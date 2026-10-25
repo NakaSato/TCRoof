@@ -69,6 +69,9 @@ public enum MPTemplates {
         guard days != 0 else { return (original, template) }
         let out = try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),
                                         actual: MasterSchedule.Actual(), calendar: cal)
-        return (out.data, try MPWorkbook.read(out.data, calendar: cal))
+        // export writes the MP plan only: the WBS sheet keeps the template's dates, so its rows move here
+        var moved = try MPWorkbook.read(out.data, calendar: cal)
+        moved.wbs = moved.wbs.map { $0.shifted(days: days, calendar: cal) }
+        return (out.data, moved)
     }
 }

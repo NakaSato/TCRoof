@@ -20,7 +20,10 @@ public enum AppCompat {
     /// before the first re-plan (`Input.baseline`). Builds before it drop both when they save that plan.
     /// 5: the team's tank structure standard (`config/tankStandard`) and each tank layout's copy of it
     /// (`TankLayout.Key.standard`). Builds before it lay every tank out with the built-in standard.
-    public static let syncVersion = 5
+    /// 6: the plan file's WBS and its ticks (`scheduleWBS`, `wbsTicks` signed `wbsTicksBy` by a contractor) and what the
+    /// ticks booked (`Actual.fromWBS`). Builds before it drop `fromWBS` when they save the plan's progress, so the ticks
+    /// would book again; set the minimum before anyone ticks.
+    public static let syncVersion = 6
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

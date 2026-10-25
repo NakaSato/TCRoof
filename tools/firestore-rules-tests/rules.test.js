@@ -131,6 +131,24 @@ test('an external member sends the weekly request of their own job, signed with 
   await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { weeklyRequests: '[]', weeklyRequestsBy: TEAM }, { merge: true }));
 });
 
+test('an external member sends the WBS ticks of their own job, signed with their email', async () => {
+  const d = db(CON);
+  const job = doc(d, 'jobs', 'mine');
+  await assertSucceeds(setDoc(job, { wbsTicks: '{"2.1.1":{}}', wbsTicksBy: CON }, { merge: true }));
+  // with the IEC test and the weekly request in the same write, as the app sends them
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":1}', iecState: 'open', weeklyRequests: '[]', weeklyRequestsBy: CON,
+                                     wbsTicks: '{}', wbsTicksBy: CON }, { merge: true }));
+  // someone else's name, or none
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.2":{}}', wbsTicksBy: TEAM }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.2":{}}', wbsTicksBy: null }, { merge: true }));
+  // another job, or the plan's progress alongside (the team books the ticks)
+  await assertFails(setDoc(doc(d, 'jobs', 'theirs'), { wbsTicks: '{}', wbsTicksBy: CON }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.3":{}}', wbsTicksBy: CON, scheduleActual: '{}' }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.3":{}}', wbsTicksBy: CON, scheduleWBS: '[]' }, { merge: true }));
+  // the team writes the rows and ticks under any name
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { scheduleWBS: '[]', wbsTicks: '{}', wbsTicksBy: TEAM }, { merge: true }));
+});
+
 test('an external member fills daily reports but never signs them', async () => {
   const d = db(CON);
   await assertSucceeds(setDoc(doc(d, 'installLogs', 'log3'), { jobID: 'mine', externals: [CON], report: '{}' }));

@@ -139,6 +139,10 @@ final class ProjectPlanTemplateTests: XCTestCase {
         }
         XCTAssertEqual(r.input.installStart, cal.date(byAdding: .day, value: days, to: template.input.installStart))
         XCTAssertTrue(r.actual.points.isEmpty)
+        // the WBS rows move with the plan
+        let wbs21 = try XCTUnwrap(r.wbs.first { $0.code == "2.1" }), was21 = try XCTUnwrap(template.wbs.first { $0.code == "2.1" })
+        XCTAssertEqual(wbs21.baselineStart, was21.baselineStart.map { cal.date(byAdding: .day, value: days, to: $0)! })
+        XCTAssertEqual(wbs21.baselineStart, r.input.fixed?["structure"]?.start)
         XCTAssertTrue(r.formulas.isComplete, "unknown \(r.formulas.unknown.prefix(3)), differs \(r.formulas.differs.prefix(3))")
         // the station's file exports back unchanged, so its next export writes only progress
         XCTAssertEqual(try MPWorkbook.export(data, input: r.input, actual: r.actual).changedCells, 0)

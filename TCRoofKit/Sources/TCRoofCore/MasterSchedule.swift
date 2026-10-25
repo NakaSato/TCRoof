@@ -357,6 +357,8 @@ public enum MasterSchedule {
         /// task once: progress the team changes afterwards, or an approval taken back, is left to the team. Optional in
         /// older plans.
         public var fromDocuments: [String: Date] = [:]
+        /// WBS row code → what its tick booked (`MasterSchedule.bookWBS`). Optional in older plans.
+        public var fromWBS: [String: WBSBooking] = [:]
 
         public init() {}
 
@@ -382,7 +384,7 @@ public enum MasterSchedule {
             confirmations.last { $0.task == task.rawValue }
         }
 
-        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations, fromDocuments }
+        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations, fromDocuments, fromWBS }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -394,6 +396,7 @@ public enum MasterSchedule {
             lateCauses = (raw ?? [:]).compactMapValues(LateCause.init(rawValue:))
             confirmations = (try? c.decodeIfPresent([Confirmation].self, forKey: .confirmations)) ?? []
             fromDocuments = (try? c.decodeIfPresent([String: Date].self, forKey: .fromDocuments)) ?? [:]
+            fromWBS = (try? c.decodeIfPresent([String: WBSBooking].self, forKey: .fromWBS)) ?? [:]
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -405,6 +408,7 @@ public enum MasterSchedule {
             // left out when empty, so a plan without any reads as before
             if !confirmations.isEmpty { try c.encode(confirmations, forKey: .confirmations) }
             if !fromDocuments.isEmpty { try c.encode(fromDocuments, forKey: .fromDocuments) }
+            if !fromWBS.isEmpty { try c.encode(fromWBS, forKey: .fromWBS) }
         }
 
         public static func key(_ week: Date, calendar cal: Calendar = MasterSchedule.calendar) -> String {

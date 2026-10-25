@@ -186,18 +186,20 @@ service cloud.firestore {
       allow create: if isTeam();
       // ลบงาน (job.delete): the team and managers, never a contractor
       allow delete: if isTeam();
-      // A contractor changes only the IEC test (while it is open, and never closes it) and the weekly requests R1
-      // (weekly.request), signing the latter with their own email in `weeklyRequestsBy`: a rule can't read inside the
-      // JSON, so team devices drop a contractor's change to a week already sent or approved
-      // (RoutineReport.WeeklyRequest.trusting).
+      // A contractor changes only the IEC test (while it is open, and never closes it), the weekly requests R1
+      // (weekly.request) and the plan's WBS ticks, signing the latter two with their own email in `weeklyRequestsBy` /
+      // `wbsTicksBy`: a rule can't read inside the JSON, so team devices drop a contractor's change to a week already
+      // sent or approved (RoutineReport.WeeklyRequest.trusting) and to a tick the team made (WBSTick.trusting).
       allow update: if isTeam()
         || (isExternal() && listsMe(resource.data)
-            && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy'])
+            && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy', 'wbsTicks', 'wbsTicksBy'])
             && (!changedKeys().hasAny(['iecReport', 'iecState'])
                 || (resource.data.get('iecState', 'open') == 'open'
                     && request.resource.data.get('iecState', null) in ['open', 'sent']))
             && (!changedKeys().hasAny(['weeklyRequests', 'weeklyRequestsBy'])
-                || request.resource.data.get('weeklyRequestsBy', null) == signedInEmail()));
+                || request.resource.data.get('weeklyRequestsBy', null) == signedInEmail())
+            && (!changedKeys().hasAny(['wbsTicks', 'wbsTicksBy'])
+                || request.resource.data.get('wbsTicksBy', null) == signedInEmail()));
     }
 
     // The customers' phones and addresses, one document per job: the team's only.

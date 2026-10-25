@@ -120,8 +120,7 @@ extension RoofPageWide {
                 summaryTile("\(n)", "แผง", note: mountBusy ? "กำลังจัดผัง…" : (mountChoice.landscape ? "แนวนอน" : "แนวตั้ง") + " · \(perRow) แผงต่อแถว")
                     .accessibilityIdentifier("tileCount")
                 summaryTile(String(format: "%.1f", q?.kWp ?? 0), "kWp", note: "\(n) × \(Int(s.moduleWp)) W")
-                // no modules-per-string figure in the job yet
-                summaryTile("—", "สตริง", note: "ยังไม่กำหนดแผงต่อสตริง")
+                stringTile
                 summaryTile(String(format: "%.1f", area), "ตร.ม.", note: String(format: "%d × %.2f × %.2f ม.", n, s.moduleLength, s.moduleWidth))
             }
             panelsField(n)
@@ -130,6 +129,19 @@ extension RoofPageWide {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Self.track, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// `สตริง`: full strings × modules per string, from the module on B2's inverter (`RoofMountYield.stringPlan`).
+    @ViewBuilder var stringTile: some View {
+        if let p = mountYieldInputs.flatMap(RoofMountYield.stringPlan) {
+            let note = "\(p.strings) × \(p.perString) แผง" + (p.leftover > 0 ? " | เหลือ \(p.leftover) แผง" : "")
+                + (p.fits ? "" : " | เกินช่อง \(p.inputs) สตริง")
+            summaryTile("\(p.strings)", "สตริง", note: note)
+                .accessibilityIdentifier("tileStrings")
+        } else {
+            summaryTile("—", "สตริง", note: "ยังไม่มีแบบจำลองแผงหรืออินเวอร์เตอร์")
+                .accessibilityIdentifier("tileStrings")
+        }
     }
 
     /// Everything else the tab had, behind one closed row.

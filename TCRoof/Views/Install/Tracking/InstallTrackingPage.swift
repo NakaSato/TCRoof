@@ -262,7 +262,6 @@ struct InstallTrackingPage: View {
             if permissions.can(.assistantUse), job.scheduleInput != nil {
                 headerButton("ผู้ช่วย AI", "sparkles", primary: true) { assistant = true }
             }
-            headerButton("รายละเอียดงาน", "info.circle") { route = .detail }
             if let id = data.surveyReport {
                 headerButton("รายงานสำรวจ", "lock", accessibility: "รายงานสำรวจ (ดูอย่างเดียว)") { route = .survey(id) }
             }

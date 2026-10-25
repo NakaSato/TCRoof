@@ -151,6 +151,15 @@ extension InstallTrackingPage {
 
     /// The MP tasks' % (the board's installed quantities have no model) beside the four tiles.
     private func siteInfo(_ s: InstallPageData.Site) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            siteInfoBody(s)
+            // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
+            Button { route = .detail } label: { Label("รายละเอียดงาน", systemImage: "info.circle") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+        }
+    }
+
+    private func siteInfoBody(_ s: InstallPageData.Site) -> some View {
         HStack(alignment: .top, spacing: 16) {
             if !s.tasks.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {

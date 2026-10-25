@@ -88,7 +88,7 @@ final class MoveToInstallUITests: XCTestCase {
         // a tap on the card opens the station's install tracking page, as the overview's row does: an unlinked survey
         // gets a TCRoof job when it moves (`SurveyModel.makeInstallJob`)
         again.tap()
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "รายละเอียดงาน")).firstMatch.waitForExistence(timeout: 15),
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.waitForExistence(timeout: 15),
                       "the install tracking page opens")
         app.terminate()
         app = launch()

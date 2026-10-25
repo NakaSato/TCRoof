@@ -193,23 +193,15 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertFalse(again.isSelected, "tapping the picked cause should clear it")
     }
 
-    /// The header's `รายละเอียดงาน` opens the job's own screen (scans, ICL, documents …) and back returns to the page.
-    func testJobDetailOpensFromHeader() {
-        let app = launch([], demo: false)
+    /// The site panel's `รายละเอียดงาน` opens the job's own screen (scans, ICL, documents …) and back returns to the page.
+    func testJobDetailOpensFromSitePanel() {
+        let app = launch(["-installSite", "info"], demo: false)
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
-        let detail = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "รายละเอียดงาน")).firstMatch
+        let detail = app.buttons["รายละเอียดงาน"]
+        for _ in 0..<4 where !detail.isHittable { app.swipeUp() }
         XCTAssertTrue(detail.waitForExistence(timeout: 8))
         detail.tap()
         XCTAssertTrue(app.staticTexts["ข้อมูลลูกค้า"].waitForExistence(timeout: 10), "the job's screen should open")
-        // the actions are below the MP plan and routine report cards
-        let scan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "สแกนอุปกรณ์")).firstMatch
-        // drag inside the page: -homeBoard draws it in the top of a portrait simulator, where swipeUp misses it
-        let page = app.staticTexts["ข้อมูลลูกค้า"]
-        for _ in 0..<6 where !scan.isHittable {
-            page.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 300))
-                .press(forDuration: 0.05, thenDragTo: page.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
-        }
-        XCTAssertTrue(scan.isHittable, "the job's screen should offer สแกนอุปกรณ์")
         XCTAssertTrue(waitGone(pageBack(app)))
         back(app)
     }

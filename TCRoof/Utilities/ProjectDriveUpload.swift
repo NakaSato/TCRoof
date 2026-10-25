@@ -44,7 +44,11 @@ enum ProjectDriveUpload {
         let keyPlan = job.uploadedKeyPlan.flatMap { p -> (PhotoAsset, [String], String)? in
             p.driveFileID == nil && !p.data.isEmpty ? (p, ["Key Plan"], "Key Plan \(job.stationName).jpg") : nil
         }
-        return daily + (keyPlan.map { [$0] } ?? []) + pendingICLPhotos(job) + pendingIECPhotos(job)
+        // each week's request signature, beside the request's PDF
+        let signatures = job.requestSignatures.compactMap { r, p -> (PhotoAsset, [String], String)? in
+            p.driveFileID == nil ? (p, RoutineReport.folder(.request, date: r.weekStart), "\(r.id) ลายเซ็น Site Engineer.png") : nil
+        }
+        return daily + (keyPlan.map { [$0] } ?? []) + signatures + pendingICLPhotos(job) + pendingIECPhotos(job)
     }
 
     /// The ICL's step photos (`ICL รูปถ่าย/โครงสร้าง 1.jpg`).

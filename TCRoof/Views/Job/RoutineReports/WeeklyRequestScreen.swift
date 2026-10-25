@@ -259,3 +259,31 @@ enum WeeklyRequestStore {
         try? RoutineReportFiles.temporaryURL(RoutineReportFiles.request(job, request))
     }
 }
+
+/// The requester's drawn signature of a week's request: a `PhotoAsset` on the job (`iecPhotos`, the job's own photos,
+/// as the uploaded key plan), tagged with the week, so it syncs, goes to Drive beside the request and prints on R1.
+extension Job {
+    static func requestSignatureTag(_ r: RoutineReport.WeeklyRequest) -> String { "request.signature." + r.id }
+
+    func requestSignature(_ r: RoutineReport.WeeklyRequest) -> PhotoAsset? {
+        let tag = Self.requestSignatureTag(r)
+        return iecPhotos.first { $0.tag == tag && !$0.data.isEmpty }
+    }
+
+    /// Keeps `png` as the week's signature (nil removes it).
+    @MainActor func setRequestSignature(_ png: Data?, for r: RoutineReport.WeeklyRequest, context: ModelContext) {
+        let tag = Self.requestSignatureTag(r)
+        for p in iecPhotos where p.tag == tag { context.delete(p) }
+        if let png {
+            let asset = PhotoAsset(data: png, tag: tag)
+            context.insert(asset)
+            asset.iecJob = self
+        }
+        try? context.save()
+    }
+
+    /// Every week's signature, with its request, for the Drive upload.
+    var requestSignatures: [(request: RoutineReport.WeeklyRequest, photo: PhotoAsset)] {
+        weeklyRequests.compactMap { r in requestSignature(r).map { (r, $0) } }
+    }
+}

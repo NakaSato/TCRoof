@@ -191,8 +191,13 @@ enum RoutineReportFiles {
     }
 
     static func request(_ job: Job, _ r: RoutineReport.WeeklyRequest) -> Built {
-        let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure()).request(r)
-        return Built(pages: pages, images: [:], name: RoutineReport.fileName(.request, date: r.weekStart, station: job.stationName),
+        // the requester's drawn signature on the Site Engineer's line, when there is one
+        let drawn = job.requestSignature(r).flatMap { p -> (Photo, Data)? in
+            guard let img = UIImage(data: p.data) else { return nil }
+            return (Photo(fileName: "request-signature.png", width: Int(img.size.width), height: Int(img.size.height)), p.data)
+        }
+        let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure()).request(r, signature: drawn?.0)
+        return Built(pages: pages, images: drawn.map { [$0.0.id: $0.1] } ?? [:], name: RoutineReport.fileName(.request, date: r.weekStart, station: job.stationName),
                      folder: RoutineReport.folder(.request, date: r.weekStart), title: RoutineReport.Kind.request.title)
     }
 

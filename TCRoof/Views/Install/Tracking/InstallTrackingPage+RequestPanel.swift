@@ -132,7 +132,7 @@ extension InstallTrackingPage {
                 .overlay(frame.strokeBorder(Theme.success.opacity(0.6)))
                 .overlay(alignment: .topTrailing) {
                     if draft && editable {
-                        Button { reqSignature = nil } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44) }
+                        Button { setSignature(nil) } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 44, height: 44) }
                             .buttonStyle(.plain).accessibilityLabel("ล้างลายเซ็น")
                     }
                 }
@@ -184,7 +184,7 @@ extension InstallTrackingPage {
                 VStack(spacing: 8) {
                     Button { reqSheet = .approve } label: { Text("บันทึกอนุมัติแล้ว").frame(maxWidth: .infinity) }
                         .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true)).accessibilityIdentifier("requestApprove")
-                    Button { reqChange { $0.sendBack() } } label: { Text("ส่งกลับให้แก้").frame(maxWidth: .infinity) }
+                    Button { reqChange { $0.sendBack() }; setSignature(nil) } label: { Text("ส่งกลับให้แก้").frame(maxWidth: .infinity) }
                         .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true)).accessibilityIdentifier("requestSendBack")
                 }
             case .approved:
@@ -198,6 +198,17 @@ extension InstallTrackingPage {
                 }
             }
         }
+    }
+
+    /// Keeps the drawn signature on the job for this week (it syncs and prints on R1), or removes it; the board's example
+    /// keeps it in memory only.
+    func setSignature(_ png: Data?) {
+        reqSignature = png
+        reqSignedAt = png == nil ? nil : .now
+        #if DEBUG
+        if Debug.demo { return }
+        #endif
+        if let r = request { job.setRequestSignature(png, for: r, context: context) }
     }
 
     private func note(_ text: String) -> some View {
@@ -221,7 +232,7 @@ extension InstallTrackingPage {
         switch s {
         case .sign:
             RequestSignSheet(name: reqName) { png, name in
-                reqSignature = png; reqSignedAt = .now
+                setSignature(png)
                 if !name.isEmpty { reqName = name }
             }
         case .pdf:

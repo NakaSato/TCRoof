@@ -238,4 +238,25 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertTrue(t.contains("(นาย ก)"))
         XCTAssertTrue(t.contains { $0.contains("13 ก.ค. 2568 – 19 ก.ค. 2568") })
     }
+
+    func testRequestPrintsDaysAndTheDrawnSignature() {
+        var r = RoutineReport.WeeklyRequest(weekStart: d(13))
+        r.crew = [.init(name: "ช่างไฟฟ้า", count: 2)]
+        r.work = [.init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1", days: [0, 1])]
+        r.toggleOff(role: 0, day: 1)
+        let sig = Photo(fileName: "sig.png", width: 240, height: 70)
+        let ops = pages.request(r, signature: sig).flatMap(\.ops)
+        let t = texts(pages.request(r, signature: sig))
+        XCTAssertTrue(t.contains("หยุด"), "a role off prints หยุด on its day")
+        XCTAssertTrue(t.contains("✓"))
+        XCTAssertTrue(t.contains("คน·วัน"))
+        XCTAssertTrue(t.contains("2"), "Monday's two people")
+        XCTAssertTrue(ops.contains { if case .photo(let p, _) = $0 { return p.id == sig.id } else { return false } }, "the drawn signature")
+        // a request without days prints as before
+        var old = r
+        old.crewOff = []; old.work[0].days = []
+        let plain = texts(pages.request(old))
+        XCTAssertFalse(plain.contains("คน·วัน"))
+        XCTAssertTrue(plain.contains("จำนวน (คน)"))
+    }
 }

@@ -33,13 +33,16 @@ extension InstallTrackingPage {
         WeeklyRequestStore.save(r, job: job, external: reqExternal, file: false, context: context)
     }
 
-    /// The week's request, its signature and name cleared.
+    /// The week's request with its kept signature (none in the board's example), and the requester's name.
     func loadRequest() {
         #if DEBUG
         if Debug.demo { request = Self.demoRequest(week: requestWeekStart, back: -requestWeek); reqSignature = nil; reqName = "นายสมชาย ใจดี"; return }
         #endif
-        request = WeeklyRequestStore.load(job, requestWeekStart)
-        reqSignature = nil
+        let r = WeeklyRequestStore.load(job, requestWeekStart)
+        request = r
+        let drawn = job.requestSignature(r)
+        reqSignature = drawn?.data
+        reqSignedAt = drawn?.createdAt
         reqName = reqSettings.siteEngineer
     }
 

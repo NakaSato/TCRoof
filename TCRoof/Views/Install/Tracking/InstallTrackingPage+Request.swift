@@ -530,7 +530,7 @@ extension InstallTrackingPage {
             VStack(alignment: .leading, spacing: 12) {
                 numbered(4, "ประเมินความเสี่ยง")
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                    ForEach(Array(r.risks.enumerated()), id: \.element.id) { i, risk in riskBox(risk, index: i, editable: editable) }
+                    ForEach(r.risks) { risk in riskBox(risk, editable: editable) }
                 }
                 if editable && !missing.isEmpty {
                     HStack(spacing: 8) {
@@ -544,26 +544,32 @@ extension InstallTrackingPage {
         }
     }
 
-    private func riskBox(_ risk: RoutineReport.Risk, index i: Int, editable: Bool) -> some View {
+    /// A text of one risk, found by its id when read and when written (and saved through `reqChange`).
+    private func riskText(_ id: UUID, _ field: WritableKeyPath<RoutineReport.Risk, String>) -> Binding<String> {
+        Binding(get: { request?.risks.first { $0.id == id }?[keyPath: field] ?? "" },
+                set: { v in reqChange { $0.updateRisk(id) { $0[keyPath: field] = v } } })
+    }
+
+    private func riskBox(_ risk: RoutineReport.Risk, editable: Bool) -> some View {
         let frame = RoundedRectangle(cornerRadius: 14, style: .continuous)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 if editable {
-                    TextField("ความเสี่ยง", text: Binding(get: { risk.description }, set: { v in reqChange { $0.risks[i].description = v } }))
+                    TextField("ความเสี่ยง", text: riskText(risk.id, \.description))
                         .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 } else {
                     Text(risk.description).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 }
                 Spacer(minLength: 4)
                 if editable {
-                    Button { reqChange { $0.risks.remove(at: i) } } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 32, height: 32) }
+                    Button { reqChange { $0.risks.removeAll { $0.id == risk.id } } } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 32, height: 32) }
                         .buttonStyle(.plain).accessibilityLabel("ลบความเสี่ยง")
                 }
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("ป้องกัน:").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
                 if editable {
-                    TextField("แนวทางป้องกัน", text: Binding(get: { risk.prevention }, set: { v in reqChange { $0.risks[i].prevention = v } }), axis: .vertical)
+                    TextField("แนวทางป้องกัน", text: riskText(risk.id, \.prevention), axis: .vertical)
                         .font(.sarabunFixed(13))
                 } else {
                     Text(risk.prevention).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
@@ -577,7 +583,7 @@ extension InstallTrackingPage {
                     case .medium: (Theme.warningInk, Theme.warningSoft)
                     case .high: (Theme.dangerText, Theme.dangerSoft)
                     }
-                    Button { if editable { reqChange { $0.risks[i].level = l } } } label: {
+                    Button { if editable { reqChange { $0.updateRisk(risk.id) { $0.level = l } } } } label: {
                         Text(l.title).font(.sarabunFixed(13, .bold)).foregroundStyle(on ? ink : Theme.inkMuted)
                             .padding(.horizontal, 14).frame(minHeight: 44)
                             .background(on ? fill : Theme.hairline, in: RoundedRectangle(cornerRadius: 9, style: .continuous))

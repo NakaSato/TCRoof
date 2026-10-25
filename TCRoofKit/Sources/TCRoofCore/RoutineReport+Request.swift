@@ -27,6 +27,13 @@ public extension RoutineReport.WeeklyRequest {
         if let i = crewOff.firstIndex(of: k) { crewOff.remove(at: i) } else { crewOff.append(k) }
     }
 
+    /// Changes the risk with this id, wherever it now sits; nothing when it was removed. An edit arriving after another
+    /// risk was deleted still lands on its own risk, as an index would not.
+    mutating func updateRisk(_ id: UUID, _ change: (inout RoutineReport.Risk) -> Void) {
+        guard let i = risks.firstIndex(where: { $0.id == id }) else { return }
+        change(&risks[i])
+    }
+
     /// Adds a day to a line, or takes it away.
     mutating func toggleDay(line id: UUID, day: Int) {
         guard let i = work.firstIndex(where: { $0.id == id }) else { return }

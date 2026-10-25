@@ -30,6 +30,37 @@ final class InstallPlanTests: XCTestCase {
         return p
     }
 
+    /// The plan file's WBS in place of the places: a stage's sub-tasks moved with the stage, ticked ones done, the other
+    /// case's left out; a stage the WBS doesn't cover keeps its places.
+    func testWBSSubTasksReplaceThePlaces() {
+        // the board's stage s4 is "dcSide" here (2.2): the file has its line 2 days before the plan
+        let rows: [InstallGantt.Row] = [
+            .init(id: "dcSide", code: "2.2", title: "ระบบ DC", status: .current, start: d(5), end: d(9), percent: 30,
+                  subs: [Sub("สตริง 1–6", percent: 100, start: d(5), end: d(5))]),
+            .init(id: "panels", code: "2.3", title: "แผง", status: .waiting, start: d(9), end: d(10), percent: 0,
+                  subs: [Sub("โซน A", percent: 0)])]
+        var p = InstallPlan(gantt: InstallGantt(rows: rows, today: d(6)), nonWorking: [], tracking: nil, calendar: cal)
+        func item(_ code: String, _ title: String, _ s: Int, _ e: Int) -> MasterSchedule.WorkItem {
+            var i = MasterSchedule.WorkItem(code: code, title: title, weight: 2)
+            i.baselineStart = d(s); i.baselineEnd = d(e)
+            return i
+        }
+        let wbs = [item("2.2", "ติดตั้งอุปกรณ์ไฟฟ้าด้าน DC", 3, 7), item("2.2.1", "    รางเดินสาย DC", 3, 4),
+                   item("2.2.2", "    สาย PV", 5, 7), item("2.2.9", "    ทางเดิน HV (ไม่เกี่ยวกับสถานีนี้)", 3, 3)]
+        p.useWBS(wbs, ticked: ["2.2.1"], calendar: cal)
+
+        let dc = p.stages[0].subs
+        XCTAssertEqual(dc.map(\.code), ["2.2.1", "2.2.2"])
+        XCTAssertEqual(dc.map(\.title), ["รางเดินสาย DC", "สาย PV"])
+        // moved 2 days with the stage
+        XCTAssertEqual(dc[0].start, d(5)); XCTAssertEqual(dc[0].end, d(6))
+        XCTAssertEqual(dc[1].start, d(7)); XCTAssertEqual(dc[1].end, d(9))
+        XCTAssertEqual(dc[0].status, .done); XCTAssertEqual(dc[0].percent, 100)
+        XCTAssertEqual(dc[1].status, .waiting, "starts after today")
+        // the panels stage has no WBS rows here: its place stays
+        XCTAssertEqual(p.stages[1].subs.map(\.title), ["โซน A"])
+    }
+
     func testStagesAreCriticalUntilDone() {
         let p = plan()
         XCTAssertEqual(p.stages.map(\.row.critical), [false, true, true, true], "a done stage is no longer outlined")

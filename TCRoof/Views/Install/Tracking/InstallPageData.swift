@@ -134,7 +134,11 @@ struct InstallPageData {
             milestones.append(.init(title: "ส่งมอบ", date: job.installEnd))
             // the weekly requests' planned crew; the plan itself keeps no crew
             let crew = Dictionary((site?.labour ?? []).compactMap { l in l.plan.map { (cal.startOfDay(for: l.date), $0) } }) { a, _ in a }
-            plan = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)
+            var p = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)
+            // a plan from a plan file shows its WBS sub-tasks under each stage, in place of the reports' places
+            let wbs = job.scheduleWBS
+            if !wbs.isEmpty { p.useWBS(wbs, ticked: Set(job.wbsTicks.keys)) }
+            plan = p
         }
     }
 }

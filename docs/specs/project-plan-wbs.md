@@ -81,6 +81,9 @@ column M is a reference into `อัปเดตงาน WBS`, a sheet the impo
 
 ## Step 4: the rest
 
+- แผนก่อสร้าง's sub rows (built): a stage's WBS sub-tasks replace the daily reports' places (`InstallPlan.useWBS`), their
+  baseline dates moved by as much as the stage has moved from the file's own line, done when ticked; a stage without WBS
+  rows keeps its places.
 - The baseline beside the current plan (`Input.baseline` from the rows' baseline dates).
 - The installation points and the Inverter station breakdown, where they don't conflict with the survey's values.
 - Per site type plans: `make_template.py` with each type's durations; the files ship through `PlanTemplates` as they are.

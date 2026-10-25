@@ -166,6 +166,22 @@ public enum MasterSchedule {
             if let e = site.compactMap(\.end).max() { installEnd = max(e, installStart) }
         }
 
+        /// The same plan `days` later (earlier when negative): every date moves, durations and weights stay. A template
+        /// plan (`MPTemplates`) is moved this way to a station's kickoff.
+        public func shifted(days: Int, calendar cal: Calendar = MasterSchedule.calendar) -> Input {
+            func move(_ d: Date) -> Date { cal.date(byAdding: .day, value: days, to: d) ?? d }
+            func move(_ t: FixedTask) -> FixedTask { FixedTask(start: t.start.map(move), end: t.end.map(move), weight: t.weight) }
+            var i = self
+            i.installStart = move(installStart)
+            i.installEnd = move(installEnd)
+            i.kickoff = move(kickoff)
+            i.engineeringStart = move(engineeringStart)
+            i.siteHandover = move(siteHandover)
+            i.fixed = fixed?.mapValues(move)
+            i.baseline = baseline?.mapValues(move)
+            return i
+        }
+
         /// The plan before its first re-plan, with dates; nil when it was never re-planned.
         public var original: Input? {
             guard let baseline else { return nil }

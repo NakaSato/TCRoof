@@ -231,6 +231,7 @@ struct MPSetupSheet: View {
     @State private var inverterKW: Double?
     /// The imported task being edited.
     @State private var editing: MasterSchedule.Task?
+    @State private var choosingTemplate = false
 
     init(job: Job) {
         self.job = job
@@ -270,6 +271,14 @@ struct MPSetupSheet: View {
                         }
                     }
                     .onChange(of: inverterKW) { _, kw in if let kw { input.over200kVA = MasterSchedule.Input.isOver200kVA(inverterKW: kw) } }
+                }
+                PadSection("แม่แบบโครงการ") {
+                    Button { choosingTemplate = true } label: {
+                        Label("เริ่มจากแม่แบบ (20 กรณีติดตั้ง)", systemImage: "doc.on.doc")
+                    }
+                    .accessibilityIdentifier("mpSetup.template")
+                } footer: {
+                    Text("แผนตามประเภทหน้างาน กันย้อน และขนาด inverter เลื่อนตามวัน Kick off")
                 }
                 if input.fixed != nil {
                     PadSection("แผนจากไฟล์ Excel") {
@@ -325,6 +334,9 @@ struct MPSetupSheet: View {
                 MPTaskEditSheet(task: task, value: input.fixed?[task.rawValue] ?? .init(start: nil, end: nil, weight: 0)) {
                     input.fixed?[task.rawValue] = $0
                 }
+            }
+            .sheet(isPresented: $choosingTemplate) {
+                MPTemplateSheet(job: job, input: input) { input = $0 }
             }
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)

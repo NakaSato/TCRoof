@@ -47,6 +47,9 @@ public enum MPWorkbook {
         public var coverage: MasterSchedule.Actual.Coverage
         /// The progress the file held when the app last exported it (`Snapshot`); nil for a file the app never wrote.
         public var base: MasterSchedule.Actual?
+        /// The team template's work breakdown (`แผนโครงการ` sheet), every row in the sheet's order; empty for a file
+        /// without one. Read only: export leaves that sheet as it came.
+        public var wbs: [MasterSchedule.WorkItem] = []
     }
 
     /// The plan sheet's formulas worked out on the untouched file and compared with the results Excel saved in it.
@@ -125,7 +128,8 @@ public enum MPWorkbook {
                         formulas: check(sheet, cal),
                         coverage: .init(tasks: Set(layout.rows.filter { $0.actual != nil }.map(\.task.rawValue)),
                                         weeks: Set(layout.weeks.map(\.key))),
-                        base: Snapshot.read(book.zip))
+                        base: Snapshot.read(book.zip),
+                        wbs: book.detail.map { wbs($0, cal) } ?? [])
     }
 
     /// The Actual rows' start, finish and weekly points as the sheet holds them.
@@ -371,22 +375,29 @@ public enum MPWorkbook {
         let sheetName: String
         let sheet: Sheet
         let layout: Layout
+        /// The team template's `แผนโครงการ` sheet (its header has `WBS`), when the file has one.
+        let detail: Sheet?
 
         init(_ data: Data) throws {
             guard let zip = try? ZipArchive(data), let wb = zip.string("xl/workbook.xml") else { throw Failure.notWorkbook }
             self.zip = zip
             let shared = Sheet.sharedStrings(zip.string("xl/sharedStrings.xml") ?? "")
             let rels = zip.string("xl/_rels/workbook.xml.rels") ?? ""
-            var noTasks = false
+            // only a file whose strings have `WBS` is looked through for the detail sheet, so other plans read as before
+            var lookForDetail = shared.contains("WBS")
+            var noTasks = false, found: (path: String, name: String, sheet: Sheet, layout: Layout)?, detail: Sheet?
             for (name, id) in Self.sheetIDs(wb) {
                 guard let path = Self.target(id, rels), let xml = zip.string(path) else { continue }
                 let sheet = Sheet(xml, shared: shared)
-                guard let layout = Layout(sheet) else { continue }
-                if layout.rows.isEmpty { noTasks = true; continue }
-                sheetPath = path; sheetName = name; self.sheet = sheet; self.layout = layout
-                return
+                if lookForDetail, MPWorkbook.wbsHeader(sheet) != nil { detail = sheet; lookForDetail = false; continue }
+                if found == nil, let layout = Layout(sheet) {
+                    if layout.rows.isEmpty { noTasks = true } else { found = (path, name, sheet, layout) }
+                }
+                if found != nil && !lookForDetail { break }
             }
-            throw noTasks ? Failure.noTasks : Failure.noPlanSheet
+            guard let found else { throw noTasks ? Failure.noTasks : Failure.noPlanSheet }
+            sheetPath = found.path; sheetName = found.name; sheet = found.sheet; layout = found.layout
+            self.detail = detail
         }
 
         /// The sheets' names and relationship ids in tab order.
@@ -529,6 +540,13 @@ public enum MPWorkbook {
                 guard let v = c.number, let (col, r) = Self.split(ref), r == row else { return nil }
                 return (col, v)
             }.sorted { $0.col < $1.col }
+        }
+
+        func numbers(col: Int) -> [(row: Int, value: Double)] {
+            byRef.compactMap { ref, c in
+                guard let v = c.number, let (cl, r) = Self.split(ref), cl == col else { return nil }
+                return (r, v)
+            }.sorted { $0.row < $1.row }
         }
 
         func texts(col: Int) -> [(row: Int, text: String)] {

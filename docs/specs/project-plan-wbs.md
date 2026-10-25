@@ -1,0 +1,83 @@
+# Project plan WBS in the app
+
+The team's plan files (`Project_Plan_TCRoof/`, 20 cases P9-001…020) carry two plans: the hidden `Weekly PLAN` sheet
+with the 18 MP tasks, which the app reads today (`MPWorkbook`, `MPTemplates`), and the visible `แผนโครงการ` sheet with
+the work breakdown under them. This spec brings the work breakdown into the app in four steps.
+
+## The sheet
+
+Header row 7 (the row of the `WBS` cell) under a row of groups:
+
+| Column | Heading | Group | Read as |
+|---|---|---|---|
+| A | WBS | | `code`: `0`, `1.1`, `1.1.3`, `1.7.1` |
+| B | กิจกรรม | | `title` (indent trimmed) |
+| C | หลักฐาน / เลขที่เอกสาร | | `evidence` |
+| D | ผู้รับผิดชอบ | | `responsible` |
+| E | น้ำหนัก % | | `weight`, percent of the station |
+| F | งานก่อนหน้า | | `predecessor`, the sheet's words |
+| G, H | รอ (วัน), ระยะ (วัน) | | `lagDays`, `days` |
+| I, J | เริ่ม, เสร็จ | Baseline (ล็อก) | `baselineStart`, `baselineEnd` |
+| K, L | เริ่ม, เสร็จ / นัด | จริง / นัด (ลิงก์) | not read (links to the template's update sheet) |
+| M | เสร็จ (Y · S) | | not read: a reference to `อัปเดตงาน WBS`, which the import files don't carry |
+| N, O | เริ่ม, เสร็จ | คาดการณ์ | `forecastStart`, `forecastEnd` |
+| P | สถานะ | | `status` |
+| R | มาตรฐาน / หมายเหตุ | | `note`; `หลักฐาน: site_map` names a station paper |
+| S | ชั้น | | `level`: 0 part, 1 task line, 2 sub-task |
+| W | อนุมัติ / ตรวจรับ (A) | | `approver` |
+
+Columns are found by these texts, not by letter. Every one of them holds values, no formulas.
+
+The table ends at the first non-code text in column A; the installation points and the Inverter station's own
+breakdown (2.5.1.1–2.5.1.6, as % of 2.5.1) below it are other lists (step 4).
+
+Numbering is the app's: the sheet's 1.1–3.2 are `MasterSchedule.Task.code`, so a row belongs to the task its first two
+code parts name (`2.5.3` → 2.5 Inverter). Grid connection 1.7 has no line of its own, only 1.7.1–1.7.6. Part 0
+(preparation, 0.x) and 2.10 Tie-in have no MP task and weigh 0. A task's sub-tasks add up to its weight; a part's line
+carries its tasks' total (1: 5, 2: 90, 3: 5). The other case's rows (HV on an LV station, พค.2 under 200 kVA) stay in
+the sheet marked `(ไม่เกี่ยวกับสถานีนี้)` / `(ไม่ต้อง…)` at weight 0.
+
+## Step 1: read it (built)
+
+- `MasterSchedule.WorkItem` (TCRoofCore, `MasterSchedule+WBS.swift`): one row, with `task`, `isMilestone` (◆),
+  `notForThisStation`, `evidenceKinds`; `[WorkItem].items(for:)` gives a task's sub-tasks.
+- `MPWorkbook.read` fills `Imported.wbs` from the `แผนโครงการ` sheet (`MPWorkbook+WBS.swift`); a file without one
+  (a station's own `Master Plan Weekly`) gives `[]` and reads exactly as before. Only a file whose shared strings have
+  `WBS` is looked through for the sheet. Export doesn't touch it.
+- `ProjectPlanTemplateTests`: every case reads 124 rows, each task's sub-tasks add up to its weight, parts and the rows
+  with no task weigh as above, 2.1's line keeps the plan's dates, and one row is checked field by field.
+
+Nothing is stored on the job yet.
+
+## Step 2: the checklist on the install page
+
+Each MP task's sub-tasks under it in แผนก่อสร้าง and the task sheet (iPad and iPhone): evidence, owner, dates, the
+station papers its note names; the other case's rows hidden. Ticking a sub-task done moves its task's % by its weight
+and books it in the MP plan's progress, so reports and the S-curve follow.
+
+Storage: not inside `MasterSchedule.Input`. The plan syncs as one JSON string on the job document; 124 rows would add
+about 35 KB to every job, and a device on an older build that saves ตั้งค่าแผน would drop a field it doesn't know. The
+rows go into their own job field (`scheduleWBSJSON`, synced beside `scheduleInput`, with its rule), and the ticks into
+`MasterSchedule.Actual` keyed by code. Raise `AppCompat.syncVersion` in that change, and set `config/app.minSyncVersion`
+before the ticks go live. A plan started from a template (`MPTemplates.plan`) moves the rows' dates with the plan
+(`Input.shifted`).
+
+## Step 3: ticks back to Excel
+
+Export writes each ticked sub-task into the `แผนโครงการ` sheet and `รับเฉพาะความก้าวหน้า` takes the ticks changed in
+Excel, as it does for the weekly points. Which column takes the tick has to be settled with the template's author:
+column M is a reference into `อัปเดตงาน WBS`, a sheet the import files leave out.
+
+## Step 4: the rest
+
+- The baseline beside the current plan (`Input.baseline` from the rows' baseline dates).
+- The installation points and the Inverter station breakdown, where they don't conflict with the survey's values.
+- Per site type plans: `make_template.py` with each type's durations; the files ship through `PlanTemplates` as they are.
+
+## Open questions
+
+1. Does a tick need its evidence (a document number or a photo), or is a tick enough?
+2. Who ticks: the contractor, the team, or both (as `daily.sign` and the weekly request)?
+3. Do ticks reach a contractor's devices? They push only the IEC test and weekly requests now; ticks would need a rule
+   and the sync version above.
+4. Step 3's tick column (see there).

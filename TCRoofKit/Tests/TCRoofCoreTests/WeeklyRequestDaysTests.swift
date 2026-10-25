@@ -81,6 +81,20 @@ final class WeeklyRequestDaysTests: XCTestCase {
         XCTAssertEqual(r.refreshed(from: draft).work.map(\.description), ["แผง", "นอกแผน"])
     }
 
+    /// An edit finds its risk by id: after the one before it is deleted it still lands on itself, and an edit to a
+    /// deleted risk changes nothing.
+    func testARiskEditFindsItsRisk() {
+        var r = RoutineReport.WeeklyRequest(weekStart: d(6))
+        r.risks = [.init(description: "ที่สูง"), .init(description: "ไฟฟ้า")]
+        let first = r.risks[0].id, second = r.risks[1].id
+        r.risks.removeAll { $0.id == first }
+        r.updateRisk(second) { $0.prevention = "ตัดไฟก่อนทำงาน" }
+        XCTAssertEqual(r.risks.map(\.prevention), ["ตัดไฟก่อนทำงาน"])
+        let before = r
+        r.updateRisk(first) { $0.description = "หาย" }
+        XCTAssertEqual(r, before)
+    }
+
     func testDeadlineIsTheFridayBefore() {
         let due = RoutineReport.requestDeadline(d(9))
         XCTAssertEqual(cal.component(.weekday, from: due), 6)

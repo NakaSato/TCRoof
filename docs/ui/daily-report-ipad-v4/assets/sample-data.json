@@ -1,0 +1,19 @@
+{
+  "_note": "Example values from the board (iPadDaily.dc.html, 25 ต.ค. 2569). For screenshots only; never hard-code them. assets/blob/*.jpg are the board's example key plan and line photos; don't ship them.",
+  "station": "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย (ตัวอย่าง)",
+  "header": { "title": "รายงานประจำวันที่ 2 ก.ค. 2568 (วันพุธ)", "subtitle": "<station>" },
+  "boardOnly": { "roleSwitch": ["เปิดในบทบาท", "ผู้รับเหมา", "ทีม TC"], "note": "the board's role switch is for the canvas only; the app picks the view from the signed-in role" },
+  "tcView": {
+    "card": "ลงนามรับทราบ",
+    "reporterRow": { "title": "ผู้รายงาน นายสมชาย ใจดี", "sub": "SITE ENGINEER ผู้รับเหมา ลงนามและส่งแล้ว 17:40" },
+    "idle": ["แตะเพื่อเซ็นรับทราบ", "ตรวจงานในหน้านี้และ PDF ก่อนเซ็น"],
+    "signedBadge": "✓ รับทราบแล้ว 18:05",
+    "nameLabel": "ชื่อผู้ตรวจงาน",
+    "namePlaceholder": "ชื่อผู้ตรวจงาน ทีม TC",
+    "status": {
+      "waiting": "ผู้รับเหมาส่งรายงานแล้ว 17:40 · รอทีม TC ตรวจและเซ็นรับทราบ",
+      "done": "เซ็นรับทราบแล้ว · ส่งกลับไปยังผู้รับเหมาและลงใน PDF หน้า 3"
+    },
+    "buttons": { "back": "ส่งกลับให้แก้", "preview": ["PDF 3 หน้า", "ดูตัวอย่างรายงาน"], "confirm": ["ยังไม่ได้เซ็นรับทราบ / เซ็นแล้ว", "ยืนยันรับทราบ"] }
+  }
+}

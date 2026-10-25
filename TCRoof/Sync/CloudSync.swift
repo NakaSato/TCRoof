@@ -442,7 +442,7 @@ final class CloudSync {
 
     /// What a push may send of a collection: everything, nothing (still kept, never deleted), or a job's IEC test.
     private enum Upload { case full, readOnly, iecOnly }
-    // iecOnly: a job's IEC test, and the weekly requests its contractor changed
+    // iecOnly: a job's IEC test, and the weekly requests and WBS ticks its contractor changed
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
                                          _ upload: Upload = .full) {
@@ -470,6 +470,11 @@ final class CloudSync {
                 if job.weeklyRequestsUnsent, let external {
                     fields["weeklyRequests"] = job.weeklyRequestsJSON ?? NSNull()
                     fields["weeklyRequestsBy"] = external
+                }
+                // the WBS rows the contractor ticked or took back, signed the same way
+                if job.wbsTicksUnsent, let external {
+                    fields["wbsTicks"] = job.wbsTicksJSON ?? "{}"
+                    fields["wbsTicksBy"] = external
                 }
                 changes.append(Change(key: key, write: { [fields] in $0.setData(fields, forDocument: ref, merge: true) },
                                       fingerprint: print))

@@ -162,6 +162,14 @@ final class Job {
     /// A contractor changed the weekly requests here and Firestore hasn't echoed them back yet: their device pushes
     /// them (signed `weeklyRequestsBy`) and keeps them over an older copy arriving meanwhile. Device only.
     var weeklyRequestsUnsent = false
+    /// Encoded `[MasterSchedule.WorkItem]`: the plan file's work breakdown (docs/specs/project-plan-wbs.md), kept beside
+    /// the plan rather than inside `scheduleInputJSON`, so a device on an older build that saves the plan leaves it be.
+    var scheduleWBSJSON: String?
+    /// Encoded `[String: MasterSchedule.WBSTick]`, by row code: the WBS rows ticked done.
+    var wbsTicksJSON: String?
+    /// A contractor ticked here and Firestore hasn't echoed it back yet: their device pushes the ticks (signed
+    /// `wbsTicksBy`) and keeps them over an older copy arriving meanwhile. Device only.
+    var wbsTicksUnsent = false
     /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
     var stationDocsJSON: String?
     /// `JobKind`; nil on jobs made before the kind was kept, which `kind` reads from their data.
@@ -311,6 +319,33 @@ final class Job {
         var a = before
         PermitLink.book(&a, input: input, station: station, stationContext)
         if a != before { scheduleActual = a }
+    }
+    /// The plan file's WBS rows; empty for a plan without them. Setting it books the ticks again (`bookFromWBS`).
+    var scheduleWBS: [MasterSchedule.WorkItem] {
+        get { scheduleWBSJSON.flatMap { try? JSONDecoder().decode([MasterSchedule.WorkItem].self, from: Data($0.utf8)) } ?? [] }
+        set {
+            scheduleWBSJSON = newValue.isEmpty ? nil : (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            bookFromWBS()
+        }
+    }
+    /// The ticked WBS rows. Setting it books them into the plan's progress (`bookFromWBS`).
+    var wbsTicks: [String: MasterSchedule.WBSTick] {
+        get { wbsTicksJSON.flatMap { try? JSONDecoder().decode([String: MasterSchedule.WBSTick].self, from: Data($0.utf8)) } ?? [:] }
+        set {
+            // sorted keys, so the same ticks always write the same text (sync compares and fingerprints it)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            wbsTicksJSON = newValue.isEmpty ? nil : (try? encoder.encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            bookFromWBS()
+        }
+    }
+    /// Books the ticked rows into the plan's progress, and takes back what an untick or a row gone from the plan booked
+    /// (`MasterSchedule.bookWBS`). Unlike the permits' booking it also runs when sync brings a contractor's ticks: a
+    /// contractor can't send progress, so a team device books them, and the same ticks always book the same.
+    func bookFromWBS() {
+        guard let input = scheduleInput else { return }
+        var a = scheduleActual
+        if MasterSchedule.bookWBS(&a, items: scheduleWBS, ticks: wbsTicks, input: input) { scheduleActual = a }
     }
     /// The IEC 62446 test; nil until the team sets up its inverters.
     var iecReport: IECReport? {

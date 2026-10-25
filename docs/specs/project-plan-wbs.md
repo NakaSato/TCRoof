@@ -55,12 +55,18 @@ Each MP task's sub-tasks under it in แผนก่อสร้าง and the t
 station papers its note names; the other case's rows hidden. Ticking a sub-task done moves its task's % by its weight
 and books it in the MP plan's progress, so reports and the S-curve follow.
 
-Storage: not inside `MasterSchedule.Input`. The plan syncs as one JSON string on the job document; 124 rows would add
-about 35 KB to every job, and a device on an older build that saves ตั้งค่าแผน would drop a field it doesn't know. The
-rows go into their own job field (`scheduleWBSJSON`, synced beside `scheduleInput`, with its rule), and the ticks into
-`MasterSchedule.Actual` keyed by code. Raise `AppCompat.syncVersion` in that change, and set `config/app.minSyncVersion`
-before the ticks go live. A plan started from a template (`MPTemplates.plan`) moves the rows' dates with the plan
-(`Input.shifted`).
+Step 2a, storage and sync (built): `Job.scheduleWBS` (rows, set by the workbook import and `เริ่มจากแม่แบบ`, which
+moves them with the plan) and `Job.wbsTicks` (`MasterSchedule.WBSTick` by code: who, the day, a document number), both
+synced on the job record (`scheduleWBS` `[]`, `wbsTicks` `{}` when empty). A contractor's device pushes `wbsTicks`
+signed `wbsTicksBy` (the rules check it); team devices take in only the contractor's own ticks
+(`WBSTick.trusting`). `MasterSchedule.bookWBS` books each ticked sub-task's weight in its tick's week, once
+(`Actual.fromWBS`), capped at its task's weight, and takes it back on untick; it runs whenever rows or ticks change,
+received ones too, since the contractor can't send progress. `AppCompat.syncVersion` is 6. Step 2b is the screens.
+
+Why not inside `MasterSchedule.Input`: The plan syncs as one JSON string on the job document; 124 rows would add
+about 35 KB to every job, and a device on an older build that saves ตั้งค่าแผน would drop a field it doesn't know. Set
+`config/app.minSyncVersion` to 6 before anyone ticks: an older build saving the progress drops `fromWBS`, and the ticks
+would then book again.
 
 ## Step 3: ticks back to Excel
 
@@ -74,10 +80,12 @@ column M is a reference into `อัปเดตงาน WBS`, a sheet the impo
 - The installation points and the Inverter station breakdown, where they don't conflict with the survey's values.
 - Per site type plans: `make_template.py` with each type's durations; the files ship through `PlanTemplates` as they are.
 
-## Open questions
+## Decisions (2026-10-26)
 
-1. Does a tick need its evidence (a document number or a photo), or is a tick enough?
-2. Who ticks: the contractor, the team, or both (as `daily.sign` and the weekly request)?
-3. Do ticks reach a contractor's devices? They push only the IEC test and weekly requests now; ticks would need a rule
-   and the sync version above.
-4. Step 3's tick column (see there).
+1. Evidence is optional: a tick alone counts; a document number or photo can be attached, and a row whose note names a
+   station paper links to it.
+2. Both tick: the job's contractor and the team; managers and the supervising engineer can untick.
+3. Ticks sync both ways with the contractor's devices: a Firestore rule for the contractor's push (as the weekly
+   request's, signed with its email), `AppCompat.syncVersion` raised, `config/app.minSyncVersion` set once every device
+   runs it.
+4. Step 3's tick column is decided later, with the template's author.

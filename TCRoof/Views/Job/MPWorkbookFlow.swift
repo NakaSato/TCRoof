@@ -93,6 +93,8 @@ final class MPWorkbookFlow {
         // the file's progress replaced the job's, `fromDocuments` with it: the papers book their permits again (only
         // where the file has them below 100 %), as they would for a plan made after the approval
         job.bookPermitsFromDocs()
+        // the file's work breakdown, which books the ticks the station has against it
+        job.scheduleWBS = imported.wbs
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil

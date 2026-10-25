@@ -167,6 +167,27 @@
           }
         },
         {
+          "id": "mp.wbs_tick",
+          "label": "ติ๊กงานย่อย WBS เสร็จ (นับเข้าแผน MP)",
+          "roles": {
+            "manager": {
+              "access": "allow",
+              "note": "เอาติ๊กออกได้ทุกรายการ"
+            },
+            "internal": {
+              "access": "allow",
+              "note": "เอาติ๊กของตัวเองออก | วิศวกรคุมงานเอาออกได้ทุกรายการ"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "งานตัวเอง | เอาติ๊กของตัวเองออก"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
           "id": "survey.move_to_install",
           "label": "ย้ายแบบสำรวจไปงานติดตั้ง",
           "roles": {

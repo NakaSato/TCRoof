@@ -18,6 +18,13 @@ struct InstallStageSheet: View {
     var confirmation: MasterSchedule.Actual.Confirmation? = nil
     let close: () -> Void
     let openDaily: () -> Void
+    /// The task's WBS sub-tasks from the plan file, the other case's rows left out; empty for a plan without them.
+    var wbs: [MasterSchedule.WorkItem] = []
+    var ticks: [String: MasterSchedule.WBSTick] = [:]
+    var canTick = false
+    var canTakeBack: (MasterSchedule.WBSTick) -> Bool = { _ in false }
+    var toggleWBS: (MasterSchedule.WorkItem) -> Void = { _ in }
+    var setDocument: (MasterSchedule.WorkItem, String) -> Void = { _, _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -25,6 +32,10 @@ struct InstallStageSheet: View {
             if let confirmation { MPAssistantMark(confirmation: confirmation) }
             if row.overrunDays > 0 && row.status != .done { lateBox }
             if !row.subs.isEmpty { checklist }
+            if !wbs.isEmpty {
+                WBSChecklist(items: wbs, ticks: ticks, canTick: canTick, canTakeBack: canTakeBack, toggle: toggleWBS,
+                             setDocument: setDocument)
+            }
             footer
         }
         .padding(24)

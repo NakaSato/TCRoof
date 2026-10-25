@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// Root of the main dock's PWA stack, `กปภ.` on iPhone and `โครงการ` on iPad (docs/ui/pwa-solar-survey-iphone-v3 §1,
 /// docs/ui/pwa-solar-survey-ipad-v3 §2): the PWA project home, with what its header and nav open. The MP plans, the
@@ -72,6 +73,14 @@ struct PWARoot: View {
                 if UserDefaults.standard.bool(forKey: "installSeed") { pick?.seedRoutineDemo(context) }
                 // `-installLate YES`: that station's 2.2 runs late, for the task sheet's causes
                 if UserDefaults.standard.bool(forKey: "installLate") { pick?.seedLatePlan(); try? context.save() }
+                // `-installWBS YES`: that station gets the P9-001 template's WBS rows with no ticks, for the task sheet's
+                // งานย่อย WBS (for good)
+                if UserDefaults.standard.bool(forKey: "installWBS"), let pick, let c = MPTemplates.cases().first,
+                   let data = try? Data(contentsOf: c.url), let wbs = try? MPWorkbook.read(data).wbs {
+                    pick.wbsTicks = [:]
+                    pick.scheduleWBS = wbs
+                    try? context.save()
+                }
                 station = pick
             }
             #endif

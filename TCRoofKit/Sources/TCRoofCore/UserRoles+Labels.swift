@@ -11,7 +11,7 @@ public struct CapabilityGroup: Identifiable, Sendable {
 public extension Capability {
     /// The table's groups, in its order.
     static let groups: [CapabilityGroup] = [
-        CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall, .installTracking, .overviewReports, .assistantUse]),
+        CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .mpWBSTick, .moveToInstall, .installTracking, .overviewReports, .assistantUse]),
         CapabilityGroup(id: "survey_design_price", label: "สำรวจ ออกแบบ และราคา", capabilities: [.surveyEdit, .surveySignRev, .designLibrary, .tankStandard, .boqDraft, .boqApprove, .companyDocs]),
         CapabilityGroup(id: "customer_docs_permits", label: "เอกสารลูกค้าและการขออนุญาต", capabilities: [.customerPersonalDocs, .permitPPIM, .engineerCertify, .attachFiles, .driveUpload, .ercFlow, .stationDocsDrafts]),
         CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .weeklyRequest, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .finalSignoff, .feedAckFix]),
@@ -27,6 +27,7 @@ public extension Capability {
         case .assignTeam: "กำหนดทีมงานของเราในงาน (งานของฉัน | แจ้งเตือนของงานไปถึงคนในทีมงานก่อน)"
         case .mpSetup: "ตั้งแผนงาน MP (วันที่ เกิน 200 kVA)"
         case .mpProgress: "ใส่ % ความคืบหน้าในแผนงาน"
+        case .mpWBSTick: "ติ๊กงานย่อย WBS เสร็จ (นับเข้าแผน MP)"
         case .moveToInstall: "ย้ายแบบสำรวจไปงานติดตั้ง"
         case .installTracking: "หน้าติดตามงานติดตั้ง | สาเหตุล่าช้า"
         case .overviewReports: "ภาพรวมทุกสถานี | รายงานสัปดาห์ / เดือน"
@@ -84,6 +85,9 @@ public extension Capability {
         case (.punchList, .internalTeam): "เปิด / ปิดรายการ"
         case (.punchList, .external): "แก้ แนบรูป ขอปิด"
         case (.dailyFill, .external): "ต้องส่งทุกวันที่เข้างาน | งานตัวเอง"
+        case (.mpWBSTick, .manager): "เอาติ๊กออกได้ทุกรายการ"
+        case (.mpWBSTick, .internalTeam): "เอาติ๊กของตัวเองออก | วิศวกรคุมงานเอาออกได้ทุกรายการ"
+        case (.mpWBSTick, .external): "งานตัวเอง | เอาติ๊กของตัวเองออก"
         case (.weeklyRequest, .internalTeam): "อนุมัติ / ส่งกลับ"
         case (.weeklyRequest, .external): "ต้องส่งทุกสัปดาห์ | งานตัวเอง"
         case (.dailySign, .internalTeam): "ทีมงานของงานนั้นหรือผู้ควบคุมงาน (งานที่ยังไม่มีชื่อใครของเรา: ทีมภายในทุกคน)"

@@ -61,7 +61,12 @@ synced on the job record (`scheduleWBS` `[]`, `wbsTicks` `{}` when empty). A con
 signed `wbsTicksBy` (the rules check it); team devices take in only the contractor's own ticks
 (`WBSTick.trusting`). `MasterSchedule.bookWBS` books each ticked sub-task's weight in its tick's week, once
 (`Actual.fromWBS`), capped at its task's weight, and takes it back on untick; it runs whenever rows or ticks change,
-received ones too, since the contractor can't send progress. `AppCompat.syncVersion` is 6. Step 2b is the screens.
+received ones too, since the contractor can't send progress. `AppCompat.syncVersion` is 6.
+
+Step 2b, the screens (built): a task's sheet (`InstallStageSheet`, iPad and iPhone) lists its sub-tasks under
+`งานย่อย WBS n/m` (`WBSChecklist`): code, title, evidence, owner, weight, and who ticked it and when; a long press adds
+a document number. `mp.wbs_tick` (user-roles.json) lets the team and a contractor on their own job tick; a tick is taken
+back by whoever made it, a manager or the job's supervising engineer (`Permissions.mayTakeBack`).
 
 Why not inside `MasterSchedule.Input`: The plan syncs as one JSON string on the job document; 124 rows would add
 about 35 KB to every job, and a device on an older build that saves ตั้งค่าแผน would drop a field it doesn't know. Set

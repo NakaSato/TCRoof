@@ -39,10 +39,13 @@ struct MPTemplateSheet: View {
         NavigationStack {
             PadForm(maxWidth: 640) {
                 PadSection("แม่แบบ") {
-                    Picker("ประเภทหน้างาน", selection: $site) {
-                        ForEach(sites, id: \.self) { Text($0).tag($0) }
+                    LabeledContent("ประเภทหน้างาน") {
+                        Picker("ประเภทหน้างาน", selection: $site) {
+                            ForEach(sites, id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                        .accessibilityIdentifier("mpTemplate.site")
                     }
-                    .accessibilityIdentifier("mpTemplate.site")
                     Picker("กันย้อน", selection: $backfeed) {
                         Text("HV").tag("HV")
                         Text("LV").tag("LV")

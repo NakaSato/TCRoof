@@ -213,52 +213,28 @@ public enum RoofDXF {
         let tp: (Pt) -> (Double, Double) = { p in ((p.x - L.origin.x) / L.k, L.ly - (p.y - L.origin.y) / L.k) }
         let f = Roof.frame(v), xs = Roof.spans(v, .x), ys = Roof.spans(v, .y)
         let mount = parts.contains(.pv) ? RoofMount.layout(v, latitude: latitude, longitude: longitude).layout : nil
-        let walkways = mount.map(RoofWalkway.walkways) ?? []
-        // a roof access ladder standing out past the plan's bottom edge pushes the title and the section down
-        let grid = mount.map(RoofMountGrid.init)
-        let ladder = walkways.contains { w in w.access && !w.ridge && L.ly - w.plan(0, w.v0 - RoofWalkway.ladderOut).y < -0.1 } ? RoofWalkway.ladderOut + 1.4 : 0
-        // and so do the mounting grid's bubbles past a bottom eave
-        let low = grid.map { g in g.faces.flatMap { f in f.numbers.map { L.ly - f.face.plan($0.at, -0.8).y } }.min() ?? 0 } ?? 0
-        let drop = max(ladder, low < -0.1 ? 0.9 : 0)
         if parts.contains(.plan) {
             for (op, tag) in zip(plan.sketch.ops, plan.tags) {
                 // the dimension chains are DIMENSIONs, not their lines and texts
                 guard let tag, let l = planLayers[tag], L.dimensions.isEmpty || (tag != "dim" && tag != "dimtxt") else { continue }
                 write(op, l, tp, L.k, text: tag == "dimtxt" ? Self.dimText : th)
             }
-            // every slope arrow carries its slope, not only the first pair the sketch labels
-            for l in L.slopeLabels { TEXT("TEXT", tp(l.at), th, l.text, mid: true) }
             dxf.options.fixedTextHeight = Self.dimText
             dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
+            // every slope arrow carries its slope, not only the first pair the sketch labels
+            for l in L.slopeLabels { TEXT("TEXT", tp(l.at), th, l.text, mid: true) }
             // the team's north arrow right of the plan, over where the member table starts (lx + 4, from the top),
             // turned to the top edge's bearing
             if let b = RoofMount.bearing(v) {
                 let r = NorthArrow.paperRadius / 1000 * dxf.plotScale
                 NorthArrow.place(&dxf, at: (L.lx + 4 + 1.8 * r, L.ly + 2.2 * r), north: b, radius: r)
             }
-            TEXT("TEXT", (0, -1.2 - drop), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
+            TEXT("TEXT", (0, -1.2), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
-        }
-        if let mount {
-            let pv = RoofPlan(v, mode: .pv, mount: mount)
-            for (op, tag) in zip(pv.sketch.ops, pv.tags) {
-                guard let tag, let l = pvLayers[tag] else { continue }
-                // a module hides the purlins and grid under it, and is the team's PV panel block fitted to it
-                if tag == "pv", case let .polygon(pts, _, _, _) = op, pts.count == 4 {
-                    let q = pts.map(tp)
-                    if moduleBlock(&dxf, layer(l), q) { continue }
-                    dxf.wipeout(layer(l), q)
-                }
-                write(op, l, tp, L.k, text: th)
-            }
-            // the walkways in their gaps, as the team's walkway detail draws them
-            for w in walkways { walkway(&dxf, w, ly: L.ly, text: th * 0.5) }
-            // the mounting grid: lettered rail (or purlin) lines, numbered foot lines, each L-foot tagged
-            if let grid { mountGrid(&dxf, grid, ly: L.ly) }
         }
         if parts.contains(.section) {
             // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
-            let s = RoofSection(v, trueScale: true, callouts: false), top = parts.contains(.plan) ? -2.5 - drop : 0
+            let s = RoofSection(v, trueScale: true, callouts: false), top = parts.contains(.plan) ? -2.5 : 0
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - s.ridgeX) / s.scale + L.lx / 2, top - p.y / s.scale) }
             // the purlins and the ridge cap as the team's own blocks (RoofComponents), the cap only near the pitch it is drawn at
             let blocks: (purlin: String?, cap: String?) = RoofComponents.shared.map { $0.define(&dxf) } ?? (nil, nil)
@@ -312,11 +288,54 @@ public enum RoofDXF {
                     ty -= 0.6
                 }
             }
-            // under it, details A (the support) and B (the ridge) of a truss, not to scale, as the PDF draws them
-            if let det = RoofTruss.details(v) { details(&dxf, det, at: (tx, ty - 1.2), width: 14, text: th) }
+        }
+        // the PV layout as its own drawing under the structure (its own grid, outline, dimensions and title), not over it
+        if let mount {
+            let drawn = parts.contains(.plan) || parts.contains(.section) || parts.contains(.table)
+            layoutPlan(&dxf, v, mount, below: drawn ? dxf.extents.min.y / dxf.unit - 4 : nil, text: th)
         }
 
         return dxf.output
+    }
+
+    /// The PV layout's plan (`RoofPlan` in the PV mode) as a drawing of its own: the grid, outline, ridge, skylights,
+    /// purlins and dimensions, the modules as blocks, rails, feet, walkways and the mounting grid, a north arrow and its
+    /// title. `below` puts the top of it there (m); nil draws it where the structure plan would be.
+    static func layoutPlan(_ dxf: inout SketchDXF, _ v: Values, _ mount: RoofMountLayout, below: Double?, text th: Double) {
+        let pv = RoofPlan(v, mode: .pv, mount: mount), L = pv.layout
+        // the sketch's top (bubbles and chains) sits `below`
+        let ly = below.map { $0 - L.origin.y / L.k } ?? L.ly
+        let tp: (Pt) -> (Double, Double) = { p in ((p.x - L.origin.x) / L.k, ly - (p.y - L.origin.y) / L.k) }
+        let keys = planLayers.filter { ["grid", "bub", "out", "ridge", "sky", "obst", "purl", "txt", "note"].contains($0.key) }
+            .merging(pvLayers) { a, _ in a }
+        for (op, tag) in zip(pv.sketch.ops, pv.tags) {
+            guard let tag, let l = keys[tag] else { continue }
+            // a module hides the purlins and grid under it, and is the team's PV panel block fitted to it
+            if tag == "pv", case let .polygon(pts, _, _, _) = op, pts.count == 4 {
+                let q = pts.map(tp)
+                if moduleBlock(&dxf, layer(l), q) { continue }
+                dxf.wipeout(layer(l), q)
+            }
+            dxf.options.fixedTextHeight = th
+            dxf.add([op], layer: { _, _ in layer(l) }, transform: tp, pointsPerMetre: L.k)
+        }
+        dxf.options.fixedTextHeight = dimText
+        dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
+        // the walkways in their gaps, as the team's walkway detail draws them, and the mounting grid: lettered rail
+        // (or purlin) lines, numbered foot lines, each L-foot tagged
+        let walkways = RoofWalkway.walkways(mount), grid = RoofMountGrid(mount)
+        for w in walkways { walkway(&dxf, w, ly: ly, text: th * 0.5) }
+        mountGrid(&dxf, grid, ly: ly)
+        if let b = RoofMount.bearing(v) {
+            let r = NorthArrow.paperRadius / 1000 * dxf.plotScale
+            NorthArrow.place(&dxf, at: (L.lx + 4 + 1.8 * r, ly + 2.2 * r), north: b, radius: r)
+        }
+        // the title under the plan, past an access ladder or the grid's bubbles beyond the bottom eave
+        let ladder = walkways.contains { w in w.access && !w.ridge && L.ly - w.plan(0, w.v0 - RoofWalkway.ladderOut).y < -0.1 } ? RoofWalkway.ladderOut + 1.4 : 0
+        let low = grid.faces.flatMap { f in f.numbers.map { L.ly - f.face.plan($0.at, -0.8).y } }.min() ?? 0
+        let drop = max(ladder, low < -0.1 ? 0.9 : 0)
+        dxf.text(layer("TEXT"), (0, ly - L.ly - 1.2 - drop), height: th * 1.4,
+                 "แปลนจัดวางแผง | \(pv.pv.count) แผง | " + String(format: "%.2f", pv.pv.kWp) + " kWp", align: .left, middle: false)
     }
 
     static func num(_ x: Double) -> String { SketchDXF.num(x) }

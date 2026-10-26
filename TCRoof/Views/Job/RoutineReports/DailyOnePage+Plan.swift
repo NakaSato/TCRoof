@@ -19,7 +19,8 @@ extension DailyOnePage {
     }
 
     var ghosts: [RoutineReport.ProgressLine] {
-        RoutineReport.plannedNotReported(on: report, previous: previous, settings: settings, plan: plan)
+        guard !readOnly else { return [] }
+        return RoutineReport.plannedNotReported(on: report, previous: previous, settings: settings, plan: plan)
     }
 
     /// A `+` pin: today's line for that task and place, 10 % on, selected.
@@ -86,7 +87,7 @@ extension DailyOnePage {
 
     var planButtons: some View {
         HStack(spacing: 0) {
-            uploadButton
+            if !readOnly { uploadButton }
             Button { mapFull = true } label: {
                 planChip(Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 12, weight: .bold)))
             }
@@ -202,7 +203,7 @@ extension DailyOnePage {
                 Text("ยังไม่มีผังของสถานีนี้ (อัปโหลดผัง หรือภาพ A2 จากแบบสำรวจ) | แสดงตำแหน่งเป็นรายการ")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
-                uploadButton
+                if !readOnly { uploadButton }
             }
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], alignment: .leading, spacing: 10) {

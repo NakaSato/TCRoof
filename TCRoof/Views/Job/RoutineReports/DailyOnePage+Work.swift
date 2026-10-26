@@ -20,7 +20,7 @@ extension DailyOnePage {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     keyPlanCard.frame(height: planHeight).padding(.top, 10)
-                    AnyView(taskList(narrow: narrow))
+                    AnyView(taskList(narrow: narrow)).allowsHitTesting(!readOnly)
                 }
                 .padding(.horizontal, 12).padding(.bottom, 12)
             }
@@ -282,8 +282,11 @@ struct DailyLineFooter: View {
                         AnyView(actionsRow)
                     }
                 }
-                AnyView(materialRows)
-                AnyView(problemRows)
+                Group {
+                    AnyView(materialRows)
+                    AnyView(problemRows)
+                }
+                .allowsHitTesting(!page.readOnly)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
             .background(Theme.surface)
@@ -317,7 +320,13 @@ struct DailyLineFooter: View {
         let shots = page.photos(of: line)
         return HStack(spacing: 6) {
             ForEach(shots, id: \.photo.id) { p in
-                Button { page.shoot(lineID, replacing: p.photo.id) } label: {
+                Button {
+                    if page.readOnly {
+                        page.viewing = .init(images: shots.map(\.photo.data), start: shots.firstIndex { $0.photo.id == p.photo.id } ?? 0)
+                    } else {
+                        page.shoot(lineID, replacing: p.photo.id)
+                    }
+                } label: {
                     Thumbnail(data: p.photo.data).frame(width: 48, height: 48)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .overlay(alignment: .topLeading) {
@@ -327,10 +336,19 @@ struct DailyLineFooter: View {
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
-                    Button("ลบรูป", role: .destructive) { page.photos.removeAll { $0.id == p.photo.id } }
+                    if !page.readOnly {
+                        Button("ลบรูป", role: .destructive) { page.photos.removeAll { $0.id == p.photo.id } }
+                    }
                 }
-                .accessibilityLabel("รูปที่ \(p.index) | แตะเพื่อถ่ายใหม่")
+                .accessibilityLabel("รูปที่ \(p.index) | " + (page.readOnly ? "แตะเพื่อดูเต็มจอ" : "แตะเพื่อถ่ายใหม่"))
             }
+            if !page.readOnly { addShot }
+            Text(shots.isEmpty ? "ถ่ายอย่างน้อย 1 รูป" : "\(shots.count) รูป | ใช้ในรายงาน")
+                .font(.sarabunFixed(12)).foregroundStyle(shots.isEmpty ? Theme.pending : Theme.inkMuted).lineLimit(1).fixedSize()
+        }
+    }
+
+    private var addShot: some View {
             Button { page.shoot(lineID) } label: {
                 VStack(spacing: 0) {
                     Image(systemName: "camera").font(.system(size: 14, weight: .semibold))
@@ -343,12 +361,13 @@ struct DailyLineFooter: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("ถ่ายรูปงานนี้เพิ่ม")
-            Text(shots.isEmpty ? "ถ่ายอย่างน้อย 1 รูป" : "\(shots.count) รูป | ใช้ในรายงาน")
-                .font(.sarabunFixed(12)).foregroundStyle(shots.isEmpty ? Theme.pending : Theme.inkMuted).lineLimit(1).fixedSize()
-        }
     }
 
-    private var actionsRow: some View {
+    @ViewBuilder private var actionsRow: some View {
+        if !page.readOnly { editActions }
+    }
+
+    private var editActions: some View {
         HStack(spacing: 8) {
             pill("+ วัสดุ", ink: Theme.primary, fill: Theme.primarySoft) {
                 page.report.materials.append(.init(location: line.location))

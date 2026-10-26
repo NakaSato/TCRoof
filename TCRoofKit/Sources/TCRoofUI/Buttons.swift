@@ -60,9 +60,12 @@ public struct TCButtonStyle: ButtonStyle {
     /// Stretch to the width offered (iPhone page buttons and bars do).
     public var fullWidth: Bool?
     public var working: Bool
+    /// An enabled `.primary` button's fill in place of `Theme.primary` (the daily report's purple `ยืนยันรับทราบ`).
+    public var tint: Color?
 
-    public init(_ kind: TCButtonKind = .primary, size: TCButtonSize = .page, fullWidth: Bool? = nil, working: Bool = false) {
-        self.kind = kind; self.size = size; self.fullWidth = fullWidth; self.working = working
+    public init(_ kind: TCButtonKind = .primary, size: TCButtonSize = .page, fullWidth: Bool? = nil, working: Bool = false,
+                tint: Color? = nil) {
+        self.kind = kind; self.size = size; self.fullWidth = fullWidth; self.working = working; self.tint = tint
     }
 
     // The environment is read in `TCButtonBody`, not here: a style with its own `@Environment` blanks the whole page
@@ -130,7 +133,7 @@ struct TCButtonBody: View {
             }
         }
         switch kind {
-        case .primary: return AnyShapeStyle(Theme.primary)
+        case .primary: return AnyShapeStyle(style.tint ?? Theme.primary)
         case .primaryGradient: return AnyShapeStyle(Theme.headerGradient)
         case .tealGradient: return AnyShapeStyle(Theme.tealGradient)
         case .secondary, .destructive: return AnyShapeStyle(Theme.surface)

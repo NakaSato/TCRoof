@@ -138,9 +138,20 @@ struct DailyReportEditor: View {
 
     private var onePage: some View {
         DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
+                     acknowledging: acknowledging,
                      actions: .init(mustAsk: mustAskBeforeSaving, saveDraft: { write() }, sign: requestSign,
-                                    clearSignature: clearSignature, preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
+                                    clearSignature: clearSignature, acknowledge: requestAck, clearAck: clearAck, sendBack: sendBack,
+                                    preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
                                     settings: { showSettings = true }, toast: { t in withAnimation { toast = t } }))
+    }
+
+    /// The TC team's view (docs/ui/daily-report-ipad-v4 §2): a signed, saved report, opened by someone on our side who
+    /// may record the acknowledgement (`requestAck`'s rule).
+    private var acknowledging: Bool {
+        #if DEBUG
+        if DailyOnePage.Debug.ackDemo { return permissions.role != .external }
+        #endif
+        return log?.engineerSignedAt != nil && !dirty && permissions.role != .external && canSign
     }
 
     private var classic: some View {
@@ -201,6 +212,10 @@ struct DailyReportEditor: View {
 
     /// The inspector acknowledges a signed report only.
     private func requestAck() {
+        #if DEBUG
+        // `-routineDailyState ack|acked`: the sheet opens on the example; saving keeps nothing (no log)
+        if DailyOnePage.Debug.ackDemo { showAck = true; return }
+        #endif
         guard canSign else { return withAnimation { toast = "\(signers)เป็นผู้บันทึก Inspector รับทราบ" } }
         if log?.engineerSignedAt != nil, !dirty { showAck = true } else { withAnimation { toast = "ผู้รายงานต้องเซ็นก่อน" } }
     }
@@ -213,6 +228,30 @@ struct DailyReportEditor: View {
         log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         job.feedMP()
         try? context.save()
+    }
+
+    /// Takes the inspector's acknowledgement off, leaving the reporter's signature (unlike `clearSignature`), and
+    /// files the PDF again without it.
+    private func clearAck() {
+        guard let log, canSign else { return }
+        log.inspectorAckAt = nil
+        log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
+        if let built = RoutineReportFiles.daily(job, log: log) { RoutineReportFiles.file(built, job: job, context: context) }
+        if let excel = RoutineReportFiles.dailyExcel(job, log: log) { RoutineReportFiles.file(excel, job: job, context: context) }
+        try? context.save()
+    }
+
+    /// `ส่งกลับให้แก้`: the reason goes into the report as an open problem (the contractor sees it under every line
+    /// and in the PDF's problem table), and saving the edited report takes both signatures off.
+    private func sendBack(_ reason: String) {
+        #if DEBUG
+        if DailyOnePage.Debug.ackDemo { return withAnimation { toast = "ส่งกลับให้ผู้รับเหมาแก้แล้ว (ตัวอย่าง ไม่ได้บันทึก)" } }
+        #endif
+        guard canSign, log?.engineerSignedAt != nil else { return }
+        report.problems.append(.init(description: "ทีม TC ส่งกลับให้แก้: " + reason, since: date))
+        write()
+        clearSignature()
+        withAnimation { toast = "ส่งกลับให้ผู้รับเหมาแก้แล้ว" }
     }
 
     /// The daily PDF of what is on screen: saved as a draft first (a signed report asks before losing its signature).

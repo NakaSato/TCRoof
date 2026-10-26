@@ -15,6 +15,7 @@ struct WBSChecklist: View {
     let setDocument: (MasterSchedule.WorkItem, String) -> Void
     @State private var documentFor: MasterSchedule.WorkItem?
     @State private var document = ""
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let parents = items.parentCodes
@@ -28,8 +29,8 @@ struct WBSChecklist: View {
             }
             // the list scrolls once it outgrows the sheet
             ViewThatFits(in: .vertical) {
-                rows
-                ScrollView { rows }
+                rows(parents)
+                ScrollView { rows(parents) }
             }
             .frame(maxHeight: 360)
         }
@@ -43,15 +44,16 @@ struct WBSChecklist: View {
         }
     }
 
-    private var rows: some View {
-        let parents = items.parentCodes
+    private func rows(_ parents: Set<String>) -> some View {
         let level = items.map(\.level).min() ?? 2
+        // a step's indent: narrower on a phone, where the row's text has little room
+        let indent: CGFloat = sizeClass == .compact ? 12 : 24
         return VStack(spacing: 8) {
             ForEach(items) { item in
                 Group {
                     if parents.contains(item.code) { heading(item) } else { row(item) }
                 }
-                .padding(.leading, CGFloat(max(item.level - level, 0)) * 24)
+                .padding(.leading, CGFloat(max(item.level - level, 0)) * indent)
             }
         }
     }
@@ -127,11 +129,7 @@ struct WBSChecklist: View {
 
     /// `0.25%`, `1.5%`, `5%`: a step's share can be under a tenth.
     static func weight(_ x: Double) -> String {
-        let r = (x * 100).rounded() / 100
-        var t = String(format: "%.2f", r)
-        while t.hasSuffix("0") { t.removeLast() }
-        if t.hasSuffix(".") { t.removeLast() }
-        return t + "%"
+        x.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US_POSIX"))) + "%"
     }
 
     private func box(on: Bool) -> some View {

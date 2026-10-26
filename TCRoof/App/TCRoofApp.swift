@@ -2,6 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 import SwiftData
+import ExcelExport
 import FirebaseCore
 
 /// Sets the notification delegate at launch, so a quick action that starts the app is still handled, and connects the
@@ -226,6 +227,9 @@ struct DebugScreen: View {
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// The job `-screen mp` opened, kept for the launch: clearing its plan or starting it from a template moves its
+    /// install dates, which would otherwise hand the screen to another job.
+    @MainActor private static var mpJob: String?
 
     /// `-jobKind home|pwa` shows the job detail as that kind. `-mpDemo` needs the PWA cards, also on the job whose plan it clears.
     private static func applyJobKind(_ job: Job) {
@@ -251,13 +255,30 @@ struct DebugScreen: View {
         case "logs": if let job { JobInstallLogsView(job: job) }
         case "log": if let log = job?.logs.first { InstallLogDetailView(log: log) }
         case "icl": if let job { InspectionView(job: job) }
-        // `-mpClear YES` opens it on the job with no plan, no progress and no plan file instead
-        case "mp": if let job {
+        // `-mpClear YES` opens it on the job with no plan, no progress, no WBS and no plan file instead; then
+        // `-mpTemplate P9-012` starts it from that template case and `-mpTickWBS 2.1.1,2.1.2` ticks those WBS rows today
+        case "mp": if let job = Self.mpJob.flatMap({ id in jobs.first { $0.syncID == id } }) ?? job {
             MPScheduleScreen(job: job).onAppear {
-                if UserDefaults.standard.bool(forKey: "mpClear") {
+                guard Self.mpJob == nil else { return }
+                Self.mpJob = job.syncID
+                let d = UserDefaults.standard
+                if d.bool(forKey: "mpClear") {
                     job.scheduleInputJSON = nil; job.scheduleActualJSON = nil
+                    job.scheduleWBSJSON = nil; job.wbsTicksJSON = nil
                     job.scheduleWorkbook = nil; job.scheduleWorkbookName = nil; job.scheduleWorkbookDriveID = nil
                 } else { job.seedMPDemo() }
+                if let id = d.string(forKey: "mpTemplate"), job.scheduleInput == nil,
+                   let c = MPTemplates.cases().first(where: { $0.id == id }),
+                   let r = try? MPTemplates.plan(c, kickoff: MasterSchedule.calendar.startOfDay(for: .now)) {
+                    MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP (แม่แบบ \(c.id)).xlsx", on: job)
+                }
+                if let codes = d.string(forKey: "mpTickWBS") {
+                    var ticks = job.wbsTicks
+                    for code in codes.split(separator: ",") {
+                        ticks[String(code)] = .init(by: MemberRole.shared.permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now))
+                    }
+                    job.wbsTicks = ticks
+                }
             }
         }
         case "mpall":

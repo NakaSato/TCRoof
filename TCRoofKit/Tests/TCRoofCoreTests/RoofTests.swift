@@ -462,6 +462,23 @@ final class RoofTests: XCTestCase {
         XCTAssertTrue(RoofSection(v).sketch.ops.contains { if case .polygon = $0 { return true }; return false }, "hatched beam ends")
     }
 
+    /// A deep boxed eave (ชายคาฝ้า) as the team's section draws it: the soffit 0.40 under the rafter's tip, the beam
+    /// dropped to it and the post going on up to the head.
+    func testBoxedEaveHangsUnderTheRafterTip() throws {
+        var v = Values()
+        Roof.setSpans(&v, .x, [4, 4, 4]); Roof.setSpans(&v, .y, [7]); Roof.setRidge(&v, .h); Roof.setFrame(&v, .eaveCeiling)
+        Roof.setLength(&v, Roof.Key.clearHeight, 5.25); Roof.setLength(&v, Roof.Key.overhang, 2.25)
+        let m = RoofSection.structure(v), tip = 5.25 - 2.25 * tan(15 * Double.pi / 180)
+        let soffit = try XCTUnwrap(m.levels.first { $0.label.hasPrefix("ระดับใต้คาน") })
+        XCTAssertEqual(soffit.y, tip - 0.4, accuracy: 1e-9)
+        XCTAssertEqual(m.levels.map(\.label), ["ระดับใต้คาน ค.ส.ล.", "ระดับหัวเสา", "ระดับหลังจันทัน"])
+        XCTAssertTrue(m.posts.allSatisfy { abs($0.top - 5.25) < 1e-9 }, "the posts reach the head")
+        XCTAssertTrue(m.cuts.filter { $0.row == 4 }.allSatisfy { abs($0.at.y - soffit.y) < 1e-9 }, "the beam sits on the soffit line")
+        // without a boxed eave (0.25 m or less) the beam sits right under the head
+        Roof.setLength(&v, Roof.Key.overhang, 0.2)
+        XCTAssertEqual(RoofSection.structure(v).levels.first?.y ?? 0, 5.25 - 0.4, accuracy: 1e-9)
+    }
+
     func testPathParser() {
         let p = PathD.parse("M10 20L30 40h5v-5zM1 2l2 -4l2 8")
         XCTAssertEqual(p.count, 2)

@@ -44,7 +44,8 @@ public struct RoofSection: Sendable {
         let o = Roof.overhang(v), base = Roof.clearHeight(v)
         // fit the section between x 26 and 586, its posts showing 1.40 m under the clear height before the break
         let ext = m.extent, below = 1.4
-        let k = min(560 / max(ext.maxX - ext.minX + 0.2, 1), (Self.cut - 34) / max(ext.maxY - base + below, 0.5))
+        // the DXF writes its text 0.30 m high, so its level band (144 pt) must stay over 4.6 m wide: at most 31 pt/m
+        let k = min(560 / max(ext.maxX - ext.minX + 0.2, 1), (Self.cut - 34) / max(ext.maxY - base + below, 0.5), trueScale ? 31 : .infinity)
         let yBase = Self.cut - below * k, cx = 306.0, mid = (ext.minX + ext.maxX) / 2
         func P(_ p: Pt) -> Pt { Pt(cx + (p.x - mid) * k, yBase - (p.y - base) * k) }
         // the roof structure only, as the team's CAD sections show it: the posts end at a break line under the clear height
@@ -165,9 +166,13 @@ public struct RoofSection: Sendable {
             let mid: (Double) -> Double = { under($0) + raf.depth / (2 * cs) }
             let head = size(4) ?? .rc(0.2, 0.4), post = (K ? size(7) : nil) ?? .rc(0.2, 0.2)
             let pw = post.material == .concrete ? post.width : post.depth
+            // a boxed eave's soffit runs 0.40 under the rafter's tip, and the beam drops to it with the post going on up
+            // to the head (the team's section); otherwise the beam sits right under the head
+            let boxed = K && o > 0.25, hh = head.profile.h
+            let beamBottom = boxed ? min(base - hh, under(-o) - 0.4) : base - hh
             for (x, s) in [(0.0, 1.0), (B, -1.0)] {
-                m.posts.append(S.Post(x: x, width: pw, top: base - head.profile.h, row: K ? 7 : nil))
-                m.cuts.append(S.Cut(head.profile, at: Pt(x, base - head.profile.h), opens: s, row: 4))
+                m.posts.append(S.Post(x: x, width: pw, top: beamBottom + hh < base - 1e-6 ? base : beamBottom, row: K ? 7 : nil))
+                m.cuts.append(S.Cut(head.profile, at: Pt(x, beamBottom), opens: s, row: 4))
             }
             let yc = base + (K ? 0.55 : 0.5) * rise, xt = (yc - base) / tn - raf.depth / (2 * cs * tn)
             if !K, let cp = size(7) { m.members.append(S.Member([Pt(h, yc), Pt(h, mid(h))], depth: cp.depth, row: 7)) }
@@ -176,9 +181,9 @@ public struct RoofSection: Sendable {
                 m.members.append(S.Member([Pt(h, yc), Pt(B - 0.72 * h, mid(B - 0.72 * h))], depth: st.depth, row: 5))
             }
             m.members.append(S.Member([Pt(xt, yc), Pt(B - xt, yc)], depth: tie.depth, row: 3))
-            if K && o > 0.25 {
+            if boxed {
                 // the boxed eave: a soffit under the beam out to a fascia raking up to the rafter's tip
-                let ys = base - head.profile.h, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
+                let ys = beamBottom, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
                 let ft = max(0.025, size(6)?.width ?? 0.025)
                 m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
                 m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))
@@ -189,7 +194,7 @@ public struct RoofSection: Sendable {
             }
             m.members.append(S.Member(pitched(under), depth: raf.depth, face: .bottom, row: 2))
             roofing(topFace)
-            m.levels = (K ? [S.Level(base - head.profile.h, head.material == .concrete ? "ระดับใต้คาน ค.ส.ล." : "ระดับใต้คานหัวเสา")] : [])
+            m.levels = (K ? [S.Level(beamBottom, head.material == .concrete ? "ระดับใต้คาน ค.ส.ล." : "ระดับใต้คานหัวเสา")] : [])
                 + [S.Level(base, "ระดับหัวเสา"), S.Level(topFace(h), "ระดับหลังจันทัน")]
 
         case .rafterTruss:

@@ -1,0 +1,24 @@
+{
+  "_note": "Example values from the board (iPadD1Obs.dc.html, 26 ต.ค. 2569). For screenshots only; never hard-code them.",
+  "tank": "40 × 40 ม. (กปภ. standard design)",
+  "progress": "ตรวจแล้ว 8/16",
+  "selectedPoint": { "id": "V9", "kind": "ช่องระบายอากาศ", "size": "1.45 × 1.45 ม.", "height": "1.00 ม.", "left": "16.80", "top": "16.40", "info": "แนวเดียวกับ V10 · ไม่ทับจุดอื่น" },
+  "moveTogether": { "options": ["จุดเดียว", "แถว", "คอลัมน์"], "spacing": "4.00 ม." },
+  "repeatRow": { "direction": ["แนวนอน", "แนวตั้ง"], "count": 3, "spacing": "4.00 ม.", "button": "สร้าง 3 จุด" },
+  "legend": ["V · ช่องระบาย", "H · ช่องลงถัง", "จากแบบ ยังไม่ยืนยัน", "ยืนยันแล้ว", "ไม่มีจริง", "จุดที่เลือก", "แนวเดียวกัน", "เว้นระยะ 0.50 ม. (จุดที่เลือก)"],
+  "dragHint": "กดค้างแล้วลากเพื่อย้าย · ใกล้แนวจะดูดเข้าแนวเอง",
+  "shade": {
+    "tab": "เงาบัง · 1.2%",
+    "moment": "21 ธ.ค. 15:30 น. · ดวงอาทิตย์สูง 27° · มุม 234°",
+    "objects": [
+      { "id": "T1", "type": "ต้นไม้", "height": 14, "lossPct": 0.4, "gapToTank": "3.0 ม." },
+      { "id": "T2", "type": "ต้นไม้", "height": 9, "lossPct": 0.0 },
+      { "id": "B1", "type": "อาคาร", "height": 8, "lossPct": 0.3 },
+      { "id": "B2", "type": "อาคาร", "height": 10, "lossPct": 0.0 },
+      { "id": "W1", "type": "หอถังสูง", "height": 30, "lossPct": 0.2 }
+    ],
+    "sunPathLegend": ["เดือนที่เลือก", "21 มี.ค. · มิ.ย. · ธ.ค.", "ต้นไม้", "อาคาร", "หอถัง"],
+    "planLegend": ["รับแดด", "เงาต้นไม้", "เงาทึบ"],
+    "note": "the percentages are the board's toy simulation, not engineering results"
+  }
+}

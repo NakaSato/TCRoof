@@ -35,6 +35,7 @@ struct TCRoofApp: App {
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
             Inspection.self, ICLSheet.self, PhotoAsset.self, DocumentAsset.self,
             Trip.self, Expense.self, ClaimMonth.self,
+            ToolEvent.self, CompanyVehicle.self,
         ])
         do {
             return try ModelContainer(for: schema)

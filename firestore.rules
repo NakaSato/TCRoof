@@ -340,6 +340,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // The tool and vehicle log (`ToolLog`, the tools tab's บันทึกการใช้เครื่องมือและรถ): one document per event (borrow,
+    // return, a vehicle out or back, fuel) and per company vehicle, the team's to read and write. Contractors have none.
+    match /toolEvents/{doc} {
+      allow read, delete: if isTeam();
+      allow create, update: if isTeam() && request.resource.data.event is string && request.resource.data.at is int;
+    }
+    match /vehicles/{doc} {
+      allow read, delete: if isTeam();
+      allow create, update: if isTeam() && request.resource.data.vehicle is string;
+    }
+
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.
     // A member adds or removes only their own email.
     match /feedAcks/{doc} {

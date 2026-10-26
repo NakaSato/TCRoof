@@ -57,6 +57,7 @@ final class CloudSync {
     private static let contactCollection = "jobContacts"
     /// Each person's travel log (`Trip`, `Expense`, `ClaimMonth`).
     private static let travelCollections = [Trip.collection, Expense.collection, ClaimMonth.collection]
+    private static let toolCollections = [ToolEvent.collection, CompanyVehicle.collection]
     /// `config/app`: switches set in the Firebase console (`contactsSplit`).
     private static let configDocument = "config/app"
     private static let contactsSplitKey = "cloudSync.contactsSplit"
@@ -152,6 +153,9 @@ final class CloudSync {
                 listen(Expense.self, optional: true, owner: me.email)
                 listen(ClaimMonth.self, optional: true, owner: me.email)
                 listenClaimReviews(owner: me.email)
+                // the tool and vehicle log: the team's, optional until firestore.rules has `toolEvents` / `vehicles`
+                listen(ToolEvent.self, optional: true)
+                listen(CompanyVehicle.self, optional: true)
             }
             listenSurveys()
             listenRevisions()
@@ -324,6 +328,12 @@ final class CloudSync {
             collect(Expense.self, context, &travel, &present)
             collect(ClaimMonth.self, context, &travel, &present)
         }
+        // the tool and vehicle log in its own batches too
+        var tools: [Change] = []
+        if external == nil {
+            collect(ToolEvent.self, context, &tools, &present)
+            collect(CompanyVehicle.self, context, &tools, &present)
+        }
         var contacts = external == nil ? contactChanges(context, &present) : []
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
@@ -342,6 +352,7 @@ final class CloudSync {
             else if key.hasPrefix("\(ICLSheet.collection)/") { iclSheets.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
             else if Self.travelCollections.contains(where: { key.hasPrefix("\($0)/") }) { travel.append(change) }
+            else if Self.toolCollections.contains(where: { key.hasPrefix("\($0)/") }) { tools.append(change) }
             else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
@@ -350,6 +361,7 @@ final class CloudSync {
         commitSeparately(contacts, "contact upload")
         commitSeparately(iclSheets, "site ICL upload", size: external == nil ? 400 : 1)
         commitSeparately(travel, "travel upload")
+        commitSeparately(tools, "tool log upload")
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
         // by one, so a refused photo doesn't hold back the rest.

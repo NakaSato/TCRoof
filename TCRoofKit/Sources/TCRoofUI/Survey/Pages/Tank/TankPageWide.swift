@@ -59,6 +59,14 @@ struct TankPageWide: View {
     @State var rowAsk = false
     @State var rowCount = 3
     @State var rowSpacing = 4.0
+    /// iPad sub-step 2 (docs/ui/survey-d1-obstacles-ipad): `ย้ายพร้อมกัน` (kept per page, not stored), the point whose
+    /// `ย้ายตำแหน่ง` was tapped before it moved, the inline `ทำซ้ำเป็นแถว` panel and its direction, the group's spacing
+    /// stepper, and a line saying what a move or a repeat couldn't do.
+    @State var groupMode: TankPoints.GroupMode = .single
+    @State var movingID: UUID?
+    @State var repeatOpen = false
+    @State var repeatDown = false
+    @State var obsNotice: String?
     @State var deleteAsk = false
     /// `เริ่มจากแบบมาตรฐาน กปภ.`: the designs, closest to the measured size first.
     @State var designAsk = false
@@ -424,7 +432,7 @@ extension TankPageWide {
             tab = 2
             try? await Task.sleep(nanoseconds: 600_000_000)
             designAsk = true
-        case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete":
+        case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete", "obstmoverow", "obstmovecol", "obstrepeat":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in
                 v[Roof.Key.obstacles] = nil
@@ -443,6 +451,14 @@ extension TankPageWide {
             case "obstfull": obsFull = true
             case "obstadded": addPoint(TankPoints.hatch)
             case "obstdelete": addPoint(TankPoints.vent); try? await Task.sleep(nanoseconds: 300_000_000); deleteAsk = true
+            // docs/ui/survey-d1-obstacles-ipad states 02–04: V9's row moving together, V10's column (V9 moved off V6's),
+            // and ทำซ้ำเป็นแถว open on V9
+            case "obstmoverow": movingID = pointSel; groupMode = .row
+            case "obstmovecol":
+                let v10 = TankPoints.points(values)[safe: 9]?.id
+                if let v10 { update { TankPoints.setStatus(&$0, v10, TankPoints.ok) } }
+                pointSel = v10; movingID = v10; groupMode = .column
+            case "obstrepeat": rowCount = 3; rowSpacing = TankPoints.rowSpacing(values); repeatDown = false; repeatOpen = true
             default: break
             }
         case "photo", "photomiss", "photofilter", "photodone":

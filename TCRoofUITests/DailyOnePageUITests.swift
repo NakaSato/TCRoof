@@ -74,9 +74,9 @@ final class DailyOnePageUITests: XCTestCase {
         team.terminate()
 
         let acked = launch("acked", role: "internal")
-        XCTAssertTrue(acked.otherElements["dailyAckSigned"].waitForExistence(timeout: slow)
-                      || acked.buttons["ล้างลายเซ็นรับทราบ"].waitForExistence(timeout: 5))
-        XCTAssertTrue(acked.buttons["dailyAckConfirm"].isEnabled)
+        XCTAssertTrue(acked.buttons["ล้างลายเซ็นรับทราบ"].waitForExistence(timeout: slow), "the signed acknowledgement")
+        let confirm = acked.buttons["dailyAckConfirm"]
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: confirm)], timeout: 10)
         acked.terminate()
 
         let contractor = launch("ack", role: "external")

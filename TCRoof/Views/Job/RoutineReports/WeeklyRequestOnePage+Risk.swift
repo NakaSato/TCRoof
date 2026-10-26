@@ -33,6 +33,7 @@ extension WeeklyRequestOnePage {
             .frame(width: 770)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("requestRiskSheet")
         }
         .transition(.opacity)

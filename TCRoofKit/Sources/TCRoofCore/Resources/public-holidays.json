@@ -1,0 +1,76 @@
+{
+  "source": "แม่แบบโครงการ TCRoof (ทุกกรณี).xlsx",
+  "sheet": "สมมติฐาน",
+  "days": [
+    {
+      "date": "2026-10-23",
+      "name": "วันปิยมหาราช",
+      "toConfirm": false
+    },
+    {
+      "date": "2026-12-07",
+      "name": "ชดเชยวันพ่อแห่งชาติ (5 ธ.ค. ตรงวันเสาร์)",
+      "toConfirm": false
+    },
+    {
+      "date": "2026-12-10",
+      "name": "วันรัฐธรรมนูญ",
+      "toConfirm": false
+    },
+    {
+      "date": "2026-12-31",
+      "name": "วันสิ้นปี",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-01-01",
+      "name": "วันขึ้นปีใหม่",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-02-22",
+      "name": "ชดเชยวันมาฆบูชา (21 ก.พ.) – ตรวจสอบประกาศ ครม.",
+      "toConfirm": true
+    },
+    {
+      "date": "2027-04-06",
+      "name": "วันจักรี",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-04-13",
+      "name": "สงกรานต์",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-04-14",
+      "name": "สงกรานต์",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-04-15",
+      "name": "สงกรานต์",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-05-03",
+      "name": "ชดเชยวันแรงงาน",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-05-04",
+      "name": "วันฉัตรมงคล",
+      "toConfirm": false
+    },
+    {
+      "date": "2027-05-20",
+      "name": "วันวิสาขบูชา – ตรวจสอบประกาศ ครม.",
+      "toConfirm": true
+    },
+    {
+      "date": "2027-06-03",
+      "name": "วันเฉลิมฯ พระราชินี",
+      "toConfirm": false
+    }
+  ]
+}

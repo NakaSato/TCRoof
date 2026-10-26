@@ -38,7 +38,8 @@ final class ERCFlowTests: XCTestCase {
         r.add(.designRequest, day: "2026-10-05") // Monday
         s = E.states(r)
         XCTAssertEqual(s[.designRequest], .done(day: "2026-10-05"))
-        XCTAssertEqual(s[.designResult], .waiting(since: "2026-10-05", due: "2026-10-26"))
+        // 23 Oct (วันปิยมหาราช) is a public holiday: the 15th working day is Tuesday 27th
+        XCTAssertEqual(s[.designResult], .waiting(since: "2026-10-05", due: "2026-10-27"))
 
         r.add(.designResult, day: "2026-10-09")
         s = E.states(r)
@@ -134,7 +135,8 @@ final class ERCFlowTests: XCTestCase {
         let waits = E.waits(r, today: E.date("2026-10-19")!)
         XCTAssertEqual(waits, [E.Wait(step: .designResult, since: "2026-10-01", due: "2026-10-22", left: 3)])
         XCTAssertEqual(waits[0].text, "เหลือ 3 วันทำการ")
-        XCTAssertEqual(E.waits(r, today: E.date("2026-10-26")!)[0].text, "เกินกำหนด 2 วันทำการ")
+        // Friday 23rd is a public holiday, so on Monday 26th it is one working day late
+        XCTAssertEqual(E.waits(r, today: E.date("2026-10-26")!)[0].text, "เกินกำหนด 1 วันทำการ")
         XCTAssertEqual(E.day("2026-10-22", before: 3, working: true), "2026-10-19")
         XCTAssertEqual(E.day("2026-10-20", before: 3, working: true), "2026-10-15")
         XCTAssertEqual(E.day("2026-10-20", before: 3, working: false), "2026-10-17")
@@ -193,11 +195,12 @@ final class ERCFlowTests: XCTestCase {
         let ctx = E.Context(installDone: "2026-11-20", variant: .under200)
         XCTAssertEqual(E.current(r, ctx), [.inspectionRequest], "no พค.2 request after installation")
         r.add(.inspectionRequest, day: "2026-11-23") // Monday
-        XCTAssertEqual(E.states(r, ctx)[.inspectionResult], .waiting(since: "2026-11-23", due: "2027-01-04"))
+        // 30 working days without 7, 10 and 31 Dec and 1 Jan (public holidays)
+        XCTAssertEqual(E.states(r, ctx)[.inspectionResult], .waiting(since: "2026-11-23", due: "2027-01-08"))
         let waits = E.waits(r, ctx, today: E.date("2026-12-28")!)
         XCTAssertEqual(waits.map(\.step), [.inspectionResult])
         XCTAssertEqual(waits[0].number, 4)
-        XCTAssertEqual(waits[0].text, "เหลือ 5 วันทำการ")
+        XCTAssertEqual(waits[0].text, "เหลือ 7 วันทำการ")
         XCTAssertEqual(E.headline(r, ctx), "รอการไฟฟ้า: ข้อ 4 ผลตรวจระบบ / อุปกรณ์การเชื่อมต่อ")
     }
 

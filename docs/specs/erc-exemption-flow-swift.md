@@ -11,7 +11,7 @@ answered, so the build took these defaults: working days are Monday–Friday les
 2026-10-20: Q1 answered by building the under-200 kVA flow (§1b): every station has the `ลำดับ กกพ.` tab, its size
 picks the flow, and a record keeps the flow it was started in. 19 `ERCFlowTests`.
 Not built: steps 3 / 7 defaulting to the package's submission day, the two private-network flows (กปภ. stations are
-all on กฟภ.'s network), a bundled public-holiday list.
+all on กฟภ.'s network).
 **Source:** `docs/permit/กกพ. การไฟฟ้า 200–1,000 kVA.pdf` (swim lanes) and `docs/permit/ลำดับ กกพ. การไฟฟ้า 200–1,000 kVA.pdf`
 (the same flow as 12 numbered messages). Both redraw the ERC office's infographic for a system on a utility's
 network. The diagrams name three more sheets (utility / private network × under 200 kVA / 200–1,000 kVA); the summary of
@@ -196,8 +196,8 @@ inspection waiting, `done` has no พค.2 steps), or `-stationDocsERC small` fo
 
 1. ~~**Under 200 kVA.** Most กปภ. stations are smaller. Should the screen cover them too?~~ Answered 2026-10-20: yes,
    with the `utility_lt200` flow (§1b).
-2. **Holidays.** Working-day limits need the public holidays. The app has only each site's own holidays
-   (`RoutineReport.Settings.holidays`). A bundled list by year, or one the team keeps in settings?
+2. ~~**Holidays.**~~ Answered 2026-10-26: a bundled list (`PublicHolidays`, from the plan workbook's `สมมติฐาน`
+   sheet by `tools/plan-template/holidays.py`), skipped by `ERCFlow.isWorking` on top of the site's own days off.
 3. **Step 10.** Does กฟภ. ask the กปภ. stations for พค.2 before connecting? If always the same, the per-station
    question can go.
 4. **Steps 4, 5 and 9** happen between other parties. Does the team ever learn their days, or should they show only

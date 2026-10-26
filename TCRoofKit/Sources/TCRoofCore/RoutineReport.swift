@@ -457,9 +457,11 @@ public enum RoutineReport {
         return d
     }
 
+    /// A day the station works: one of its weekdays, not one of its own days off, not a public holiday (`PublicHolidays`).
     public static func isWorkingDay(_ date: Date, settings: Settings) -> Bool {
-        settings.workingWeekdays.contains(calendar.component(.weekday, from: date))
-            && !settings.holidays.contains(dayKey(date))
+        let key = dayKey(date)
+        return settings.workingWeekdays.contains(calendar.component(.weekday, from: date))
+            && !settings.holidays.contains(key) && !PublicHolidays.days.contains(key)
     }
 
     /// Working days from `from` to `to` (both included) with no report.

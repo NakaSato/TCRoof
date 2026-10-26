@@ -437,7 +437,8 @@ public enum ERCFlow {
 
     static func isWorking(_ date: Date, _ ctx: Context) -> Bool {
         let weekday = MasterSchedule.calendar.component(.weekday, from: date)
-        return weekday != 1 && weekday != 7 && !ctx.holidays.contains(day(date))
+        let key = day(date)
+        return weekday != 1 && weekday != 7 && !ctx.holidays.contains(key) && !PublicHolidays.days.contains(key)
     }
 
     /// The last day of a step's time limit, counted from the day after `asked`.

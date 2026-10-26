@@ -147,12 +147,12 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(due[0].tone, .ok)
         XCTAssertEqual(due[0].opens, .docs)
 
-        // the site's holiday moves the limit; past it the row is late
+        // the site's holiday moves the limit, and 23 Oct (a public holiday) once more; past it the row is late
         s.holidays = ["2026-10-13"]
         due = PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }
-        XCTAssertEqual(due[0].date, day(2026, 10, 23))
+        XCTAssertEqual(due[0].date, day(2026, 10, 26))
         due = PWAPlan.deadlines([s], today: day(2026, 10, 27)).filter { $0.id.hasPrefix("erc-") }
-        XCTAssertEqual(due[0].chip, "เกินกำหนด 2 วันทำการ")
+        XCTAssertEqual(due[0].chip, "เกินกำหนด 1 วันทำการ")
         XCTAssertEqual(due[0].tone, .late)
 
         // answered: no row

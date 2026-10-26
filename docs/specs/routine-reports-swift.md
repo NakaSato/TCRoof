@@ -184,7 +184,8 @@ reaches 100 %, the title becomes "ติดตั้งแล้วเสร็�
 3. ~~Who fills R2 on site — our engineer or the ผรม. foreman? (decides who may edit, and whether ผรม. needs app access)~~
    The contractor's foreman fills it (`daily.fill`), our engineer signs it (`daily.sign`).
 4. Role and tool lists: fixed company lists, or per project? The 2560 template had 24 roles / 30 tools; โชคชัย used 3 / 4.
-5. Working days: Mon–Sat everywhere? Public holidays list from where?
+5. Working days: Mon–Sat by default, per project. Public holidays: the bundled `PublicHolidays` (2026-10-26), which
+   `RoutineReport.isWorkingDay` skips with the project's own extra days off.
 6. Is one R1 per week enough, or are there mid-week revisions that need versions?
 7. ~~"Key plan": draw from the survey A2 site picture, or attach the drawing the team uses now?~~ The survey's A2 site
    picture, with a point per location (`KeyPlanViews.swift`).

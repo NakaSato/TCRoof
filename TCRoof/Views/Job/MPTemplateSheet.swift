@@ -40,11 +40,16 @@ struct MPTemplateSheet: View {
             PadForm(maxWidth: 640) {
                 PadSection("แม่แบบ") {
                     LabeledContent("ประเภทหน้างาน") {
-                        Picker("ประเภทหน้างาน", selection: $site) {
-                            ForEach(sites, id: \.self) { Text($0).tag($0) }
+                        // shown once the templates are read, so the selection always has its tag
+                        if sites.isEmpty {
+                            ProgressView()
+                        } else {
+                            Picker("ประเภทหน้างาน", selection: $site) {
+                                ForEach(sites, id: \.self) { Text($0).tag($0) }
+                            }
+                            .labelsHidden()
+                            .accessibilityIdentifier("mpTemplate.site")
                         }
-                        .labelsHidden()
-                        .accessibilityIdentifier("mpTemplate.site")
                     }
                     Picker("กันย้อน", selection: $backfeed) {
                         Text("HV").tag("HV")

@@ -322,11 +322,21 @@ struct RoofCADSheet: View {
     @State private var mm = false
     @State private var result: (url: URL, out: RoofDXF.Output)?
     @State private var sharing = false
+    /// Why the file couldn't be written, shown under the button.
+    @State private var failure: String?
 
     var chosen: Set<RoofDXF.Part> { pvMode ? parts : parts.subtracting([.pv]) }
+    /// "NO224_TCR2569-23404_C1.dxf": letters (Thai with its marks), digits, "-" and "." kept, anything else (a "/" or
+    /// "|" in the document number, spaces) one "_", so the file can be written and shared by name.
     var fileName: String {
         let no = job.docNo.isEmpty ? "C1" : "NO" + job.docNo
-        return (no + "_" + section).replacingOccurrences(of: " ", with: "") + ".dxf"
+        let keep = CharacterSet.alphanumerics.union(.nonBaseCharacters).union(CharacterSet(charactersIn: "-."))
+        var out = "", gap = false
+        for u in (no + "_" + section).unicodeScalars {
+            if keep.contains(u) { out.unicodeScalars.append(u); gap = false } else if !gap && !out.isEmpty { out += "_"; gap = true }
+        }
+        while out.hasSuffix("_") { out.removeLast() }
+        return (out.isEmpty ? "C1" : out) + ".dxf"
     }
 
     var body: some View {
@@ -366,6 +376,10 @@ struct RoofCADSheet: View {
                     .background(chosen.isEmpty ? Theme.disabledFill : Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain).disabled(chosen.isEmpty)
+            if let failure {
+                Label(failure, systemImage: "exclamationmark.triangle.fill").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.warningText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -410,7 +424,12 @@ struct RoofCADSheet: View {
         let site = RoofMount.site(job)
         let out = RoofDXF.build(values, parts: chosen, millimetres: mm, latitude: site.latitude, longitude: site.longitude)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        do { try out.data.write(to: url, options: .atomic); result = (url, out); sharing = true } catch {}
+        do {
+            try out.data.write(to: url, options: .atomic)
+            failure = nil; result = (url, out); sharing = true
+        } catch {
+            failure = "บันทึกไฟล์ไม่ได้: " + error.localizedDescription
+        }
     }
 }
 #endif

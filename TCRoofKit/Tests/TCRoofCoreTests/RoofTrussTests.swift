@@ -46,7 +46,7 @@ final class RoofTrussTests: XCTestCase {
     func testTheSectionDrawsHoweLikeTheGeometry() {
         // the section and the schedule draw the same members: Howe adds diagonals from the supports Pratt doesn't have
         let howe = RoofSection(roof(.howe)).sketch.ops.count, pratt = RoofSection(roof(.pratt)).sketch.ops.count
-        XCTAssertEqual(howe - pratt, 2 * 2, "two more diagonals, each drawn dark and light")
+        XCTAssertEqual(howe - pratt, 2, "two more diagonals, one outline each")
         XCTAssertEqual(RoofFrame(rawValue: "h"), .howe)
         XCTAssertTrue(RoofFrame.howe.isTruss)
         XCTAssertEqual(RoofFrame.ordered.count, RoofFrame.allCases.count)

@@ -87,20 +87,23 @@ final class RoofWalkwayTests: XCTestCase {
         XCTAssertNil(RoofDXF.pvLayers["walkway"]); XCTAssertNil(RoofDXF.pvLayers["access"])
     }
 
-    /// Each module of the roof's CAD plan is the team's PV panel block, fitted to the module.
+    /// Each module of the roof's CAD plan is one INSERT of a block of its size on plan (wipeout, the team's PV panel
+    /// cells fitted to it, the frame polyline).
     func testModulesAreThePanelBlock() throws {
         let v = roofCentre(), out = RoofDXF.build(v, parts: [.pv])
         let m = RoofMount.layout(v, latitude: 15).layout
-        let inserts = t.records(out.data).filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "TK_MODULE_PLAN" }
+        let inserts = t.records(out.data).filter { $0.first?.1 == "INSERT" && t.value($0, "2")?.hasPrefix("TC_PV_MODULE_") == true }
         XCTAssertEqual(inserts.count, m.quantities.modules)
         XCTAssertTrue(inserts.allSatisfy { t.value($0, "8") == "P-MODL-N" })
-        // stretched from the drawn 0.992 × 1.956 to the module on plan (portrait: the short side along the eave, the
-        // long side up the slope, foreshortened by the tilt)
+        // named by the module on plan in mm (portrait: the short side along the eave, the long side up the slope,
+        // foreshortened by the tilt)
         let first = try XCTUnwrap(inserts.first), tilt = try XCTUnwrap(m.faces.first).face.tilt
-        XCTAssertEqual(abs(t.double(first, "41")) * TankComponents.modulePlanDrawn.w, m.moduleAlong, accuracy: 0.002)
-        XCTAssertEqual(abs(t.double(first, "42")) * TankComponents.modulePlanDrawn.h, m.moduleUp * cos(tilt), accuracy: 0.002)
+        let size = try XCTUnwrap(t.value(first, "2")).dropFirst("TC_PV_MODULE_".count).split(separator: "x").compactMap { Double($0) }
+        XCTAssertEqual(size[0] / 1000, m.moduleAlong, accuracy: 0.001)
+        XCTAssertEqual(size[1] / 1000, m.moduleUp * cos(tilt), accuracy: 0.001)
         // only the panel block of the tank components goes into a roof file
         let lines = t.lines(out.data)
+        XCTAssertTrue(lines.contains("TK_MODULE_PLAN"))
         XCTAssertFalse(lines.contains("TK_TOPPING")); XCTAssertFalse(lines.contains("TK_MODULE_SIDE"))
     }
 

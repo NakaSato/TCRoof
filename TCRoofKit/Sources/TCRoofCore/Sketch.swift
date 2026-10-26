@@ -116,7 +116,7 @@ public enum Drawings {
                 if let s = TankDrawings.section(v, across: across, width: W) { sections.append((nil, s)) }
             }
         } else if !tank, Roof.hasFrame(v) {
-            sections.append(("รูปตัด A-A | " + Roof.frame(v).title + " (หน่วย ม.)", RoofSection(v).sketch))
+            sections.append(("รูปตัด A-A | " + Roof.frame(v).title + " (หน่วย ม.)", RoofSection(v, callouts: false).sketch))
         }
         guard !sections.isEmpty else { return plan }
         // fitted into a box of height 1, a picture is scaled by min(box ÷ width, 1 ÷ height); the plan keeps `keep` of

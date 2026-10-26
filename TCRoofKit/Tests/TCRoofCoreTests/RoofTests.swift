@@ -450,7 +450,8 @@ final class RoofTests: XCTestCase {
         let plain = RoofSection(v)
         XCTAssertEqual(RoofSection(v, highlight: 3).sketch.ops.count, plain.sketch.ops.count + 2)
         XCTAssertEqual(plain.tags.count, plain.sketch.ops.count)
-        XCTAssertEqual(plain.scale, min(540 / 16, 118 / (8 * tan(15 * .pi / 180) + 0.5)), accuracy: 1e-9)
+        // fitted across the page's frame area: 16 m plus the overhangs in 560 pt
+        XCTAssertEqual(plain.scale, 560 / (plain.model.extent.maxX - plain.model.extent.minX + 0.2), accuracy: 1e-9)
         // wider purlin spacing, fewer purlin marks
         Roof.setPurlinSpacing(&v, 1.5)
         XCTAssertLessThan(RoofSection(v).sketch.ops.count, plain.sketch.ops.count)
@@ -459,6 +460,38 @@ final class RoofTests: XCTestCase {
         Roof.setFrame(&v, .eaveCeiling)
         XCTAssertEqual(Set(RoofSection(v).callouts.keys), Set(1...7))
         XCTAssertTrue(RoofSection(v).sketch.ops.contains { if case .polygon = $0 { return true }; return false }, "hatched beam ends")
+    }
+
+    /// A deep boxed eave (ชายคาฝ้า) as the team's section draws it: the soffit 0.40 under the rafter's tip, the beam
+    /// dropped to it and the post going on up to the head.
+    func testBoxedEaveHangsUnderTheRafterTip() throws {
+        var v = Values()
+        Roof.setSpans(&v, .x, [4, 4, 4]); Roof.setSpans(&v, .y, [7]); Roof.setRidge(&v, .h); Roof.setFrame(&v, .eaveCeiling)
+        Roof.setLength(&v, Roof.Key.clearHeight, 5.25); Roof.setLength(&v, Roof.Key.overhang, 2.25)
+        let m = RoofSection.structure(v), tip = 5.25 - 2.25 * tan(15 * Double.pi / 180)
+        let soffit = try XCTUnwrap(m.levels.first { $0.label.hasPrefix("ระดับใต้คาน") })
+        XCTAssertEqual(soffit.y, tip - 0.4, accuracy: 1e-9)
+        XCTAssertEqual(m.levels.map(\.label), ["ระดับใต้คาน ค.ส.ล.", "ระดับหัวเสา", "ระดับหลังจันทัน"])
+        XCTAssertTrue(m.posts.allSatisfy { abs($0.top - 5.25) < 1e-9 }, "the posts reach the head")
+        XCTAssertTrue(m.cuts.filter { $0.row == 4 }.allSatisfy { abs($0.at.y - soffit.y) < 1e-9 }, "the beam sits on the soffit line")
+        // without a boxed eave (0.25 m or less) the beam sits right under the head
+        Roof.setLength(&v, Roof.Key.overhang, 0.2)
+        XCTAssertEqual(RoofSection.structure(v).levels.first?.y ?? 0, 5.25 - 0.4, accuracy: 1e-9)
+    }
+
+    /// A post the plan has between the supports on the frame line A-A looks at stands under the truss's beam.
+    func testInnerPostsFromThePlan() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        XCTAssertTrue(RoofSection.innerPosts(v).isEmpty, "the default posts are the supports'")
+        let before = RoofSection.structure(v).posts.count
+        // A-A at 0.42 of 19 m = 7.98 → grid line 3 (x 9.5 is farther than 5.5); grid C is 6.00 m across
+        Roof.togglePost(&v, i: 3, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0])
+        XCTAssertEqual(RoofSection.structure(v).posts.count, before + 1)
+        Roof.togglePost(&v, i: 2, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0], "a post on another line isn't in view")
     }
 
     func testPathParser() {

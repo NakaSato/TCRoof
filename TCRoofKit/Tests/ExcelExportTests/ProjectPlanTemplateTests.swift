@@ -46,14 +46,18 @@ final class ProjectPlanTemplateTests: XCTestCase {
         for url in try files() {
             let name = url.lastPathComponent
             let r = try MPWorkbook.read(Data(contentsOf: url))
-            // 4 parts, 34 task lines, 86 sub-tasks; the tables under them are other lists
-            XCTAssertEqual(r.wbs.count, 124, name)
+            // 4 parts, 34 task lines, 86 sub-tasks, and the Inverter station's 6 steps under 2.5.1; the installation
+            // points are left out
+            XCTAssertEqual(r.wbs.count, 130, name)
             XCTAssertEqual(r.wbs.filter { $0.level == 0 }.map(\.code), ["0", "1", "2", "3"], name)
             XCTAssertEqual(Set(r.wbs.map(\.code)).count, r.wbs.count, "\(name): codes repeat")
             for t in MasterSchedule.Task.allCases {
                 let items = r.wbs.items(for: t)
                 XCTAssertFalse(items.isEmpty, "\(name): \(t.code) has no sub-tasks")
-                XCTAssertEqual(items.reduce(0) { $0 + $1.weight }, r.input.weight(t), accuracy: 1e-9, "\(name): \(t.code)")
+                // a row with steps under it is their sum: count the steps, not it
+                let parents = r.wbs.parentCodes
+                XCTAssertEqual(items.filter { !parents.contains($0.code) }.reduce(0) { $0 + $1.weight }, r.input.weight(t),
+                               accuracy: 1e-9, "\(name): \(t.code)")
             }
             // a part carries its tasks' weight (permit 5, installation 90, tests 5); part 0 (preparation) and 2.10
             // Tie-in carry none and belong to no MP task
@@ -90,6 +94,25 @@ final class ProjectPlanTemplateTests: XCTestCase {
         XCTAssertEqual(lv.first { $0.code == "2.8.2" }?.weight, 0)
         // พค.2 under 200 kVA
         XCTAssertEqual(hv.items(for: .pk2).allSatisfy { $0.weight == 0 }, true)
+    }
+
+    /// The Inverter station table under the list: its six steps follow 2.5.1, each its share of 2.5.1's weight, and
+    /// 2.5.1's note names the station's type.
+    func testTheInverterStationStepsFollowTheirRow() throws {
+        let wbs = try MPWorkbook.read(Data(contentsOf: files()[1])).wbs        // P9-002: 125+125 kW
+        let i = try XCTUnwrap(wbs.firstIndex { $0.code == "2.5.1" })
+        let station = wbs[i]
+        XCTAssertEqual(wbs[(i + 1)...(i + 6)].map(\.code), (1...6).map { "2.5.1.\($0)" })
+        let steps = Array(wbs[(i + 1)...(i + 6)])
+        XCTAssertEqual(steps.reduce(0) { $0 + $1.weight }, station.weight, accuracy: 1e-9)
+        XCTAssertEqual(steps[2].weight, station.weight * 0.3, accuracy: 1e-9)
+        XCTAssertEqual(steps[2].note, "30% ของ 2.5.1")
+        XCTAssertEqual(steps.map(\.level), Array(repeating: station.level + 1, count: 6))
+        XCTAssertEqual(steps.map(\.task), Array(repeating: .inverter, count: 6))
+        XCTAssertTrue(station.note?.contains("รูปแบบ: สร้างใหม่ (E09)") == true, station.note ?? "")
+        XCTAssertTrue(station.note?.contains("125+125 kW") == true)
+        XCTAssertTrue(wbs.parentCodes.contains("2.5.1"))
+        XCTAssertFalse(wbs.contains { $0.title.hasPrefix("หลังคาลอนคู่") }, "the installation points stay out")
     }
 
     func testAPlanWithoutTheSheetHasNoWBS() throws {

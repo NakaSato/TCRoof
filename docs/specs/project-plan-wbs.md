@@ -28,8 +28,9 @@ Header row 7 (the row of the `WBS` cell) under a row of groups:
 
 Columns are found by these texts, not by letter. Every one of them holds values, no formulas.
 
-The table ends at the first non-code text in column A; the installation points and the Inverter station's own
-breakdown (2.5.1.1–2.5.1.6, as % of 2.5.1) below it are other lists (step 4).
+The table ends at the first non-code text in column A. Below it, the Inverter station's own breakdown (2.5.1.1–2.5.1.6,
+as % of 2.5.1, the same six steps in every case) joins the list after 2.5.1 (step 4); the installation points are left
+out.
 
 Numbering is the app's: the sheet's 1.1–3.2 are `MasterSchedule.Task.code`, so a row belongs to the task its first two
 code parts name (`2.5.3` → 2.5 Inverter). Grid connection 1.7 has no line of its own, only 1.7.1–1.7.6. Part 0
@@ -92,7 +93,12 @@ column M is a reference into `อัปเดตงาน WBS`, a sheet the impo
   sub-task's baseline is its row's own dates.
 - Predecessors: not filled. The template plans backward from 2.10 (`ย้อนจาก 2.10 (n วัน)`) or from the Master Plan;
   only a few part 3 rows name a row they follow, so `ต่อจาก` stays hidden.
-- The installation points and the Inverter station breakdown, where they don't conflict with the survey's values.
+- Inverter station steps (built): `MPWorkbook.stationSteps` puts 2.5.1.1–2.5.1.6 after 2.5.1, each weighing its share of
+  2.5.1 (`30% ของ 2.5.1` in its note), and adds the table's `รูปแบบ` line (type and size) to 2.5.1's note. A row with
+  rows under it (`parentCodes`) is their sum: `bookWBS` skips it and the checklist shows it as a heading with its steps
+  indented. A plan imported before this has no steps until it is imported again.
+- Installation points: left out. They are the template's own figures per site type (points, panels, kWp, standard
+  designs); a real station's come from its survey.
 - Per site type plans: `make_template.py` with each type's durations; the files ship through `PlanTemplates` as they are.
 
 ## Decisions (2026-10-26)

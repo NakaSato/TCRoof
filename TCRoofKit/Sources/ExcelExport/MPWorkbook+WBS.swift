@@ -37,8 +37,9 @@ extension MPWorkbook {
     }
 
     /// Every row under the header whose WBS cell is a code (`0`, `1.7.1`), in the sheet's order, down to the first
-    /// text in that column that isn't one: the tables under it (installation points, the Inverter station's own
-    /// breakdown) are other lists.
+    /// text in that column that isn't one. Of the tables under it, the Inverter station's steps (`2.5.1.1`…, each a
+    /// % of 2.5.1) join the list after their row (`stationSteps`); the installation points are the template's own
+    /// figures, which the survey holds for a real station, and are left out.
     static func wbs(_ s: Sheet, _ cal: Calendar) -> [MasterSchedule.WorkItem] {
         guard let h = wbsHeader(s) else { return [] }
         func text(_ col: Int?, _ r: Int) -> String? {
@@ -50,11 +51,12 @@ extension MPWorkbook {
         let rows = Set(s.texts.filter { $0.col == h.code && $0.row > h.row }.map(\.row))
             .union(s.numbers(col: h.code).filter { $0.row > h.row }.map(\.row)).sorted()
         var items: [MasterSchedule.WorkItem] = []
-        for r in rows {
+        var tail: [Int] = []
+        for (k, r) in rows.enumerated() {
             // a code is text ("1.7.1"); a whole part number may be stored as a number (0, 1, 2)
             guard let code = text(h.code, r) ?? s.number(h.code, r).flatMap({ $0 == $0.rounded() ? String(Int($0)) : nil }) else { continue }
             guard code.range(of: #"^\d+(\.\d+)*$"#, options: .regularExpression) != nil else {
-                if items.isEmpty { continue } else { break }
+                if items.isEmpty { continue } else { tail = Array(rows[k...]); break }
             }
             guard let title = text(h.title, r) else { continue }
             var item = MasterSchedule.WorkItem(code: code, title: title, weight: h.weight.flatMap { s.number($0, r) } ?? 0,
@@ -71,6 +73,42 @@ extension MPWorkbook {
             item.approver = text(h.approver, r)
             items.append(item)
         }
-        return items
+        // the tables' lines without a code (the station's `รูปแบบ`) count too
+        let below = tail.first.map { first in Set(s.texts.map(\.row)).filter { $0 >= first }.union(tail).sorted() } ?? []
+        return stationSteps(s, h, rows: below, into: items)
+    }
+
+    /// The Inverter station table under the list: its `รูปแบบ` line (the station's type and size) goes into its row's
+    /// note, and each step (`2.5.1.1`, `% ของ 2.5.1` in the weight column) follows that row, weighing its share of it.
+    static func stationSteps(_ s: Sheet, _ h: WBSHeader, rows: [Int], into items: [MasterSchedule.WorkItem]) -> [MasterSchedule.WorkItem] {
+        func text(_ col: Int, _ r: Int) -> String? {
+            guard let t = s.text(col, r)?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+            return t
+        }
+        var out = items
+        var style: String?
+        var steps: [String: [MasterSchedule.WorkItem]] = [:]
+        for r in rows {
+            if let t = text(h.title, r), t.hasPrefix("รูปแบบ") {
+                let rest = s.texts.filter { $0.row == r && $0.col > h.title }.sorted { $0.col < $1.col }
+                    .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                if !rest.isEmpty { style = rest.joined(separator: " · ") }
+                continue
+            }
+            guard let code = text(h.code, r), code.range(of: #"^\d+(\.\d+){3,}$"#, options: .regularExpression) != nil,
+                  let dot = code.lastIndex(of: "."), let parent = out.first(where: { $0.code == String(code[..<dot]) }),
+                  let title = text(h.title, r), let share = h.weight.flatMap({ s.number($0, r) }) else { continue }
+            var step = MasterSchedule.WorkItem(code: code, title: title, weight: parent.weight * share / 100, level: parent.level + 1)
+            let pct = share == share.rounded() ? String(Int(share)) : String(format: "%.1f", share)
+            step.note = "\(pct)% ของ \(parent.code)"
+            step.responsible = parent.responsible
+            steps[parent.code, default: []].append(step)
+        }
+        for (parent, list) in steps {
+            guard let i = out.firstIndex(where: { $0.code == parent }) else { continue }
+            if let style { out[i].note = [out[i].note, "รูปแบบ: " + style].compactMap { $0 }.joined(separator: " | ") }
+            out.insert(contentsOf: list, at: i + 1)
+        }
+        return out
     }
 }

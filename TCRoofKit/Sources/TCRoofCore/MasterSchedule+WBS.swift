@@ -73,9 +73,20 @@ public extension MasterSchedule.WorkItem {
 }
 
 public extension Array where Element == MasterSchedule.WorkItem {
-    /// The sub-tasks of one MP task, without the task's own line.
+    /// The sub-tasks of one MP task, without the task's own line; a sub-task's own steps (2.5.1.1 under 2.5.1) follow it.
     func items(for task: MasterSchedule.Task) -> [MasterSchedule.WorkItem] {
         filter { $0.task == task && $0.code != task.code }
+    }
+
+    /// The codes of the rows other rows sit under (`2.5`, `2.5.1` when the Inverter station's steps are there): such a
+    /// row is its sub-rows' sum, so only they are ticked and booked.
+    var parentCodes: Set<String> {
+        let codes = Set(map(\.code))
+        return Set(compactMap { item -> String? in
+            guard let dot = item.code.lastIndex(of: ".") else { return nil }
+            let parent = String(item.code[..<dot])
+            return codes.contains(parent) ? parent : nil
+        })
     }
 }
 
@@ -127,13 +138,15 @@ public extension MasterSchedule {
     /// Books the ticked rows into the plan's progress: each row's weight in the week of its tick, once per row (kept in
     /// `Actual.fromWBS`), never past its task's weight; a tick taken back, or a row the plan no longer has, takes its
     /// booking away again. The task's start moves back to the earliest tick, and it finishes on the last one once it
-    /// reaches its weight. A task's own line, rows of the other case and rows without a task or weight book nothing. Running it again
+    /// reaches its weight. A task's own line, a row with steps under it, rows of the other case and rows without a task or weight book
+    /// nothing. Running it again
     /// changes nothing, so every team device can run it after a change arrives. Returns whether anything changed.
     @discardableResult
     static func bookWBS(_ actual: inout Actual, items: [WorkItem], ticks: [String: WBSTick], input: Input,
                         calendar cal: Calendar = MasterSchedule.calendar) -> Bool {
         let before = actual
         let byCode = Dictionary(items.map { ($0.code, $0) }) { a, _ in a }
+        let parents = items.parentCodes
         for (code, b) in actual.fromWBS where ticks[code] == nil || byCode[code] == nil {
             var week = actual.points[b.task] ?? [:]
             let left = (week[b.week] ?? 0) - b.points
@@ -142,9 +155,9 @@ public extension MasterSchedule {
             actual.fromWBS[code] = nil
         }
         for item in items {
-            // the task's own line is its sub-tasks' sum: only they book
+            // the task's own line, and any row with steps under it, is its sub-rows' sum: only they book
             guard actual.fromWBS[item.code] == nil, let tick = ticks[item.code], let task = item.task, item.code != task.code,
-                  item.weight > 0, !item.notForThisStation else { continue }
+                  !parents.contains(item.code), item.weight > 0, !item.notForThisStation else { continue }
             let key = task.rawValue, weight = input.weight(task)
             let done = (actual.points[key] ?? [:]).values.reduce(0, +)
             let points = max(0, min(item.weight, weight - done))

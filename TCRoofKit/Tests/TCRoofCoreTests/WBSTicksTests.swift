@@ -66,6 +66,17 @@ final class WBSTicksTests: XCTestCase {
         XCTAssertEqual(a.points["structure"]?.values.reduce(0, +), 15)
     }
 
+    /// 2.1.2 split into steps (as 2.5.1 is by the Inverter station table): the steps book, 2.1.2 itself doesn't.
+    func testARowWithStepsBooksOnlyItsSteps() {
+        let split = items + [.init(code: "2.1.2.1", title: "ฐานราก", weight: 4.8, level: 3),
+                             .init(code: "2.1.2.2", title: "โครงเหล็ก", weight: 7.2, level: 3)]
+        XCTAssertEqual(split.parentCodes, ["2.1", "2.1.2"])
+        var a = MasterSchedule.Actual()
+        MasterSchedule.bookWBS(&a, items: split, ticks: ["2.1.2": tick(7), "2.1.2.1": tick(8)], input: input)
+        XCTAssertEqual(a.points["structure"]?.values.reduce(0, +) ?? 0, 4.8, accuracy: 1e-9)
+        XCTAssertNil(a.fromWBS["2.1.2"])
+    }
+
     func testRowsThatWeighNothingBookNothing() {
         var a = MasterSchedule.Actual()
         XCTAssertFalse(MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.3": tick(7), "0.1.1": tick(7), "2.1": tick(7)], input: input))

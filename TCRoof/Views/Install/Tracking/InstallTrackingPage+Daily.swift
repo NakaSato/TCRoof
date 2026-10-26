@@ -133,7 +133,7 @@ extension InstallTrackingPage {
                         .fixedSize()
                     Spacer(minLength: 8)
                     if let w = d.week {
-                        Button { route = .weekly } label: {
+                        Button { go(.weekly) } label: {
                             Label("สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")
                         }
                         .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()

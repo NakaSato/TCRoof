@@ -76,16 +76,19 @@ struct PDFPreview: View {
     }
 }
 
-struct PDFKitView: UIViewRepresentable {
-    let url: URL
-    func makeUIView(context: Context) -> PDFView {
+/// A PDF to read, pages one under another (the survey report's preview, the IEC test's SLD).
+public struct PDFKitView: UIViewRepresentable {
+    let document: () -> PDFDocument?
+    public init(url: URL) { document = { PDFDocument(url: url) } }
+    public init(data: Data) { document = { PDFDocument(data: data) } }
+    public func makeUIView(context: Context) -> PDFView {
         let v = PDFView()
         v.autoScales = true
         v.displayMode = .singlePageContinuous
         v.backgroundColor = UIColor(Theme.phonePage)
-        v.document = PDFDocument(url: url)
+        v.document = document()
         return v
     }
-    func updateUIView(_ v: PDFView, context: Context) {}
+    public func updateUIView(_ v: PDFView, context: Context) {}
 }
 #endif

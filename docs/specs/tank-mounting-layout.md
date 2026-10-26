@@ -377,8 +377,8 @@ Done when:
 ## 8. Open questions
 
 1. Accept the energy model assumptions (clear-sky × 0.72, PR 0.80, portrait-2 shading rule) or supply a measured TMY / PVsyst yield to calibrate?
-2. Must posts land on the tank's columns or beams (4.00 m grid) rather than anywhere on the slab? If so, the post
-   spacing along the row should snap to the bay grid instead of ≤ 2.70 m.
+2. ~~Must posts land on the tank's columns or beams (4.00 m grid)?~~ Answered 2026-10-26: no. Footings go anywhere on
+   the slab clear of the openings, post pairs at most `postDX` (2.70 m) apart, as built (`TankLayout.pairs`).
 3. Is the row gap (2.70 m) fixed, or should it follow a shading rule (e.g. no shade at 9:00–15:00 on 21 December)?
 4. Walkways: does the team need a maintenance path to every hatch and between tables (width?), beyond the 0.5 m clearance?
 5. Vent heights: one value per tank (as built), or per vent (box vents vs mushroom vents)?

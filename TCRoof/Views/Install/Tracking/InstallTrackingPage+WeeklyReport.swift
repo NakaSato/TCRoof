@@ -125,17 +125,30 @@ extension InstallTrackingPage {
         VStack(spacing: 12) {
             weeklyHeader.zIndex(1)
             if let c = reportContent {
-                HStack(alignment: .top, spacing: 12) {
-                    weeklyRail(c).frame(width: 206)
-                    weeklyViewer(c)
-                    weeklyPanel.frame(width: 300)
+                if weeklyNarrow {
+                    // portrait: the rail beside the slide at full width, the checks and the recipients under it
+                    HStack(alignment: .top, spacing: 12) {
+                        weeklyRail(c).frame(width: 206)
+                        VStack(spacing: 12) {
+                            weeklyViewer(c).layoutPriority(1)
+                            weeklyPanel(split: true).frame(minHeight: 300)
+                        }
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    HStack(alignment: .top, spacing: 12) {
+                        weeklyRail(c).frame(width: 206)
+                        weeklyViewer(c)
+                        weeklyPanel(split: false).frame(width: 300)
+                    }
+                    .frame(maxHeight: .infinity)
                 }
-                .frame(maxHeight: .infinity)
             } else {
                 Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .padding(.horizontal, 24).padding(.top, 14)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { weeklyWidth = $0 }
         // the columns end above the dock
         .padding(.bottom, 96)
         .overlay(alignment: .bottom) { if let t = reportNote { weeklyToast(t).padding(.bottom, 100) } }
@@ -150,6 +163,9 @@ extension InstallTrackingPage {
             }
         }
     }
+
+    /// A portrait iPad: the three columns would leave the slide small.
+    var weeklyNarrow: Bool { weeklyWidth > 0 && weeklyWidth < 1200 }
 
     private func weeklyCard<Content: View>(padding: CGFloat = 14, @ViewBuilder _ content: () -> Content) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -180,17 +196,21 @@ extension InstallTrackingPage {
     var weeklyHeader: some View {
         let range = reportWeekRange
         return weeklyCard(padding: 12) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Weekly Report").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    // nothing builds or reminds R3 on a schedule yet (§7 Q1)
-                    Text("จากรายงานประจำวัน").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Weekly Report").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        // nothing builds or reminds R3 on a schedule yet (§7 Q1)
+                        Text("จากรายงานประจำวัน").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                    }
+                    .fixedSize()
+                    weeklyWeekSwitcher(range)
+                    // portrait: the step line takes a row of its own, so its words aren't cut
+                    if weeklyNarrow { Spacer(minLength: 0) } else { weeklySteps.frame(maxWidth: .infinity) }
+                    weeklyDue(range)
+                    weeklyDownloadButton
                 }
-                .fixedSize()
-                weeklyWeekSwitcher(range)
-                weeklySteps.frame(maxWidth: .infinity)
-                weeklyDue(range)
-                weeklyDownloadButton
+                if weeklyNarrow { weeklySteps.fixedSize() }
             }
         }
         .overlay(alignment: .topTrailing) { if reportDownload { weeklyDownloadMenu.offset(x: -12, y: 66) } }
@@ -463,15 +483,49 @@ extension InstallTrackingPage {
     // MARK: panel
 
     /// `ความพร้อมก่อนส่ง`, `ส่งถึง` and the send button or the sent line.
-    var weeklyPanel: some View {
-        let checks = reportChecks, ready = checks.filter(\.ok).count
-        return weeklyCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("ความพร้อมก่อนส่ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Spacer()
-                    Text("\(ready)/\(checks.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
+    /// `split` (portrait): the checks on the left, the recipients and the send button on the right.
+    func weeklyPanel(split: Bool) -> some View {
+        weeklyCard(padding: 14) {
+            if split {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        panelTitle
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 8) { ForEach(reportChecks, id: \.title) { c in panelCheck(c) } }
+                        }
+                        .scrollIndicators(.hidden)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    Rectangle().fill(Theme.hairline).frame(width: 1)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("ส่งถึง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        recipientChips
+                        Spacer(minLength: 0)
+                        sendArea
+                    }
+                    .frame(width: 280)
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
+            } else {
+                columnPanel
+            }
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private var panelTitle: some View {
+        let checks = reportChecks, ready = checks.filter(\.ok).count
+        return HStack {
+            Text("ความพร้อมก่อนส่ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Spacer()
+            Text("\(ready)/\(checks.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
+        }
+    }
+
+    private var columnPanel: some View {
+        let checks = reportChecks
+        return VStack(alignment: .leading, spacing: 10) {
+                panelTitle
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(checks, id: \.title) { c in panelCheck(c) }
@@ -484,9 +538,7 @@ extension InstallTrackingPage {
                 Spacer(minLength: 0)
                 Rectangle().fill(Theme.hairline).frame(height: 1)
                 sendArea
-            }
         }
-        .frame(maxHeight: .infinity)
     }
 
     /// A check as on the iPhone (`checkRow`'s icon and words), tighter to fit the 300 pt panel.

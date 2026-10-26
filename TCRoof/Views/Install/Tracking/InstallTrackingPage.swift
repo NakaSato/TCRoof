@@ -88,6 +88,8 @@ struct InstallTrackingPage: View {
     @State var reportPhotos: [UUID: UIImage] = [:]
     @State var reportNote: String?
     @State var reportDemoSent: [String: RoutineReport.WeeklySent] = [:]
+    /// The Weekly Report tab's width: under `weeklyNarrow` (a portrait iPad) it takes its portrait layout.
+    @State var weeklyWidth: CGFloat = 0
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
     /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first

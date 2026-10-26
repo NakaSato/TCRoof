@@ -180,11 +180,18 @@ public struct RoofSection: Sendable {
                 m.members.append(S.Member([Pt(0.72 * h, mid(0.72 * h)), Pt(h, yc)], depth: st.depth, row: 5))
                 m.members.append(S.Member([Pt(h, yc), Pt(B - 0.72 * h, mid(B - 0.72 * h))], depth: st.depth, row: 5))
             }
-            m.members.append(S.Member([Pt(xt, yc), Pt(B - xt, yc)], depth: tie.depth, row: 3))
+            m.members.append(S.Member([Pt(xt, yc), Pt(B - xt, yc)], depth: tie.depth, row: 3, lip: tie.lip))
             if boxed {
                 // the boxed eave: a soffit under the beam out to a fascia raking up to the rafter's tip
                 let ys = beamBottom, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
                 let ft = max(0.025, size(6)?.width ?? 0.025)
+                // two struts from the post out to the rafter's underside, 0.22 and 0.38 m under the head (the team's section)
+                for drop in [0.22, 0.38] where base - drop > ys + 0.1 {
+                    let y = base - drop, reach = drop / tn
+                    guard reach > pw / 2 + 0.15 else { continue }
+                    m.members.append(S.Member([Pt(-reach, y), Pt(-pw / 2, y)], depth: 0.05))
+                    m.members.append(S.Member([Pt(B + pw / 2, y), Pt(B + reach, y)], depth: 0.05))
+                }
                 m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
                 m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))
                 m.members.append(S.Member([Pt(-o, under(-o)), Pt(-o + run, ys - sof.depth)], depth: ft, row: 6))
@@ -192,7 +199,7 @@ public struct RoofSection: Sendable {
             } else {
                 fascia(topFace(-o))
             }
-            m.members.append(S.Member(pitched(under), depth: raf.depth, face: .bottom, row: 2))
+            m.members.append(S.Member(pitched(under), depth: raf.depth, face: .bottom, row: 2, lip: raf.lip))
             roofing(topFace)
             m.levels = (K ? [S.Level(beamBottom, head.material == .concrete ? "ระดับใต้คาน ค.ส.ล." : "ระดับใต้คานหัวเสา")] : [])
                 + [S.Level(base, "ระดับหัวเสา"), S.Level(topFace(h), "ระดับหลังจันทัน")]
@@ -237,12 +244,14 @@ public struct RoofSection: Sendable {
             for s in g.verticals { m.members.append(S.Member([Y(s.a), Y(s.b)], depth: vt.depth, row: 4)) }
             for s in g.diagonals { m.members.append(S.Member(s.a.x < s.b.x ? [Y(s.a), Y(s.b)] : [Y(s.b), Y(s.a)], depth: dg.depth, row: 5)) }
             if let kp = g.kingPost, let ks = size(7) { m.members.append(S.Member([Y(kp.a), Y(kp.b)], depth: ks.depth, row: 7)) }
-            m.members.append(S.Member([Pt(0, base), Pt(B, base)], depth: bc.depth, face: .bottom, row: 3))
-            m.members.append(S.Member(pitched(topFace), depth: tc.depth, face: .top, row: 2))
-            let beam = S.Size.rc(0.2, 0.4)
+            m.members.append(S.Member([Pt(0, base), Pt(B, base)], depth: bc.depth, face: .bottom, row: 3, lip: bc.lip))
+            m.members.append(S.Member(pitched(topFace), depth: tc.depth, face: .top, row: 2, lip: tc.lip))
+            // the concrete beam the truss sits on: seen along the span between the posts, and cut (hatched) over each post
+            let beam = S.Size.rc(0.2, 0.4), bh = beam.profile.h
+            m.members.insert(S.Member([Pt(0.1, base - bh), Pt(B - 0.1, base - bh)], depth: bh, face: .bottom), at: 0)
             for x in [0, B] {
-                m.posts.append(S.Post(x: x, width: 0.2, top: base - beam.profile.h))
-                m.cuts.append(S.Cut(beam.profile, at: Pt(x, base - beam.profile.h)))
+                m.posts.append(S.Post(x: x, width: 0.2, top: base - bh))
+                m.cuts.append(S.Cut(beam.profile, at: Pt(x, base - bh)))
             }
             fascia(topFace(-o))
             roofing(topFace)

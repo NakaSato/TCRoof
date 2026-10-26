@@ -123,6 +123,21 @@ final class RoofDXFTests: XCTestCase {
 
     /// The structure drawing carries what the PDF prints: the member schedule with its counts and weights, details A / B,
     /// the plan's T1 marks and labels, and the section's member callouts with their numbers.
+    /// As the team's own drawings come: every layer's lineweight Default, the display off, and concrete cut by the
+    /// section hatched AR-CONC.
+    func testNoLineweightsAndConcreteHatch() throws {
+        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.plan, .section]).data, l = lines(d)
+        let layers = l.indices.filter { l[$0] == "AcDbLayerTableRecord" }
+        XCTAssertFalse(layers.isEmpty)
+        for i in layers { XCTAssertEqual(t.after(l, i, "370"), "-3") }
+        XCTAssertEqual(l[l.firstIndex(of: "$LWDISPLAY")! + 2], "0")
+        let hatches = t.rawEntities(d).filter { $0.first?.1 == "HATCH" }.compactMap { t.value($0, "2") }
+        XCTAssertTrue(hatches.contains("AR-CONC"), "\(Set(hatches))")
+        // the other exports keep the standard's lineweights
+        var o = SketchDXF(); o.line(CADLayers.grid, (0, 0), (1, 0))
+        XCTAssertTrue(lines(o.data()).contains("18"))
+    }
+
     func testStructureScheduleDetailsAndMarks() throws {
         var v = roof()
         v["comp2"] = .text("C100x50x20x3.2")

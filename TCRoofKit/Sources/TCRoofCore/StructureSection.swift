@@ -27,6 +27,9 @@ public struct StructureSection: Sendable {
         /// The member as a cut shows it.
         public var profile: Profile
 
+        /// A C's lip (m), for its line along the member; nil for anything else.
+        public var lip: Double? { if case let .channel(l) = profile.kind { return l }; return nil }
+
         public static func c(_ h: Double, _ b: Double = 0.05, lip: Double = 0.02) -> Size {
             Size(depth: h, width: b, material: .steel, profile: Profile(.channel(lip: lip), h: h, b: b))
         }
@@ -112,30 +115,23 @@ public struct StructureSection: Sendable {
         public var face: Face
         /// Member row 1…7 of C1's table (nil when it isn't one).
         public var row: Int?
-        public init(_ path: [Pt], depth: Double, face: Face = .centre, row: Int? = nil) {
-            self.path = path; self.depth = depth; self.face = face; self.row = row
+        /// A steel C's lip, drawn as a line that far inside its top face (nil: none).
+        public var lip: Double?
+        public init(_ path: [Pt], depth: Double, face: Face = .centre, row: Int? = nil, lip: Double? = nil) {
+            self.path = path; self.depth = depth; self.face = face; self.row = row; self.lip = lip
         }
 
+        /// How far the top and bottom faces are from the path, along its left normal.
+        var faces: (top: Double, bottom: Double) { face == .centre ? (depth / 2, -depth / 2) : face == .top ? (0, -depth) : (depth, 0) }
         /// The outline, mitred at every bend.
         public var outline: [Pt] {
-            let p = path
-            guard p.count >= 2 else { return [] }
-            let normals = (0..<(p.count - 1)).map { Self.leftNormal(p[$0], p[$0 + 1]) }
-            func offset(_ d: Double) -> [Pt] {
-                p.indices.map { i in
-                    var n = normals[min(i, normals.count - 1)]
-                    if i > 0 && i < p.count - 1 {
-                        let a = normals[i - 1], b = normals[i], m = Pt(a.x + b.x, a.y + b.y), l = hypot(m.x, m.y)
-                        if l > 1e-9 {
-                            let u = Pt(m.x / l, m.y / l), c = max(0.2, u.x * a.x + u.y * a.y)
-                            n = Pt(u.x / c, u.y / c)
-                        }
-                    }
-                    return Pt(p[i].x + n.x * d, p[i].y + n.y * d)
-                }
-            }
-            let (d1, d2): (Double, Double) = face == .centre ? (depth / 2, -depth / 2) : face == .top ? (0, -depth) : (depth, 0)
-            return offset(d1) + offset(d2).reversed()
+            guard path.count >= 2 else { return [] }
+            return StructureSection.offset(path, faces.top) + StructureSection.offset(path, faces.bottom).reversed()
+        }
+        /// The lip line, inside the top face.
+        public var lipLine: [Pt]? {
+            guard let lip, lip > 0, lip < depth, path.count >= 2 else { return nil }
+            return StructureSection.offset(path, faces.top - lip)
         }
 
         /// A point on the member's centre line `t` of the way along its piece `i`.
@@ -148,6 +144,23 @@ public struct StructureSection: Sendable {
         static func leftNormal(_ a: Pt, _ b: Pt) -> Pt {
             let l = max(hypot(b.x - a.x, b.y - a.y), 1e-12)
             return Pt(-(b.y - a.y) / l, (b.x - a.x) / l)
+        }
+    }
+
+    /// `p` moved `d` along its left normal (up for a path left to right), mitred at every bend.
+    public static func offset(_ p: [Pt], _ d: Double) -> [Pt] {
+        guard p.count >= 2 else { return p }
+        let normals = (0..<(p.count - 1)).map { Member.leftNormal(p[$0], p[$0 + 1]) }
+        return p.indices.map { i in
+            var n = normals[min(i, normals.count - 1)]
+            if i > 0 && i < p.count - 1 {
+                let a = normals[i - 1], b = normals[i], m = Pt(a.x + b.x, a.y + b.y), l = hypot(m.x, m.y)
+                if l > 1e-9 {
+                    let u = Pt(m.x / l, m.y / l), c = max(0.2, u.x * a.x + u.y * a.y)
+                    n = Pt(u.x / c, u.y / c)
+                }
+            }
+            return Pt(p[i].x + n.x * d, p[i].y + n.y * d)
         }
     }
 
@@ -280,6 +293,7 @@ public struct StructureSection: Sendable {
         }
         for m in members {
             d.add(.polygon(m.outline.map(P), stroke: Self.ink, fill: .white, width: 0.9), "SECTION")
+            if let l = m.lipLine { d.add(.polyline(l.map(P), width: 0.5, color: Self.ink), "SECTION") }
         }
         for c in cuts {
             let o = c.outline.map(P), tag = c.row == 1 ? "PURLIN" : "SECTION"
@@ -296,10 +310,20 @@ public struct StructureSection: Sendable {
                 }
             }
         }
-        if sheet.count > 1 { d.add(.polyline(sheet.map(P), width: 1.2, color: Self.sheetC), "SECTION") }
-        if let r = ridge {
-            let c = P(r), w = max(5, 0.2 * k)
-            d.add(.polyline([Pt(c.x - w, c.y + w * 0.35), Pt(c.x, c.y - 2), Pt(c.x + w, c.y + w * 0.35)], width: 1.4, color: Self.sheetC), "SECTION")
+        if sheet.count > 1 {
+            // the sheet, and its corrugation's valleys dashed 25 mm under it, as the team draws a metal sheet cut
+            d.add(.polyline(sheet.map(P), width: 1.2, color: Self.sheetC), "SECTION")
+            d.add(.polyline(Self.offset(sheet, -0.025).map(P), width: 0.5, color: Self.sheetC, dash: [3, 2]), "SECTION")
+        }
+        if let r = ridge, let i = sheet.firstIndex(where: { abs($0.x - r.x) < 1e-9 && abs($0.y - r.y) < 1e-9 }), i > 0, i < sheet.count - 1 {
+            // the ridge cap: a flashing 0.30 m down each slope, 15 mm over the sheet, folded up 40 mm at the apex
+            func along(_ to: Pt, _ len: Double) -> Pt {
+                let l = max(hypot(to.x - r.x, to.y - r.y), 1e-9)
+                return Pt(r.x + (to.x - r.x) / l * len, r.y + (to.y - r.y) / l * len + 0.015)
+            }
+            let a = along(sheet[i - 1], 0.3), b = along(sheet[i + 1], 0.3)
+            let cap = [Pt(a.x, a.y - 0.02), a, Pt(r.x, r.y + 0.055), b, Pt(b.x, b.y - 0.02)]
+            d.add(.polyline(cap.map(P), width: 1.2, color: Self.sheetC), "SECTION")
         }
 
         // level marks on the right, a dashed line from the section to each, with the chain between them

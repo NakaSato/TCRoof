@@ -23,6 +23,12 @@ public struct TankComponents: Decodable, Sendable {
     }
     public var components: [String: Component]
 
+    /// The team's concrete hatch (AR-CONC) as their topping detail stores it, for any section that cuts concrete.
+    public static var concrete: [SketchDXF.PatternLine]? {
+        guard let h = shared?.components.values.flatMap(\.hatches).first(where: { $0.pattern == "AR-CONC" }) else { return nil }
+        return h.lines.map { .init(angle: $0.angle, base: ($0.base[0], $0.base[1]), offset: ($0.offset[0], $0.offset[1]), dashes: $0.dashes) }
+    }
+
     /// The components the app ships.
     public static let shared: TankComponents? = {
         guard let url = Bundle.module.url(forResource: "tank-components", withExtension: "json"), let d = try? Data(contentsOf: url) else { return nil }

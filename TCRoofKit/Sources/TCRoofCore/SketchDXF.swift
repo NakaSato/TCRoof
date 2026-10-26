@@ -59,6 +59,9 @@ public struct SketchDXF: Sendable {
         /// `hatch` as a HATCH entity (pattern ANSI31 at the sketch's spacing) instead of its lines, and an opaque fill with
         /// no stroke (a junction dot, a column base) as a SOLID HATCH inside its outline.
         public var hatchEntities = true
+        /// Each layer's standard lineweight, shown on screen ($LWDISPLAY). Off: every layer Default (370 = -3) and the
+        /// display off, as the team's own drawings come (the roof export).
+        public var lineweights = true
         public init() {}
     }
 
@@ -665,7 +668,7 @@ public struct SketchDXF: Sendable {
         var la: [String] = []
         for l in layers {
             la += record("LAYER", tLayer, "AcDbLayerTableRecord", l.name)
-                + ["62", String(l.aci), "6", l.linetype.rawValue, "290", l.plot ? "1" : "0", "370", String(l.lineweight), "390", normal]
+                + ["62", String(l.aci), "6", l.linetype.rawValue, "290", l.plot ? "1" : "0", "370", String(options.lineweights ? l.lineweight : -3), "390", normal]
             // the description, where AutoCAD keeps it
             if !l.description.isEmpty { la += ["1001", "AcAecLayerStandard", "1000", "", "1000", l.description] }
         }
@@ -764,7 +767,7 @@ public struct SketchDXF: Sendable {
                       "9", "$LIMMAX", "10", n(e.max.x), "20", n(e.max.y),
                       "9", "$TEXTSTYLE", "7", ts.name, "9", "$CLAYER", "8", "0", "9", "$DIMSTYLE", "2", "Standard",
                       "9", "$LTSCALE", "40", n6(ltScale), "9", "$PSLTSCALE", "70", "1", "9", "$CELTYPE", "6", "BYLAYER",
-                      "9", "$LWDISPLAY", "290", "1",
+                      "9", "$LWDISPLAY", "290", options.lineweights ? "1" : "0",
                       "9", "$LUNITS", "70", "2", "9", "$HANDSEED", "5", String(next + 1, radix: 16, uppercase: true),
                       "9", "$MEASUREMENT", "70", "1", "9", "$INSUNITS", "70", options.millimetres ? "4" : "6", "0", "ENDSEC"]
         return Self.tis620((header + out).joined(separator: "\r\n") + "\r\n")

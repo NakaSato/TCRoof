@@ -187,7 +187,7 @@ public enum RoofDXF {
     /// faces in use as the page does (`PlaneYield`).
     public static func build(_ v: Values, parts: Set<Part>, millimetres: Bool = false, latitude: Double? = nil,
                              longitude: Double? = nil) -> Output {
-        var o = SketchDXF.Options(); o.millimetres = millimetres
+        var o = SketchDXF.Options(); o.millimetres = millimetres; o.lineweights = false
         var dxf = SketchDXF(options: o)
         func layer(_ key: String) -> SketchDXF.Layer { Self.layer(key) }
         func TEXT(_ l: String, _ p: (Double, Double), _ h: Double, _ t: String, mid: Bool) {
@@ -249,6 +249,12 @@ public enum RoofDXF {
                 guard let tag, !s.dimensionOps.contains(i) else { continue }
                 // a member or post hides what it covers, as the CAD trims them
                 if case let .polygon(pts, _, fill, _) = op, fill == .white { dxf.wipeout(layer(tag), pts.map(ts)) }
+                // concrete cut by the section takes the team's AR-CONC, as their sections hatch it
+                if case let .hatch(b, _, _) = op, let conc = TankComponents.concrete {
+                    let loop = [Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY)].map(ts)
+                    dxf.patternHatch(layer(tag), loops: [loop], name: "AR-CONC", lines: conc)
+                    continue
+                }
                 write(op, tag, ts, s.scale, text: th)
             }
             dxf.options.centreText = true

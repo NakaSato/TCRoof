@@ -183,6 +183,34 @@ test('an external member only reads the ICL', async () => {
   await assertFails(updateDoc(doc(d, 'inspections', 'icl1'), { currentStep: 2 }));
 });
 
+test('the site ICL: a contractor fills and sends their sheets, only the team signs', async () => {
+  const d = db(CON);
+  const sheet = doc(d, 'iclSheets', 'mine-2_1_R1');
+  const base = { sheetID: '2.1/R1', sheet: '{}', jobID: 'mine', externals: [CON] };
+  await assertSucceeds(setDoc(sheet, { ...base, state: 'open' }));
+  await assertSucceeds(getDoc(sheet));
+  await assertFails(setDoc(sheet, { ...base, state: 'closed' }));
+  await assertSucceeds(setDoc(sheet, { ...base, sheet: '{"a":1}', state: 'sent' }));
+  // sent: the contractor no longer changes it; the team sends it back, then it is theirs again
+  await assertFails(setDoc(sheet, { ...base, sheet: '{"a":2}', state: 'sent' }));
+  await assertFails(setDoc(sheet, { ...base, sheet: '{"a":2}', state: 'open' }));
+  await assertSucceeds(setDoc(doc(db(TEAM), 'iclSheets', 'mine-2_1_R1'), { ...base, state: 'open' }));
+  await assertSucceeds(setDoc(sheet, { ...base, sheet: '{"a":3}', state: 'sent' }));
+  await assertSucceeds(setDoc(doc(db(TEAM), 'iclSheets', 'mine-2_1_R1'), { ...base, state: 'closed' }));
+  await assertFails(setDoc(sheet, { ...base, state: 'open' }));
+  await assertFails(deleteDoc(sheet));
+  // never another contractor's job, nor taking themselves off
+  await assertFails(setDoc(doc(d, 'iclSheets', 'theirs-2_2'), { sheetID: '2.2', sheet: '{}', jobID: 'theirs', externals: [CON], state: 'open' }));
+  await assertFails(setDoc(doc(d, 'iclSheets', 'mine-2_2'), { sheetID: '2.2', sheet: '{}', jobID: 'mine', externals: [], state: 'open' }));
+  await assertFails(getDoc(doc(db(OTHER), 'iclSheets', 'mine-2_1_R1')));
+  // photos of their sheets
+  await assertSucceeds(setDoc(doc(d, 'photos', 'q1'), { tag: '2.1/R1#ICL-2.1-01', drive: 'id', iclSheet: 'mine-2_1_R1', externals: [CON] }));
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'iclSheets', 'theirs-2_2'), { sheetID: '2.2', sheet: '{}', jobID: 'theirs', externals: [OTHER], state: 'open' });
+  });
+  await assertFails(setDoc(doc(d, 'photos', 'q2'), { tag: 'x', drive: 'id', iclSheet: 'theirs-2_2', externals: [CON] }));
+});
+
 test('an external member edits their survey but not who it is open to', async () => {
   const d = db(CON);
   await assertSucceeds(updateDoc(doc(d, 'pwaSurveys', 's1'), { json: '{"b":1}' }));

@@ -101,6 +101,9 @@ public enum Capability: String, CaseIterable, Sendable {
     case iecFillSubmit = "iec.fill_submit"
     case iecClose = "iec.close"
     case iclChecklist = "icl.checklist"
+    /// The PWA site ICL (`SiteICL`): the contractor inspects, fills and sends each sheet; the team signs it.
+    case iclSiteFill = "icl.site_fill"
+    case iclSiteSign = "icl.site_sign"
     case finalSignoff = "handover.final_signoff"
     case feedAckFix = "feed.ack_fix"
     // ผู้ใช้และระบบ
@@ -169,6 +172,8 @@ public enum Capability: String, CaseIterable, Sendable {
         .iecFillSubmit: (.allow, .allow, .conditional),
         .iecClose: (.allow, .allow, .deny),
         .iclChecklist: (.allow, .allow, .view),
+        .iclSiteFill: (.allow, .allow, .conditional),
+        .iclSiteSign: (.allow, .allow, .deny),
         .finalSignoff: (.allow, .conditional, .conditional),
         .feedAckFix: (.allow, .allow, .conditional),
         .usersManage: (.allow, .deny, .deny),

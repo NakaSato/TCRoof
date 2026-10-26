@@ -28,7 +28,8 @@ extension SurveyForm { var ownerJob: Job? { job } }
 extension ScannedDevice { var ownerJob: Job? { job } }
 extension InstallLog { var ownerJob: Job? { job } }
 extension Inspection { var ownerJob: Job? { job } }
-extension PhotoAsset { var ownerJob: Job? { log?.job ?? inspection?.job ?? iecJob } }
+extension ICLSheet { var ownerJob: Job? { job } }
+extension PhotoAsset { var ownerJob: Job? { log?.job ?? inspection?.job ?? iclSheet?.job ?? iecJob } }
 
 extension Date {
     /// Whole milliseconds, so a date reads back from Firestore exactly as it was written.
@@ -373,6 +374,53 @@ extension Inspection: CloudSynced {
     }
 }
 
+// MARK: - Site ICL sheet
+
+/// A sheet of the PWA site ICL (`SiteICL`), one document each. `state` is the sheet's hand-over, beside it for the
+/// rules: a contractor writes a sheet only while it is open and may send it (`sent`), never sign it (`closed`).
+extension ICLSheet: CloudSynced {
+    struct Record: Codable {
+        var sheetID: String
+        var sheet: String
+        var state: String
+        var updatedAt: Int64
+        var jobID: String?
+        var externals: [String]?
+    }
+
+    static let collection = "iclSheets"
+
+    var record: Record {
+        let s = sheet
+        return Record(sheetID: s.id, sheet: sheetJSON, state: s.lockState.rawValue, updatedAt: updatedAt.millis,
+                      jobID: job?.syncID, externals: externals(of: job))
+    }
+
+    func apply(_ r: Record, jobs: [String: Job]) -> Bool {
+        guard let owner = parent(r.jobID, in: jobs) else { return false }
+        // a signature the document's state doesn't record wasn't made by the team: drop it
+        if let incoming = try? JSONDecoder().decode(SiteICL.Sheet.self, from: Data(r.sheet.utf8)) {
+            sheet = incoming.trusting(SiteICL.LockState(rawValue: r.state))
+        } else {
+            sheetJSON = r.sheet
+        }
+        updatedAt = Date(millis: r.updatedAt)
+        if job !== owner { job = owner }
+        return true
+    }
+
+    static func make(_ r: Record, jobs: [String: Job]) -> ICLSheet? {
+        guard parent(r.jobID, in: jobs) != nil else { return nil }
+        return ICLSheet(SiteICL.Sheet(group: "?"))
+    }
+
+    /// One document per sheet of a job, the same id on every device, so two devices starting the same sheet write
+    /// one document rather than two.
+    static func syncID(job: Job, sheet: SiteICL.Sheet) -> String {
+        "\(job.syncID ?? UUID().uuidString)-\(sheet.id.replacingOccurrences(of: "/", with: "_"))"
+    }
+}
+
 // MARK: - Photo
 
 /// A daily-report, ICL or IEC 62446 photo, one document each, so photos added or deleted on two devices at once never
@@ -382,8 +430,9 @@ extension PhotoAsset: CloudSynced {
         var tag: String
         var createdAt: Int64
         var drive: String
-        /// The syncID of the install log, inspection or job (IEC 62446) the photo belongs to; one is set.
+        /// The syncID of the install log, inspection, site ICL sheet or job (IEC 62446) the photo belongs to; one is set.
         var log, inspection, iecJob: String?
+        var iclSheet: String?
         var externals: [String]?
     }
 
@@ -391,11 +440,11 @@ extension PhotoAsset: CloudSynced {
 
     var record: Record {
         Record(tag: tag, createdAt: createdAt.millis, drive: driveFileID ?? "", log: log?.syncID, inspection: inspection?.syncID,
-               iecJob: iecJob?.syncID, externals: externals(of: log?.job ?? inspection?.job ?? iecJob))
+               iecJob: iecJob?.syncID, iclSheet: iclSheet?.syncID, externals: externals(of: ownerJob))
     }
 
     /// Once on Drive, and only the photos of the records that sync (a home survey's stay on the device).
-    var syncs: Bool { driveFileID != nil && (log?.syncID ?? inspection?.syncID ?? iecJob?.syncID) != nil }
+    var syncs: Bool { driveFileID != nil && (log?.syncID ?? inspection?.syncID ?? iclSheet?.syncID ?? iecJob?.syncID) != nil }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
         guard let context = modelContext else { return false }
@@ -405,6 +454,9 @@ extension PhotoAsset: CloudSynced {
         } else if let id = r.inspection {
             guard let owner = try? context.fetch(FetchDescriptor<Inspection>(predicate: #Predicate { $0.syncID == id })).first else { return false }
             if inspection !== owner { inspection = owner }
+        } else if let id = r.iclSheet {
+            guard let owner = try? context.fetch(FetchDescriptor<ICLSheet>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+            if iclSheet !== owner { iclSheet = owner }
         } else if let id = r.iecJob {
             guard let owner = jobs[id] else { return false }
             if iecJob !== owner { iecJob = owner }

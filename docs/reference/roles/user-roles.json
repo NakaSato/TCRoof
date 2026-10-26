@@ -712,6 +712,43 @@
           }
         },
         {
+          "id": "icl.site_fill",
+          "label": "ICL ตรวจหน้างาน (กปภ.): ตรวจ กรอกผล ถ่ายรูป ส่งให้ วศ.",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "conditional",
+              "note": "ต้องตรวจและส่งทุกหมวด ก่อนปิดงานติดตั้ง, งานตัวเอง"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
+          "id": "icl.site_sign",
+          "label": "ลงนามรับรอง ICL ตรวจหน้างาน, ส่งกลับให้แก้",
+          "roles": {
+            "manager": {
+              "access": "allow"
+            },
+            "internal": {
+              "access": "allow"
+            },
+            "external": {
+              "access": "deny"
+            },
+            "maintainer": {
+              "access": "allow"
+            }
+          }
+        },
+        {
           "id": "handover.final_signoff",
           "label": "เซ็นตรวจรับงานขั้นสุดท้าย | ยอดค่าแรงและยอดหัก",
           "roles": {

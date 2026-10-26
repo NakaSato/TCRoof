@@ -144,6 +144,7 @@ final class CloudSync {
             listen(ScannedDevice.self)
             listen(InstallLog.self)
             listen(Inspection.self)
+            listen(ICLSheet.self, optional: true)   // optional until firestore.rules has `iclSheets`
             listen(PhotoAsset.self, optional: true)
             // the travel log: each person's own (docs/specs/calendar-travel-expenses-swift.md §B6)
             if external == nil, !me.email.isEmpty {
@@ -310,6 +311,10 @@ final class CloudSync {
         collect(ScannedDevice.self, context, &changes, &present)
         collect(InstallLog.self, context, &changes, &present)
         collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
+        // the site ICL: a contractor fills and sends their sheets (`icl.site_fill`); the rules refuse a sent or signed one.
+        // Committed on its own, so a refusal (rules not deployed yet, a sheet signed meanwhile) never holds back the rest.
+        var iclSheets: [Change] = []
+        collect(ICLSheet.self, context, &iclSheets, &present)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
         // the travel log goes in its own batches: a refusal (rules not deployed yet) mustn't hold back the jobs
@@ -334,6 +339,7 @@ final class CloudSync {
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
+            else if key.hasPrefix("\(ICLSheet.collection)/") { iclSheets.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
             else if Self.travelCollections.contains(where: { key.hasPrefix("\($0)/") }) { travel.append(change) }
             else { changes.append(change) }
@@ -342,6 +348,7 @@ final class CloudSync {
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
+        commitSeparately(iclSheets, "site ICL upload", size: external == nil ? 400 : 1)
         commitSeparately(travel, "travel upload")
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
@@ -544,7 +551,7 @@ final class CloudSync {
             }
         }
         // records waiting for their job, and photos waiting for their log or inspection
-        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self {
+        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self {
             for (key, retry) in pending where retry() { pending[key] = nil }
         }
         try? context.save()

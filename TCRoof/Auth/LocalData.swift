@@ -40,6 +40,7 @@ enum LocalData {
         for key in d.dictionaryRepresentation().keys where key.hasPrefix("cloudSync.known.") { d.removeObject(forKey: key) }
         try? context.delete(model: InstallLog.self)
         try? context.delete(model: Inspection.self)
+        try? context.delete(model: ICLSheet.self)
         try? context.delete(model: ScannedDevice.self)
         try? context.delete(model: SurveyForm.self)
         try? context.delete(model: PhotoAsset.self)

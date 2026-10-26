@@ -33,9 +33,10 @@ final class RoofDXFTests: XCTestCase {
         // layers 0 and Defpoints, and the drawing's
         XCTAssertEqual(t.tableCount(l, "LAYER"), out.layers.count + 2)
         XCTAssertEqual(out.entities, t.records(out.data).count)
-        // 10 posts, each one closed LWPOLYLINE of 4 sides, on POST
-        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "S-COLS-E" }.count, 10)
-        XCTAssertEqual(t.entities(out.data).filter { t.value($0, "8") == "S-COLS-E" && $0.first?.1 == "LINE" }.count, 40)
+        // the plan's 10 posts, each one closed LWPOLYLINE of 4 sides, on POST
+        let plan = RoofDXF.build(roof(), parts: [.plan]).data
+        XCTAssertEqual(t.rawEntities(plan).filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "S-COLS-E" }.count, 10)
+        XCTAssertEqual(t.entities(plan).filter { t.value($0, "8") == "S-COLS-E" && $0.first?.1 == "LINE" }.count, 40)
         // the span chains: one DIMENSION per span and one per total, nothing else on DIM
         let v = roof(), spans = Roof.spans(v, .x).count + Roof.spans(v, .y).count
         // (the section's schematic dimensions stay lines: it isn't drawn to scale)
@@ -139,11 +140,8 @@ final class RoofDXFTests: XCTestCase {
         // details A / B: their members on the section layer under the schedule, their labels in words
         XCTAssertNotNil(RoofTruss.details(v))
         XCTAssertTrue(texts("G-ANNO-TEXT").contains("T1"), "the plan's truss marks")
-        // the section's callouts ①–⑦: a bubble and its number each, as symbols
-        let symbols = texts("G-ANNO-SYMB")
-        let section = RoofSection(v, trueScale: true)
-        for n in section.callouts.keys { XCTAssertTrue(symbols.contains(String(n)), "callout \(n)") }
-        // and the plan's two section-mark bubbles
-        XCTAssertEqual(raw.filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-ANNO-SYMB" }.count, section.callouts.count + 2)
+        // the section is clean like the team's CAD (the callouts ①–⑦ are the page's): only the plan's two section marks
+        XCTAssertTrue(RoofSection(v, trueScale: true, callouts: false).callouts.isEmpty)
+        XCTAssertEqual(raw.filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-ANNO-SYMB" }.count, 2)
     }
 }

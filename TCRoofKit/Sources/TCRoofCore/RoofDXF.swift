@@ -20,7 +20,7 @@ public enum RoofDXF {
         "POST": CADLayers.roofPost, "PURLIN": CADLayers.roofPurlin, "SKYLIGHT": CADLayers.roofSkylight, "OBSTACLE": CADLayers.obstacle,
         "SECTION_MARK": CADLayers.sectionMark, "DIM": CADLayers.dim, "TEXT": CADLayers.text, "PV": CADLayers.pvModule,
         "PV_RAIL": CADLayers.pvRail, "PV_FOOT": CADLayers.pvFoot, "PV_CUT": CADLayers.pvCut, "KEEPOUT": CADLayers.pvKeepout,
-        "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable,
+        "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable, "LEVEL": CADLayers.dim,
     ]
     static func layer(_ key: String) -> SketchDXF.Layer { standard[key] ?? CADLayers.text }
     /// The plan's path keys (`RoofPlan.tags`) → layers.
@@ -241,14 +241,17 @@ public enum RoofDXF {
         }
         if parts.contains(.section) {
             // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
-            let s = RoofSection(v, trueScale: true), top = parts.contains(.plan) ? -2.5 - drop : 0
-            let ts: (Pt) -> (Double, Double) = { p in ((p.x - 380) / s.scale + L.lx / 2, top - p.y / s.scale) }
+            let s = RoofSection(v, trueScale: true, callouts: false), top = parts.contains(.plan) ? -2.5 - drop : 0
+            let ts: (Pt) -> (Double, Double) = { p in ((p.x - s.ridgeX) / s.scale + L.lx / 2, top - p.y / s.scale) }
+            // the level marks' labels read from their line's left end and their values end at its right
+            dxf.options.centreText = false
             for (i, (op, tag)) in zip(s.sketch.ops, s.tags).enumerated() {
                 guard let tag, !s.dimensionOps.contains(i) else { continue }
-                // the member callouts ①–⑦ (bubble, number, leader) as symbols, the number fitted to its bubble
-                if tag == "CALLOUT" { write(op, "SECTION_MARK", ts, s.scale, text: 11 / s.scale); continue }
+                // a member or post hides what it covers, as the CAD trims them
+                if case let .polygon(pts, _, fill, _) = op, fill == .white { dxf.wipeout(layer(tag), pts.map(ts)) }
                 write(op, tag, ts, s.scale, text: th)
             }
+            dxf.options.centreText = true
             dxf.options.fixedTextHeight = th * 0.8
             dxf.add(s.dimensions, layer: layer("DIM"), transform: ts, pointsPerMetre: s.scale)
             TEXT("TEXT", (L.lx / 2 - s.span / 2, top - (s.sketch.height + 2) / s.scale - 0.8), th * 1.4,

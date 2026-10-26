@@ -195,98 +195,117 @@ public enum MeasuredRoofSection {
         return out
     }
 
+    // MARK: the section in metres
+
+    /// The frame as the team's CAD sections draw it (`StructureSection`): the rafter seated on the posts at the eave
+    /// height, the tie beam under it, a king post and struts on a gable or hip, C purlins on the rafter's top face under
+    /// the sheet, a fascia at each tip, and the levels. Sizes come from the members entered (centimetres), else the usual.
+    public static func structure(_ i: Input, eave e: Double, known: Bool) -> StructureSection {
+        typealias S = StructureSection
+        func size(_ name: String) -> S.Size? { i.members.first { $0.name == name }.flatMap { S.Size.read($0.size) } }
+        let raf = size("จันทัน") ?? .c(0.15), tie = size("ขื่อ") ?? .c(0.1), purlin = size("แป") ?? .c(0.1)
+        let B = i.span, h = B / 2, o = i.overhang, t = i.rise / max(i.run, 1e-9), cs = 1 / (1 + t * t).squareRoot()
+        let pw = 0.2
+        var m = S()
+        m.datum = known ? 0 : e
+        let line = roofLine(i, eave: e).map { Pt($0.x, $0.y) }
+        func posts(_ tops: [(Double, Double)]) { for (x, top) in tops { m.posts.append(S.Post(x: x, width: pw, top: top)) } }
+        let ground = known ? [S.Level(0, "ระดับพื้น")] : []
+
+        if i.shape == .flat {
+            let slab = S.Size.rc(B + 2 * o, 0.15)
+            posts([(0, e), (B, e)])
+            m.cuts.append(S.Cut(slab.profile, at: Pt(h, e)))
+            m.levels = ground + [S.Level(e, "ระดับใต้พื้นดาดฟ้า"), S.Level(e + 0.15, "ระดับหลังพื้นดาดฟ้า")]
+            return m
+        }
+        // the posts under the tie beam, the high side of a shed straight up to its rafter
+        posts(i.shape == .shed ? [(0, e - tie.depth), (B, e + i.rise)] : [(0, e - tie.depth), (B, e - tie.depth)])
+        m.members.append(S.Member([Pt(-pw / 2, e), Pt(i.shape == .shed ? B - pw / 2 : B + pw / 2, e)], depth: tie.depth, face: .top))
+        let mid = raf.depth / (2 * cs)
+        if i.shape == .gable || i.shape == .hip || i.shape == .curved {
+            let king = size("ดั้ง") ?? .c(0.1)
+            m.members.append(S.Member([Pt(h, e), Pt(h, e + i.rise + mid)], depth: king.depth))
+            if i.shape != .curved {
+                let st = size("ค้ำยัน") ?? .c(0.075)
+                m.members.append(S.Member([Pt(h / 2, e + i.rise / 2 + mid), Pt(h, e)], depth: st.depth))
+                m.members.append(S.Member([Pt(h, e), Pt(3 * h / 2, e + i.rise / 2 + mid)], depth: st.depth))
+            }
+            m.centreLine = h
+        }
+        let rafter = S.Member(line, depth: raf.depth, face: .bottom)
+        // the rafter's top face: the first half of its outline
+        let top = Array(rafter.outline.prefix(line.count))
+        let fz = size("เชิงชาย") ?? S.Size.box(0.2, 0.025, .wood), th = max(0.02, fz.width), hh = max(0.1, fz.depth)
+        for (p, s) in [(top[0], -1.0), (top[top.count - 1], 1.0)] {
+            m.members.append(S.Member([Pt(p.x + s * th / 2, p.y), Pt(p.x + s * th / 2, p.y - hh)], depth: th))
+        }
+        m.members.append(rafter)
+        // purlins square to the rafter on its top face, flanges toward the ridge
+        func normal(_ x: Double) -> Pt {
+            for k in 0..<(line.count - 1) where x >= line[k].x - 1e-9 && x <= line[k + 1].x + 1e-9 {
+                return S.Member.leftNormal(line[k], line[k + 1])
+            }
+            return Pt(0, 1)
+        }
+        for p in purlins(i, eave: e) {
+            let up = abs(p.x - h) < 1e-6 && i.shape != .shed ? Pt(0, 1) : normal(p.x)
+            let lift = abs(up.x) < 1e-9 ? raf.depth / cs : raf.depth
+            m.cuts.append(S.Cut(purlin.profile, at: Pt(p.x + up.x * lift, p.y + up.y * lift), up: up,
+                                opens: i.shape == .shed || p.x < h ? 1 : -1))
+        }
+        let sheet = S.Member(line, depth: raf.depth + purlin.profile.h + 0.01, face: .bottom)
+        m.sheet = Array(sheet.outline.prefix(line.count))
+        if i.shape != .shed { m.ridge = m.sheet[m.sheet.count / 2] }
+        m.levels = ground + [S.Level(e, "ระดับหัวเสา"), S.Level(top.map(\.y).max() ?? e, "ระดับหลังจันทัน")]
+        return m
+    }
+
     // MARK: drawing
 
-    static let ink = RGBA(hex: 0x1A1D22), dimC = RGBA(hex: 0x16325C), soil = RGBA(hex: 0x8B6F47), red = RGBA(hex: 0xD9453B)
+    static let ink = RGBA(hex: 0x1A1D22), dimC = RGBA(hex: 0x16325C), red = RGBA(hex: 0xD9453B)
 
-    /// docs/specs/auto-drawing.md §6: 690 pt wide, title strip, the section fitted to `W − 128` × 220, the dimension
+    /// docs/specs/auto-drawing.md §6: 690 pt wide, title strip, the section fitted beside its level marks, the dimension
     /// chain under it, the members, the assumed values and warnings, and the note that it is not a construction drawing.
     public static func sketch(_ i: Input, width W: Double = 690) -> Sketch {
         let known = i.eave != nil, e = i.eave ?? 3.0, o = i.overhang, B = i.span
-        let line = roofLine(i, eave: e)
-        let top = line.map(\.y).max() ?? e, base = known ? 0 : e - 0.8
-        let left = -o, right = B + o
-        let areaW = W - 128, areaH = 210.0, y0 = 40.0
-        let k = min(areaW / max(right - left, 1e-6), areaH / max(top + (i.shape == .flat ? 0.15 : 0) - base, 1e-6))
-        let x0 = 64 + (areaW - (right - left) * k) / 2
-        func P(_ x: Double, _ y: Double) -> Pt { Pt(x0 + (x - left) * k, y0 + (top - y) * k) }
-        var o2: [DrawOp] = [.rect(Box(0, 0, W, 0), stroke: nil, fill: .white)]
+        let model = structure(i, eave: e, known: known)
+        // the frame and its overhang dimensions (a curved roof's tips stop at the posts)
+        let ext = model.extent, base = known ? 0 : e - 0.8, minX = min(ext.minX, -o), maxX = max(ext.maxX, B + o)
+        let marks = (W - 150)...(W - 12), areaL = 24.0, areaR = marks.lowerBound - 20, areaH = 200.0, y0 = 40.0
+        let k = min((areaR - areaL) / max(maxX - minX, 1e-6), areaH / max(ext.maxY - base, 1e-6))
+        let x0 = areaL + ((areaR - areaL) - (maxX - minX) * k) / 2
+        func P(_ p: Pt) -> Pt { Pt(x0 + (p.x - minX) * k, y0 + (ext.maxY - p.y) * k) }
+        func X(_ x: Double) -> Double { P(Pt(x, 0)).x }
+        var d = StructureSection.Drawn()
+        d.add(.rect(Box(0, 0, W, 0), stroke: nil, fill: .white), nil)
+        d.add(.text("รูปตัดโครงหลังคา — " + i.title, at: Pt(16, 14), size: 10, bold: true, color: ink), nil)
+        d.add(.text("หน่วย: ม. | มาตราส่วนโดยประมาณ", at: Pt(W - 16, 14), size: 8.5, color: .ink2, align: .right), nil)
+        let floor = P(Pt(0, base)).y
+        model.draw(into: &d, P, scale: k, marks: marks, gridTop: nil, floor: floor, ground: known, text: 8.5)
+        if !known { d.add(.text("ไม่ทราบความสูงชายคา", at: Pt(X(B / 2), floor - 10), size: 8.5, color: red, align: .center), nil) }
 
-        o2.append(.text("รูปตัดโครงหลังคา — " + i.title, at: Pt(16, 14), size: 10, bold: true, color: ink))
-        o2.append(.text("หน่วย: ม. | มาตราส่วนโดยประมาณ", at: Pt(W - 16, 14), size: 8.5, color: .ink2, align: .right))
-
-        // ground and columns
-        let ground = P(0, 0).y
-        if known {
-            o2.append(.line(Pt(P(left, 0).x - 20, ground), Pt(P(right, 0).x + 20, ground), width: 1.4, color: soil))
-            o2.append(.hatch(Box(P(left, 0).x - 20, ground, (right - left) * k + 40, 6), color: soil.withAlpha(0.6), spacing: 6))
-        }
-        let colW = max(3, 0.2 * k)
-        let colTops: [(Double, Double)] = i.shape == .shed ? [(0, e), (B, e + i.rise)] : [(0, e), (B, e)]
-        for (x, yTop) in colTops {
-            if known { o2.append(.rect(Box(P(x, 0).x - colW / 2, P(x, yTop).y, colW, (yTop) * k), stroke: ink, fill: RGBA(hex: 0xC9CED6), width: 0.8)) }
-            else { o2.append(.line(P(x, yTop), P(x, yTop - 0.6), width: 1.2, color: ink, dash: [4, 3])) }
-        }
-        if !known { o2.append(.text("ไม่ทราบความสูงชายคา", at: Pt(P(B / 2, e - 0.6).x, P(0, e - 0.6).y), size: 8.5, color: red, align: .center)) }
-
-        // the frame
-        if i.shape == .flat {
-            let a = P(left, e + 0.15), b = P(right, e)
-            o2.append(.rect(Box(a.x, a.y, b.x - a.x, b.y - a.y), stroke: ink, fill: RGBA(hex: 0xC9CED6), width: 1.2))
-        } else {
-            o2.append(.polyline(line.map { P($0.x, $0.y) }, width: 2.2, color: ink))
-            o2.append(.line(P(0, e), P(B, e), width: 1.6, color: ink))
-            switch i.shape {
-            case .gable, .hip, .curved:
-                let h = B / 2
-                o2.append(.line(P(h, e), P(h, e + i.rise), width: 1.6, color: ink))
-                if i.shape != .curved {
-                    o2.append(.line(P(h, e), P(h / 2, e + i.rise / 2), width: 1.2, color: ink))
-                    o2.append(.line(P(h, e), P(3 * h / 2, e + i.rise / 2), width: 1.2, color: ink))
-                }
-            case .shed:
-                o2.append(.line(P(B, e), P(B, e + i.rise), width: 1.6, color: ink))
-            case .flat: break
-            }
-            // fascia at each tip, 0.2 m down
-            for tip in [line.first!, line.last!] { o2.append(.line(P(tip.x, tip.y), P(tip.x, tip.y - 0.2), width: 1.6, color: ink)) }
-            // purlins: fixed-size markers on the rafter
-            for p in purlins(i, eave: e) {
-                let c = P(p.x, p.y)
-                o2.append(.rect(Box(c.x - 3.5, c.y - 7.8, 7, 5), stroke: ink, fill: .white, width: 0.9))
-            }
-        }
-
-        // dimensions
+        // the spans under it
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
-            let pa = P(a, 0).x, pb = P(b, 0).x
-            o2.append(.line(Pt(pa, y), Pt(pb, y), width: 0.6, color: dimC))
-            for x in [pa, pb] { o2.append(.line(Pt(x - 3, y + 3), Pt(x + 3, y - 3), width: 0.8, color: dimC)) }
-            if pb - pa > 14 { o2.append(.text(label, at: Pt((pa + pb) / 2, y - 7), size: 8.5, color: dimC, align: .center)) }
+            let pa = X(a), pb = X(b)
+            d.add(.line(Pt(pa, y), Pt(pb, y), width: 0.6, color: dimC), nil)
+            for x in [pa, pb] { d.add(.line(Pt(x - 3, y + 3), Pt(x + 3, y - 3), width: 0.8, color: dimC), nil) }
+            if pb - pa > 14 { d.add(.text(label, at: Pt((pa + pb) / 2, y - 7), size: 8.5, color: dimC, align: .center), nil) }
         }
-        func dimV(_ x: Double, _ a: Double, _ b: Double, _ label: String, right: Bool) {
-            let pa = P(0, a).y, pb = P(0, b).y
-            o2.append(.line(Pt(x, pa), Pt(x, pb), width: 0.6, color: dimC))
-            for y in [pa, pb] { o2.append(.line(Pt(x - 3, y + 3), Pt(x + 3, y - 3), width: 0.8, color: dimC)) }
-            o2.append(.text(label, at: Pt(x + (right ? 6 : -6), (pa + pb) / 2), size: 8.5, color: dimC, align: right ? .left : .right))
-        }
-        let chainY = (known ? ground : P(0, e - 0.8).y) + 22
-        if o > 0 { dimH(left, 0, chainY, String(format: "%.2f", o)); dimH(B, right, chainY, String(format: "%.2f", o)) }
+        let chainY = floor + 22
+        if o > 0 { dimH(-o, 0, chainY, String(format: "%.2f", o)); dimH(B, B + o, chainY, String(format: "%.2f", o)) }
         dimH(0, B, chainY, String(format: "%.2f", B))
-        o2.append(.text("ช่วงกว้าง " + String(format: "%.2f", B), at: Pt(P(B / 2, 0).x, chainY + 12), size: 9, bold: true, color: dimC, align: .center))
-        if known { dimV(P(left, 0).x - 14, 0, e, "ชายคา " + String(format: "%.2f", e), right: false) }
+        d.add(.text("ช่วงกว้าง " + String(format: "%.2f", B), at: Pt(X(B / 2), chainY + 12), size: 9, bold: true, color: dimC, align: .center), nil)
         if i.rise > 0 {
-            let rx = P(right, 0).x + 14
-            dimV(rx, e, e + i.rise, "R " + String(format: "%.2f", i.rise), right: true)
-            // the pitch: an arc at the left column head, and the slope length along the first slope
-            let c = P(0, e), deg = i.pitch
+            // the pitch: an arc at the left post head, and the slope length along the first slope
+            let c = P(Pt(0, e)), deg = i.pitch
             let arc = (0...12).map { s -> Pt in let a = Double(s) / 12 * deg * .pi / 180; return Pt(c.x + 30 * cos(a), c.y - 30 * sin(a)) }
-            o2.append(.polyline(arc, width: 0.6, color: dimC))
-            o2.append(.text(fmt((deg * 10).rounded() / 10) + "°", at: Pt(c.x + 50, c.y - 5), size: 8, color: dimC))
+            d.add(.polyline(arc, width: 0.6, color: dimC), nil)
+            d.add(.text(fmt((deg * 10).rounded() / 10) + "°", at: Pt(c.x + 50, c.y - 5), size: 8, color: dimC), nil)
             if i.shape != .curved {
-                let m = P(i.run / 2, e + i.rise / 2)
-                o2.append(.text("L = " + String(format: "%.2f", i.slopeLength) + " ม.", at: Pt(m.x, m.y - 16), size: 8.5, color: dimC,
-                                align: .center, angle: -deg))
+                let m = P(Pt(i.run / 2, e + i.rise / 2))
+                d.add(.text("L = " + String(format: "%.2f", i.slopeLength) + " ม.", at: Pt(m.x, m.y - 16), size: 8.5, color: dimC,
+                            align: .center, angle: -deg), nil)
             }
         }
 
@@ -295,14 +314,14 @@ public enum MeasuredRoofSection {
         let rows = i.members.enumerated().map { n, m in "\(n + 1) " + m.name + " | " + (m.size.isEmpty ? "— ไม่ได้ระบุ —" : m.size) }
         let colWd = (W - 32) / 2
         for (n, t) in rows.enumerated() {
-            o2.append(.text(t, at: Pt(16 + Double(n % 2) * colWd, y + Double(n / 2) * 12), size: 8.5, color: ink))
+            d.add(.text(t, at: Pt(16 + Double(n % 2) * colWd, y + Double(n / 2) * 12), size: 8.5, color: ink), nil)
         }
         y += Double((rows.count + 1) / 2) * 12 + (rows.isEmpty ? 0 : 4)
-        if !i.assumed.isEmpty { o2.append(.text("ค่าสมมติ: " + i.assumed.joined(separator: " | "), at: Pt(16, y), size: 8, color: .ink2)); y += 12 }
-        for w in i.warnings { o2.append(.text(w, at: Pt(16, y), size: 8, bold: true, color: red)); y += 12 }
-        o2.append(.text(TankDrawings.note, at: Pt(16, y), size: 7.5, color: .ink2))
+        if !i.assumed.isEmpty { d.add(.text("ค่าสมมติ: " + i.assumed.joined(separator: " | "), at: Pt(16, y), size: 8, color: .ink2), nil); y += 12 }
+        for w in i.warnings { d.add(.text(w, at: Pt(16, y), size: 8, bold: true, color: red), nil); y += 12 }
+        d.add(.text(TankDrawings.note, at: Pt(16, y), size: 7.5, color: .ink2), nil)
         let H = y + 10
-        o2[0] = .rect(Box(0, 0, W, H), stroke: nil, fill: .white)
-        return Sketch(width: W, height: H, ops: o2)
+        d.ops[0] = .rect(Box(0, 0, W, H), stroke: nil, fill: .white)
+        return Sketch(width: W, height: H, ops: d.ops)
     }
 }

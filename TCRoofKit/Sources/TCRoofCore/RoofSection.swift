@@ -1,16 +1,21 @@
 import Foundation
 
-/// C1 section A-A (docs/ui/survey-c1 `renderVals`, `S.*`): a true-scale cut across the ridge for the seven frame types,
-/// with dimensions and the callouts ①–⑦ of the member rows. The sketch is the design's 760 × 250 viewBox, where the
-/// columns stop at a fixed ground line; `trueScale` (the DXF) draws the ground at the clear height, to the frame's scale,
-/// so the sketch grows taller, and lists the dimensions (`dimensions`) for the DXF's DIMENSIONs.
-/// `tags` names each op's CAD layer (`SECTION`, `DIM`, `GRID`; nil for fills, labels and the light core strokes).
+/// C1 section A-A: a true-scale cut across the ridge for the seven frame types, drawn as the team's CAD sections draw
+/// it (`StructureSection`): members at the depth of the sizes in rows 1–7, C purlins under the sheet, posts with the
+/// beam at their heads, the fascia, and level marks with their chain on the right. The members come from the same
+/// geometry as the member schedule (`RoofTruss.Geometry`).
+///
+/// The sketch is 760 × 250, the roof structure only: the posts stop at a break line under the clear height (the level
+/// marks give the height). `trueScale` (the DXF) also lists the dimensions (`dimensions`) for the DXF's DIMENSIONs.
+/// `callouts` adds the page's numbered member bubbles ①–⑦; the PDF and the DXF leave them out.
+/// `tags` names each op's CAD layer (`SECTION`, `POST`, `PURLIN`, `GRID`, `LEVEL`, `DIM`, `CALLOUT`; nil for the
+/// background and the dimension texts).
 public struct RoofSection: Sendable {
     public static let width = 760.0, height = 250.0
 
     public var sketch: Sketch
     public var tags: [String?]
-    /// Where the eave overhang, clear-height and rise labels sit (the page makes them tappable).
+    /// Where the eave overhang, clear-height and ridge-height values sit (the page makes them tappable).
     public var overhangLabel = Pt(0, 0), clearLabel = Pt(0, 0), riseLabel = Pt(0, 0)
     /// The numbered callouts' bubble centres (rows a frame doesn't draw are missing).
     public var callouts: [Int: Pt] = [:]
@@ -18,304 +23,273 @@ public struct RoofSection: Sendable {
     public let bays: Int
     /// Sketch points per metre.
     public let scale: Double
-    /// With `trueScale`: the half spans, the span, the overhangs, the clear height, the rise and the heel, and the
-    /// indices of the ops that draw their lines and ticks (the DXF writes DIMENSIONs instead).
+    /// The ridge's x in the sketch.
+    public let ridgeX: Double
+    /// The section in metres.
+    public let model: StructureSection
+    /// With `trueScale`: the half spans, the span, the overhangs and the level chain, and the indices of the ops that
+    /// draw their lines and ticks (the DXF writes DIMENSIONs instead).
     public var dimensions: [SketchDXF.Dimension] = []
     public var dimensionOps: Set<Int> = []
 
-    static let dark = RGBA(hex: 0x1A1D22), core = RGBA(hex: 0xD5DBE3), webCore = RGBA(hex: 0xF2F4F7), navy = RGBA(hex: 0x16325C)
-    static let sheet = RGBA(hex: 0x1F4F78), red = RGBA(hex: 0xD9453B), blue = RGBA(hex: 0x1F6FB5), gridC = RGBA(hex: 0x8A97AA)
-    static let concrete = RGBA(hex: 0xC9CED6)
+    static let navy = RGBA(hex: 0x16325C), red = RGBA(hex: 0xD9453B), blue = RGBA(hex: 0x1F6FB5)
+    /// The posts' break line on screen, and the band of the level marks.
+    static let cut = 194.0, marks = 606.0...750.0
 
     /// - Parameter highlight: member row 1…7 whose callout is filled red.
-    public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false) {
-        let f = Roof.frame(v), ridge = Roof.ridge(v)
+    public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false, callouts showCallouts: Bool = true) {
+        let f = Roof.frame(v), m = Self.structure(v)
         let span = Roof.span(v), half = span / 2, nH = Roof.bays(v)
-        let ang = Roof.slope(v), tn = tan(ang * .pi / 180), rise = half * tn
-        let isK = f == .eaveCeiling, isC = f.isRafter, isR = f == .rafterTruss, heelM = f.heel
-        let sc = min(540 / span, 118 / (rise + heelM)), HW = half * sc, XL = 380 - HW, XR = 380 + HW, YB = 150.0
-        let heel = heelM * sc, YE = YB - heel, YT = YE - rise * sc, pw = half / Double(nH)
-        let overhang = Roof.overhang(v), clear = Roof.clearHeight(v)
-        // the ground: a fixed line in the design; at the clear height under the tie (a rafter frame's column top) to scale
-        let G0 = trueScale && clear > 0 ? (f.isRafter ? YE : YB) + clear * sc : 192.0, dy = G0 - 192
-        var o: [DrawOp] = [], tg: [String?] = []
-        func add(_ op: DrawOp, _ tag: String?) { o.append(op); tg.append(tag) }
-        var webs: [[Pt]] = [], chords: [[Pt]] = [], cols: [[Pt]] = []
-        func pt(_ x: Double, _ y: Double) -> Pt { Pt(x, y) }
-        func line(_ a: Double, _ b: Double, _ c: Double, _ d: Double, _ w: Double, _ col: RGBA, dash: [Double] = [], _ tag: String? = "SECTION") {
-            add(.line(Pt(a, b), Pt(c, d), width: w, color: col, dash: dash), tag)
-        }
-        func text(_ t: String, _ x: Double, _ y: Double, _ size: Double = 12, bold: Bool = false, color: RGBA = RoofSection.navy, align: TextAlign = .left) {
-            // the design's y is the baseline; DrawOp text is anchored at the line's middle
-            add(.text(t, at: Pt(x, y - size * 0.35), size: size, bold: bold, color: color, align: align), nil)
-        }
-        func path(_ d: String, width: Double, color: RGBA = RoofSection.dark, fill: RGBA? = nil, _ tag: String? = "SECTION") {
-            for sub in PathD.parse(d) {
-                if let fill, sub.closed { add(.polygon(sub.points, stroke: color, fill: fill, width: width), tag) }
-                else { add(.polyline(sub.closed ? sub.points + [sub.points[0]] : sub.points, width: width, color: color), tag) }
-            }
-        }
-        func g(_ x: Double) -> String { String(format: "%.1f", x) }
-        func topY(_ x: Double) -> Double { x <= 380 ? YE - (x - XL) / HW * (YE - YT) : YE - (XR - x) / HW * (YE - YT) }
-        let ov = overhang * sc, rOff = 7.0, slope = (YE - YT) / HW
-        var pts: [Double] = []
-        if !isC { for i in 1..<(2 * nH) { pts.append(XL + Double(i) * pw * sc) } }
+        let ang = Roof.slope(v), rise = half * tan(ang * .pi / 180)
+        let o = Roof.overhang(v), base = Roof.clearHeight(v)
+        // fit the section between x 26 and 586, its posts showing 1.40 m under the clear height before the break
+        let ext = m.extent, below = 1.4
+        let k = min(560 / max(ext.maxX - ext.minX + 0.2, 1), (Self.cut - 34) / max(ext.maxY - base + below, 0.5))
+        let yBase = Self.cut - below * k, cx = 306.0, mid = (ext.minX + ext.maxX) / 2
+        func P(_ p: Pt) -> Pt { Pt(cx + (p.x - mid) * k, yBase - (p.y - base) * k) }
+        // the roof structure only, as the team's CAD sections show it: the posts end at a break line under the clear height
+        let floor = Self.cut, H = Self.height
 
-        add(.rect(Box(0, 0, Self.width, Self.height), stroke: nil, fill: .white), nil)
-        let gdash: [Double] = [12, 3, 2, 3]
-        line(XL, 24, XL, 240 + dy, 0.6, Self.gridC, dash: gdash, "GRID"); line(XR, 24, XR, 240 + dy, 0.6, Self.gridC, dash: gdash, "GRID")
-        line(380, 24, 380, YB, 0.6, Self.gridC, dash: gdash, "GRID")
-        let gA = ridge == .h ? "A" : "1"
-        let gB = ridge == .h ? Roof.gridName(.y, Roof.spans(v, .y).count) : Roof.gridName(.x, Roof.spans(v, .x).count)
-        for (x, t) in [(XL, gA), (XR, gB)] {
-            add(.circle(Pt(x, 14), r: 9, stroke: Self.navy, fill: .white, width: 1), "GRID")
-            add(.text(t, at: Pt(x, 14), size: 11, bold: true, color: Self.navy, align: .center), nil)
-        }
+        var d = StructureSection.Drawn()
+        d.add(.rect(Box(0, 0, Self.width, H), stroke: nil, fill: .white), nil)
+        m.draw(into: &d, P, scale: k, marks: Self.marks, gridTop: 14, floor: floor, ground: false)
 
-        // the rafter frames' outlines (the owner's ST1 / Type 1 drawings), kept for the callouts
-        struct Rafter { var dv = 0.0, hp = 0.0, yc = 0.0, dc = 0.0, w = 0.0, pj = 0.0, yB1 = 0.0, eL = 0.0
-            var wc = 0.0, yb1 = 0.0, yb2 = 0.0, bw = 0.0, fx = 0.0 }
-        var G = Rafter()
-        var hatches: [Box] = []
-        if isR {
-            let d = heel, eL = XL - ov, eyL = YE + ov * slope
-            func ybot(_ x: Double) -> Double { topY(x) + d }
-            chords += [[pt(eL, eyL), pt(380, YT), pt(XR + ov, eyL)], [pt(eL, eyL + d), pt(380, YT + d), pt(XR + ov, eyL + d)],
-                       [pt(eL, eyL), pt(eL, eyL + d)], [pt(XR + ov, eyL), pt(XR + ov, eyL + d)], [pt(380, YT), pt(380, YT + d)]]
-            let nodes = [XL] + pts + [XR]
-            for i in 0..<(nodes.count - 1) {
-                let a = nodes[i], b = nodes[i + 1]
-                if abs(b - 380) < 1 || abs(a - 380) < 1 || (a < 380) == (i % 2 == 0) { webs.append([pt(a, ybot(a)), pt(b, topY(b))]) }
-                else { webs.append([pt(a, topY(a)), pt(b, ybot(b))]) }
-                webs.append([pt(b, topY(b)), pt(b, ybot(b))])
-            }
-            let xi1 = XL + HW * 0.8, xi2 = XR - HW * 0.8
-            for x in [XL, XR, xi1, xi2] { cols.append([pt(x, ybot(x)), pt(x, G0 - 2)]); hatches.append(Box(x - 6, ybot(x), 12, 6)) }
-        } else if isC {
-            let eL = XL - ov, eR = XR + ov, cs = 1 / hypot(1, slope), sn = slope * cs
-            let dv = max(4, 0.17 * sc), hp = max(4.5, 0.1 * sc), fw = hp * 0.55, sh = (hp + 0.6) / cs, sh2 = (hp + 2.2) / cs
-            func yb(_ x: Double) -> Double { topY(x) }
-            func tp(_ x: Double) -> Double { yb(x) - dv }
-            var L = "M\(g(eL)) \(g(yb(eL)))L380 \(g(YT))L\(g(eR)) \(g(yb(eR)))M\(g(eL)) \(g(tp(eL)))L380 \(g(YT - dv))L\(g(eR)) \(g(tp(eR)))"
-            L += "M\(g(eL)) \(g(yb(eL)))V\(g(tp(eL)))M\(g(eR)) \(g(yb(eR)))V\(g(tp(eR)))"
-            L += "M\(g(eL - 3)) \(g(tp(eL) - sh + 3 * slope))L380 \(g(YT - dv - sh))L\(g(eR + 3)) \(g(tp(eR) - sh + 3 * slope))"
-            L += "M\(g(eL - 3)) \(g(tp(eL) - sh2 + 3 * slope))L380 \(g(YT - dv - sh2))L\(g(eR + 3)) \(g(tp(eR) - sh2 + 3 * slope))"
-            if !isK { L += "M\(g(eL - 2.4)) \(g(tp(eL) - 1))h2.4v\(g(dv + 5))h-2.4zM\(g(eR)) \(g(tp(eR) - 1))h2.4v\(g(dv + 5))h-2.4z" }
-            let yc = YE - (isK ? 0.55 : 0.5) * (YE - YT), dc = max(4, 0.15 * sc)
-            func xl(_ y: Double) -> Double { XL + (YE - y) / slope }
-            func xr(_ y: Double) -> Double { XR - (YE - y) / slope }
-            L += "M\(g(xl(yc))) \(g(yc))H\(g(xr(yc)))M\(g(xl(yc + dc))) \(g(yc + dc))H\(g(xr(yc + dc)))"
-            let w = max(7, 0.3 * sc), Hh = G0 - YE, hw = max(10, 0.36 * Hh), yB0 = YE + hw, yB1 = yB0 + max(4, 0.14 * Hh)
-            let pj = max(8, 0.3 * sc), ys = yB1 + max(5, 0.2 * Hh)
-            var Hd = ""
-            G = Rafter(dv: dv, hp: hp, yc: yc, dc: dc, w: w, pj: pj, yB1: yB1, eL: eL)
-            if isK {
-                let wc = max(7, 0.25 * sc), yo1 = YE + max(3, 0.12 * sc), yo2 = yo1 + max(3.5, 0.15 * sc)
-                let yb1 = YE + max(10, 0.45 * sc), yb2 = min(yb1 + max(6, 0.3 * sc), YE + Hh * 0.78), bw = max(6, 0.22 * sc), fx = max(3, 0.15 * sc)
-                L += "M\(g(XL + wc / 2)) \(g(yb1))H\(g(XR - wc / 2))M\(g(XL + wc / 2)) \(g(yb2))H\(g(XR - wc / 2))"
-                for (x, k, e) in [(XL, 1.0, eL), (XR, -1.0, eR)] {
-                    let o = x - k * wc / 2, i = x + k * wc / 2, xf = e + k * fx
-                    L += "M\(g(o)) \(g(yb(o)))V\(g(G0))M\(g(i)) \(g(yb(i)))V\(g(G0))"
-                    L += "M\(g(x - wc / 2 - 9)) \(g(G0))H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + wc / 2 + 9))"
-                    Hd += "M\(g(o - k * bw * 0.6)) \(g(yb1))H\(g(o + k * bw * 0.4))V\(g(yb2))H\(g(o - k * bw * 0.6))z"
-                    for y in [yo1, yo2] { L += "M\(g(x - k * (y - YE) / slope)) \(g(y))H\(g(o))" }
-                    L += "M\(g(e)) \(g(yb(e)))L\(g(xf)) \(g(yb2))M\(g(e + k * 2.2)) \(g(yb(e) + 0.6))L\(g(xf + k * 2.2)) \(g(yb2 - 2.2))"
-                    L += "M\(g(xf)) \(g(yb2))H\(g(o - k * bw * 0.6))M\(g(xf + k * 2.2)) \(g(yb2 - 2.2))H\(g(o - k * bw * 0.6))"
-                }
-                G.wc = wc; G.yb1 = yb1; G.yb2 = yb2; G.bw = bw; G.fx = fx
-            } else {
-                for (x, k) in [(XL, 1.0), (XR, -1.0)] {
-                    let o = x - k * w / 2, i = x + k * w / 2
-                    Hd += "M\(g(o)) \(g(yb(o)))L\(g(i)) \(g(yb(i)))V\(g(yB0))H\(g(o))z"
-                    L += "M\(g(o)) \(g(yB0))H\(g(i + k * pj))V\(g(yB1))L\(g(i)) \(g(ys))V\(g(G0))M\(g(o)) \(g(yB0))V\(g(G0))"
-                    L += "M\(g(x - w / 2 - 9)) \(g(G0))H\(g(x - 3))l2 -4l2 8l2 -4H\(g(x + w / 2 + 9))"
-                }
-            }
-            // C purlins square to the rafter, at ระยะแป along the slope
-            var Pd = ""
-            let kk = max(3, Int((((half + overhang) / cos(ang * .pi / 180)) / Roof.purlinSpacing(v)).rounded()))
-            let px0 = eL + 0.12 * sc + fw, px1 = 380 - fw - 3
-            for q in 0...kk {
-                let xx = px0 + (px1 - px0) * Double(q) / Double(kk)
-                for (px, ux, uy, nx, ny) in [(xx, cs, -sn, -sn, -cs), (760 - xx, -cs, -sn, sn, -cs)] {
-                    let py = tp(px), bx = px + nx * hp, by = py + ny * hp
-                    Pd += "M\(g(bx + ux * fw)) \(g(by + uy * fw))L\(g(bx)) \(g(by))L\(g(px)) \(g(py))L\(g(px + ux * fw)) \(g(py + uy * fw))"
-                }
-            }
-            path(Hd, width: 1, fill: Self.concrete)
-            path(L, width: 1)
-            path(Pd, width: 1.5)
-            path("M372 \(g(YT - dv - sh2 + 5))L380 \(g(YT - dv - sh2 - 2))L388 \(g(YT - dv - sh2 + 5))", width: 1.6, color: Self.sheet)
-        } else {
-            chords += [[pt(XL, YE), pt(380, YT), pt(XR, YE)], [pt(XL, YB), pt(XR, YB)], [pt(XL, YB), pt(XL, YE)], [pt(XR, YB), pt(XR, YE)]]
-            cols += [[pt(XL, 150), pt(XL, G0)], [pt(XR, 150), pt(XR, G0)]]
-            let nodes = [XL] + pts + [XR]
-            switch f {
-            case .normal:
-                webs.append([pt(380, YB), pt(380, YT)])
-                let q1 = XL + HW * 0.5, q2 = XR - HW * 0.5
-                webs += [[pt(q1, YB), pt(q1 + HW * 0.22, topY(q1 + HW * 0.22))], [pt(q2, YB), pt(q2 - HW * 0.22, topY(q2 - HW * 0.22))]]
-            case .howe:
-                // verticals at every node; diagonals rise from the bottom chord toward the ridge
-                for x in pts { webs.append([pt(x, YB), pt(x, topY(x))]) }
-                for i in 0..<(nodes.count - 1) {
-                    let a = nodes[i], b = nodes[i + 1]
-                    webs.append(i < nH ? [pt(a, YB), pt(b, topY(b))] : [pt(a, topY(a)), pt(b, YB)])
-                }
-            case .warren:
-                for i in 0..<(nodes.count - 1) {
-                    let a = nodes[i], b = nodes[i + 1]
-                    webs.append(i % 2 == 0 ? [pt(a, YB), pt(b, topY(b))] : [pt(a, topY(a)), pt(b, YB)])
-                }
-                webs.append([pt(380, YB), pt(380, YT)])
-            default:
-                for x in pts { webs.append([pt(x, YB), pt(x, topY(x))]) }
-                for i in 1..<(nodes.count - 1) {
-                    let x = nodes[i]
-                    if x < 379 { webs.append([pt(x, topY(x)), pt(nodes[i + 1], YB)]) } else if x > 381 { webs.append([pt(nodes[i - 1], YB), pt(x, topY(x))]) }
-                }
-            }
+        // the spans and overhangs under it
+        let XL = P(Pt(0, 0)).x, XR = P(Pt(span, 0)).x, RX = P(Pt(half, 0)).x, oL = P(Pt(-o, 0)).x, oR = P(Pt(span + o, 0)).x
+        let y1 = floor + 14, y2 = floor + 36
+        func dim(_ a: Double, _ b: Double, _ c: Double, _ e: Double) { d.dim(.line(Pt(a, b), Pt(c, e), width: 0.8, color: Self.navy)) }
+        func tick(_ x: Double, _ y: Double) { dim(x - 4, y + 4, x + 4, y - 4) }
+        func text(_ t: String, _ x: Double, _ y: Double, _ size: Double = 11, bold: Bool = false, color: RGBA = Self.navy, align: TextAlign = .center) {
+            d.add(.text(t, at: Pt(x, y), size: size, bold: bold, color: color, align: align), nil)
         }
-        for w in webs { add(.polyline(w, width: 3.2, color: Self.dark), "SECTION") }
-        for w in webs { add(.polyline(w, width: 1.3, color: Self.webCore), nil) }
-        for c in chords { add(.polyline(c, width: 6, color: Self.dark), "SECTION") }
-        for c in chords { add(.polyline(c, width: 3.6, color: Self.core), nil) }
-        func gusset(_ x: Double, _ y: Double, _ r: Double) {
-            add(.polygon([pt(x - r, y), pt(x, y - r * 0.8), pt(x + r, y), pt(x, y + r * 0.8)], stroke: Self.dark, fill: .white, width: 0.9), "SECTION")
+        dim(XL - 6, y1, XR + 6, y1); dim(XL - 6, y2, XR + 6, y2)
+        for x in [XL, RX, XR] { tick(x, y1) }
+        for x in [XL, XR] { tick(x, y2) }
+        dim(RX, y1 - 8, RX, y1 + 4)
+        if !f.isRafter { for i in 1..<(2 * nH) where i != nH { let x = P(Pt(Double(i) * half / Double(nH), 0)).x; dim(x, y1 - 3, x, y1 + 3) } }
+        let ovT = String(format: "%.2f", o)
+        if o > 0.01 {
+            dim(oL - 6, y2, XL, y2); dim(XR, y2, oR + 6, y2)
+            tick(oL, y2); tick(oR, y2)
+            text("ชายคา " + ovT, (oL + XL) / 2, y2 + 11, 10); text(ovT, (XR + oR) / 2, y2 + 11, 10)
         }
-        if !isC && !isR {
-            for x in [XL, XR] { gusset(x, YB - 3, 7) }
-            for x in pts { gusset(x, YB, 4.5); gusset(x, topY(x), 4.5) }
-            gusset(380, YT + 2, 6)
-        }
-        if isR { for x in pts { gusset(x, topY(x), 3.5); gusset(x, topY(x) + heel, 3.5) } }
-
-        // corrugated sheet along the slope, with the ridge cap (the rafter frames draw theirs as outlines)
-        let eY = YE + ov * slope - rOff - (isC ? 7 : 0), rT = YT - rOff - (isC ? 7 : 0)
-        if !isC {
-            func wave(_ xa: Double, _ ya: Double, _ xb: Double, _ yb: Double) -> [Pt] {
-                let L = hypot(xb - xa, yb - ya), n = max(2, Int((L / 5).rounded())), ux = (xb - xa) / L, uy = (yb - ya) / L, nx = -uy, ny = ux
-                var p = [pt(xa, ya)]
-                for q in 1...n {
-                    let t = Double(q) / Double(n), a = q % 2 == 1 ? 1.6 : 0
-                    p.append(pt(xa + (xb - xa) * t + nx * -a, ya + (yb - ya) * t + ny * -a))
-                }
-                return p
-            }
-            add(.polyline(wave(XL - ov, eY, 380, rT) + wave(380, rT, XR + ov, eY).dropFirst(), width: 1.1, color: Self.sheet), "SECTION")
-            add(.polyline([pt(372, rT + 3), pt(380, rT - 3), pt(388, rT + 3)], width: 1.6, color: Self.sheet), "SECTION")
-            line(XL - ov, eY, XL - ov, eY + 15, 1.6, RGBA(hex: 0x111111)); line(XR + ov, eY, XR + ov, eY + 15, 1.6, RGBA(hex: 0x111111))
-            // purlins (C marks) at ระยะแป along the slope
-            let nP = max(3, Int((half / cos(ang * .pi / 180) / Roof.purlinSpacing(v)).rounded()))
-            for i in 1...nP {
-                for x in [XL + Double(i) * HW / (Double(nP) + 0.5), XR - Double(i) * HW / (Double(nP) + 0.5)] {
-                    let py = topY(x) - 5
-                    add(.polyline([pt(x + 3, py), pt(x - 3, py), pt(x - 3, py + 5), pt(x + 3, py + 5)], width: 1.4, color: Self.dark), "SECTION")
-                }
-            }
-        }
-        for c in cols { add(.polyline(c, width: 7, color: Self.dark), "SECTION") }
-        for c in cols { add(.polyline(c, width: 4.4, color: Self.core), nil) }
-        let colXs = isC ? [] : isR ? [XL, XR, XL + HW * 0.8, XR - HW * 0.8] : [XL, XR]
-        for x in colXs {
-            add(.rect(Box(x - 9, G0, 18, 3), stroke: nil, fill: Self.dark), "SECTION")
-            add(.polyline([pt(x - 12, 199 + dy), pt(x - 6, 196 + dy), pt(x - 2, 202 + dy), pt(x + 2, 196 + dy), pt(x + 8, 199 + dy)], width: 0.9, color: Self.dark), "SECTION")
-        }
-        for b in hatches { add(.hatch(b, color: RGBA(hex: 0x3A3F47), spacing: 5), nil); add(.rect(b, stroke: RGBA(hex: 0x111111), fill: nil, width: 1), "SECTION") }
-
-        // dimensions (in the design 192 is the ground; `dy` moves what hangs off it)
-        let oL = XL - ov, oR = XR + ov, cX = isK ? XR - 28 : XL - 22, cT = isC ? YE : YB
-        var dimOps: Set<Int> = []
-        func dim(_ a: Double, _ b: Double, _ c: Double, _ d: Double) { dimOps.insert(o.count); line(a, b, c, d, 0.8, Self.navy, "DIM") }
-        func tick(_ x: Double, _ y: Double) { dim(x, y, x + 8, y - 8) }
-        dim(XL - 6, 208 + dy, XR + 6, 208 + dy); dim(XL - 6, 230 + dy, XR + 6, 230 + dy)
-        tick(XL - 4, 212 + dy); tick(376, 212 + dy); tick(XR - 4, 212 + dy); tick(XL - 4, 234 + dy); tick(XR - 4, 234 + dy); dim(380, 200 + dy, 380, 212 + dy)
-        for x in pts { dim(x, 205 + dy, x, 211 + dy) }
-        dim(oL - 6, 230 + dy, XL, 230 + dy); dim(XR, 230 + dy, oR + 6, 230 + dy)
-        tick(oL - 4, 234 + dy); tick(oR - 4, 234 + dy); dim(oL, 222 + dy, oL, 238 + dy); dim(oR, 222 + dy, oR, 238 + dy)
-        dim(cX, cT - 6, cX, 199 + dy); tick(cX - 4, cT + 4); tick(cX - 4, 199 + dy)
-        if isK { dim(XR - 8, cT, cX - 4, cT); dim(XR - 8, 195 + dy, cX - 4, 195 + dy) } else { dim(cX - 4, cT, XL - 4, cT); dim(cX - 4, 195 + dy, XL - 10, 195 + dy) }
-        let ovT = String(format: "%.2f", overhang)
-        text("ชายคา " + ovT, oL - 8, 234 + dy, align: .right); text(ovT, oR + 8, 234 + dy)
-        text(isC ? "สูงถึงหัวเสา" : "สูงใต้ขื่อ", cX - 6, (cT + 195 + dy) / 2 - 3, align: .right)
-        text(String(format: "%.2f", clear), cX - 6, (cT + 195 + dy) / 2 + 11, bold: true, align: .right)
-        overhangLabel = Pt(oL - 40, 230 + dy); clearLabel = Pt(cX - 30, (cT + 195 + dy) / 2 + 2)
-        let halfT = isC ? String(format: "%.2f", half) : "\(nH) × " + String(format: "%.2f", half / Double(nH)) + " = " + String(format: "%.2f", half)
-        text(halfT, (XL + 380) / 2, 201 + dy, color: Self.blue, align: .center); text(halfT, (XR + 380) / 2, 201 + dy, color: Self.blue, align: .center)
-        text(fmt(span) + " (จากแปลน)", 380, 246 + dy, 13, bold: true, align: .center)
-        let RX = XR + 46
-        dim(RX, YT - 4, RX, YB + 4); dim(386, YT, RX + 4, YT)
-        tick(RX - 4, YT + 4); tick(RX - 4, YE + 4); if !isC { tick(RX - 4, 154) }
-        text("R " + String(format: "%.2f", rise), RX + 6, (YT + YE) / 2 + 4)
-        if !isC { text(String(format: "%.2f", heelM), RX + 6, (YE + YB) / 2 + 4) }
+        overhangLabel = Pt((oL + XL) / 2, y2 + 11)
+        let halfT = f.isRafter ? String(format: "%.2f", half) : "\(nH) × " + String(format: "%.2f", half / Double(nH)) + " = " + String(format: "%.2f", half)
+        text(halfT, (XL + RX) / 2, y1 - 7, color: Self.blue); text(halfT, (XR + RX) / 2, y1 - 7, color: Self.blue)
+        text(fmt(span) + " (จากแปลน)", RX, floor + 47, 13, bold: true)
         if trueScale {
-            // the same measures as dimensions; the extension lines start at the frame (or just under the ground)
             typealias D = SketchDXF.Dimension
-            let low = G0 + 6
-            dimensions += [D(Pt(XL, low), Pt(380, low), at: Pt(0, 208 + dy), text: halfT, size: 12),
-                           D(Pt(380, low), Pt(XR, low), at: Pt(0, 208 + dy), text: halfT, size: 12),
-                           D(Pt(XL, low), Pt(XR, low), at: Pt(0, 230 + dy), text: String(format: "%.2f", span) + " (จากแปลน)", size: 12)]
-            if ov > 0.5 {
-                dimensions += [D(Pt(oL, 222 + dy), Pt(XL, low), at: Pt(0, 230 + dy), text: "ชายคา " + ovT, size: 12),
-                               D(Pt(XR, low), Pt(oR, 222 + dy), at: Pt(0, 230 + dy), text: ovT, size: 12)]
+            let low = floor + 6
+            d.dimensions += [D(Pt(XL, low), Pt(RX, low), at: Pt(0, y1), text: halfT, size: 12),
+                             D(Pt(RX, low), Pt(XR, low), at: Pt(0, y1), text: halfT, size: 12),
+                             D(Pt(XL, low), Pt(XR, low), at: Pt(0, y2), text: String(format: "%.2f", span) + " (จากแปลน)", size: 12)]
+            if (XL - oL) > 0.5 {
+                d.dimensions += [D(Pt(oL, low), Pt(XL, low), at: Pt(0, y2), text: "ชายคา " + ovT, size: 12),
+                                 D(Pt(XR, low), Pt(oR, low), at: Pt(0, y2), text: ovT, size: 12)]
             }
-            let side = isK ? XR - 8 : XL - 4
-            dimensions.append(D(Pt(side, cT), Pt(side, G0), at: Pt(cX, 0), vertical: true,
-                                text: (isC ? "สูงถึงหัวเสา " : "สูงใต้ขื่อ ") + String(format: "%.2f", clear), size: 12))
-            dimensions.append(D(Pt(386, YT), Pt(XR + 4, YE), at: Pt(RX, 0), vertical: true, text: "R " + String(format: "%.2f", rise), size: 12))
-            if !isC && heelM > 0 { dimensions.append(D(Pt(XR + 4, YE), Pt(XR + 4, YB), at: Pt(RX, 0), vertical: true, text: String(format: "%.2f", heelM), size: 12)) }
-            dimensionOps = dimOps
         }
-        text(Roof.slopeText(v), XL + 44, YE - 4)
-        riseLabel = Pt(RX + 30, (YT + YE) / 2)
-        var arc: [Pt] = []
-        for s in 0...12 { let t = Double(s) / 12 * ang * .pi / 180; arc.append(pt(XL + 40 * cos(t), YE - 40 * sin(t))) }
-        add(.polyline(arc, width: 0.8, color: Self.navy), "DIM")
 
-        // callouts ①–⑦
-        var bubbles: [Int: Pt] = [:]
-        func call(_ n: Int, _ bx: Double, _ by: Double, _ tx: Double, _ ty: Double) {
-            let dx = tx - bx, dy = ty - by, L = max(hypot(dx, dy), 1), ux = dx / L, uy = dy / L, r = 9.0
-            let sx = bx + ux * r, sy = by + uy * r, ex = tx - ux, ey = ty - uy, al = 7.0, aw = 2.6
-            line(sx, sy, ex - ux * al, ey - uy * al, 1, Self.red, "CALLOUT")
-            add(.polygon([pt(ex, ey), pt(ex - ux * al - uy * aw, ey - uy * al + ux * aw), pt(ex - ux * al + uy * aw, ey - uy * al - ux * aw)],
-                         stroke: nil, fill: Self.red), "CALLOUT")
-            add(.circle(pt(bx, by), r: r, stroke: Self.red, fill: .white, width: 1.4), "CALLOUT")
-            add(.text(String(n), at: pt(bx, by), size: 12, bold: true, color: Self.red, align: .center), "CALLOUT")
-            bubbles[n] = pt(bx, by)
+        // the pitch at the left support
+        let heel = f.isRafter ? 0 : f.heel, c = P(Pt(0, base + heel))
+        d.add(.polyline((0...12).map { s in let t = Double(s) / 12 * ang * .pi / 180; return Pt(c.x + 40 * cos(t), c.y - 40 * sin(t)) },
+                        width: 0.8, color: Self.navy), "DIM")
+        text(Roof.slopeText(v), c.x + 46, c.y - 6, 11, align: .left)
+
+        // the level values the page makes tappable: the clear height and the ridge
+        let baseLevel = m.levels.firstIndex { abs($0.y - base) < 1e-6 }
+        if let i = baseLevel, i < d.levelValues.count { clearLabel = d.levelValues[i] }
+        if let last = d.levelValues.last { riseLabel = last }
+
+        if showCallouts { callouts = Self.callouts(m, into: &d, P, base: base, below: yBase, half: half, overhang: o) }
+        if let n = highlight, let c = callouts[n] {
+            d.add(.circle(c, r: 11, stroke: .white, fill: Self.red, width: 2), nil)
+            d.add(.text(String(n), at: c, size: 13, bold: true, color: .white, align: .center), nil)
         }
-        let x1 = XL + HW * 0.37, x2 = XR - HW * 0.33
-        if isC {
-            call(1, x1 - 20, 44, x1, topY(x1) - G.dv - G.hp * 0.6); call(2, x2 + 10, 44, x2, topY(x2) - G.dv / 2)
-            call(3, 430, 172, 430, G.yc + G.dc)
-            if isK {
-                let o = XL - G.wc / 2, xf = G.eL + G.fx, ye = topY(G.eL)
-                call(4, XL + 60, 196 + dy, o + G.bw * 0.4, (G.yb1 + G.yb2) / 2); call(5, G.eL + 8, 196 + dy, (xf + o) / 2, G.yb2)
-                call(6, G.eL - 26, 96, (G.eL + xf) / 2 - 1, (ye + G.yb2) / 2); call(7, XL + 96, 172, XL + G.wc / 2, (G.yb2 + G0) / 2)
-            } else {
-                call(4, XL + 44, 196 + dy, XL + G.w / 2 + G.pj - 2, G.yB1 - 1); call(6, G.eL - 22, 96, G.eL - 1.5, topY(G.eL) - G.dv / 2 + 2)
+        sketch = Sketch(width: Self.width, height: H, ops: d.ops)
+        tags = d.tags
+        if trueScale { dimensions = d.dimensions; dimensionOps = d.dimensionOps }
+        self.span = span; self.half = half; self.rise = rise; self.bays = nH; self.scale = k; self.ridgeX = RX; self.model = m
+    }
+
+    // MARK: the section in metres
+
+    /// C1's frame cut across the ridge, in metres (x from the left support, y up from the ground).
+    public static func structure(_ v: Values) -> StructureSection {
+        typealias S = StructureSection
+        let f = Roof.frame(v), B = Roof.span(v), h = B / 2, n = Roof.bays(v)
+        let ang = Roof.slope(v) * .pi / 180, tn = tan(ang), cs = cos(ang), sn = sin(ang)
+        let o = Roof.overhang(v), base = Roof.clearHeight(v), heel = f.isRafter ? 0 : f.heel, rise = h * tn
+        /// Row `r`'s size as entered (its default until then); nil for "-".
+        func size(_ r: Int) -> S.Size? {
+            let s = Roof.memberSize(v, r)
+            if s == "-" { return nil }
+            return S.Size.read(s.isEmpty ? f.members[r - 1].defaultSize : s)
+        }
+        var m = S()
+        let ridge = Roof.ridge(v)
+        let gB = ridge == .h ? Roof.gridName(.y, Roof.spans(v, .y).count) : Roof.gridName(.x, Roof.spans(v, .x).count)
+        m.grid = [(0, ridge == .h ? "A" : "1"), (B, gB)]
+        m.centreLine = h
+
+        /// Purlins at ระยะแป along the slope from 0.15 m off the ridge down to the eave tip, the sheet over them.
+        func roofing(_ topFace: (Double) -> Double) {
+            let p = size(1), step = Roof.purlinSpacing(v) * cs
+            if let p {
+                var x = h - 0.15
+                while x > -o + 0.06 {
+                    m.cuts.append(S.Cut(p.profile, at: Pt(x, topFace(x)), up: Pt(-sn, cs), opens: 1, row: 1))
+                    m.cuts.append(S.Cut(p.profile, at: Pt(B - x, topFace(B - x)), up: Pt(sn, cs), opens: -1, row: 1))
+                    x -= step
+                }
             }
-        } else if isR {
-            call(1, x1 - 20, 44, x1, topY(x1) - 5); call(2, x2 + 10, 44, x2, topY(x2))
-            let xa = XL + HW * 0.25, xi1 = XL + HW * 0.8, xq = pts[safe: max(0, Int(Double(pts.count) * 0.15))] ?? XL + 40
-            call(3, xa, 172, xa, topY(xa) + heel); call(4, xq + pw * sc * 0.5 + 30, 172, xq + pw * sc * 0.5, topY(xq + pw * sc * 0.5) + heel * 0.5)
-            call(5, xi1 + 42, 96, xi1 + 4, topY(xi1) + heel + 2); call(6, XL - 50, 96, XL - ov, eY + 7); call(7, xi1 - 34, 172, xi1, 165)
-        } else {
-            call(1, x1 - 20, 44, x1, topY(x1) - 5); call(2, x2 + 10, 44, x2, topY(x2))
-            let xv = pts[safe: max(0, Int(Double(pts.count) * 0.3))] ?? 300
-            call(3, XL + HW * 0.47, 172, XL + HW * 0.47, YB); call(4, xv + 10, 172, xv, (YB + topY(xv)) / 2)
-            call(5, xv + 46, 172, xv + pw * sc * 0.5, (YB + topY(xv + pw * sc * 0.5)) / 2 + 4); call(6, XL - 50, 96, XL - ov, eY + 7)
-            call(7, 420, 172, 380, (YB + YT) / 2 + 10)
+            let lift = (p?.profile.h ?? 0) + 0.01
+            m.sheet = [Pt(-o - sn * lift - 0.05 * cs, topFace(-o) + cs * lift - 0.05 * sn), Pt(h, topFace(h) + lift / cs),
+                       Pt(B + o + sn * lift + 0.05 * cs, topFace(B + o) + cs * lift - 0.05 * sn)]
+            m.ridge = m.sheet[1]
         }
-        // the chosen row's callout filled red
-        if let n = highlight, let c = bubbles[n] {
-            add(.circle(c, r: 11, stroke: .white, fill: Self.red, width: 2), nil)
-            add(.text(String(n), at: c, size: 13, bold: true, color: .white, align: .center), nil)
+        /// A fascia board standing at each eave tip, its top at the roof's top face.
+        func fascia(_ top: Double) {
+            guard let fz = size(6) else { return }
+            let t = max(0.02, fz.width), hh = max(0.1, fz.depth)
+            for x in [-o - t / 2, B + o + t / 2] { m.members.append(S.Member([Pt(x, top), Pt(x, top - hh)], depth: t, row: 6)) }
         }
-        sketch = Sketch(width: Self.width, height: Self.height + max(0, dy), ops: o)
-        tags = tg
-        callouts = bubbles
-        self.span = span; self.half = half; self.rise = rise; self.bays = nH; self.scale = sc
+        func pitched(_ line: (Double) -> Double) -> [Pt] { [Pt(-o, line(-o)), Pt(h, line(h)), Pt(B + o, line(B + o))] }
+
+        switch f {
+        case .rafterTie, .eaveCeiling:
+            // rafters seated on the post heads at the clear height, a tie between them, the eave beam cut at each head
+            let K = f == .eaveCeiling
+            let raf = size(2) ?? .c(0.15), tie = size(3) ?? .c(0.1)
+            let under: (Double) -> Double = { base + (h - abs($0 - h)) * tn }
+            let topFace: (Double) -> Double = { under($0) + raf.depth / cs }
+            let mid: (Double) -> Double = { under($0) + raf.depth / (2 * cs) }
+            let head = size(4) ?? .rc(0.2, 0.4), post = (K ? size(7) : nil) ?? .rc(0.2, 0.2)
+            let pw = post.material == .concrete ? post.width : post.depth
+            for (x, s) in [(0.0, 1.0), (B, -1.0)] {
+                m.posts.append(S.Post(x: x, width: pw, top: base - head.profile.h, row: K ? 7 : nil))
+                m.cuts.append(S.Cut(head.profile, at: Pt(x, base - head.profile.h), opens: s, row: 4))
+            }
+            let yc = base + (K ? 0.55 : 0.5) * rise, xt = (yc - base) / tn - raf.depth / (2 * cs * tn)
+            if !K, let cp = size(7) { m.members.append(S.Member([Pt(h, yc), Pt(h, mid(h))], depth: cp.depth, row: 7)) }
+            if !K, let st = size(5) {
+                m.members.append(S.Member([Pt(0.72 * h, mid(0.72 * h)), Pt(h, yc)], depth: st.depth, row: 5))
+                m.members.append(S.Member([Pt(h, yc), Pt(B - 0.72 * h, mid(B - 0.72 * h))], depth: st.depth, row: 5))
+            }
+            m.members.append(S.Member([Pt(xt, yc), Pt(B - xt, yc)], depth: tie.depth, row: 3))
+            if K && o > 0.25 {
+                // the boxed eave: a soffit under the beam out to a fascia raking up to the rafter's tip
+                let ys = base - head.profile.h, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
+                let ft = max(0.025, size(6)?.width ?? 0.025)
+                m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
+                m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))
+                m.members.append(S.Member([Pt(-o, under(-o)), Pt(-o + run, ys - sof.depth)], depth: ft, row: 6))
+                m.members.append(S.Member([Pt(B + o - run, ys - sof.depth), Pt(B + o, under(B + o))], depth: ft, row: 6))
+            } else {
+                fascia(topFace(-o))
+            }
+            m.members.append(S.Member(pitched(under), depth: raf.depth, face: .bottom, row: 2))
+            roofing(topFace)
+            m.levels = (K ? [S.Level(base - head.profile.h, head.material == .concrete ? "ระดับใต้คาน ค.ส.ล." : "ระดับใต้คานหัวเสา")] : [])
+                + [S.Level(base, "ระดับหัวเสา"), S.Level(topFace(h), "ระดับหลังจันทัน")]
+
+        case .rafterTruss:
+            // two tube chords a heel apart from eave to eave, a vertical and a diagonal in each panel, posts under the
+            // bottom chord: at the supports and, on a T2 along the ridge, at 0.8 of each half
+            let tc = size(2) ?? .tube(0.034), bc = size(3) ?? .tube(0.034), web = size(4) ?? .tube(0.034)
+            let topFace: (Double) -> Double = { base + heel + (h - abs($0 - h)) * tn }
+            let bottom: (Double) -> Double = { topFace($0) - heel }
+            func T(_ x: Double) -> Pt { Pt(x, topFace(x) - tc.depth / (2 * cs)) }
+            func Bt(_ x: Double) -> Pt { Pt(x, bottom(x) + bc.depth / (2 * cs)) }
+            let panel = h / Double(n), nodes = (0...(2 * n)).map { Double($0) * panel }
+            m.members.append(S.Member([Bt(0), T(0)], depth: web.depth, row: 4))
+            for i in 0..<(2 * n) {
+                let a = nodes[i], b = nodes[i + 1]
+                let up = abs(b - h) < 1e-9 || abs(a - h) < 1e-9 || (a < h) == (i % 2 == 0)
+                m.members.append(S.Member(up ? [Bt(a), T(b)] : [T(a), Bt(b)], depth: web.depth, row: 4))
+                m.members.append(S.Member([Bt(b), T(b)], depth: web.depth, row: 4))
+            }
+            m.members.append(S.Member(pitched(bottom), depth: bc.depth, face: .bottom, row: 3))
+            m.members.append(S.Member(pitched(topFace), depth: tc.depth, face: .top, row: 2))
+            let post = size(7) ?? .tube(0.1), pw = post.material == .concrete ? post.width : post.depth
+            for x in [0, B] { m.posts.append(S.Post(x: x, width: pw, top: base, row: 7)) }
+            let t2 = size(5)
+            for x in [0.8 * h, B - 0.8 * h] {
+                let d = t2?.profile.h ?? 0
+                if let t2 { m.cuts.append(S.Cut(t2.profile, at: Pt(x, bottom(x) - d), row: 5)) }
+                m.posts.append(S.Post(x: x, width: pw, top: bottom(x) - d, row: 7))
+            }
+            fascia(topFace(-o))
+            roofing(topFace)
+            m.levels = [S.Level(base, "ระดับหัวเสา"), S.Level(topFace(h), "ระดับสันหลังคา")]
+
+        default:
+            // a truss with a bottom chord on a concrete beam at each post head; the webs as the schedule counts them
+            let tc = size(2) ?? .c(0.15), bc = size(3) ?? .c(0.15), vt = size(4) ?? .c(0.075), dg = size(5) ?? .c(0.075)
+            let g = RoofTruss.Geometry(frame: f, span: B, bays: n, slope: Roof.slope(v), overhang: o)
+            let topFace: (Double) -> Double = { base + heel + (h - abs($0 - h)) * tn }
+            // a web's end on the bottom chord goes to that chord's centre line, one on the top chord to its
+            func Y(_ p: Pt) -> Pt { abs(p.y) < 1e-9 ? Pt(p.x, base + bc.depth / 2) : Pt(p.x, base + p.y - tc.depth / (2 * cs)) }
+            for s in g.verticals { m.members.append(S.Member([Y(s.a), Y(s.b)], depth: vt.depth, row: 4)) }
+            for s in g.diagonals { m.members.append(S.Member(s.a.x < s.b.x ? [Y(s.a), Y(s.b)] : [Y(s.b), Y(s.a)], depth: dg.depth, row: 5)) }
+            if let kp = g.kingPost, let ks = size(7) { m.members.append(S.Member([Y(kp.a), Y(kp.b)], depth: ks.depth, row: 7)) }
+            m.members.append(S.Member([Pt(0, base), Pt(B, base)], depth: bc.depth, face: .bottom, row: 3))
+            m.members.append(S.Member(pitched(topFace), depth: tc.depth, face: .top, row: 2))
+            let beam = S.Size.rc(0.2, 0.4)
+            for x in [0, B] {
+                m.posts.append(S.Post(x: x, width: 0.2, top: base - beam.profile.h))
+                m.cuts.append(S.Cut(beam.profile, at: Pt(x, base - beam.profile.h)))
+            }
+            fascia(topFace(-o))
+            roofing(topFace)
+            m.levels = [S.Level(base, "ระดับใต้ขื่อ"), S.Level(base + heel, "ระดับหัวโครงถัก"),
+                        S.Level(base + heel + rise, "ระดับสันหลังคา", chain: "R " + String(format: "%.2f", rise))]
+        }
+        return m
+    }
+
+    // MARK: callouts
+
+    /// The numbered member bubbles ①–⑦: one per row the section draws, on the member nearest a spot set for each row,
+    /// the roof's members (purlin, top chord, fascia) from a band over the roof and the rest from one under the frame.
+    static func callouts(_ m: StructureSection, into d: inout StructureSection.Drawn, _ P: (Pt) -> Pt, base: Double, below yBase: Double,
+                         half h: Double, overhang o: Double) -> [Int: Pt] {
+        let prefer: [Int: Double] = [1: 0.35 * h, 2: 1.4 * h, 3: 0.3 * h, 4: 0.3 * h, 5: 0.5 * h, 6: -o, 7: 1.6 * h]
+        var spots: [Int: [Pt]] = [:]
+        for mem in m.members {
+            guard let r = mem.row else { continue }
+            let vertical = abs(mem.path[0].x - mem.path[mem.path.count - 1].x) < 1e-6
+            spots[r, default: []].append(mem.path.count > 2 ? mem.centre(piece: 1, at: 0.55) : mem.centre(at: vertical ? 0.5 : 0.3))
+        }
+        for c in m.cuts { if let r = c.row { spots[r, default: []].append(c.centre) } }
+        for p in m.posts { if let r = p.row { spots[r, default: []].append(Pt(p.x, min(p.top - 0.25, base - 0.3))) } }
+        var upper: [(Int, Pt)] = [], lower: [(Int, Pt)] = []
+        for (r, pts) in spots {
+            let want = prefer[r] ?? h
+            guard let t = pts.min(by: { abs($0.x - want) < abs($1.x - want) }) else { continue }
+            if [1, 2, 6].contains(r) { upper.append((r, P(t))) } else { lower.append((r, P(t))) }
+        }
+        var bubbles: [Int: Pt] = [:]
+        func place(_ list: [(Int, Pt)], y: Double, lean: Double) {
+            var xs = list.sorted { $0.1.x < $1.1.x }.map { ($0.0, $0.1, $0.1.x + lean) }
+            for i in xs.indices {
+                xs[i].2 = max(xs[i].2, 16)
+                if i > 0 { xs[i].2 = max(xs[i].2, xs[i - 1].2 + 26) }
+            }
+            if let last = xs.last, last.2 > 588 { let shift = last.2 - 588; for i in xs.indices { xs[i].2 -= shift } }
+            for (r, t, x) in xs { bubbles[r] = Pt(x, y); call(r, Pt(x, y), t) }
+        }
+        func call(_ n: Int, _ b: Pt, _ t: Pt) {
+            let dx = t.x - b.x, dy = t.y - b.y, l = max(hypot(dx, dy), 1), ux = dx / l, uy = dy / l, r = 9.0, al = 7.0, aw = 2.6
+            let e = Pt(t.x - ux, t.y - uy)
+            d.add(.line(Pt(b.x + ux * r, b.y + uy * r), Pt(e.x - ux * al, e.y - uy * al), width: 1, color: red), "CALLOUT")
+            d.add(.polygon([e, Pt(e.x - ux * al - uy * aw, e.y - uy * al + ux * aw), Pt(e.x - ux * al + uy * aw, e.y - uy * al - ux * aw)],
+                           stroke: nil, fill: red), "CALLOUT")
+            d.add(.circle(b, r: r, stroke: red, fill: .white, width: 1.4), "CALLOUT")
+            d.add(.text(String(n), at: b, size: 12, bold: true, color: red, align: .center), "CALLOUT")
+        }
+        place(upper, y: 40, lean: -22)
+        place(lower, y: min(yBase + 28, cut - 12), lean: 18)
+        return bubbles
     }
 }
 

@@ -450,7 +450,8 @@ final class RoofTests: XCTestCase {
         let plain = RoofSection(v)
         XCTAssertEqual(RoofSection(v, highlight: 3).sketch.ops.count, plain.sketch.ops.count + 2)
         XCTAssertEqual(plain.tags.count, plain.sketch.ops.count)
-        XCTAssertEqual(plain.scale, min(540 / 16, 118 / (8 * tan(15 * .pi / 180) + 0.5)), accuracy: 1e-9)
+        // fitted across the page's frame area: 16 m plus the overhangs in 560 pt
+        XCTAssertEqual(plain.scale, 560 / (plain.model.extent.maxX - plain.model.extent.minX + 0.2), accuracy: 1e-9)
         // wider purlin spacing, fewer purlin marks
         Roof.setPurlinSpacing(&v, 1.5)
         XCTAssertLessThan(RoofSection(v).sketch.ops.count, plain.sketch.ops.count)

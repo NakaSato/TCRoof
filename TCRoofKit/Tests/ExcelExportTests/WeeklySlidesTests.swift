@@ -11,8 +11,8 @@ final class WeeklySlidesTests: XCTestCase {
     /// A small real JPEG (the IEC form's PWA logo, 220 × 222).
     func jpeg() throws -> Data { try XCTUnwrap(ZipArchive(IECExcel.template()).data("xl/media/image1.jpeg")) }
 
-    /// MP 189's plan; the week of 8 มี.ค. 2569 (Sunday) with reports on Monday (signed, no photos), Tuesday (signed, the
-    /// photos, a problem) and Wednesday (not signed), as of Saturday.
+    /// MP 189's plan; the week of 9–15 มี.ค. 2569 (Monday to Sunday) with reports on Monday (signed, no photos), Tuesday
+    /// (signed, the photos, a problem) and Wednesday (not signed), as of Saturday.
     func input(photos: [WeeklySlides.DayPhoto], wedSigned: Bool = false) -> WeeklySlides.Input {
         let plan = MasterSchedule.Input(installStart: day(2026, 2, 22), installEnd: day(2026, 4, 8), kickoff: day(2026, 1, 5),
                                         engineeringStart: day(2026, 1, 5), siteHandover: day(2026, 1, 12), over200kVA: false)
@@ -57,12 +57,12 @@ final class WeeklySlidesTests: XCTestCase {
         }
         // the order: cover, AGENDA, progress, the day table, the photo slides, weather, problems
         XCTAssertTrue(s[0].contains("Weekly Report") && s[0].contains("สถานีผลิตน้ำทุ่งน้อย"))
-        XCTAssertTrue(s[0].contains("ประจำวันที่ 8 มีนาคม 2569 ถึงวันที่ 14 มีนาคม 2569"))
+        XCTAssertTrue(s[0].contains("ประจำวันที่ 9 มีนาคม 2569 ถึงวันที่ 15 มีนาคม 2569"), "Monday to Sunday")
         XCTAssertTrue(s[1].contains("AGENDA") && s[1].contains("CONSTRUCTION PROGRESS") && s[1].contains("Weather Report"))
         XCTAssertTrue(s[2].contains("ความก้าวหน้าของงาน") && s[2].contains("% WORK PROGRESS"))
         XCTAssertTrue(s[3].contains("การดำเนินงาน") && s[3].contains("-ติดตั้งโครงสร้าง | โซน A"), "done work starts with -")
-        XCTAssertTrue(s[3].contains("สถานีผลิตน้ำทุ่งน้อย ดำเนินงาน 8–14 มีนาคม 2569"))
-        XCTAssertTrue(s[2].contains("ช่วงระหว่างวันที่ 8 มีนาคม 2569 ถึง วันที่ 14 มีนาคม 2569"))
+        XCTAssertTrue(s[3].contains("สถานีผลิตน้ำทุ่งน้อย ดำเนินงาน 9–15 มีนาคม 2569"))
+        XCTAssertTrue(s[2].contains("ช่วงระหว่างวันที่ 9 มีนาคม 2569 ถึง วันที่ 15 มีนาคม 2569"))
         XCTAssertTrue((4...6).allSatisfy { s[$0].contains("PROGRESS FOR THIS WEEK") })
         XCTAssertTrue(s[7].contains("2.Weather Report") && s[7].contains("ฝนตก") && s[7].contains("แจ่มใส"))
         XCTAssertTrue(s[7].contains(">MON<") && s[7].contains(">SUN<"))
@@ -96,12 +96,13 @@ final class WeeklySlidesTests: XCTestCase {
         let c = WeeklySlides.content(input(photos: []))
         XCTAssertEqual(c.waiting, ["พ 11/3", "พฤ 12/3", "ศ 13/3", "ส 14/3"], "unsigned, then working days with no report")
         XCTAssertEqual(c.rows.count, 7)
-        XCTAssertEqual(c.rows[0].state, .off, "Sunday")
-        XCTAssertEqual(c.rows[1].state, .done)
-        XCTAssertEqual(c.rows[3].state, .waiting)
-        XCTAssertEqual(c.rows[3].lines, ["รอเซ็นรายงานประจำวัน พ 11/3"])
+        XCTAssertEqual(c.rows[0].state, .done, "Monday first")
+        XCTAssertEqual(c.rows[2].state, .waiting)
+        XCTAssertEqual(c.rows[2].lines, ["รอเซ็นรายงานประจำวัน พ 11/3"])
         // Thursday to Saturday have no report: working days already past, so they wait too
-        XCTAssertEqual(c.rows[4].lines, ["ยังไม่มีรายงานประจำวัน พฤ 12/3"])
+        XCTAssertEqual(c.rows[3].lines, ["ยังไม่มีรายงานประจำวัน พฤ 12/3"])
+        XCTAssertEqual(c.rows[6].state, .off, "Sunday last")
+        XCTAssertEqual(c.weather.map(\.name), ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"])
         let o = WeeklySlides.outline(input(photos: []))
         XCTAssertEqual(o.map(\.label), ["ปก", "AGENDA", "ความก้าวหน้า", "งานรายวัน", "ภาพหน้างาน", "Weather Report", "ปัญหาและอุปสรรค"])
         XCTAssertEqual(o.map(\.number), Array(1...7))
@@ -118,7 +119,7 @@ final class WeeklySlidesTests: XCTestCase {
         let o = WeeklySlides.outline(i)
         XCTAssertTrue(o.allSatisfy(\.ready), o.filter { !$0.ready }.map(\.label).joined(separator: ", "))
         // Thursday onwards is still ahead
-        XCTAssertEqual(WeeklySlides.content(i).rows[4].state, .ahead)
+        XCTAssertEqual(WeeklySlides.content(i).rows[3].state, .ahead)
     }
 
     /// The week's photos day by day, two a slide, at most twenty.
@@ -153,15 +154,24 @@ final class WeeklySlidesTests: XCTestCase {
     }
 
     /// The customer's deck: text in TH SarabunPSK at its point sizes (band title 36 pt, cover title 54 pt, the day table in
-    /// TH Sarabun New at 16 pt with an 18 pt header and 1 pt borders), the cover's lines in its grey.
+    /// TH Sarabun New at 16 pt with an 18 pt header and 1 pt borders), the cover's lines in black.
     func testTheCustomersFontsAndSizes() throws {
         let s = try slides(ZipArchive(WeeklySlides.export(input(photos: []), images: [:])))
         XCTAssertTrue(s[0].contains("typeface=\"TH SarabunPSK\""))
         XCTAssertTrue(s[0].contains("sz=\"5400\" b=\"1\""), "Weekly Report 54 pt bold")
-        XCTAssertTrue(s[0].contains("6E747A"), "the cover's grey")
+        XCTAssertFalse(s[0].contains("6E747A"), "the cover's lines in black")
+        XCTAssertTrue(s[0].contains("val=\"000000\"/></a:solidFill><a:latin typeface=\"TH SarabunPSK\"/><a:ea typeface=\"TH SarabunPSK\"/><a:cs typeface=\"TH SarabunPSK\"/></a:rPr><a:t>โครงการ"), "the project line in black")
         XCTAssertTrue(s[2].contains("sz=\"3600\""), "the band title")
         XCTAssertTrue(s[3].contains("typeface=\"TH Sarabun New\"") && s[3].contains("sz=\"1600\"") && s[3].contains("sz=\"1800\""))
         XCTAssertTrue(s[3].contains("w=\"12700\""), "1 pt borders")
+    }
+
+    /// Monday to Sunday, numbered by ISO week; a Sunday belongs to the week before.
+    func testTheWeek() {
+        XCTAssertEqual(WeeklySlides.week(of: day(2026, 3, 11)), day(2026, 3, 9)...day(2026, 3, 15))
+        XCTAssertEqual(WeeklySlides.week(of: day(2026, 3, 15)), day(2026, 3, 9)...day(2026, 3, 15))
+        XCTAssertEqual(WeeklySlides.week(of: day(2026, 3, 16)).lowerBound, day(2026, 3, 16))
+        XCTAssertEqual(WeeklySlides.weekNumber(day(2025, 6, 30)), 27, "the customer's deck: 30 มิ.ย. 2568 is week 27")
     }
 
     func testFileName() {

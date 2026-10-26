@@ -238,7 +238,7 @@ enum RoutineReportFiles {
     /// The week's slides' input (`WeeklySlides`): the daily reports with their photos and whether our engineer signed
     /// them, the MP plan and next week's request; with the photos' bytes by id.
     static func slidesInput(_ job: Job, week: Date) -> (input: WeeklySlides.Input, images: [UUID: Data]) {
-        let ws = MasterSchedule.weekStart(week), range = RoutineReport.week(of: ws), cal = RoutineReport.calendar
+        let range = WeeklySlides.week(of: week), ws = range.lowerBound, cal = RoutineReport.calendar
         let st = job.reportStation
         // only the week's reports: the deck shows no other day, so no other photo is read
         var images: [UUID: Data] = [:]
@@ -261,7 +261,7 @@ enum RoutineReportFiles {
     /// The week's slides' input without the photos' bytes (each photo a placeholder), for `WeeklySlides.outline`: the
     /// rail and the iPhone's strip need only how many there are.
     static func outlineInput(_ job: Job, week: Date) -> WeeklySlides.Input {
-        let ws = MasterSchedule.weekStart(week), range = RoutineReport.week(of: ws), cal = RoutineReport.calendar
+        let range = WeeklySlides.week(of: week), ws = range.lowerBound, cal = RoutineReport.calendar
         let days = job.dailyLogs.filter { range.contains(cal.startOfDay(for: $0.date)) }.compactMap { log -> WeeklySlides.Day? in
             guard let r = log.report else { return nil }
             let photos = log.sortedPhotos.map { _ in WeeklySlides.DayPhoto(id: UUID(), width: 0, height: 0, caption: "") }

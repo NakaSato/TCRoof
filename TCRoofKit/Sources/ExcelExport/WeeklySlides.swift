@@ -106,8 +106,8 @@ public enum WeeklySlides {
             if let seal = templatePicture("logo-pea-seal") { s.picture(1608, 28, 228, 214, data: seal, descr: "ตราการไฟฟ้าส่วนภูมิภาค") }
             s.text(160, 283, 1600, 146, ["Weekly Report"], size: 75.6, bold: true, color: Tpl.title, align: "ctr", anchor: "ctr")
             // one paragraph that wraps, as the customer's cover
-            s.text(170, 486, 1580, 305, [(content.project + [content.station]).joined(separator: " ")], size: 56, bold: true, color: Tpl.coverInk, align: "ctr", anchor: "ctr")
-            s.text(99, 887, 1700, 102, [content.range], size: 50.4, bold: true, color: Tpl.coverInk, align: "ctr", anchor: "ctr")
+            s.text(170, 486, 1580, 305, [(content.project + [content.station]).joined(separator: " ")], size: 56, bold: true, color: Tpl.ink, align: "ctr", anchor: "ctr")
+            s.text(99, 887, 1700, 102, [content.range], size: 50.4, bold: true, color: Tpl.ink, align: "ctr", anchor: "ctr")
         }
 
         /// Every slide but the cover: the band with its yellow title and the template's mark at its left.

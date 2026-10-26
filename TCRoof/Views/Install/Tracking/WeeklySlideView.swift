@@ -72,8 +72,8 @@ struct WeeklySlideView: View {
             at(0, 80, 1920, 110, Tpl.band)
             if let seal = picture("logo-pea-seal") { at(1608, 28, 228, 214, seal.resizable().scaledToFit()) }
             text("Weekly Report", 160, 283, 1600, 146, size: 75.6, bold: true, color: Tpl.title, align: .center)
-            text((data.project + [data.station]).joined(separator: "\n"), 170, 486, 1580, 305, size: 53.2, bold: true, color: Tpl.coverInk, align: .center)
-            text(data.range, 99, 887, 1700, 102, size: 50.4, bold: true, color: Tpl.coverInk, align: .center)
+            text((data.project + [data.station]).joined(separator: " "), 170, 486, 1580, 305, size: 53.2, bold: true, color: Tpl.ink, align: .center)
+            text(data.range, 99, 887, 1700, 102, size: 50.4, bold: true, color: Tpl.ink, align: .center)
         }
     }
 

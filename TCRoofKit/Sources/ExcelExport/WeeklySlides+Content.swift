@@ -108,7 +108,7 @@ extension WeeklySlides {
 
     public struct Content: Sendable {
         public var weekStart: Date
-        /// `WEEKNUM` of the week (Sunday first), the template's `สัปดาห์ที่`.
+        /// The ISO number of the week (Monday to Sunday), the template's `สัปดาห์ที่`.
         public var weekNumber: Int
         /// The cover's project lines and `สถานีผลิตน้ำ…`.
         public var project: [String]
@@ -185,11 +185,11 @@ extension WeeklySlides {
     /// nil takes every photo.
     public static func content(_ input: Input, images: [UUID: Data]? = nil) -> Content {
         let cal = RoutineReport.calendar
-        let range = RoutineReport.week(of: input.week), start = range.lowerBound
+        let range = week(of: input.week), start = range.lowerBound
         let days = input.days.filter { range.contains(cal.startOfDay(for: $0.report.date)) }.sorted { $0.report.date < $1.report.date }
         let reports = days.map(\.report)
         let today = cal.startOfDay(for: input.asOf)
-        let weekNumber = MasterSchedule.calendar.component(.weekOfYear, from: start)
+        let weekNumber = WeeklySlides.weekNumber(start)
 
         // slide 3: the plan's cumulative percent at the end of each of the last six weeks
         var bars: [Bar] = [], planned: Double?, actual: Double?
@@ -199,7 +199,7 @@ extension WeeklySlides {
                 let w = cal.date(byAdding: .day, value: -7 * k, to: start)!
                 let end = min(cal.date(byAdding: .day, value: 6, to: w)!, max(today, w))
                 let st = MasterSchedule.status(plan: plan, actual: s.actual, through: end)
-                bars.append(Bar(label: "W\(MasterSchedule.calendar.component(.weekOfYear, from: w))", planned: st.planned,
+                bars.append(Bar(label: "W\(WeeklySlides.weekNumber(w))", planned: st.planned,
                                 actual: st.actual, current: k == 0))
             }
             planned = bars.last?.planned; actual = bars.last?.actual
@@ -270,6 +270,21 @@ extension WeeklySlides {
                        photoCount: perDay.reduce(0) { $0 + $1.count }, weather: weather,
                        problems: all.map(\.description), fixes: all.map(\.solution).filter { !$0.isEmpty },
                        waiting: waiting, reportCount: reports.count)
+    }
+
+    /// The Weekly Report's week, Monday to Sunday as the customer's deck (the R3 PDF and the MP plan count weeks from
+    /// Sunday).
+    public static func week(of date: Date) -> ClosedRange<Date> {
+        let cal = RoutineReport.calendar, d = cal.startOfDay(for: date)
+        let monday = cal.date(byAdding: .day, value: -((cal.component(.weekday, from: d) + 5) % 7), to: d)!
+        return monday...cal.date(byAdding: .day, value: 6, to: monday)!
+    }
+
+    /// The ISO week number of a Monday-to-Sunday week (`สัปดาห์ที่`, `W40`).
+    public static func weekNumber(_ d: Date) -> Int {
+        var iso = Calendar(identifier: .iso8601)
+        iso.timeZone = RoutineReport.calendar.timeZone
+        return iso.component(.weekOfYear, from: d)
     }
 
     /// `28 กันยายน 2569`.

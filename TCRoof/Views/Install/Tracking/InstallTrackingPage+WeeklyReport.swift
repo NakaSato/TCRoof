@@ -736,16 +736,17 @@ private struct FlowRow: Layout {
 
 extension InstallTrackingPage {
     /// The board's example week (docs/ui/install-tracking-ipad-weekly-report/assets/sample-data.json) around today:
-    /// Monday to Saturday reported, Friday not signed unless `allSigned`, six drawn photos; nothing is saved.
+    /// Monday to Saturday reported (the week runs Monday to Sunday), Friday not signed unless `allSigned`, six drawn
+    /// photos; nothing is saved.
     static func demoReport(week: Date, allSigned: Bool) -> (input: WeeklySlides.Input, images: [UUID: Data]) {
-        let cal = RoutineReport.calendar, start = MasterSchedule.weekStart(week)
+        let cal = RoutineReport.calendar, start = WeeklySlides.week(of: week).lowerBound
         let work = [["ติดตั้งแผงหลังคา A–B"], ["เดินสายสตริง 1–6", "เข้าหัว MC4"], ["ติดตั้งตู้ DC combiner", "เดินสายสตริง 7–12"],
                     ["ติดป้ายเตือน"], ["เทฐานอินเวอร์เตอร์"], ["ติดตั้ง Walkway"]]
         let sky: [RoutineReport.Weather] = [.fine, .fine, .cloudy, .cloudy, .rain, .rain]
         let pictures = [("แผงหลังคา A", 0), ("สายสตริง 1–6", 1), ("ตู้ DC", 2), ("สายสตริง 7–12", 2), ("ฐานอินเวอร์เตอร์", 4), ("ภาพรวมหลังคา", 5)]
         var images: [UUID: Data] = [:], days: [WeeklySlides.Day] = [], all: [RoutineReport.Daily] = []
         for i in 0..<6 {
-            let date = cal.date(byAdding: .day, value: i + 1, to: start)!
+            let date = cal.date(byAdding: .day, value: i, to: start)!
             var r = RoutineReport.Daily(date: date)
             r.progress = work[i].enumerated().map { k, t in .init(task: .structure, description: t, location: "", percent: Double(10 * (i + 1) + k)) }
             for h in r.weather.indices { r.weather[h] = sky[i] }

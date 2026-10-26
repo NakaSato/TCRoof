@@ -215,7 +215,8 @@ extension InstallTrackingPage {
     var reportWeekRange: ClosedRange<Date> {
         let cal = RoutineReport.calendar
         let anchor = cal.date(byAdding: .day, value: 7 * reportWeek, to: .now) ?? .now
-        return RoutineReport.week(of: anchor)
+        // Weekly Report weeks run Monday to Sunday, as the customer's deck
+        return WeeklySlides.week(of: anchor)
     }
 
     func phoneWeeklyTab() -> some View {

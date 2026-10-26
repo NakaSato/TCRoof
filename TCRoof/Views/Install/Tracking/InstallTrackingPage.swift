@@ -508,8 +508,8 @@ struct InstallTrackingPage: View {
         static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
         /// `-installReportWeek 0|1|2`: the week being reported or one of the two before.
         static let reportWeek = -UserDefaults.standard.integer(forKey: "installReportWeek")
-        /// `-installReportSlide 1…8`.
-        static let reportSlide = max(0, min(7, UserDefaults.standard.integer(forKey: "installReportSlide") - 1))
+        /// `-installReportSlide n`: the deck's nth slide.
+        static let reportSlide = max(0, UserDefaults.standard.integer(forKey: "installReportSlide") - 1)
         /// `-installReportState ready|menu|pptx|sent`.
         static let reportState = UserDefaults.standard.string(forKey: "installReportState")
         /// iPhone: `-installTab request|weekly|iec|docs|settings` too, `-installSettings team|routine|connection` and

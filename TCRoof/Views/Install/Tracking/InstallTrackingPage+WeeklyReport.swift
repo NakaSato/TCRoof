@@ -353,7 +353,7 @@ extension InstallTrackingPage {
         weeklyCard(padding: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("สไลด์ \(WeeklySlides.Kind.allCases.count) หน้า").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("สไลด์ \(c.outline.count) หน้า").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                     Text("แม่แบบ Weekly Report Template").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 8)
@@ -376,7 +376,7 @@ extension InstallTrackingPage {
         let on = reportSlide == o.number - 1, frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
         return Button { reportSlide = o.number - 1 } label: {
             VStack(alignment: .leading, spacing: 5) {
-                WeeklySlideView(kind: o.kind, data: c, photos: reportPhotos)
+                WeeklySlideView(slide: o, data: c, photos: reportPhotos)
                     .drawingGroup()
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.borderSubtle))
@@ -425,7 +425,7 @@ extension InstallTrackingPage {
                 Rectangle().fill(Theme.hairline).frame(height: 1)
                 VStack(spacing: 18) {
                     Spacer(minLength: 0)
-                    WeeklySlideView(kind: o.kind, data: c, photos: reportPhotos)
+                    WeeklySlideView(slide: o, data: c, photos: reportPhotos)
                         .background(Theme.paper)
                         .shadow(color: Theme.navySolid.opacity(0.14), radius: 6, y: 2)
                     HStack(spacing: 8) {
@@ -620,7 +620,7 @@ extension InstallTrackingPage {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Weekly Report สัปดาห์ที่ \(no).pptx").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
-                    Text("8 สไลด์ · 16:9 · ใช้แม่แบบ \"Weekly Report Template\" · ข้อมูลจากรายงานประจำวัน แผน MP และรูปที่เลือก")
+                    Text("\(c?.outline.count ?? 0) สไลด์ · 16:9 · ใช้แม่แบบ \"Weekly Report Template\" · ข้อมูลจากรายงานประจำวัน แผน MP และรูปที่เลือก")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 8)
@@ -639,7 +639,7 @@ extension InstallTrackingPage {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 26), GridItem(.flexible(), spacing: 26)], spacing: 20) {
                         ForEach(c.outline, id: \.number) { o in
                             VStack(alignment: .leading, spacing: 8) {
-                                WeeklySlideView(kind: o.kind, data: c, photos: reportPhotos)
+                                WeeklySlideView(slide: o, data: c, photos: reportPhotos)
                                     .background(Theme.paper)
                                     .shadow(color: Theme.navySolid.opacity(0.12), radius: 4, y: 1)
                                 (Text("\(o.number)").bold() + Text(" · " + o.label)).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)

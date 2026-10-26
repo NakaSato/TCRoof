@@ -81,21 +81,21 @@ public enum WeeklySlides {
         let images: [UUID: Data]
 
         func slides() -> [Slide] {
-            Kind.allCases.map { k -> Slide in
+            content.outline.map { o -> Slide in
                 var s = Slide()
+                let k = o.kind
                 if k == .cover { cover(&s) } else { frame(&s, k) }
                 switch k {
                 case .cover: break
                 case .agenda: agenda(&s)
                 case .progress: progress(&s)
                 case .daily: daily(&s)
-                case .photos1: photos(&s, page: 0)
-                case .photos2: photos(&s, page: 1)
+                case .photos: photos(&s, page: o.page)
                 case .weather: weather(&s)
                 case .problems: problems(&s)
                 }
                 // the page number, bottom right
-                s.text(1386, 1003, 432, 58, ["\(k.rawValue)"], size: 12.6, color: Tpl.pageInk, align: "r")
+                s.text(1386, 1003, 432, 58, ["\(o.number)"], size: 12.6, color: Tpl.pageInk, align: "r")
                 return s
             }
         }
@@ -156,13 +156,14 @@ public enum WeeklySlides {
             s.text(1366, 443, 478, 286, ["% WORK PROGRESS", "PLAN : \(Self.pct(content.planned ?? 0)) %",
                                          "ACTUAL : \(Self.pct(content.actual ?? 0)) %", "STATUS : \(content.status ?? "0") %"],
                    size: 39.2, color: Tpl.white, fill: Tpl.boxGrey, inset: 28)
-            s.text(308, 948, 812, 58, [content.asOf], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "dash")
+            s.text(554, 960, 812, 58, [content.period], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "sysDash")
         }
 
         static func pct(_ x: Double) -> String { String(Int(x.rounded())) }
 
         func daily(_ s: inout Slide) {
-            s.text(116, 160, 1688, 50, [content.station], size: 28, bold: true)
+            // the customer's line under the band: the station and the week's dates
+            s.text(109, 141, 1499, 69, [content.tableLine], size: 33.6, bold: true, color: Tpl.coverInk, anchor: "ctr")
             var rows: [[String]] = [["ลำดับ", "สัปดาห์ที่", "วันที่", "การดำเนินงาน"]]
             var fills: [[String?]] = [Array(repeating: Tpl.band, count: 4)]
             var inks: [[String?]] = [Array(repeating: Tpl.white, count: 4)]
@@ -178,31 +179,32 @@ public enum WeeklySlides {
                     aligns: ["ctr", "ctr", "ctr", "l"], border: Tpl.tableLine, italicRows: italics)
         }
 
+        /// Two photos side by side, each over its dashed caption (work and date); a last single photo centred.
         func photos(_ s: inout Slide, page: Int) {
-            s.text(50, 168, 1200, 68, ["PROGRESS FOR THIS WEEK"], size: 39.2)
-            let list = content.photos(page: page), w = (1732 - 44) / 3.0
-            for i in 0..<3 {
-                let x = 94 + Double(i) * (w + 22)
-                s.rect(x, 300, w, 520, fill: Tpl.photoBack)
-                guard list.indices.contains(i) else { continue }
-                let p = list[i]
-                if let bytes = images[p.id] { s.picture(x, 300, w, 520, data: bytes, descr: p.caption) }
-                s.text(x, 840, w, 58, [p.caption], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "dash")
+            s.text(69, 165, 1200, 82, ["PROGRESS FOR THIS WEEK"], size: 39.2)
+            let list = content.photos(page: page)
+            for (i, p) in list.enumerated() {
+                let x = list.count == 1 ? 504.0 : 40 + Double(i) * 936
+                s.rect(x, 274, 911, 576, fill: Tpl.photoBack)
+                if let bytes = images[p.id] { s.picture(x, 274, 911, 576, data: bytes, descr: p.caption) }
+                s.text(x, 886, 911, 58, [p.caption], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "sysDash")
             }
+            if list.isEmpty { s.text(40, 540, 1840, 60, ["ไม่มีรูปในรายงานประจำวัน"], size: 33.6, color: Tpl.pageInk, align: "ctr") }
         }
 
+        /// The customer's weather grid: a blue strip of day names, the icon, the words and the date, a column a day.
         func weather(_ s: inout Slide) {
-            let w = 1298 / 7.0
-            s.rect(356, 236, 1298, 110, gradient: [Tpl.wxTop, Tpl.wxMid, Tpl.white], line: Tpl.wxLine, lineWidth: 2)
+            let w = 1320 / 7.0
+            s.rect(353, 239, 1320, 110, gradient: [Tpl.white, Tpl.wxTop], line: Tpl.wxLine, lineWidth: 2)
             for (i, d) in content.weather.enumerated() {
-                let x = 356 + Double(i) * w
-                s.text(x, 246, w, 100, [d.name], size: 25.2, color: d.colour, align: "ctr", anchor: "ctr")
-                s.rect(x, 364, w, 244, fill: Tpl.wxIcon, line: Tpl.wxIconLine, lineWidth: 3)
+                let x = 357 + Double(i) * w
+                s.text(x, 258, w, 82, [d.name], size: 39.2, bold: true, color: d.colour, align: "ctr", anchor: "ctr")
+                s.rect(x, 367, w, 241, fill: Tpl.wxIcon, line: Tpl.wxIconLine, lineWidth: 3)
                 if let icon = d.icon, let png = templatePicture(icon.rawValue) {
-                    s.picture(x + (w - 150) / 2, 411, 150, 150, data: png, descr: d.text)
+                    s.picture(x + (w - 150) / 2, 412, 150, 150, data: png, descr: d.text)
                 }
-                s.text(x, 605, w, 220, [d.text], size: 33.6, align: "ctr", anchor: "ctr", gradient: [Tpl.wxTextTop, Tpl.wxTextBottom], line: Tpl.ink, lineWidth: 3)
-                s.text(x, 825, w, 110, [d.date], size: 36, color: Tpl.dateInk, align: "ctr", anchor: "ctr", gradient: [Tpl.dateTop, Tpl.dateBottom], line: Tpl.ink, lineWidth: 3)
+                s.text(x, 608, w, 215, [d.text], size: 33.6, align: "ctr", anchor: "ctr", gradient: [Tpl.wxTextTop, Tpl.wxTextBottom], line: Tpl.ink, lineWidth: 3)
+                s.text(x, 823, w, 108, [d.date], size: 44.8, color: Tpl.dateInk, align: "ctr", anchor: "ctr", gradient: [Tpl.dateTop, Tpl.dateBottom], line: Tpl.ink, lineWidth: 3)
             }
         }
 
@@ -226,7 +228,7 @@ public enum WeeklySlides {
         static let dots = "C0C0C0", dot = "A6A6A6"
         static let chartBack = "FAFBFD", chartLine = "D0D7E2", planBar = "BFC9D9", actualBar = "8FAADC", axis = "333333", boxGrey = "808080"
         static let tableLine = "1F4E79", waitFill = "FFF3E6", waitInk = "C55A11", photoBack = "F2F4F7"
-        static let wxTop = "2E75C0", wxMid = "DCE6F4", wxLine = "2F5597", wxIcon = "5B9BD5", wxIconLine = "002060"
+        static let wxTop = "0070C0", wxMid = "DCE6F4", wxLine = "2F5597", wxIcon = "5B9BD5", wxIconLine = "002060"
         static let wxTextTop = "D9E2F3", wxTextBottom = "A9C7EA", dateInk = "FFC000", dateTop = "1F4E79", dateBottom = "002060"
     }
 

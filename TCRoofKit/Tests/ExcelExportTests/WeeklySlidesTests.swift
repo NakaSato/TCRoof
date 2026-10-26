@@ -38,14 +38,15 @@ final class WeeklySlidesTests: XCTestCase {
         return try (1...max(count, 1)).map { try XCTUnwrap(zip.string("ppt/slides/slide\($0).xml"), "slide \($0)") }
     }
 
-    func testEightSlidesInTheTemplatesOrder() throws {
+    /// Cover, AGENDA, progress, the day table, a photo slide per two photos, weather and problems.
+    func testTheSlidesInTheCustomersOrder() throws {
         let photos = (0..<5).map { WeeklySlides.DayPhoto(id: UUID(), width: 220, height: 222, caption: "รูป \($0)") }
         let bytes = try jpeg()
         let zip = try ZipArchive(WeeklySlides.export(input(photos: photos), images: Dictionary(uniqueKeysWithValues: photos.map { ($0.id, bytes) })))
         let s = try slides(zip)
-        XCTAssertEqual(s.count, 8)
+        XCTAssertEqual(s.count, 4 + 3 + 2, "five photos: three photo slides")
         let types = try XCTUnwrap(zip.string("[Content_Types].xml")), rels = try XCTUnwrap(zip.string("ppt/_rels/presentation.xml.rels"))
-        for n in 1...8 {
+        for n in 1...s.count {
             XCTAssertTrue(types.contains("/ppt/slides/slide\(n).xml"))
             XCTAssertTrue(rels.contains("Target=\"slides/slide\(n).xml\""))
             // every picture a slide names is in the package
@@ -54,20 +55,24 @@ final class WeeklySlidesTests: XCTestCase {
                 XCTAssertNotNil(zip.data("ppt/media/" + part.prefix { $0 != "\"" }), "slide \(n)")
             }
         }
-        // the order: cover, AGENDA, progress, the day table, photos 1/2, 2/2, weather, problems
+        // the order: cover, AGENDA, progress, the day table, the photo slides, weather, problems
         XCTAssertTrue(s[0].contains("Weekly Report") && s[0].contains("สถานีผลิตน้ำทุ่งน้อย"))
         XCTAssertTrue(s[0].contains("ประจำวันที่ 8 มีนาคม 2569 ถึงวันที่ 14 มีนาคม 2569"))
         XCTAssertTrue(s[1].contains("AGENDA") && s[1].contains("CONSTRUCTION PROGRESS") && s[1].contains("Weather Report"))
         XCTAssertTrue(s[2].contains("ความก้าวหน้าของงาน") && s[2].contains("% WORK PROGRESS"))
-        XCTAssertTrue(s[3].contains("การดำเนินงาน") && s[3].contains("ติดตั้งโครงสร้าง | โซน A"))
-        XCTAssertTrue(s[4].contains("PROGRESS FOR THIS WEEK") && s[5].contains("PROGRESS FOR THIS WEEK"))
-        XCTAssertTrue(s[6].contains("2.Weather Report") && s[6].contains("ฝนตก") && s[6].contains("ท้องฟ้าโปร่ง"))
-        XCTAssertTrue(s[7].contains("ปัญหาและอุปสรรคระหว่างปฏิบัติงาน") && s[7].contains("แนวทางแก้ไข"))
-        XCTAssertTrue(s[7].contains("ฝนตก &lt;บ่าย&gt; &amp; ลมแรง"), "text is escaped")
-        XCTAssertTrue(s[7].contains("เลื่อนเป็นช่วงเช้า"))
-        // photos 1–3 on slide 5, 4–5 on slide 6
-        XCTAssertTrue(s[4].contains("รูป 0 (10/3)") && s[4].contains("รูป 2 (10/3)") && !s[4].contains("รูป 3"))
-        XCTAssertTrue(s[5].contains("รูป 3 (10/3)") && s[5].contains("รูป 4 (10/3)"))
+        XCTAssertTrue(s[3].contains("การดำเนินงาน") && s[3].contains("-ติดตั้งโครงสร้าง | โซน A"), "done work starts with -")
+        XCTAssertTrue(s[3].contains("สถานีผลิตน้ำทุ่งน้อย ดำเนินงาน 8–14 มีนาคม 2569"))
+        XCTAssertTrue(s[2].contains("ช่วงระหว่างวันที่ 8 มีนาคม 2569 ถึง วันที่ 14 มีนาคม 2569"))
+        XCTAssertTrue((4...6).allSatisfy { s[$0].contains("PROGRESS FOR THIS WEEK") })
+        XCTAssertTrue(s[7].contains("2.Weather Report") && s[7].contains("ฝนตก") && s[7].contains("แจ่มใส"))
+        XCTAssertTrue(s[7].contains(">MON<") && s[7].contains(">SUN<"))
+        XCTAssertTrue(s[8].contains("ปัญหาและอุปสรรคระหว่างปฏิบัติงาน") && s[8].contains("แนวทางแก้ไข"))
+        XCTAssertTrue(s[8].contains("ฝนตก &lt;บ่าย&gt; &amp; ลมแรง"), "text is escaped")
+        XCTAssertTrue(s[8].contains("เลื่อนเป็นช่วงเช้า"))
+        // two photos a slide, captioned with the work and the date
+        XCTAssertTrue(s[4].contains("รูป 0 10/03/2569") && s[4].contains("รูป 1 10/03/2569") && !s[4].contains("รูป 2"))
+        XCTAssertTrue(s[6].contains("รูป 4 10/03/2569"))
+        XCTAssertEqual(s[6].components(separatedBy: "<p:pic>").count - 1, 1, "the last slide's single photo")
     }
 
     /// The template's pictures are in the package: the seal on the cover, AGENDA's three markers, the weather icons used.
@@ -83,9 +88,10 @@ final class WeeklySlidesTests: XCTestCase {
         XCTAssertTrue(media.contains(try XCTUnwrap(WeeklySlides.templatePicture("weather-thunderstorm"))))
         XCTAssertEqual(try slides(zip)[0].components(separatedBy: "<p:pic>").count - 1, 1, "the seal")
         XCTAssertEqual(try slides(zip)[1].components(separatedBy: "<p:pic>").count - 1, 3, "the three markers")
+        XCTAssertEqual(try slides(zip).count, 7, "no photos: one empty photo slide")
     }
 
-    /// An unsigned working day waits: its row on slide 4, and slides 4, 7 and 8 in the outline.
+    /// An unsigned working day waits: its row in the day table, and the day table, weather and problems in the outline.
     func testAWaitingDay() throws {
         let c = WeeklySlides.content(input(photos: []))
         XCTAssertEqual(c.waiting, ["พ 11/3", "พฤ 12/3", "ศ 13/3", "ส 14/3"], "unsigned, then working days with no report")
@@ -97,14 +103,15 @@ final class WeeklySlidesTests: XCTestCase {
         // Thursday to Saturday have no report: working days already past, so they wait too
         XCTAssertEqual(c.rows[4].lines, ["ยังไม่มีรายงานประจำวัน พฤ 12/3"])
         let o = WeeklySlides.outline(input(photos: []))
-        XCTAssertEqual(o.map(\.label), ["ปก", "AGENDA", "ความก้าวหน้า", "งานรายวัน", "ภาพหน้างาน 1/2", "ภาพหน้างาน 2/2", "Weather Report", "ปัญหาและอุปสรรค"])
-        XCTAssertEqual(o.filter { !$0.ready }.map(\.number), [4, 5, 6, 7, 8], "no photos either")
+        XCTAssertEqual(o.map(\.label), ["ปก", "AGENDA", "ความก้าวหน้า", "งานรายวัน", "ภาพหน้างาน", "Weather Report", "ปัญหาและอุปสรรค"])
+        XCTAssertEqual(o.map(\.number), Array(1...7))
+        XCTAssertEqual(o.filter { !$0.ready }.map(\.number), [4, 5, 6, 7], "no photos either")
         let zip = try ZipArchive(WeeklySlides.export(input(photos: []), images: [:]))
         XCTAssertTrue(try slides(zip)[3].contains("รอเซ็นรายงานประจำวัน พ 11/3"))
         XCTAssertTrue(try slides(zip)[3].contains("i=\"1\""), "the waiting row in italic")
     }
 
-    /// A week whose working days are all signed: slides 4, 7 and 8 are ready.
+    /// A week whose working days are all signed: every slide is ready.
     func testEverySignedDayIsReady() {
         var i = input(photos: [WeeklySlides.DayPhoto(id: UUID(), width: 1, height: 1, caption: "")], wedSigned: true)
         i.asOf = day(2026, 3, 11)
@@ -114,16 +121,20 @@ final class WeeklySlidesTests: XCTestCase {
         XCTAssertEqual(WeeklySlides.content(i).rows[4].state, .ahead)
     }
 
-    /// Six photos at most, spread over the days: each day's first, then each day's second.
-    func testPhotosSpreadOverTheDays() {
+    /// The week's photos day by day, two a slide, at most twenty.
+    func testPhotosTwoASlide() {
         var i = input(photos: [])
-        let p = (0..<4).map { n in (0..<3).map { k in WeeklySlides.DayPhoto(id: UUID(), width: 1, height: 1, caption: "d\(n)p\(k)") } }
+        let p = (0..<3).map { n in (0..<9).map { k in WeeklySlides.DayPhoto(id: UUID(), width: 1, height: 1, caption: "d\(n)p\(k)") } }
         i.days = i.days.indices.map { d in WeeklySlides.Day(report: i.days[d].report, photos: p[d], signed: true) }
         let c = WeeklySlides.content(i)
-        XCTAssertEqual(c.photos.map { String($0.caption.prefix(4)) }, ["d0p0", "d1p0", "d2p0", "d0p1", "d1p1", "d2p1"])
-        XCTAssertEqual(c.photos(page: 0).count, 3)
-        XCTAssertEqual(c.photos(page: 1).count, 3)
-        XCTAssertEqual(c.photoCount, 9)
+        XCTAssertEqual(c.photos.count, WeeklySlides.maxPhotos)
+        XCTAssertEqual(c.photos.prefix(3).map { String($0.caption.prefix(4)) }, ["d0p0", "d0p1", "d0p2"], "day by day")
+        XCTAssertEqual(c.photoPages, 10)
+        XCTAssertEqual(c.photos(page: 9).count, 2)
+        XCTAssertEqual(c.photoCount, 27)
+        let o = c.outline
+        XCTAssertEqual(o.filter { $0.kind == .photos }.map(\.label).first, "ภาพหน้างาน 1/10")
+        XCTAssertEqual(o.last?.number, 4 + 10 + 2)
     }
 
     /// Six weeks of plan and actual, the current one last, and the % box.

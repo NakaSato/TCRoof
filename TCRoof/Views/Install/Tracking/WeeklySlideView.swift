@@ -8,7 +8,8 @@ import ExcelExport
 /// given. The rail, the viewer and the .pptx sheet show it. The colours are the template's (a document, like the PDF),
 /// not the app's `Theme`.
 struct WeeklySlideView: View {
-    let kind: WeeklySlides.Kind
+    /// The slide: its kind, number and (a photo slide) page.
+    let slide: WeeklySlides.Outline
     let data: WeeklySlides.Content
     /// The week's photos by id.
     var photos: [UUID: UIImage] = [:]
@@ -18,7 +19,7 @@ struct WeeklySlideView: View {
     var body: some View {
         GeometryReader { g in
             let k = g.size.width / Self.size.width
-            slide
+            canvas
                 .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
                 .scaleEffect(k, anchor: .topLeading)
                 .frame(width: g.size.width, height: g.size.height, alignment: .topLeading)
@@ -26,10 +27,12 @@ struct WeeklySlideView: View {
         .aspectRatio(16 / 9, contentMode: .fit)
         .clipped()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("สไลด์ \(kind.rawValue) \(kind.label)")
+        .accessibilityLabel("สไลด์ \(slide.number) \(slide.label)")
     }
 
-    private var slide: some View {
+    private var kind: WeeklySlides.Kind { slide.kind }
+
+    private var canvas: some View {
         ZStack(alignment: .topLeading) {
             Tpl.paper
             if kind == .cover { cover } else { frame }
@@ -38,12 +41,11 @@ struct WeeklySlideView: View {
             case .agenda: agenda
             case .progress: progress
             case .daily: daily
-            case .photos1: photoRow(0)
-            case .photos2: photoRow(1)
+            case .photos: photoRow(slide.page)
             case .weather: weather
             case .problems: problems
             }
-            text("\(kind.rawValue)", 1386, 1003, 432, 58, size: 12.6, color: Tpl.pageInk, align: .trailing)
+            text("\(slide.number)", 1386, 1003, 432, 58, size: 12.6, color: Tpl.pageInk, align: .trailing)
         }
     }
 
@@ -114,8 +116,8 @@ struct WeeklySlideView: View {
             at(1366, 443, 478, 286, Tpl.boxGrey)
             text(["% WORK PROGRESS", "PLAN : \(Self.pct(data.planned)) %", "ACTUAL : \(Self.pct(data.actual)) %",
                   "STATUS : \(data.status ?? "0") %"].joined(separator: "\n"), 1394, 443, 450, 286, size: 39.2, color: Tpl.paper)
-            at(308, 948, 812, 58, Rectangle().strokeBorder(Tpl.ink, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
-            text(data.asOf, 308, 948, 812, 58, size: 25.2, align: .center)
+            at(554, 960, 812, 58, Rectangle().strokeBorder(Tpl.ink, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+            text(data.period, 554, 960, 812, 58, size: 25.2, align: .center)
         }
     }
 
@@ -142,7 +144,7 @@ struct WeeklySlideView: View {
     private var daily: some View {
         let widths: [CGFloat] = [95, 126, 186, 1281]
         return ZStack(alignment: .topLeading) {
-            text(data.station, 116, 160, 1688, 50, size: 28, bold: true)
+            text(data.tableLine, 109, 141, 1499, 69, size: 33.6, bold: true, color: Tpl.coverInk)
             VStack(spacing: 0) {
                 tableRow(["ลำดับ", "สัปดาห์ที่", "วันที่", "การดำเนินงาน"], widths: widths, height: 50, header: true, waiting: false)
                 ForEach(data.rows, id: \.number) { r in
@@ -177,39 +179,39 @@ struct WeeklySlideView: View {
         }
     }
 
+    /// Two photos side by side over their dashed captions; a last single photo centred.
     private func photoRow(_ page: Int) -> some View {
-        let list = data.photos(page: page), w: CGFloat = (1732 - 44) / 3
+        let list = data.photos(page: page)
         return ZStack(alignment: .topLeading) {
-            text("PROGRESS FOR THIS WEEK", 50, 168, 1200, 68, size: 39.2)
-            ForEach(0..<3, id: \.self) { i in
-                let x = 94 + CGFloat(i) * (w + 22)
-                at(x, 300, w, 520, Tpl.photoBack)
-                if list.indices.contains(i) {
-                    let p = list[i]
-                    if let img = photos[p.id] { at(x, 300, w, 520, Image(uiImage: img).resizable().scaledToFit()) }
-                    at(x, 840, w, 58, Rectangle().strokeBorder(Tpl.ink, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
-                    text(p.caption, x, 840, w, 58, size: 25.2, align: .center)
-                }
+            text("PROGRESS FOR THIS WEEK", 69, 165, 1200, 82, size: 39.2)
+            ForEach(Array(list.enumerated()), id: \.offset) { i, p in
+                let x: CGFloat = list.count == 1 ? 504 : 40 + CGFloat(i) * 936
+                at(x, 274, 911, 576, Tpl.photoBack)
+                if let img = photos[p.id] { at(x, 274, 911, 576, Image(uiImage: img).resizable().scaledToFit()) }
+                at(x, 886, 911, 58, Rectangle().strokeBorder(Tpl.ink, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+                text(p.caption, x, 886, 911, 58, size: 25.2, align: .center)
             }
+            if list.isEmpty { text("ไม่มีรูปในรายงานประจำวัน", 40, 540, 1840, 60, size: 33.6, color: Tpl.pageInk, align: .center) }
         }
     }
 
+    /// The customer's weather grid: a blue strip of day names, the icon, the words and the date, a column a day.
     private var weather: some View {
-        let w: CGFloat = 1298 / 7
+        let w: CGFloat = 1320 / 7
         return ZStack(alignment: .topLeading) {
-            at(356, 236, 1298, 110, LinearGradient(colors: [Tpl.wxTop, Tpl.wxMid, Tpl.paper], startPoint: .top, endPoint: .bottom)
+            at(353, 239, 1320, 110, LinearGradient(colors: [Tpl.paper, Tpl.wxTop], startPoint: .top, endPoint: .bottom)
                 .overlay(Rectangle().strokeBorder(Tpl.wxLine, lineWidth: 2)))
             ForEach(Array(data.weather.enumerated()), id: \.offset) { i, d in
-                let x = 356 + CGFloat(i) * w
-                text(d.name, x, 246, w, 100, size: 25.2, color: Tpl.color(d.colour), align: .center)
-                at(x, 364, w, 244, Rectangle().fill(Tpl.wxIcon).overlay(Rectangle().strokeBorder(Tpl.wxIconLine, lineWidth: 3)))
-                if let icon = d.icon, let img = picture(icon.rawValue) { at(x + (w - 150) / 2, 411, 150, 150, img.resizable().scaledToFit()) }
-                at(x, 605, w, 220, LinearGradient(colors: [Tpl.wxTextTop, Tpl.wxTextBottom], startPoint: .topLeading, endPoint: .bottomTrailing)
+                let x = 357 + CGFloat(i) * w
+                text(d.name, x, 258, w, 82, size: 39.2, bold: true, color: Tpl.color(d.colour), align: .center)
+                at(x, 367, w, 241, Rectangle().fill(Tpl.wxIcon).overlay(Rectangle().strokeBorder(Tpl.wxIconLine, lineWidth: 3)))
+                if let icon = d.icon, let img = picture(icon.rawValue) { at(x + (w - 150) / 2, 412, 150, 150, img.resizable().scaledToFit()) }
+                at(x, 608, w, 215, LinearGradient(colors: [Tpl.wxTextTop, Tpl.wxTextBottom], startPoint: .top, endPoint: .bottom)
                     .overlay(Rectangle().strokeBorder(Tpl.ink, lineWidth: 3)))
-                text(d.text, x, 605, w, 220, size: 33.6, align: .center)
-                at(x, 825, w, 110, LinearGradient(colors: [Tpl.dateTop, Tpl.dateBottom], startPoint: .top, endPoint: .bottom)
+                text(d.text, x, 608, w, 215, size: 33.6, align: .center)
+                at(x, 823, w, 108, LinearGradient(colors: [Tpl.dateTop, Tpl.dateBottom], startPoint: .top, endPoint: .bottom)
                     .overlay(Rectangle().strokeBorder(Tpl.ink, lineWidth: 3)))
-                text(d.date, x, 825, w, 110, size: 36, color: Tpl.dateInk, align: .center)
+                text(d.date, x, 823, w, 108, size: 44.8, color: Tpl.dateInk, align: .center)
             }
         }
     }
@@ -251,7 +253,7 @@ private enum Tpl {
     static let chartBack = color("FAFBFD"), chartLine = color("D0D7E2"), planBar = color("BFC9D9"), actualBar = color("8FAADC")
     static let axis = color("333333"), boxGrey = color("808080")
     static let tableLine = color("1F4E79"), waitFill = color("FFF3E6"), waitInk = color("C55A11"), photoBack = color("F2F4F7")
-    static let wxTop = color("2E75C0"), wxMid = color("DCE6F4"), wxLine = color("2F5597"), wxIcon = color("5B9BD5"), wxIconLine = color("002060")
+    static let wxTop = color("0070C0"), wxMid = color("DCE6F4"), wxLine = color("2F5597"), wxIcon = color("5B9BD5"), wxIconLine = color("002060")
     static let wxTextTop = color("D9E2F3"), wxTextBottom = color("A9C7EA"), dateInk = color("FFC000"), dateTop = color("1F4E79"), dateBottom = color("002060")
 
     /// The template's pictures, decoded once.

@@ -39,7 +39,7 @@ final class InstallWeeklyReportUITests: XCTestCase {
         XCTAssertTrue(tile.waitForExistence(timeout: 10))
         XCTAssertEqual(tile.value as? String, "รอข้อมูล")
         tile.tap()
-        XCTAssertTrue(app.staticTexts["สไลด์ 4/8 · งานรายวัน"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@", "สไลด์ 4/", "งานรายวัน")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", "รอข้อมูล")).firstMatch.exists)
         let fix = app.buttons.matching(NSPredicate(format: "label == %@", "ไปแก้")).firstMatch
         XCTAssertTrue(fix.exists)

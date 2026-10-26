@@ -338,7 +338,7 @@ struct RoutineSettingsSheet: View {
                         }
                     }
                 } footer: {
-                    Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน")
+                    Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน | " + Self.publicHolidaysNote)
                 }
                 inspections
                 ListEditor(title: "ตำแหน่งงาน (กำลังคน)", placeholder: "เพิ่มตำแหน่ง", items: $s.roles)
@@ -358,6 +358,12 @@ struct RoutineSettingsSheet: View {
 }
 
 extension RoutineSettingsSheet {
+    /// Public holidays count as days off already (`PublicHolidays`); the station's own list is for anything else.
+    static var publicHolidaysNote: String {
+        guard let end = PublicHolidays.coveredUntil.flatMap(ISODate.date) else { return "เพิ่มวันหยุดของหน้างานเอง" }
+        return "วันหยุดราชการนับเป็นวันหยุดให้แล้วถึง \(ThaiFormat.numericDate.string(from: end)) เพิ่มเฉพาะวันหยุดของหน้างานเอง"
+    }
+
     /// Which locations each task's % is averaged over for the MP; a task left empty uses the places it was reported at.
     var taskLocations: some View {
         PadSection("ตำแหน่งของแต่ละงาน (คิด % ให้แผน MP)") {

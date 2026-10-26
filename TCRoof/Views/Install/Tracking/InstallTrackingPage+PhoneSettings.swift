@@ -227,7 +227,7 @@ extension InstallTrackingPage {
         let s = job.routineSettings
         func clock(_ m: Int) -> String { String(format: "%02d.%02d", m / 60, m % 60) }
         return VStack(alignment: .leading, spacing: 14) {
-            section("รอบรายงาน", footer: "รายงานประจำวันส่งก่อนเลิกงาน | คำขอรายสัปดาห์ส่งก่อนเริ่มสัปดาห์") {
+            section("รอบรายงาน", footer: "รายงานประจำวันส่งก่อนเลิกงาน | คำขอรายสัปดาห์ส่งก่อนเริ่มสัปดาห์ | " + RoutineSettingsSheet.publicHolidaysNote) {
                 valueRow("วันทำงาน", weekdaysSummary, first: true)
                 valueRow("เวลาทำงาน", clock(s.workStart) + " – " + clock(s.workEnd))
                 valueRow("วันหยุดเพิ่ม", s.holidays.isEmpty ? "ไม่มี" : "\(s.holidays.count) วัน")

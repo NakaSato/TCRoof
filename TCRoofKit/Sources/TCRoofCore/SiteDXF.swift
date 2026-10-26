@@ -62,7 +62,11 @@ public enum SiteDXF {
         }
         add(SiteMarks.ops(v.marks(ModuleMarks.key), in: box), symbol)
         let cs = W * 0.08
-        add(Drawings.compass(v.choice("north"), size: cs).translated(W - cs * 1.1, cs * 0.1), north)
+        // the team's north arrow where `Drawings.compass` sits (its circle centred at 43, 45 of 86, radius 24)
+        let cc = Pt(W - cs * 1.1 + 43 * cs / 86, cs * 0.1 + 45 * cs / 86)
+        if !NorthArrow.place(&dxf, at: (cc.x * k, (H - cc.y) * k), north: NorthArrow.turn(siteNorth: v.choice("north")), radius: 24 * cs / 86 * k) {
+            add(Drawings.compass(v.choice("north"), size: cs).translated(W - cs * 1.1, cs * 0.1), north)
+        }
 
         // title under the frame, sized to the drawing
         let th = W * k * 0.012, docNo = job.docNo.isEmpty ? "-" : job.docNo, site = job.projectName.isEmpty ? "-" : job.projectName

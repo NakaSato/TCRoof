@@ -35,20 +35,4 @@ extension RoofDXF {
         dxf.text(L, (o.0, bottom - h * 3), height: h * 0.8, s.note)
         return bottom - h * 3.5
     }
-
-    /// A drawing of points (`RoofTruss.details`) placed `width` metres wide with its top-left corner at `o`: words on
-    /// G-ANNO-TEXT at their own sizes, everything else on the section layer; its white background left out.
-    static func details(_ dxf: inout SketchDXF, _ d: Sketch, at o: (Double, Double), width: Double, text h: Double) {
-        let k = width / d.width
-        let keep = dxf.options.fixedTextHeight
-        dxf.options.fixedTextHeight = nil
-        dxf.add(d.ops, layer: { _, op in
-            switch op {
-            case .text, .textBox, .runs: return CADLayers.text
-            case let .rect(_, nil, f, _) where f == .white: return nil
-            default: return CADLayers.roofSection
-            }
-        }, transform: { p in (o.0 + p.x * k, o.1 - p.y * k) }, pointsPerMetre: 1 / k)
-        dxf.options.fixedTextHeight = keep
-    }
 }

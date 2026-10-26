@@ -92,7 +92,9 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(lines(mm.data).contains("19000"))
         XCTAssertTrue(lines(m.data).contains("19"))
         let pv = RoofDXF.build(roof(), parts: [.pv])
-        XCTAssertEqual(pv.layers.first, "P-MODL-N")
+        // the layout alone has its own grid and outline
+        XCTAssertTrue(pv.layers.contains("P-MODL-N"))
+        XCTAssertTrue(pv.layers.contains("G-GRID") && pv.layers.contains("S-ROOF-OTLN-E"))
         XCTAssertTrue(pv.layers.contains("P-RAIL-N"))
         XCTAssertTrue(pv.layers.contains("P-FOOT-N"))
     }
@@ -132,11 +134,16 @@ final class RoofDXFTests: XCTestCase {
         for name in letters { XCTAssertTrue(bubbles.contains(name), name) }
         let tags = texts("G-ANNO-TEXT")
         for r in refs.compactMap({ $0 }) { XCTAssertTrue(tags.contains(r), r) }
-        // the title sits under every bubble
-        let circles = raw.filter { $0.first?.1 == "CIRCLE" && SketchDXFTests().value($0, "8") == "G-GRID" }
-        let lowest = circles.map { SketchDXFTests().double($0, "20") - SketchDXFTests().double($0, "40") }.min() ?? 0
-        let title = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (SketchDXFTests().value($0, "1") ?? "").contains("Pratt") })
-        XCTAssertLessThan(SketchDXFTests().double(title, "20") + 0.42, lowest)
+        // the layout is its own drawing under the structure plan's title, and its title sits under every one of its bubbles
+        let t = SketchDXFTests(), named = { (s: String) in String(data: RoofDXF.tis620(s), encoding: .isoLatin1)! }
+        let structure = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (t.value($0, "1") ?? "").contains("Pratt") })
+        let layout = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (t.value($0, "1") ?? "").hasPrefix(named("แปลนจัดวางแผง")) })
+        let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("TC_PV_MODULE") }
+        XCTAssertFalse(modules.isEmpty)
+        XCTAssertTrue(modules.allSatisfy { t.double($0, "20") < t.double(structure, "20") - 2 }, "no module over the structure plan")
+        let circles = raw.filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-GRID" && t.double($0, "20") < t.double(structure, "20") }
+        let lowest = circles.map { t.double($0, "20") - t.double($0, "40") }.min() ?? 0
+        XCTAssertLessThan(t.double(layout, "20") + 0.42, lowest)
     }
 
     /// Rails up the slope (รางตัดแป): portrait modules packed up the slope with only the module gap between rows, and

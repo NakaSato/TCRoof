@@ -253,12 +253,35 @@ public struct RoofSection: Sendable {
                 m.posts.append(S.Post(x: x, width: 0.2, top: base - bh))
                 m.cuts.append(S.Cut(beam.profile, at: Pt(x, base - bh)))
             }
+            // the posts the plan has under the beam between the supports, on the frame line A-A looks at
+            for x in innerPosts(v) where x > 0.3 && x < B - 0.3 { m.posts.append(S.Post(x: x, width: 0.2, top: base - bh)) }
             fascia(topFace(-o))
             roofing(topFace)
             m.levels = [S.Level(base, "ระดับใต้ขื่อ"), S.Level(base + heel, "ระดับหัวโครงถัก"),
                         S.Level(base + heel + rise, "ระดับสันหลังคา", chain: "R " + String(format: "%.2f", rise))]
         }
         return m
+    }
+
+    /// The posts on the plan's frame line nearest section A-A (cut at 0.42 of the roof's length, as the plan draws its
+    /// mark), between the grid lines next to the eaves (the supports'), as metres across the span.
+    static func innerPosts(_ v: Values) -> [Double] {
+        let r = Roof.ridge(v)
+        let along = r == .h ? Roof.spans(v, .x) : Roof.spans(v, .y), across = r == .h ? Roof.spans(v, .y) : Roof.spans(v, .x)
+        let run = along.reduce(0, +)
+        guard run > 0, across.count >= 4 else { return [] }
+        var at = 0.0, line = 0, gap = Double.infinity
+        for i in 0...along.count {
+            if abs(at - 0.42 * run) < gap { gap = abs(at - 0.42 * run); line = i }
+            if i < along.count { at += along[i] }
+        }
+        let posts = Roof.posts(v)
+        var xs: [Double] = [], x = 0.0
+        for ic in 0...across.count {
+            if ic >= 2 && ic <= across.count - 2 && posts.contains(r == .h ? "\(line),\(ic)" : "\(ic),\(line)") { xs.append(x) }
+            if ic < across.count { x += across[ic] }
+        }
+        return xs
     }
 
     // MARK: callouts

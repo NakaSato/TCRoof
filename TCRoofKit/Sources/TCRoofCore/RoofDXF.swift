@@ -23,6 +23,8 @@ public enum RoofDXF {
         "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable, "LEVEL": CADLayers.dim,
     ]
     static func layer(_ key: String) -> SketchDXF.Layer { standard[key] ?? CADLayers.text }
+    /// Every dimension's text height (m), the team's 0.16.
+    public static let dimText = 0.16
     /// The plan's path keys (`RoofPlan.tags`) → layers.
     static let planLayers: [String: String] = ["grid": "GRID", "bub": "GRID", "out": "OUTLINE", "ridge": "RIDGE", "tbd": "TRUSS",
                                                "truss": "TRUSS", "t2": "TRUSS", "raft": "TRUSS", "eave": "TRUSS", "post": "POST",
@@ -75,7 +77,7 @@ public enum RoofDXF {
         let back = (w.access && !w.ridge ? W.ladderOut + 0.4 : 0.5) / max(1e-9, hypot(along.0, along.1))
         let o = (a.0 - along.0 * back, a.1 - along.1 * back)
         if w.ridge || !w.access, abs(across.1) < 1e-6 || abs(across.0) < 1e-6 {
-            dxf.dimension(CADLayers.dim, a, b, at: o, vertical: abs(across.0) < 1e-6, text: String(format: "%.2f", W.band), height: h)
+            dxf.dimension(CADLayers.dim, a, b, at: o, vertical: abs(across.0) < 1e-6, text: String(format: "%.2f", W.band), height: dimText)
         }
         // a short tag beyond that end, reading left to right across the walkway (the detail sheet has the rest)
         var angle = atan2(across.1, across.0) * 180 / .pi
@@ -215,9 +217,9 @@ public enum RoofDXF {
             for (op, tag) in zip(plan.sketch.ops, plan.tags) {
                 // the dimension chains are DIMENSIONs, not their lines and texts
                 guard let tag, let l = planLayers[tag], L.dimensions.isEmpty || (tag != "dim" && tag != "dimtxt") else { continue }
-                write(op, l, tp, L.k, text: tag == "dimtxt" ? th * 0.8 : th)
+                write(op, l, tp, L.k, text: tag == "dimtxt" ? Self.dimText : th)
             }
-            dxf.options.fixedTextHeight = th * 0.8
+            dxf.options.fixedTextHeight = Self.dimText
             dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
             TEXT("TEXT", (0, -1.2 - drop), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
@@ -258,7 +260,7 @@ public enum RoofDXF {
                 write(op, tag, ts, s.scale, text: th)
             }
             dxf.options.centreText = true
-            dxf.options.fixedTextHeight = th * 0.8
+            dxf.options.fixedTextHeight = Self.dimText
             dxf.add(s.dimensions, layer: layer("DIM"), transform: ts, pointsPerMetre: s.scale)
             TEXT("TEXT", (L.lx / 2 - s.span / 2, top - (s.sketch.height + 2) / s.scale - 0.8), th * 1.4,
                  "รูปตัด A-A | " + f.label + " | ช่วง " + fmt(s.span) + " ม. | ลาด " + Roof.slopeText(v), mid: false)

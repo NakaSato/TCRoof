@@ -479,6 +479,21 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(RoofSection.structure(v).levels.first?.y ?? 0, 5.25 - 0.4, accuracy: 1e-9)
     }
 
+    /// A post the plan has between the supports on the frame line A-A looks at stands under the truss's beam.
+    func testInnerPostsFromThePlan() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        XCTAssertTrue(RoofSection.innerPosts(v).isEmpty, "the default posts are the supports'")
+        let before = RoofSection.structure(v).posts.count
+        // A-A at 0.42 of 19 m = 7.98 → grid line 3 (x 9.5 is farther than 5.5); grid C is 6.00 m across
+        Roof.togglePost(&v, i: 3, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0])
+        XCTAssertEqual(RoofSection.structure(v).posts.count, before + 1)
+        Roof.togglePost(&v, i: 2, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0], "a post on another line isn't in view")
+    }
+
     func testPathParser() {
         let p = PathD.parse("M10 20L30 40h5v-5zM1 2l2 -4l2 8")
         XCTAssertEqual(p.count, 2)

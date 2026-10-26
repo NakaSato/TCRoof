@@ -133,6 +133,10 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(l[l.firstIndex(of: "$LWDISPLAY")! + 2], "0")
         let hatches = t.rawEntities(d).filter { $0.first?.1 == "HATCH" }.compactMap { t.value($0, "2") }
         XCTAssertTrue(hatches.contains("AR-CONC"), "\(Set(hatches))")
+        // every DIMENSION's text 0.16 m (its style TC_0_16), the team's size
+        let dims = t.rawEntities(d).filter { $0.first?.1 == "DIMENSION" }
+        XCTAssertFalse(dims.isEmpty)
+        XCTAssertTrue(dims.allSatisfy { t.value($0, "3")?.hasPrefix("TC_0_16") == true }, "\(Set(dims.compactMap { t.value($0, "3") }))")
         // the other exports keep the standard's lineweights
         var o = SketchDXF(); o.line(CADLayers.grid, (0, 0), (1, 0))
         XCTAssertTrue(lines(o.data()).contains("18"))

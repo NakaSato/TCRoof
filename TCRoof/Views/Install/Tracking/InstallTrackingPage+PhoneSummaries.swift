@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// The iPhone page's in-page summaries (docs/ui/install-tracking-iphone §4.4–4.7) of the screens the iPad pushes:
 /// next week's request (R1), the Weekly Report (R3), the IEC 62446 test and the station's permit papers. They read the
@@ -211,30 +212,18 @@ extension InstallTrackingPage {
 
     // MARK: Weekly Report
 
-    private var reportWeekRange: ClosedRange<Date> {
+    var reportWeekRange: ClosedRange<Date> {
         let cal = RoutineReport.calendar
         let anchor = cal.date(byAdding: .day, value: 7 * reportWeek, to: .now) ?? .now
         return RoutineReport.week(of: anchor)
     }
 
     func phoneWeeklyTab() -> some View {
-        let cal = RoutineReport.calendar, w = reportWeekRange, today = cal.startOfDay(for: .now), settings = job.routineSettings
+        let cal = RoutineReport.calendar, w = reportWeekRange, today = cal.startOfDay(for: .now)
         let logs = job.dailyLogs.filter { w.contains(cal.startOfDay(for: $0.date)) }
         let reports = logs.compactMap(\.report)
-        let through = min(w.upperBound, today)
-        let working = through >= w.lowerBound ? RoutineReport.workingDays(settings: settings, from: w.lowerBound, to: through).count : 0
-        let signed = logs.filter { $0.engineerSignedAt != nil }.count
-        let photos = logs.reduce(0) { $0 + $1.sortedPhotos.count }
-        let problems = reports.reduce(0) { $0 + $1.problems.filter { !$0.description.isEmpty }.count }
-        let planned = job.scheduleInput.map { MasterSchedule.status(plan: MasterSchedule.plan($0), actual: job.scheduleActual, through: w.upperBound).planned }
-        let unsigned = logs.filter { $0.engineerSignedAt == nil }.map { Self.dayLabel($0.date) }
-        let checks: [(String, Bool, String, Bool)] = [
-            ("รายงานประจำวันเซ็นครบ", signed >= working && working > 0, "เซ็นแล้ว \(signed)/\(working) วันทำงาน" + (unsigned.isEmpty ? "" : " | " + unsigned.joined(separator: ", ") + " รอเซ็น"), true),
-            ("แผน MP", planned != nil, planned.map { "แผนสะสม \(Int($0.rounded()))%" } ?? "ยังไม่มีแผน MP", false),
-            ("รูปหน้างาน", photos > 0, "\(photos) รูปจากรายงานประจำวัน", true),
-            ("ปัญหาและแนวทางแก้ไข", true, "รวมจากรายงานประจำวัน \(problems) ข้อ", false),
-        ]
-        let ready = checks.filter(\.1).count
+        let checks = weeklyChecks(week: w)
+        let ready = checks.filter(\.ok).count
         let filed = job.documents.contains { $0.name == RoutineReport.fileName(.weekly, date: MasterSchedule.weekStart(w.lowerBound), station: job.stationName) }
         let step = filed ? 3 : ready == checks.count ? 1 : 0
         return VStack(alignment: .leading, spacing: 14) {
@@ -264,16 +253,16 @@ extension InstallTrackingPage {
                         Spacer()
                         Text("\(ready)/\(checks.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
                     }
-                    ForEach(checks, id: \.0) { c in
+                    ForEach(checks, id: \.title) { c in
                         HStack(spacing: 8) {
-                            checkRow(c.0, ok: c.1, note: c.2)
-                            if !c.1 && c.3 {
+                            checkRow(c.title, ok: c.ok, note: c.note)
+                            if !c.ok && c.fixable {
                                 Button("ไปแก้") { phoneTab = .daily }
                                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                             }
                         }
                         .padding(10)
-                        .background(c.1 ? Theme.phonePage : Theme.warningSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(c.ok ? Theme.phonePage : Theme.warningSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     HStack(spacing: 10) {
                         Menu {
@@ -298,16 +287,10 @@ extension InstallTrackingPage {
         }
     }
 
-    /// The deck's slides as `WeeklySlides` lays them out: the cover, the plan, a slide a report, weather, crew, problems,
-    /// next week. Green when its data is there, orange when it waits on something.
+    /// The deck's slides as `WeeklySlides.outline` lists them (the template's 8, as the iPad rail). Green when its data
+    /// is there, orange when it waits on something.
     private func slidesCard(reports: [RoutineReport.Daily], logs: [InstallLog], week: ClosedRange<Date>) -> some View {
-        let cal = RoutineReport.calendar
-        let signedDays = Set(logs.filter { $0.engineerSignedAt != nil }.map { cal.startOfDay(for: $0.date) })
-        let next = job.weeklyRequest(for: cal.date(byAdding: .day, value: 7, to: MasterSchedule.weekStart(week.lowerBound)) ?? week.upperBound)
-        var slides: [(String, Bool)] = [("ปก", true)]
-        if job.scheduleInput != nil { slides.append(("ความก้าวหน้า", true)) }
-        slides += reports.map { ("งาน " + ThaiFormat.dayMonth.string(from: $0.date), signedDays.contains(cal.startOfDay(for: $0.date))) }
-        slides += [("สภาพอากาศ", !reports.isEmpty), ("แรงงาน", !reports.isEmpty), ("ปัญหา", true), ("สัปดาห์ถัดไป", next != nil)]
+        let slides = WeeklySlides.outline(RoutineReportFiles.outlineInput(job, week: week.lowerBound)).map { ($0.label, $0.ready) }
         return phoneCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {

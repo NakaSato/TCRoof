@@ -1,0 +1,286 @@
+import Foundation
+import TCRoofCore
+
+/// What the customer's `Weekly Report Template` shows (docs/ui/install-tracking-ipad-weekly-report §4.3): the 8 slides'
+/// values worked out once from the week's daily reports, the MP plan and the station's settings. The .pptx
+/// (`WeeklySlides.export`) and the app's slide views draw from the same `Content`, so the screen shows the file.
+extension WeeklySlides {
+    /// The template's slides, in order.
+    public enum Kind: Int, CaseIterable, Sendable {
+        case cover = 1, agenda, progress, daily, photos1, photos2, weather, problems
+
+        /// The rail's and the viewer's name of the slide.
+        public var label: String {
+            switch self {
+            case .cover: "ปก"
+            case .agenda: "AGENDA"
+            case .progress: "ความก้าวหน้า"
+            case .daily: "งานรายวัน"
+            case .photos1: "ภาพหน้างาน 1/2"
+            case .photos2: "ภาพหน้างาน 2/2"
+            case .weather: "Weather Report"
+            case .problems: "ปัญหาและอุปสรรค"
+            }
+        }
+
+        /// The title in the slide's blue band (the cover has none).
+        public var bandTitle: String {
+            switch self {
+            case .cover: ""
+            case .agenda: "AGENDA"
+            case .progress, .daily: "1.Construction Progress"
+            case .photos1, .photos2: "Construction Progress"
+            case .weather: "2.Weather Report"
+            case .problems: "3.ปัญหาและอุปสรรค"
+            }
+        }
+    }
+
+    /// One slide of the deck as the rail, the viewer's chip and the .pptx sheet list it.
+    public struct Outline: Sendable, Equatable {
+        public var kind: Kind
+        public var label: String
+        /// Where its values come from.
+        public var source: String
+        /// Its data is there; false while it waits on something (an unsigned daily report for slides 4, 7 and 8).
+        public var ready: Bool
+        public var number: Int { kind.rawValue }
+    }
+
+    /// A week's plan and actual on slide 3, cumulative percent of the station's plan.
+    public struct Bar: Sendable, Equatable {
+        /// `W40`.
+        public var label: String
+        public var planned: Double
+        public var actual: Double
+        /// The week being reported.
+        public var current: Bool
+        public init(label: String, planned: Double, actual: Double, current: Bool) {
+            self.label = label; self.planned = planned; self.actual = actual; self.current = current
+        }
+    }
+
+    /// One day of slide 4's table.
+    public struct Row: Sendable, Equatable {
+        public enum State: Sendable, Equatable {
+            /// A signed report: its work.
+            case done
+            /// A working day whose report is missing or not signed yet.
+            case waiting
+            /// Not a working day, without a report.
+            case off
+            /// Still ahead of the report's date.
+            case ahead
+        }
+        public var number: Int
+        public var date: Date
+        /// `28/09/2569`.
+        public var dateText: String
+        public var lines: [String]
+        public var state: State
+    }
+
+    /// A photo on slide 5 or 6: the id `images` holds its bytes under, and its caption with the day.
+    public struct Photo: Sendable, Equatable {
+        public var id: UUID
+        public var width: Int
+        public var height: Int
+        public var caption: String
+    }
+
+    /// One column of slide 7.
+    public struct WeatherDay: Sendable, Equatable {
+        /// The template's three pictures; nil shows the text only.
+        public enum Icon: String, Sendable { case sunny = "weather-sunny", partlyCloudy = "weather-partly-cloudy", thunderstorm = "weather-thunderstorm" }
+        /// `จันทร์`.
+        public var name: String
+        /// The template's colour of the day's name, as hex.
+        public var colour: String
+        /// `28/09`.
+        public var date: String
+        public var icon: Icon?
+        public var text: String
+    }
+
+    public struct Content: Sendable {
+        public var weekStart: Date
+        /// `WEEKNUM` of the week (Sunday first), the template's `สัปดาห์ที่`.
+        public var weekNumber: Int
+        /// The cover's project lines and `สถานีผลิตน้ำ…`.
+        public var project: [String]
+        public var station: String
+        /// `ประจำวันที่ 28 กันยายน 2569 ถึงวันที่ 4 ตุลาคม 2569`.
+        public var range: String
+        /// `ข้อมูล ณ วันที่ …`.
+        public var asOf: String
+        /// The last six weeks to this one; empty without an MP plan.
+        public var bars: [Bar]
+        /// Plan and actual through the week, percent; nil without an MP plan.
+        public var planned: Double?
+        public var actual: Double?
+        public var rows: [Row]
+        /// Up to six, spread over the days: each day's first photo, then each day's second, …
+        public var photos: [Photo]
+        /// The photos the week has in all.
+        public var photoCount: Int
+        public var weather: [WeatherDay]
+        public var problems: [String]
+        public var fixes: [String]
+        /// The working days that wait on a daily report, as `ศ 2/10`.
+        public var waiting: [String]
+        /// The number of daily reports in the week.
+        public var reportCount: Int
+
+        /// `+2`, `-2`, `0`: actual less plan, rounded.
+        public var status: String? {
+            guard let p = planned, let a = actual else { return nil }
+            let d = Int(a.rounded()) - Int(p.rounded())
+            return d > 0 ? "+\(d)" : String(d)
+        }
+
+        /// The photos of slide 5 (`page` 0) or 6 (`page` 1).
+        public func photos(page: Int) -> [Photo] { Array(photos.dropFirst(page * 3).prefix(3)) }
+
+        public var outline: [Outline] {
+            let wait = waiting.isEmpty
+            return Kind.allCases.map { k in
+                switch k {
+                case .cover: Outline(kind: k, label: k.label, source: "ข้อมูลโครงการ", ready: true)
+                case .agenda: Outline(kind: k, label: k.label, source: "แม่แบบ", ready: true)
+                case .progress: Outline(kind: k, label: k.label, source: "แผน MP · รายงานประจำวัน", ready: planned != nil)
+                case .daily: Outline(kind: k, label: k.label, source: "รายงานประจำวัน \(reportCount) วัน", ready: wait)
+                case .photos1, .photos2: Outline(kind: k, label: k.label, source: "รูปในรายงานประจำวัน", ready: photoCount > 0)
+                case .weather, .problems: Outline(kind: k, label: k.label, source: "รายงานประจำวัน", ready: wait)
+                }
+            }
+        }
+    }
+
+    /// The template's cover lines above the station when the station's settings name no contract.
+    static let coverProject = ["โครงการจัดการพลังงานไฟฟ้าจากระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์",
+                               "ที่ติดตั้งบนหลังคา (Solar Rooftop) การประปาส่วนภูมิภาค"]
+    /// The weather slide's day names, Sunday first, and the template's colour for each.
+    static let dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
+    static let dayColours = ["FF0000", "FFFF00", "FF66CC", "00B050", "FFC000", "00B0F0", "7030A0"]
+    static let dayShort = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
+
+    /// The slides as the rail, the viewer's chips and the .pptx sheet list them.
+    public static func outline(_ input: Input) -> [Outline] { content(input).outline }
+
+    /// The deck's values. `images` (photo bytes by id) leaves out photos without readable bytes, as the .pptx does;
+    /// nil takes every photo.
+    public static func content(_ input: Input, images: [UUID: Data]? = nil) -> Content {
+        let cal = RoutineReport.calendar
+        let range = RoutineReport.week(of: input.week), start = range.lowerBound
+        let days = input.days.filter { range.contains(cal.startOfDay(for: $0.report.date)) }.sorted { $0.report.date < $1.report.date }
+        let reports = days.map(\.report)
+        let today = cal.startOfDay(for: input.asOf)
+        let weekNumber = MasterSchedule.calendar.component(.weekOfYear, from: start)
+
+        // slide 3: the plan's cumulative percent at the end of each of the last six weeks
+        var bars: [Bar] = [], planned: Double?, actual: Double?
+        if let s = input.schedule {
+            let plan = MasterSchedule.plan(s.input)
+            for k in (0..<6).reversed() {
+                let w = cal.date(byAdding: .day, value: -7 * k, to: start)!
+                let end = min(cal.date(byAdding: .day, value: 6, to: w)!, max(today, w))
+                let st = MasterSchedule.status(plan: plan, actual: s.actual, through: end)
+                bars.append(Bar(label: "W\(MasterSchedule.calendar.component(.weekOfYear, from: w))", planned: st.planned,
+                                actual: st.actual, current: k == 0))
+            }
+            planned = bars.last?.planned; actual = bars.last?.actual
+        }
+
+        // slide 4: a row a day
+        var rows: [Row] = [], waiting: [String] = []
+        for i in 0..<7 {
+            let d = cal.date(byAdding: .day, value: i, to: start)!
+            let day = days.first { RoutineReport.dayKey($0.report.date) == RoutineReport.dayKey(d) }
+            let label = dayLabel(d)
+            var row = Row(number: i + 1, date: d, dateText: slashDate(d), lines: [], state: .done)
+            if let day {
+                if day.signed {
+                    let done = RoutineReport.workDone(day.report, in: input.all).map(\.line.title)
+                    row.lines = !done.isEmpty ? done
+                        : day.report.stopReason.isEmpty ? ["ไม่มีความก้าวหน้า"] : ["หยุดงาน: " + day.report.stopReason]
+                } else {
+                    row.state = .waiting; row.lines = ["รอเซ็นรายงานประจำวัน " + label]; waiting.append(label)
+                }
+            } else if !RoutineReport.isWorkingDay(d, settings: input.settings) {
+                row.state = .off; row.lines = ["วันหยุด"]
+            } else if d > today {
+                row.state = .ahead
+            } else {
+                row.state = .waiting; row.lines = ["ยังไม่มีรายงานประจำวัน " + label]; waiting.append(label)
+            }
+            rows.append(row)
+        }
+
+        // slides 5–6: each day's first photo, then each day's second, … up to six
+        func usable(_ p: DayPhoto) -> Bool {
+            guard let images else { return true }
+            return images[p.id].flatMap { IECWord.pixelSize($0) } != nil
+        }
+        let perDay = days.map { d in d.photos.filter(usable).map { (d.report.date, $0) } }
+        var photos: [Photo] = []
+        for k in 0..<(perDay.map(\.count).max() ?? 0) where photos.count < 6 {
+            for list in perDay where list.indices.contains(k) && photos.count < 6 {
+                let (date, p) = list[k]
+                let c = cal.dateComponents([.day, .month], from: date)
+                let when = "\(c.day ?? 0)/\(c.month ?? 0)"
+                photos.append(Photo(id: p.id, width: p.width, height: p.height,
+                                    caption: p.caption.isEmpty ? when : "\(p.caption) (\(when))"))
+            }
+        }
+
+        // slide 7: a column a day
+        let weather = rows.map { r -> WeatherDay in
+            let w = cal.component(.weekday, from: r.date) - 1
+            let slots = days.first { RoutineReport.dayKey($0.report.date) == RoutineReport.dayKey(r.date) }?.report.weather.compactMap { $0 } ?? []
+            let c = cal.dateComponents([.day, .month], from: r.date)
+            let date = String(format: "%02d/%02d", c.day ?? 0, c.month ?? 0)
+            guard !slots.isEmpty else { return WeatherDay(name: dayNames[w], colour: dayColours[w], date: date, icon: nil, text: "-") }
+            let fine = slots.filter { $0 == .fine }.count, cloudy = slots.filter { $0 == .cloudy }.count
+            let kind: RoutineReport.Weather = slots.contains(.rain) ? .rain : fine > cloudy ? .fine : .cloudy
+            let icon: WeatherDay.Icon = switch kind { case .rain: .thunderstorm; case .fine: .sunny; case .cloudy: .partlyCloudy }
+            return WeatherDay(name: dayNames[w], colour: dayColours[w], date: date, icon: icon, text: kind.title)
+        }
+
+        let p = RoutineReport.problems(reports), all = p.open + p.closed
+        let s = input.stationName.trimmingCharacters(in: .whitespaces)
+        let contract = input.settings.contractName.trimmingCharacters(in: .whitespaces)
+        return Content(weekStart: start, weekNumber: weekNumber, project: contract.isEmpty ? coverProject : [contract],
+                       station: s.hasPrefix("สถานี") ? s : "สถานีผลิตน้ำ" + s,
+                       range: "ประจำวันที่ " + longDate(start) + " ถึงวันที่ " + longDate(range.upperBound),
+                       asOf: "ข้อมูล ณ วันที่ " + longDate(min(range.upperBound, max(today, start))),
+                       bars: bars, planned: planned, actual: actual, rows: rows, photos: photos,
+                       photoCount: perDay.reduce(0) { $0 + $1.count }, weather: weather,
+                       problems: all.map(\.description), fixes: all.map(\.solution).filter { !$0.isEmpty },
+                       waiting: waiting, reportCount: reports.count)
+    }
+
+    /// `28 กันยายน 2569`.
+    public static func longDate(_ d: Date) -> String {
+        let c = RoutineReport.calendar.dateComponents([.year, .month, .day], from: d)
+        return "\(c.day ?? 0) \(RoutineReport.thaiMonths[(c.month ?? 1) - 1]) \((c.year ?? 0) + 543)"
+    }
+
+    /// `28/09/2569`.
+    static func slashDate(_ d: Date) -> String {
+        let c = RoutineReport.calendar.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%02d/%02d/%d", c.day ?? 0, c.month ?? 0, (c.year ?? 0) + 543)
+    }
+
+    /// `ศ 2/10`.
+    public static func dayLabel(_ d: Date) -> String {
+        let cal = RoutineReport.calendar, c = cal.dateComponents([.weekday, .day, .month], from: d)
+        return "\(dayShort[(c.weekday ?? 1) - 1]) \(c.day ?? 0)/\(c.month ?? 0)"
+    }
+
+    /// A picture of the template (`logo-pea-seal`, `agenda-hex-1`…`3`, `weather-sunny`…), PNG bytes.
+    public static func templatePicture(_ name: String) -> Data? {
+        let url = Bundle.module.url(forResource: name, withExtension: "png")
+            ?? Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "WeeklyTemplate")
+        return url.flatMap { try? Data(contentsOf: $0) }
+    }
+}

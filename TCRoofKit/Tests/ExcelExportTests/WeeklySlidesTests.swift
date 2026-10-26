@@ -2,7 +2,7 @@ import XCTest
 @testable import ExcelExport
 @testable import TCRoofCore
 
-/// `WeeklySlides`: R3 as a .pptx built on `weekly_template.pptx`.
+/// `WeeklySlides`: R3 as a .pptx in the customer's `Weekly Report Template`, 8 slides, built on `weekly_template.pptx`.
 final class WeeklySlidesTests: XCTestCase {
     let cal = MasterSchedule.calendar
 
@@ -11,73 +11,146 @@ final class WeeklySlidesTests: XCTestCase {
     /// A small real JPEG (the IEC form's PWA logo, 220 × 222).
     func jpeg() throws -> Data { try XCTUnwrap(ZipArchive(IECExcel.template()).data("xl/media/image1.jpeg")) }
 
-    /// MP 189's plan; the week of 8 มี.ค. 2569 with two daily reports, the second with 5 photos and a problem.
-    func input(photos: [WeeklySlides.DayPhoto]) -> WeeklySlides.Input {
+    /// MP 189's plan; the week of 8 มี.ค. 2569 (Sunday) with reports on Monday (signed, no photos), Tuesday (signed, the
+    /// photos, a problem) and Wednesday (not signed), as of Saturday.
+    func input(photos: [WeeklySlides.DayPhoto], wedSigned: Bool = false) -> WeeklySlides.Input {
         let plan = MasterSchedule.Input(installStart: day(2026, 2, 22), installEnd: day(2026, 4, 8), kickoff: day(2026, 1, 5),
                                         engineeringStart: day(2026, 1, 5), siteHandover: day(2026, 1, 12), over200kVA: false)
         var a = RoutineReport.Daily(date: day(2026, 3, 9))
         a.progress = [.init(task: .structure, description: "ติดตั้งโครงสร้าง", location: "โซน A", percent: 40)]
-        a.crew = [.init(name: "ช่างติดตั้ง", count: 4)]; a.crewConfirmed = true
-        a.weather[0] = .fine; a.weather[8] = .rain
+        a.weather[0] = .fine; a.weather[1] = .fine
         var b = RoutineReport.Daily(date: day(2026, 3, 10))
         b.progress = [.init(task: .structure, description: "ติดตั้งโครงสร้าง", location: "โซน A", percent: 60)]
-        b.crew = [.init(name: "ช่างติดตั้ง", count: 5)]
+        b.weather[8] = .rain
         b.problems = [.init(description: "ฝนตก <บ่าย> & ลมแรง", solution: "เลื่อนเป็นช่วงเช้า", since: day(2026, 3, 10))]
-        var next = RoutineReport.WeeklyRequest(weekStart: day(2026, 3, 15))
-        next.work = [.init(task: .dcSide, description: "เดินสาย DC", location: "โซน A")]
-        var settings = RoutineReport.Settings()
-        settings.contractName = "Solar Rooftop กปภ."
-        return WeeklySlides.Input(stationName: "สถานีผลิตน้ำทุ่งน้อย", mpNumber: 189, capacityKWp: 92.34, settings: settings,
-                                  week: day(2026, 3, 11), days: [.init(report: a, photos: []), .init(report: b, photos: photos)],
-                                  all: [a, b], schedule: (plan, MasterSchedule.Actual()), nextRequest: next,
-                                  installStart: day(2026, 2, 22), asOf: day(2026, 3, 14))
+        var c = RoutineReport.Daily(date: day(2026, 3, 11))
+        c.progress = [.init(task: .structure, description: "ติดตั้งโครงสร้าง", location: "โซน A", percent: 70)]
+        let days: [WeeklySlides.Day] = [.init(report: a, photos: []), .init(report: b, photos: photos),
+                                        .init(report: c, photos: [], signed: wedSigned)]
+        return WeeklySlides.Input(stationName: "ทุ่งน้อย", mpNumber: 189, capacityKWp: 92.34, settings: RoutineReport.Settings(),
+                                  week: day(2026, 3, 11), days: days, all: [a, b, c], schedule: (plan, MasterSchedule.Actual()),
+                                  nextRequest: nil, installStart: day(2026, 2, 22), asOf: day(2026, 3, 14))
     }
 
-    func testBuildsTheDeck() throws {
-        let photos = (0..<5).map { WeeklySlides.DayPhoto(id: UUID(), width: 220, height: 222, caption: $0 == 4 ? "" : "รูป \($0)") }
-        let bytes = try jpeg()
-        let data = try WeeklySlides.export(input(photos: photos), images: Dictionary(uniqueKeysWithValues: photos.map { ($0.id, bytes) }))
-        let zip = try ZipArchive(data)
-
+    func slides(_ zip: ZipArchive) throws -> [String] {
         let pres = try XCTUnwrap(zip.string("ppt/presentation.xml"))
         let count = pres.components(separatedBy: "<p:sldId ").count - 1
-        // cover, progress (2: the plan's weighted tasks are more than 14), 2 days, weather, labour, problems, next week
-        let weighted = MasterSchedule.plan(input(photos: []).schedule!.input).filter { $0.weight > 0 }.count
-        XCTAssertEqual(count, 1 + (weighted + 13) / 14 + 2 + 1 + 1 + 1 + 1)
+        return try (1...max(count, 1)).map { try XCTUnwrap(zip.string("ppt/slides/slide\($0).xml"), "slide \($0)") }
+    }
+
+    func testEightSlidesInTheTemplatesOrder() throws {
+        let photos = (0..<5).map { WeeklySlides.DayPhoto(id: UUID(), width: 220, height: 222, caption: "รูป \($0)") }
+        let bytes = try jpeg()
+        let zip = try ZipArchive(WeeklySlides.export(input(photos: photos), images: Dictionary(uniqueKeysWithValues: photos.map { ($0.id, bytes) })))
+        let s = try slides(zip)
+        XCTAssertEqual(s.count, 8)
         let types = try XCTUnwrap(zip.string("[Content_Types].xml")), rels = try XCTUnwrap(zip.string("ppt/_rels/presentation.xml.rels"))
-        for n in 1...count {
-            XCTAssertNotNil(zip.string("ppt/slides/slide\(n).xml"), "slide \(n)")
+        for n in 1...8 {
             XCTAssertTrue(types.contains("/ppt/slides/slide\(n).xml"))
             XCTAssertTrue(rels.contains("Target=\"slides/slide\(n).xml\""))
             // every picture a slide names is in the package
             let r = try XCTUnwrap(zip.string("ppt/slides/_rels/slide\(n).xml.rels"))
             for part in r.components(separatedBy: "Target=\"../media/").dropFirst() {
-                XCTAssertNotNil(zip.data("ppt/media/" + part.prefix { $0 != "\"" }))
+                XCTAssertNotNil(zip.data("ppt/media/" + part.prefix { $0 != "\"" }), "slide \(n)")
             }
         }
-
-        let all = (1...count).compactMap { zip.string("ppt/slides/slide\($0).xml") }.joined()
-        XCTAssertTrue(all.contains("รายงานประจำสัปดาห์ (Weekly Report)"))
-        XCTAssertTrue(all.contains("MP 189 | สถานีผลิตน้ำทุ่งน้อย | 92.34 kWp"))
-        XCTAssertTrue(all.contains("ติดตั้งโครงสร้าง | โซน A  +20%"), "the day's delta from the day before")
-        XCTAssertTrue(all.contains("ฝนตก &lt;บ่าย&gt; &amp; ลมแรง"), "text is escaped")
-        XCTAssertTrue(all.contains("เดินสาย DC"))
-        XCTAssertTrue(all.contains("* 1 วันใช้กำลังคนจากวันก่อนโดยไม่ได้ยืนยัน"))
-        // the 4 captioned photos of the second day, not the fifth
-        XCTAssertEqual(all.components(separatedBy: "<p:pic>").count - 1, 4)
-        XCTAssertEqual(zip.data("ppt/media/image1.jpeg"), bytes)
+        // the order: cover, AGENDA, progress, the day table, photos 1/2, 2/2, weather, problems
+        XCTAssertTrue(s[0].contains("Weekly Report") && s[0].contains("สถานีผลิตน้ำทุ่งน้อย"))
+        XCTAssertTrue(s[0].contains("ประจำวันที่ 8 มีนาคม 2569 ถึงวันที่ 14 มีนาคม 2569"))
+        XCTAssertTrue(s[1].contains("AGENDA") && s[1].contains("CONSTRUCTION PROGRESS") && s[1].contains("Weather Report"))
+        XCTAssertTrue(s[2].contains("ความก้าวหน้าของงาน") && s[2].contains("% WORK PROGRESS"))
+        XCTAssertTrue(s[3].contains("การดำเนินงาน") && s[3].contains("ติดตั้งโครงสร้าง | โซน A"))
+        XCTAssertTrue(s[4].contains("PROGRESS FOR THIS WEEK") && s[5].contains("PROGRESS FOR THIS WEEK"))
+        XCTAssertTrue(s[6].contains("2.Weather Report") && s[6].contains("ฝนตก") && s[6].contains("ท้องฟ้าโปร่ง"))
+        XCTAssertTrue(s[7].contains("ปัญหาและอุปสรรคระหว่างปฏิบัติงาน") && s[7].contains("แนวทางแก้ไข"))
+        XCTAssertTrue(s[7].contains("ฝนตก &lt;บ่าย&gt; &amp; ลมแรง"), "text is escaped")
+        XCTAssertTrue(s[7].contains("เลื่อนเป็นช่วงเช้า"))
+        // photos 1–3 on slide 5, 4–5 on slide 6
+        XCTAssertTrue(s[4].contains("รูป 0 (10/3)") && s[4].contains("รูป 2 (10/3)") && !s[4].contains("รูป 3"))
+        XCTAssertTrue(s[5].contains("รูป 3 (10/3)") && s[5].contains("รูป 4 (10/3)"))
     }
 
-    func testAWeekWithNothing() throws {
+    /// The template's pictures are in the package: the seal on the cover, AGENDA's three markers, the weather icons used.
+    func testTheTemplatesPictures() throws {
+        for name in ["logo-pea-seal", "agenda-hex-1", "agenda-hex-2", "agenda-hex-3", "weather-sunny", "weather-partly-cloudy", "weather-thunderstorm"] {
+            XCTAssertNotNil(WeeklySlides.templatePicture(name), name)
+        }
+        let zip = try ZipArchive(WeeklySlides.export(input(photos: []), images: [:]))
+        let seal = try XCTUnwrap(WeeklySlides.templatePicture("logo-pea-seal"))
+        let media = (1...20).compactMap { zip.data("ppt/media/image\($0).png") }
+        XCTAssertTrue(media.contains(seal))
+        XCTAssertTrue(media.contains(try XCTUnwrap(WeeklySlides.templatePicture("agenda-hex-3"))))
+        XCTAssertTrue(media.contains(try XCTUnwrap(WeeklySlides.templatePicture("weather-thunderstorm"))))
+        XCTAssertEqual(try slides(zip)[0].components(separatedBy: "<p:pic>").count - 1, 1, "the seal")
+        XCTAssertEqual(try slides(zip)[1].components(separatedBy: "<p:pic>").count - 1, 3, "the three markers")
+    }
+
+    /// An unsigned working day waits: its row on slide 4, and slides 4, 7 and 8 in the outline.
+    func testAWaitingDay() throws {
+        let c = WeeklySlides.content(input(photos: []))
+        XCTAssertEqual(c.waiting, ["พ 11/3", "พฤ 12/3", "ศ 13/3", "ส 14/3"], "unsigned, then working days with no report")
+        XCTAssertEqual(c.rows.count, 7)
+        XCTAssertEqual(c.rows[0].state, .off, "Sunday")
+        XCTAssertEqual(c.rows[1].state, .done)
+        XCTAssertEqual(c.rows[3].state, .waiting)
+        XCTAssertEqual(c.rows[3].lines, ["รอเซ็นรายงานประจำวัน พ 11/3"])
+        // Thursday to Saturday have no report: working days already past, so they wait too
+        XCTAssertEqual(c.rows[4].lines, ["ยังไม่มีรายงานประจำวัน พฤ 12/3"])
+        let o = WeeklySlides.outline(input(photos: []))
+        XCTAssertEqual(o.map(\.label), ["ปก", "AGENDA", "ความก้าวหน้า", "งานรายวัน", "ภาพหน้างาน 1/2", "ภาพหน้างาน 2/2", "Weather Report", "ปัญหาและอุปสรรค"])
+        XCTAssertEqual(o.filter { !$0.ready }.map(\.number), [4, 5, 6, 7, 8], "no photos either")
+        let zip = try ZipArchive(WeeklySlides.export(input(photos: []), images: [:]))
+        XCTAssertTrue(try slides(zip)[3].contains("รอเซ็นรายงานประจำวัน พ 11/3"))
+        XCTAssertTrue(try slides(zip)[3].contains("i=\"1\""), "the waiting row in italic")
+    }
+
+    /// A week whose working days are all signed: slides 4, 7 and 8 are ready.
+    func testEverySignedDayIsReady() {
+        var i = input(photos: [WeeklySlides.DayPhoto(id: UUID(), width: 1, height: 1, caption: "")], wedSigned: true)
+        i.asOf = day(2026, 3, 11)
+        let o = WeeklySlides.outline(i)
+        XCTAssertTrue(o.allSatisfy(\.ready), o.filter { !$0.ready }.map(\.label).joined(separator: ", "))
+        // Thursday onwards is still ahead
+        XCTAssertEqual(WeeklySlides.content(i).rows[4].state, .ahead)
+    }
+
+    /// Six photos at most, spread over the days: each day's first, then each day's second.
+    func testPhotosSpreadOverTheDays() {
         var i = input(photos: [])
-        i.days = []; i.all = []; i.schedule = nil; i.nextRequest = nil
-        let zip = try ZipArchive(WeeklySlides.export(i, images: [:]))
-        let pres = try XCTUnwrap(zip.string("ppt/presentation.xml"))
-        // cover, weather, labour, problems, next week
-        XCTAssertEqual(pres.components(separatedBy: "<p:sldId ").count - 1, 5)
-        let all = (1...5).compactMap { zip.string("ppt/slides/slide\($0).xml") }.joined()
-        XCTAssertTrue(all.contains("ยังไม่มีคำขอปฏิบัติงานสัปดาห์ถัดไป"))
-        XCTAssertTrue(all.contains("วันทำงานที่ไม่มีรายงานประจำวัน"))
+        let p = (0..<4).map { n in (0..<3).map { k in WeeklySlides.DayPhoto(id: UUID(), width: 1, height: 1, caption: "d\(n)p\(k)") } }
+        i.days = i.days.indices.map { d in WeeklySlides.Day(report: i.days[d].report, photos: p[d], signed: true) }
+        let c = WeeklySlides.content(i)
+        XCTAssertEqual(c.photos.map { String($0.caption.prefix(4)) }, ["d0p0", "d1p0", "d2p0", "d0p1", "d1p1", "d2p1"])
+        XCTAssertEqual(c.photos(page: 0).count, 3)
+        XCTAssertEqual(c.photos(page: 1).count, 3)
+        XCTAssertEqual(c.photoCount, 9)
+    }
+
+    /// Six weeks of plan and actual, the current one last, and the % box.
+    func testProgressBars() {
+        let c = WeeklySlides.content(input(photos: []))
+        XCTAssertEqual(c.bars.count, 6)
+        XCTAssertEqual(c.bars.last?.label, "W11")
+        XCTAssertEqual(c.bars.filter(\.current).count, 1)
+        XCTAssertEqual(c.bars.map(\.planned), c.bars.map(\.planned).sorted(), "cumulative")
+        XCTAssertNotNil(c.status)
+        var none = input(photos: [])
+        none.schedule = nil
+        let n = WeeklySlides.content(none)
+        XCTAssertTrue(n.bars.isEmpty)
+        XCTAssertFalse(n.outline[2].ready)
+    }
+
+    /// The customer's deck: text in TH SarabunPSK at its point sizes (band title 36 pt, cover title 54 pt, the day table in
+    /// TH Sarabun New at 16 pt with an 18 pt header and 1 pt borders), the cover's lines in its grey.
+    func testTheCustomersFontsAndSizes() throws {
+        let s = try slides(ZipArchive(WeeklySlides.export(input(photos: []), images: [:])))
+        XCTAssertTrue(s[0].contains("typeface=\"TH SarabunPSK\""))
+        XCTAssertTrue(s[0].contains("sz=\"5400\" b=\"1\""), "Weekly Report 54 pt bold")
+        XCTAssertTrue(s[0].contains("6E747A"), "the cover's grey")
+        XCTAssertTrue(s[2].contains("sz=\"3600\""), "the band title")
+        XCTAssertTrue(s[3].contains("typeface=\"TH Sarabun New\"") && s[3].contains("sz=\"1600\"") && s[3].contains("sz=\"1800\""))
+        XCTAssertTrue(s[3].contains("w=\"12700\""), "1 pt borders")
     }
 
     func testFileName() {

@@ -40,6 +40,29 @@ extension Job {
         weeklyRequests = weeklyRequests.filter { $0.id != r.id } + [r]
     }
 
+    /// The Weekly Reports (R3) sent from the iPad install page.
+    var weeklySentList: [RoutineReport.WeeklySent] {
+        weeklySentJSON.flatMap { try? JSONDecoder().decode([RoutineReport.WeeklySent].self, from: Data($0.utf8)) } ?? []
+    }
+
+    /// The send of the week holding `week`, if it was sent from the page.
+    func weeklySent(for week: Date) -> RoutineReport.WeeklySent? {
+        let key = RoutineReport.dayKey(MasterSchedule.weekStart(week))
+        return weeklySentList.first { RoutineReport.dayKey($0.weekStart) == key }
+    }
+
+    /// Keeps the send in place of an earlier one of its week.
+    func recordWeeklySent(_ sent: RoutineReport.WeeklySent) {
+        let list = RoutineReport.WeeklySent.recording(sent, in: weeklySentList)
+        weeklySentJSON = (try? JSONEncoder().encode(list)).flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    /// The week's R3 PDF is among the job's documents: an older way of sending, before the record.
+    func weeklyFiled(_ week: Date) -> Bool {
+        let name = RoutineReport.fileName(.weekly, date: MasterSchedule.weekStart(week), station: stationName)
+        return documents.contains { $0.name == name }
+    }
+
     /// Books the daily reports' progress into the MP actual (§3 "Feed MP"); no-op without a plan. Only reports our engineer
     /// has signed count: the contractor's foreman writes them, so a draft must not move the plan.
     func feedMP() {
@@ -212,22 +235,49 @@ enum RoutineReportFiles {
                      folder: RoutineReport.folder(.weekly, date: ws), title: RoutineReport.Kind.weekly.title)
     }
 
-    /// R3 as PowerPoint (`WeeklySlides`), written to a temporary file to share.
-    static func weeklySlides(_ job: Job, week: Date) throws -> URL {
-        let (entries, images) = entries(job)
-        let ws = MasterSchedule.weekStart(week)
+    /// The week's slides' input (`WeeklySlides`): the daily reports with their photos and whether our engineer signed
+    /// them, the MP plan and next week's request; with the photos' bytes by id.
+    static func slidesInput(_ job: Job, week: Date) -> (input: WeeklySlides.Input, images: [UUID: Data]) {
+        let ws = MasterSchedule.weekStart(week), range = RoutineReport.week(of: ws), cal = RoutineReport.calendar
         let st = job.reportStation
-        let days = entries.map { e in
-            WeeklySlides.Day(report: e.report, photos: e.photos.map {
+        // only the week's reports: the deck shows no other day, so no other photo is read
+        var images: [UUID: Data] = [:]
+        let days = job.dailyLogs.filter { range.contains(cal.startOfDay(for: $0.date)) }.compactMap { log -> WeeklySlides.Day? in
+            guard let r = log.report else { return nil }
+            let (photos, imgs) = log.dayPhotos(r)
+            images.merge(imgs) { a, _ in a }
+            return WeeklySlides.Day(report: r, photos: photos.map {
                 WeeklySlides.DayPhoto(id: $0.photo.id, width: $0.photo.width, height: $0.photo.height, caption: $0.caption)
-            })
+            }, signed: log.engineerSignedAt != nil)
         }
         let input = WeeklySlides.Input(stationName: st.name, mpNumber: st.mpNumber, capacityKWp: st.capacityKWp, settings: st.settings,
                                        week: ws, days: days, all: job.dailyReports,
                                        schedule: job.reportSchedule.map { (input: $0.input, actual: $0.actual) },
                                        nextRequest: job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws)!),
                                        installStart: job.installStart)
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(WeeklySlides.fileName(week: ws, station: job.stationName))
+        return (input, images)
+    }
+
+    /// The week's slides' input without the photos' bytes (each photo a placeholder), for `WeeklySlides.outline`: the
+    /// rail and the iPhone's strip need only how many there are.
+    static func outlineInput(_ job: Job, week: Date) -> WeeklySlides.Input {
+        let ws = MasterSchedule.weekStart(week), range = RoutineReport.week(of: ws), cal = RoutineReport.calendar
+        let days = job.dailyLogs.filter { range.contains(cal.startOfDay(for: $0.date)) }.compactMap { log -> WeeklySlides.Day? in
+            guard let r = log.report else { return nil }
+            let photos = log.sortedPhotos.map { _ in WeeklySlides.DayPhoto(id: UUID(), width: 0, height: 0, caption: "") }
+            return WeeklySlides.Day(report: r, photos: photos, signed: log.engineerSignedAt != nil)
+        }
+        let st = job.reportStation
+        return WeeklySlides.Input(stationName: st.name, mpNumber: st.mpNumber, capacityKWp: st.capacityKWp, settings: st.settings,
+                                  week: ws, days: days, all: job.dailyReports,
+                                  schedule: job.reportSchedule.map { (input: $0.input, actual: $0.actual) },
+                                  nextRequest: nil, installStart: job.installStart)
+    }
+
+    /// R3 as PowerPoint (`WeeklySlides`), written to a temporary file to share.
+    static func weeklySlides(_ job: Job, week: Date) throws -> URL {
+        let (input, images) = slidesInput(job, week: week)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(WeeklySlides.fileName(week: input.week, station: job.stationName))
         try WeeklySlides.export(input, images: images).write(to: url, options: .atomic)
         return url
     }

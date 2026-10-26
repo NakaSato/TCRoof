@@ -1,12 +1,13 @@
 import SwiftUI
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// The iPad install tracking page of one station (docs/ui/install-tracking-ipad): the blue header, the project's tab
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request, weekly }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
@@ -67,7 +68,20 @@ struct InstallTrackingPage: View {
     @State var reqToast: String?
     @State var reqPulledAt: Date?
     @State var reqPulling = false
-    @State var reportWeek = 0
+    @State var reportWeek = Debug.reportWeek
+    /// iPad `Weekly Report` (docs/ui/install-tracking-ipad-weekly-report): the selected slide (0…7), the recipients picked
+    /// for a week not sent yet (nil: the default two), the download menu, the .pptx sheet, the share sheet's files, the
+    /// week's content and photos (worked out when the week changes), a short note, and `-installDemo YES`'s sends.
+    @State var reportSlide = Debug.reportSlide
+    @State var reportTo: [String]?
+    @State var reportDownload = false
+    @State var reportPptx = false
+    @State var reportShare: WeeklyShare?
+    @State var reportDeckShare: WeeklyShare?
+    @State var reportContent: WeeklySlides.Content?
+    @State var reportPhotos: [UUID: UIImage] = [:]
+    @State var reportNote: String?
+    @State var reportDemoSent: [String: RoutineReport.WeeklySent] = [:]
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
     /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first
@@ -120,8 +134,12 @@ struct InstallTrackingPage: View {
         VStack(spacing: 0) {
             header(data)
             tabBar(data)
+            // Weekly Report doesn't scroll: its rail and panel scroll inside themselves
+            if tab == .weekly {
+                weeklyTab()
+                    .task(id: reportWeek) { loadReport() }
             // คำขอรายสัปดาห์ scrolls its form and keeps its panel still
-            if tab == .request {
+            } else if tab == .request {
                 requestTab()
                     .task(id: requestWeek) {
                         loadRequest()
@@ -144,7 +162,7 @@ struct InstallTrackingPage: View {
                             planTab(data)
                         case .docs:
                             docsTab()
-                        case .request:
+                        case .request, .weekly:
                             EmptyView()
                         }
                     }
@@ -346,7 +364,7 @@ struct InstallTrackingPage: View {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
-         Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
+         Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan)]
@@ -460,7 +478,8 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily|plan|docs|request`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
+    /// `-installTab overview|daily|plan|docs|request|weekly`, `-installReportWeek n`, `-installReportSlide 1…8`,
+    /// `-installReportState ready|menu|pptx|sent`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
     /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
@@ -487,6 +506,12 @@ struct InstallTrackingPage: View {
         /// `-installRequestState sign|signed|sent|approved|pdf|edited`.
         static let requestState = UserDefaults.standard.string(forKey: "installRequestState")
         static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
+        /// `-installReportWeek 0|1|2`: the week being reported or one of the two before.
+        static let reportWeek = -UserDefaults.standard.integer(forKey: "installReportWeek")
+        /// `-installReportSlide 1…8`.
+        static let reportSlide = max(0, min(7, UserDefaults.standard.integer(forKey: "installReportSlide") - 1))
+        /// `-installReportState ready|menu|pptx|sent`.
+        static let reportState = UserDefaults.standard.string(forKey: "installReportState")
         /// iPhone: `-installTab request|weekly|iec|docs|settings` too, `-installSettings team|routine|connection` and
         /// `-installPlanEdit YES`.
         static let phoneTab = UserDefaults.standard.string(forKey: "installTab").flatMap(PhoneTab.init) ?? .overview
@@ -508,6 +533,8 @@ struct InstallTrackingPage: View {
         static let docsPackage: StationDocs.Package? = nil
         static let docsPaper: String? = nil
         static let requestWeek = 0
+        static let reportWeek = 0
+        static let reportSlide = 0
         #endif
     }
 }

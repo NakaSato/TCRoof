@@ -1,13 +1,13 @@
 import Foundation
 import TCRoofCore
 
-/// รายงานประจำสัปดาห์ R3 as PowerPoint for the weekly meeting (docs/specs/routine-reports-swift.md §4.4): the same content
-/// as the PDF (`RoutineReportPages.weekly`), 16:9, every text and table editable. Slides: the cover, the MP progress, one
-/// slide per daily report with its work and up to 4 photos, the weather, labour and tools, problems (with the working
-/// days that have no report), and next week's plan. Long tables continue on another slide.
+/// รายงานประจำสัปดาห์ R3 as PowerPoint for the weekly meeting, in the customer's `Weekly Report Template`
+/// (docs/ui/install-tracking-ipad-weekly-report §4.3): 16:9, 8 slides, every text and table editable: the cover, AGENDA,
+/// the MP progress, the week's work a day a row, two slides of three site photos, the weather and the problems with their
+/// fixes. The values are `content(_:images:)`'s, which the app's slide views draw too.
 ///
 /// Built on `Resources/weekly_template.pptx` (the master, the blank layout and a theme in TH Sarabun New); this adds the
-/// slides, their pictures and the entries that list them.
+/// slides, their pictures (the template's from `Resources/WeeklyTemplate/`) and the entries that list them.
 public enum WeeklySlides {
     public enum Failure: Error, Equatable { case template }
 
@@ -25,7 +25,11 @@ public enum WeeklySlides {
     public struct Day: Sendable {
         public var report: RoutineReport.Daily
         public var photos: [DayPhoto]
-        public init(report: RoutineReport.Daily, photos: [DayPhoto]) { self.report = report; self.photos = photos }
+        /// Our engineer signed it; an unsigned day waits on slides 4, 7 and 8.
+        public var signed: Bool
+        public init(report: RoutineReport.Daily, photos: [DayPhoto], signed: Bool = true) {
+            self.report = report; self.photos = photos; self.signed = signed
+        }
     }
 
     public struct Input: Sendable {
@@ -64,236 +68,202 @@ public enum WeeklySlides {
         guard let url = Bundle.module.url(forResource: "weekly_template", withExtension: "pptx")
                 ?? Bundle.module.url(forResource: "weekly_template", withExtension: "pptx", subdirectory: "Resources"),
               let data = try? Data(contentsOf: url), var zip = try? ZipArchive(data) else { throw Failure.template }
-        let deck = Deck(input, images: images)
-        try package(&zip, deck.slides(), subtitle: deck.subtitle)
+        let deck = Deck(content: content(input, images: images), images: images)
+        try package(&zip, deck.slides())
         return try zip.write()
     }
 
-    // MARK: - Content
+    // MARK: - Deck
 
+    /// The template's 8 slides from the week's content, laid out on the board's 1920 × 1080 slide (`px`).
     struct Deck {
-        let input: Input
+        let content: Content
         let images: [UUID: Data]
-        let range: ClosedRange<Date>
-        let days: [Day]
-        let reports: [RoutineReport.Daily]
-        let subtitle: String
-
-        init(_ input: Input, images: [UUID: Data]) {
-            self.input = input; self.images = images
-            let range = RoutineReport.week(of: input.week)
-            let cal = RoutineReport.calendar
-            self.range = range
-            days = input.days.filter { range.contains(cal.startOfDay(for: $0.report.date)) }.sorted { $0.report.date < $1.report.date }
-            reports = days.map(\.report)
-            var weekNo = ""
-            if let s = input.schedule {
-                let first = MasterSchedule.plan(s.input).compactMap(\.start).min() ?? range.lowerBound
-                if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) | " }
-            }
-            let station = [input.mpNumber.map { "MP \($0)" }, input.stationName,
-                           input.capacityKWp > 0 ? String(format: "%.2f kWp", input.capacityKWp) : nil].compactMap { $0 }.joined(separator: " | ")
-            subtitle = station + " | " + weekNo + RoutineReport.thaiDate(range.lowerBound) + " – " + RoutineReport.thaiDate(range.upperBound)
-        }
 
         func slides() -> [Slide] {
-            var out = [cover()]
-            out += progress()
-            out += days.map(day)
-            out.append(weather())
-            out += labour()
-            out += problems()
-            out += nextWeek()
-            return out
-        }
-
-        func cover() -> Slide {
-            var s = Slide(title: nil)
-            s.rect(0, 0, W, 2.6, fill: navy)
-            s.text(M, 0.7, W - 2 * M, 0.9, ["รายงานประจำสัปดาห์ (Weekly Report)"], size: 44, bold: true, color: white)
-            s.text(M, 1.55, W - 2 * M, 0.6, [subtitle], size: 22, color: white)
-            let set = input.settings
-            let rows = [["โครงการ", set.contractName.isEmpty ? input.stationName : set.contractName], ["สถานี", input.stationName],
-                        ["ผู้ว่าจ้าง", set.employer], ["ผู้รับจ้าง", set.contractor], ["รายงานประจำวัน", "\(reports.count) วัน"]]
-            s.table(M, 3.1, widths: [2.6, 9.7], rows: rows, size: 18, rowH: 0.5, header: false,
-                    fills: rows.map { _ in [soft, nil] })
-            return s
-        }
-
-        func progress() -> [Slide] {
-            guard let sch = input.schedule else { return [] }
-            let plan = MasterSchedule.plan(sch.input)
-            let st = MasterSchedule.status(plan: plan, actual: sch.actual, through: min(range.upperBound, input.asOf))
-            let v = st.variance
-            let gap = v < -0.05 ? "ช้ากว่าแผน " + RoutineReport.percent(-v) : v > 0.05 ? "เร็วกว่าแผน " + RoutineReport.percent(v) : "ตามแผน"
-            let rows = plan.filter { $0.weight > 0 }.map { p in
-                [p.task.code, p.task.title, RoutineReport.percent(p.weight),
-                 RoutineReport.percent(st.plannedByTask[p.task] ?? 0), RoutineReport.percent(st.actualByTask[p.task] ?? 0)]
-            }
-            return Self.chunks(rows, 14).enumerated().map { i, part in
-                var s = Slide(title: "ความก้าวหน้าตามแผน MP" + (i > 0 ? " (ต่อ)" : ""))
-                let figures: [(String, String, String)] = [("แผนสะสม", RoutineReport.percent(st.planned), navy),
-                                                           ("ทำได้สะสม", RoutineReport.percent(st.actual), navy),
-                                                           ("ผลต่าง", gap, v < -0.05 ? red : v > 0.05 ? green : navy)]
-                for (k, f) in figures.enumerated() {
-                    s.text(M, 1.6 + Double(k) * 1.15, 3.3, 0.4, [f.0], size: 18, color: muted)
-                    s.text(M, 1.95 + Double(k) * 1.15, 3.3, 0.7, [f.1], size: k < 2 ? 32 : 24, bold: true, color: f.2)
+            Kind.allCases.map { k -> Slide in
+                var s = Slide()
+                if k == .cover { cover(&s) } else { frame(&s, k) }
+                switch k {
+                case .cover: break
+                case .agenda: agenda(&s)
+                case .progress: progress(&s)
+                case .daily: daily(&s)
+                case .photos1: photos(&s, page: 0)
+                case .photos2: photos(&s, page: 1)
+                case .weather: weather(&s)
+                case .problems: problems(&s)
                 }
-                s.table(4.2, 1.6, widths: [0.8, 5.1, 0.9, 0.9, 0.9], rows: [["ข้อ", "งาน", "น้ำหนัก", "แผน", "ทำได้"]] + part,
-                        size: 14, rowH: 0.35, aligns: ["ctr", "l", "r", "r", "r"])
+                // the page number, bottom right
+                s.text(1386, 1003, 432, 58, ["\(k.rawValue)"], size: 12.6, color: Tpl.pageInk, align: "r")
                 return s
             }
         }
 
-        func day(_ d: Day) -> Slide {
-            let r = d.report
-            var s = Slide(title: "งานวันที่ " + RoutineReport.thaiDate(r.date))
-            let done = RoutineReport.workDone(r, in: input.all)
-            let lines = done.isEmpty
-                ? [r.stopReason.isEmpty ? "ไม่มีความก้าวหน้า" : "หยุดงาน: " + r.stopReason]
-                : done.map { "• \($0.line.title)  +\(RoutineReport.percent($0.delta)) (สะสม \(RoutineReport.percent($0.line.percent)))" }
-            // only pictures PowerPoint can show: a JPEG or PNG whose size can be read
-            let usable = d.photos.filter { p in images[p.id].flatMap { IECWord.pixelSize($0) } != nil }
-            let tagged = usable.filter { !$0.caption.isEmpty }
-            let pick = Array((tagged.isEmpty ? usable : tagged).prefix(4))
-            s.text(M, 1.6, pick.isEmpty ? W - 2 * M : 4.6, 5.2, lines, size: 18)
-            for (k, p) in pick.enumerated() {
-                let x = 5.4 + Double(k % 2) * 3.75, y = 1.6 + Double(k / 2) * 2.7
-                guard let bytes = images[p.id] else { continue }
-                s.rect(x, y, 3.6, 2.25, fill: photoBack)
-                s.picture(x, y, 3.6, 2.25, data: bytes, pixels: (p.width, p.height), descr: p.caption)
-                s.text(x, y + 2.27, 3.6, 0.38, [p.caption.isEmpty ? RoutineReport.thaiDate(r.date) : p.caption],
-                       size: 14, color: navy, align: "ctr")
-            }
-            return s
+        /// The blue band, the cover's seal and its four lines.
+        func cover(_ s: inout Slide) {
+            s.rect(0, 80, 1920, 110, fill: Tpl.band)
+            if let seal = templatePicture("logo-pea-seal") { s.picture(1608, 28, 228, 214, data: seal, descr: "ตราการไฟฟ้าส่วนภูมิภาค") }
+            s.text(160, 283, 1600, 146, ["Weekly Report"], size: 75.6, bold: true, color: Tpl.title, align: "ctr", anchor: "ctr")
+            // one paragraph that wraps, as the customer's cover
+            s.text(170, 486, 1580, 305, [(content.project + [content.station]).joined(separator: " ")], size: 56, bold: true, color: Tpl.coverInk, align: "ctr", anchor: "ctr")
+            s.text(99, 887, 1700, 102, [content.range], size: 50.4, bold: true, color: Tpl.coverInk, align: "ctr", anchor: "ctr")
         }
 
-        func weather() -> Slide {
-            var s = Slide(title: "สภาพอากาศ")
-            let cal = RoutineReport.calendar, hours = RoutineReport.weatherHours
-            var rows = [["วัน"] + hours.map { String(format: "%02d", $0) }]
-            var fills: [[String?]] = [Array(repeating: nil, count: hours.count + 1)]
-            for i in 0..<7 {
-                let d = cal.date(byAdding: .day, value: i, to: range.lowerBound)!
-                let slots = reports.first { RoutineReport.dayKey($0.date) == RoutineReport.dayKey(d) }?.weather
-                    ?? Array(repeating: nil, count: hours.count)
-                rows.append([RoutineReport.thaiDate(d)] + hours.indices.map { slots[safe: $0]??.rawValue ?? "" })
-                fills.append([nil] + hours.indices.map { i -> String? in
-                    switch slots[safe: i] ?? nil { case .fine?: sun; case .cloudy?: cloud; case .rain?: rain; case nil: nil }
-                })
-            }
-            s.table(M, 1.6, widths: [1.8] + Array(repeating: 0.69, count: hours.count), rows: rows, size: 14, rowH: 0.42,
-                    fills: fills, aligns: ["l"] + Array(repeating: "ctr", count: hours.count))
-            s.text(M, 5.15, W - 2 * M, 0.8, ["F = ท้องฟ้าโปร่ง   C = เมฆครึ้ม   R = ฝนตก",
-                                             "ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน"],
-                   size: 16, color: muted)
-            return s
+        /// Every slide but the cover: the band with its yellow title and the template's mark at its left.
+        func frame(_ s: inout Slide, _ k: Kind) {
+            s.rect(0, 49, 1920, 92, fill: Tpl.band)
+            s.text(0, 42, 1920, 92, [k.bandTitle], size: k == .agenda || k == .weather ? 56 : 50.4, color: Tpl.bandTitle, align: "ctr", anchor: "ctr")
+            s.rect(35, 6, 60, 156, fill: Tpl.markGrey, line: Tpl.markGreyLine, lineWidth: 10)
+            s.rect(76, 15, 63, 83, fill: Tpl.markYellow, line: Tpl.markYellowLine, lineWidth: 10)
+            s.shape("homePlate", 126, 49, 43, 56, fill: Tpl.markArrow, line: Tpl.markArrowLine, lineWidth: 10)
         }
 
-        func labour() -> [Slide] {
-            let men = RoutineReport.manDays(reports), tools = RoutineReport.toolDays(reports)
-            // typed and split: one long untyped expression can be too slow for the type checker
-            let total = men.reduce(0) { $0 + $1.days }
-            var menRows: [[String]] = men.map { [$0.name, String($0.days)] }
-            if !men.isEmpty { menRows.append(["รวม", String(total)]) }
-            let toolRows: [[String]] = tools.map { [$0.name, String($0.days)] }
-            let parts = max(Self.chunks(menRows, 10).count, Self.chunks(toolRows, 10).count, 1)
-            let unconfirmed = reports.filter { !$0.crewConfirmed && $0.crewTotal > 0 }.count
-            return (0..<parts).map { i in
-                var s = Slide(title: "แรงงานและเครื่องมือ" + (i > 0 ? " (ต่อ)" : ""))
-                if men.isEmpty, tools.isEmpty { s.text(M, 1.6, 6, 0.5, ["ไม่มี"], size: 18, color: muted) }
-                if let part = Self.chunks(menRows, 10)[safe: i] {
-                    let bold: Set<Int> = i == Self.chunks(menRows, 10).count - 1 ? [part.count] : []
-                    s.table(M, 1.6, widths: [4.0, 2.0], rows: [["ตำแหน่ง", "แรงงาน (คน-วัน)"]] + part, size: 16, rowH: 0.42,
-                            aligns: ["l", "ctr"], boldRows: bold)
-                }
-                if let part = Self.chunks(toolRows, 10)[safe: i] {
-                    s.table(6.9, 1.6, widths: [4.0, 2.0], rows: [["เครื่องมือ", "เครื่อง-วัน"]] + part, size: 16, rowH: 0.42, aligns: ["l", "ctr"])
-                }
-                if i == 0, unconfirmed > 0 {
-                    s.text(M, 6.45, W - 2 * M, 0.45, ["* \(unconfirmed) วันใช้กำลังคนจากวันก่อนโดยไม่ได้ยืนยัน"], size: 14, color: red)
-                }
-                return s
+        func agenda(_ s: inout Slide) {
+            for (i, item) in ["CONSTRUCTION PROGRESS", "Weather Report", "ปัญหาและอุปสรรค"].enumerated() {
+                let y = 205 + 150 * Double(i)
+                if let hex = templatePicture("agenda-hex-\(i + 1)") { s.picture(118, y, 140, 120, data: hex, descr: "\(i + 1).") }
+                s.text(300, y + 26, 1400, 68, [item], size: 39.2)
+                s.line(258, y + 112, 1758, y + 112, color: Tpl.dots, width: 4, dash: "sysDot")
+                s.shape("ellipse", 1752, y + 109, 10, 10, fill: Tpl.dot)
             }
         }
 
-        func problems() -> [Slide] {
-            let p = RoutineReport.problems(reports)
-            let rows = p.open.map { [$0.description, $0.solution, "ยังเปิด"] } + p.closed.map { [$0.description, $0.solution, "ปิดแล้ว"] }
-            let from = max(range.lowerBound, input.installStart ?? range.lowerBound), to = min(range.upperBound, input.asOf)
-            let missing = from <= to
-                ? RoutineReport.missingDays(reported: reports.map(\.date), settings: input.settings, from: from, to: to) : []
-            let parts = Self.chunks(rows, 9)
-            return (parts.isEmpty ? [[]] : parts).enumerated().map { i, part in
-                var s = Slide(title: "ปัญหา / อุปสรรค" + (i > 0 ? " (ต่อ)" : ""))
-                if part.isEmpty { s.text(M, 1.6, 6, 0.5, ["ไม่มี"], size: 18, color: muted) } else {
-                    s.table(M, 1.6, widths: [4.8, 5.4, 2.1], rows: [["ปัญหา", "แนวทางแก้ไข", "สถานะ"]] + part, size: 16, rowH: 0.45,
-                            aligns: ["l", "l", "ctr"])
-                }
-                if i == 0, !missing.isEmpty {
-                    s.text(M, 6.2, W - 2 * M, 0.7, ["วันทำงานที่ไม่มีรายงานประจำวัน: " + missing.map(RoutineReport.thaiDate).joined(separator: ", ")],
-                           size: 14, color: red)
-                }
-                return s
+        func progress(_ s: inout Slide) {
+            s.text(64, 168, 1000, 68, ["ความก้าวหน้าของงาน"], size: 39.2, bold: true)
+            s.rect(64, 262, 1300, 668, fill: Tpl.chartBack, line: Tpl.chartLine, lineWidth: 2)
+            // the legend
+            s.rect(1050, 300, 22, 22, fill: Tpl.planBar); s.text(1078, 290, 80, 40, ["แผน"], size: 24)
+            s.rect(1170, 300, 22, 22, fill: Tpl.band); s.text(1198, 290, 80, 40, ["จริง"], size: 24)
+            let bars = content.bars
+            guard !bars.isEmpty else {
+                s.text(140, 560, 1180, 60, ["ยังไม่มีแผน MP"], size: 33.6, color: Tpl.pageInk, align: "ctr")
+                return
+            }
+            // six weeks, plan and actual side by side; 60 % fills the chart until a week goes past it
+            let top = max(60, bars.map { max($0.planned, $0.actual) }.max() ?? 0)
+            let gap = 40.0, groupW = (1180 - gap * Double(bars.count - 1)) / Double(bars.count)
+            let full = 476.0, base = 860.0, barW = (groupW - 8) / 2
+            for (i, b) in bars.enumerated() {
+                let x = 140 + Double(i) * (groupW + gap)
+                let ph = full * b.planned / top, ah = full * b.actual / top
+                s.rect(x, base - ph, barW, max(ph, 0.5), fill: Tpl.planBar)
+                s.rect(x + barW + 8, base - ah, barW, max(ah, 0.5), fill: b.current ? Tpl.band : Tpl.actualBar)
+                s.text(x, base - full - 48, groupW, 44, [Self.pct(b.actual) + "%"], size: 28, bold: true, align: "ctr")
+                s.text(x, 870, groupW, 44, [b.label], size: 28, bold: b.current, align: "ctr")
+            }
+            s.line(140, base, 1320, base, color: Tpl.axis, width: 3)
+            s.text(1366, 443, 478, 286, ["% WORK PROGRESS", "PLAN : \(Self.pct(content.planned ?? 0)) %",
+                                         "ACTUAL : \(Self.pct(content.actual ?? 0)) %", "STATUS : \(content.status ?? "0") %"],
+                   size: 39.2, color: Tpl.white, fill: Tpl.boxGrey, inset: 28)
+            s.text(308, 948, 812, 58, [content.asOf], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "dash")
+        }
+
+        static func pct(_ x: Double) -> String { String(Int(x.rounded())) }
+
+        func daily(_ s: inout Slide) {
+            s.text(116, 160, 1688, 50, [content.station], size: 28, bold: true)
+            var rows: [[String]] = [["ลำดับ", "สัปดาห์ที่", "วันที่", "การดำเนินงาน"]]
+            var fills: [[String?]] = [Array(repeating: Tpl.band, count: 4)]
+            var inks: [[String?]] = [Array(repeating: Tpl.white, count: 4)]
+            var italics: Set<Int> = []
+            for r in content.rows {
+                rows.append([String(r.number), String(content.weekNumber), r.dateText, r.lines.joined(separator: "\n")])
+                let wait = r.state == .waiting
+                fills.append([nil, nil, nil, wait ? Tpl.waitFill : nil])
+                inks.append([nil, nil, nil, wait ? Tpl.waitInk : nil])
+                if wait { italics.insert(rows.count - 1) }
+            }
+            s.table(116, 216, widths: [95, 126, 186, 1281], rows: rows, size: 22.4, headerSize: 25.2, rowH: 80, headerH: 50, fills: fills, inks: inks,
+                    aligns: ["ctr", "ctr", "ctr", "l"], border: Tpl.tableLine, italicRows: italics)
+        }
+
+        func photos(_ s: inout Slide, page: Int) {
+            s.text(50, 168, 1200, 68, ["PROGRESS FOR THIS WEEK"], size: 39.2)
+            let list = content.photos(page: page), w = (1732 - 44) / 3.0
+            for i in 0..<3 {
+                let x = 94 + Double(i) * (w + 22)
+                s.rect(x, 300, w, 520, fill: Tpl.photoBack)
+                guard list.indices.contains(i) else { continue }
+                let p = list[i]
+                if let bytes = images[p.id] { s.picture(x, 300, w, 520, data: bytes, descr: p.caption) }
+                s.text(x, 840, w, 58, [p.caption], size: 25.2, align: "ctr", anchor: "ctr", line: Tpl.ink, dash: "dash")
             }
         }
 
-        func nextWeek() -> [Slide] {
-            let rows = (input.nextRequest?.work ?? []).map { [$0.task?.code ?? "อื่น", $0.description, $0.location] }
-            let parts = Self.chunks(rows, 11)
-            return (parts.isEmpty ? [[]] : parts).enumerated().map { i, part in
-                var s = Slide(title: "แผนงานสัปดาห์ถัดไป" + (i > 0 ? " (ต่อ)" : ""))
-                if part.isEmpty { s.text(M, 1.6, 8, 0.5, ["ยังไม่มีคำขอปฏิบัติงานสัปดาห์ถัดไป"], size: 18, color: muted) } else {
-                    s.table(M, 1.6, widths: [1.2, 7.4, 3.7], rows: [["งาน MP", "รายละเอียด", "ตำแหน่ง"]] + part, size: 16, rowH: 0.42,
-                            aligns: ["ctr", "l", "l"])
+        func weather(_ s: inout Slide) {
+            let w = 1298 / 7.0
+            s.rect(356, 236, 1298, 110, gradient: [Tpl.wxTop, Tpl.wxMid, Tpl.white], line: Tpl.wxLine, lineWidth: 2)
+            for (i, d) in content.weather.enumerated() {
+                let x = 356 + Double(i) * w
+                s.text(x, 246, w, 100, [d.name], size: 25.2, color: d.colour, align: "ctr", anchor: "ctr")
+                s.rect(x, 364, w, 244, fill: Tpl.wxIcon, line: Tpl.wxIconLine, lineWidth: 3)
+                if let icon = d.icon, let png = templatePicture(icon.rawValue) {
+                    s.picture(x + (w - 150) / 2, 411, 150, 150, data: png, descr: d.text)
                 }
-                return s
+                s.text(x, 605, w, 220, [d.text], size: 33.6, align: "ctr", anchor: "ctr", gradient: [Tpl.wxTextTop, Tpl.wxTextBottom], line: Tpl.ink, lineWidth: 3)
+                s.text(x, 825, w, 110, [d.date], size: 36, color: Tpl.dateInk, align: "ctr", anchor: "ctr", gradient: [Tpl.dateTop, Tpl.dateBottom], line: Tpl.ink, lineWidth: 3)
             }
         }
 
-        static func chunks<T>(_ list: [T], _ n: Int) -> [[T]] {
-            stride(from: 0, to: list.count, by: n).map { Array(list[$0..<min($0 + n, list.count)]) }
+        func problems(_ s: inout Slide) {
+            let bullets: ([String]) -> [(String, Bool)] = { list in
+                list.isEmpty ? [("• ไม่มี", false)] : list.map { ("• " + $0, false) }
+            }
+            let lines = [("ปัญหาและอุปสรรคระหว่างปฏิบัติงาน", true)] + bullets(content.problems)
+                + [("แนวทางแก้ไข", true)] + bullets(content.fixes)
+            s.rich(195, 260, 1593, 720, lines, size: 37.1)
         }
     }
 
     // MARK: - Drawing
 
-    /// Slide size and margin in inches; colours as the PDF's.
-    static let W = 13.333, H = 7.5, M = 0.5
-    static let navy = "16325C", primary = "1F6FB5", muted = "6B7A90", soft = "E3EEF8", line = "C9D3DF"
-    static let red = "B42318", green = "2E7D32", sun = "FCE7A6", cloud = "D5DCE5", rain = "9CC3E8"
-    static let white = "FFFFFF", photoBack = "F2F4F7", black = "000000"
-    static let font = "TH Sarabun New"
+    /// The customer's template colours (a document, like the PDF: not the app's `Theme`).
+    enum Tpl {
+        static let band = "4472C4", bandTitle = "FFFF00", title = "002060", ink = "000000", white = "FFFFFF", pageInk = "898989", coverInk = "6E747A"
+        static let markGrey = "808080", markGreyLine = "A6A6A6", markYellow = "FFC000", markYellowLine = "FFFF00"
+        static let markArrow = "F4B183", markArrowLine = "C55A11"
+        static let dots = "C0C0C0", dot = "A6A6A6"
+        static let chartBack = "FAFBFD", chartLine = "D0D7E2", planBar = "BFC9D9", actualBar = "8FAADC", axis = "333333", boxGrey = "808080"
+        static let tableLine = "1F4E79", waitFill = "FFF3E6", waitInk = "C55A11", photoBack = "F2F4F7"
+        static let wxTop = "2E75C0", wxMid = "DCE6F4", wxLine = "2F5597", wxIcon = "5B9BD5", wxIconLine = "002060"
+        static let wxTextTop = "D9E2F3", wxTextBottom = "A9C7EA", dateInk = "FFC000", dateTop = "1F4E79", dateBottom = "002060"
+    }
 
-    static func emu(_ inches: Double) -> String { String(Int((inches * 914_400).rounded())) }
+    /// Slide size in inches, and the board's 1920 px slide in inches.
+    static let W = 13.333, H = 7.5
+    static let px = W / 1920
+    /// The customer's deck sets its text in TH SarabunPSK and its tables in TH Sarabun New.
+    static let font = "TH SarabunPSK", tableFont = "TH Sarabun New"
+    /// The board draws in Sarabun at 1.4 × the deck's point size (its 50.4 px band title is the deck's 36 pt).
+    static let ptPerPx = 1 / 1.4
+
+    static func emu(_ v: Double) -> String { String(Int((v * px * 914_400).rounded())) }
 
     static func escape(_ s: String) -> String {
         s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
     }
 
-    /// One slide's shapes and pictures; the header and footer are added when the deck is packed.
+    /// One slide's shapes and pictures, in the board's px. A font size is the board's px, half of it in points.
     struct Slide {
-        /// nil for the cover, which has its own header.
-        var title: String?
         var shapes: [String] = []
         /// Picture bytes and extension, in the order of their relationship ids (rId2…).
         var images: [(data: Data, ext: String)] = []
         var nextID = 2
 
-        init(title: String?) { self.title = title }
-
         mutating func id() -> Int { defer { nextID += 1 }; return nextID }
 
-        static func run(_ text: String, size: Double, bold: Bool, color: String) -> String {
-            "<a:r><a:rPr lang=\"th-TH\" sz=\"\(Int(size * 100))\"\(bold ? " b=\"1\"" : "") dirty=\"0\"><a:solidFill><a:srgbClr val=\"\(color)\"/></a:solidFill>"
-                + "<a:latin typeface=\"\(font)\"/><a:cs typeface=\"\(font)\"/></a:rPr><a:t>\(escape(text))</a:t></a:r>"
+        static func run(_ text: String, size: Double, bold: Bool, italic: Bool = false, color: String, font: String = WeeklySlides.font) -> String {
+            "<a:r><a:rPr lang=\"th-TH\" sz=\"\(Int((size * ptPerPx * 100).rounded()))\"\(bold ? " b=\"1\"" : "")\(italic ? " i=\"1\"" : "") dirty=\"0\"><a:solidFill><a:srgbClr val=\"\(color)\"/></a:solidFill>"
+                + "<a:latin typeface=\"\(font)\"/><a:ea typeface=\"\(font)\"/><a:cs typeface=\"\(font)\"/></a:rPr><a:t>\(escape(text))</a:t></a:r>"
         }
 
-        static func paragraphs(_ lines: [String], size: Double, bold: Bool, color: String, align: String) -> String {
-            lines.map { line in
-                "<a:p><a:pPr algn=\"\(align)\"/>" + (line.isEmpty ? "" : run(line, size: size, bold: bold, color: color))
-                    + "<a:endParaRPr lang=\"th-TH\" sz=\"\(Int(size * 100))\"/></a:p>"
+        static func paragraphs(_ lines: [(String, Bool)], size: Double, italic: Bool = false, color: String, align: String,
+                               font: String = WeeklySlides.font) -> String {
+            lines.map { line, bold in
+                "<a:p><a:pPr algn=\"\(align)\"/>" + (line.isEmpty ? "" : run(line, size: size, bold: bold, italic: italic, color: color, font: font))
+                    + "<a:endParaRPr lang=\"th-TH\" sz=\"\(Int((size * ptPerPx * 100).rounded()))\"/></a:p>"
             }.joined()
         }
 
@@ -301,29 +271,69 @@ public enum WeeklySlides {
             "<a:xfrm><a:off x=\"\(emu(x))\" y=\"\(emu(y))\"/><a:ext cx=\"\(emu(w))\" cy=\"\(emu(h))\"/></a:xfrm>"
         }
 
-        static func solid(_ color: String?) -> String {
-            color.map { "<a:solidFill><a:srgbClr val=\"\($0)\"/></a:solidFill>" } ?? "<a:noFill/>"
+        /// A solid fill, a top-to-bottom gradient, or none.
+        static func fill(_ color: String?, gradient: [String]? = nil) -> String {
+            if let g = gradient, g.count > 1 {
+                let stops = g.enumerated().map { i, c in "<a:gs pos=\"\(i * 100_000 / (g.count - 1))\"><a:srgbClr val=\"\(c)\"/></a:gs>" }.joined()
+                return "<a:gradFill rotWithShape=\"1\"><a:gsLst>\(stops)</a:gsLst><a:lin ang=\"5400000\" scaled=\"0\"/></a:gradFill>"
+            }
+            return color.map { "<a:solidFill><a:srgbClr val=\"\($0)\"/></a:solidFill>" } ?? "<a:noFill/>"
+        }
+
+        static func outline(_ color: String?, width: Double, dash: String?) -> String {
+            guard let color else { return "<a:ln><a:noFill/></a:ln>" }
+            return "<a:ln w=\"\(Int(width * px * 914_400))\"><a:solidFill><a:srgbClr val=\"\(color)\"/></a:solidFill>"
+                + (dash.map { "<a:prstDash val=\"\($0)\"/>" } ?? "") + "</a:ln>"
         }
 
         mutating func text(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ lines: [String], size: Double, bold: Bool = false,
-                           color: String = black, align: String = "l") {
-            let i = id()
-            shapes.append("<p:sp><p:nvSpPr><p:cNvPr id=\"\(i)\" name=\"Text \(i)\"/><p:cNvSpPr txBox=\"1\"/><p:nvPr/></p:nvSpPr>"
-                + "<p:spPr>\(Self.frame(x, y, w, h))<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>"
-                + "<p:txBody><a:bodyPr wrap=\"square\" lIns=\"45720\" tIns=\"27432\" rIns=\"45720\" bIns=\"27432\" anchor=\"t\"><a:noAutofit/></a:bodyPr><a:lstStyle/>"
-                + Self.paragraphs(lines, size: size, bold: bold, color: color, align: align) + "</p:txBody></p:sp>")
+                           color: String = Tpl.ink, align: String = "l", anchor: String = "t", fill: String? = nil, gradient: [String]? = nil,
+                           line: String? = nil, lineWidth: Double = 2, dash: String? = nil, inset: Double = 6) {
+            add(x, y, w, h, lines.map { ($0, bold) }, size: size, color: color, align: align, anchor: anchor, fill: fill, gradient: gradient,
+                line: line, lineWidth: lineWidth, dash: dash, inset: inset)
         }
 
-        mutating func rect(_ x: Double, _ y: Double, _ w: Double, _ h: Double, fill: String) {
+        /// Paragraphs each bold or not.
+        mutating func rich(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ lines: [(String, Bool)], size: Double) {
+            add(x, y, w, h, lines, size: size, color: Tpl.ink, align: "l", anchor: "t", fill: nil, gradient: nil, line: nil, lineWidth: 0, dash: nil, inset: 6)
+        }
+
+        private mutating func add(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ lines: [(String, Bool)], size: Double, color: String,
+                                  align: String, anchor: String, fill: String?, gradient: [String]?, line: String?, lineWidth: Double,
+                                  dash: String?, inset: Double) {
+            let i = id(), ins = emu(inset)
+            shapes.append("<p:sp><p:nvSpPr><p:cNvPr id=\"\(i)\" name=\"Text \(i)\"/><p:cNvSpPr txBox=\"1\"/><p:nvPr/></p:nvSpPr>"
+                + "<p:spPr>\(Self.frame(x, y, w, h))<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom>\(Self.fill(fill, gradient: gradient))"
+                + Self.outline(line, width: lineWidth, dash: dash) + "</p:spPr>"
+                + "<p:txBody><a:bodyPr wrap=\"square\" lIns=\"\(ins)\" tIns=\"\(ins)\" rIns=\"\(ins)\" bIns=\"\(ins)\" anchor=\"\(anchor)\"><a:noAutofit/></a:bodyPr><a:lstStyle/>"
+                + Self.paragraphs(lines, size: size, color: color, align: align) + "</p:txBody></p:sp>")
+        }
+
+        mutating func rect(_ x: Double, _ y: Double, _ w: Double, _ h: Double, fill: String? = nil, gradient: [String]? = nil,
+                           line: String? = nil, lineWidth: Double = 0) {
+            shape("rect", x, y, w, h, fill: fill, gradient: gradient, line: line, lineWidth: lineWidth)
+        }
+
+        mutating func shape(_ prst: String, _ x: Double, _ y: Double, _ w: Double, _ h: Double, fill: String? = nil, gradient: [String]? = nil,
+                            line: String? = nil, lineWidth: Double = 0) {
             let i = id()
             shapes.append("<p:sp><p:nvSpPr><p:cNvPr id=\"\(i)\" name=\"Shape \(i)\"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"
-                + "<p:spPr>\(Self.frame(x, y, w, h))<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom>\(Self.solid(fill))<a:ln><a:noFill/></a:ln></p:spPr></p:sp>")
+                + "<p:spPr>\(Self.frame(x, y, w, h))<a:prstGeom prst=\"\(prst)\"><a:avLst/></a:prstGeom>\(Self.fill(fill, gradient: gradient))"
+                + Self.outline(line, width: lineWidth, dash: nil) + "</p:spPr></p:sp>")
+        }
+
+        /// A straight line from (x1, y1) to (x2, y2).
+        mutating func line(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, color: String, width: Double, dash: String? = nil) {
+            let i = id()
+            shapes.append("<p:cxnSp><p:nvCxnSpPr><p:cNvPr id=\"\(i)\" name=\"Line \(i)\"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>"
+                + "<p:spPr>\(Self.frame(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1)))<a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom>"
+                + Self.outline(color, width: width, dash: dash) + "</p:spPr></p:cxnSp>")
         }
 
         /// The picture fitted inside the box, centred.
-        mutating func picture(_ x: Double, _ y: Double, _ w: Double, _ h: Double, data: Data, pixels: (Int, Int), descr: String) {
-            let size: (Int, Int) = IECWord.pixelSize(data).map { ($0.w, $0.h) } ?? pixels
-            let pw = Double(max(size.0, 1)), ph = Double(max(size.1, 1)), k = min(w / pw, h / ph)
+        mutating func picture(_ x: Double, _ y: Double, _ w: Double, _ h: Double, data: Data, descr: String) {
+            let size = IECWord.pixelSize(data) ?? (w: Int(w), h: Int(h))
+            let pw = Double(max(size.w, 1)), ph = Double(max(size.h, 1)), k = min(w / pw, h / ph)
             let dw = pw * k, dh = ph * k
             let i = id()
             images.append((data, data.first == 0x89 ? "png" : "jpeg"))
@@ -333,41 +343,31 @@ public enum WeeklySlides {
                 + "<p:spPr>\(Self.frame(x + (w - dw) / 2, y + (h - dh) / 2, dw, dh))<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></p:spPr></p:pic>")
         }
 
-        /// A table: the first row is the header (unless `header` is false), cells bordered, text editable.
-        mutating func table(_ x: Double, _ y: Double, widths: [Double], rows: [[String]], size: Double, rowH: Double, header: Bool = true,
-                            fills: [[String?]]? = nil, aligns: [String]? = nil, boldRows: Set<Int> = []) {
+        /// A table: the first row is the header, cells bordered, text editable.
+        mutating func table(_ x: Double, _ y: Double, widths: [Double], rows: [[String]], size: Double, headerSize: Double, rowH: Double, headerH: Double,
+                            fills: [[String?]], inks: [[String?]], aligns: [String], border: String, italicRows: Set<Int>) {
             let i = id()
             let grid = widths.map { "<a:gridCol w=\"\(emu($0))\"/>" }.joined()
-            let border = ["lnL", "lnR", "lnT", "lnB"].map { "<a:\($0) w=\"6350\"><a:solidFill><a:srgbClr val=\"\(line)\"/></a:solidFill></a:\($0)>" }.joined()
+            let lines = ["lnL", "lnR", "lnT", "lnB"].map { "<a:\($0) w=\"12700\"><a:solidFill><a:srgbClr val=\"\(border)\"/></a:solidFill></a:\($0)>" }.joined()
             var trs = ""
             for (r, cells) in rows.enumerated() {
                 var tcs = ""
                 for (c, value) in cells.enumerated() where c < widths.count {
-                    let head = header && r == 0
-                    let fill = head ? soft : fills?[safe: r]?[safe: c] ?? nil
-                    let align = head ? "ctr" : aligns?[safe: c] ?? "l"
+                    let head = r == 0
                     tcs += "<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>"
-                        + Self.paragraphs(value.components(separatedBy: "\n"), size: size, bold: head || boldRows.contains(r),
-                                          color: head ? navy : black, align: align)
-                        + "</a:txBody><a:tcPr marL=\"45720\" marR=\"45720\" marT=\"22860\" marB=\"22860\" anchor=\"ctr\">\(border)\(Self.solid(fill))</a:tcPr></a:tc>"
+                        + Self.paragraphs(value.components(separatedBy: "\n").map { ($0, false) }, size: head ? headerSize : size, italic: italicRows.contains(r),
+                                          color: inks[safe: r]?[safe: c].flatMap { $0 } ?? Tpl.ink, align: head ? "ctr" : aligns[safe: c] ?? "l",
+                                          font: tableFont)
+                        + "</a:txBody><a:tcPr marL=\"\(emu(14))\" marR=\"\(emu(14))\" marT=\"\(emu(7))\" marB=\"\(emu(7))\" anchor=\"\(head ? "ctr" : "t")\">"
+                        + lines + Self.fill(fills[safe: r]?[safe: c].flatMap { $0 }) + "</a:tcPr></a:tc>"
                 }
-                trs += "<a:tr h=\"\(emu(rowH))\">\(tcs)</a:tr>"
+                trs += "<a:tr h=\"\(emu(r == 0 ? headerH : rowH))\">\(tcs)</a:tr>"
             }
+            let height = headerH + rowH * Double(rows.count - 1)
             shapes.append("<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id=\"\(i)\" name=\"Table \(i)\"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp=\"1\"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>"
-                + "<p:xfrm><a:off x=\"\(emu(x))\" y=\"\(emu(y))\"/><a:ext cx=\"\(emu(widths.reduce(0, +)))\" cy=\"\(emu(rowH * Double(rows.count)))\"/></p:xfrm>"
-                + "<a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/table\"><a:tbl><a:tblPr firstRow=\"\(header ? 1 : 0)\"/>"
+                + "<p:xfrm><a:off x=\"\(emu(x))\" y=\"\(emu(y))\"/><a:ext cx=\"\(emu(widths.reduce(0, +)))\" cy=\"\(emu(height))\"/></p:xfrm>"
+                + "<a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/table\"><a:tbl><a:tblPr firstRow=\"1\"/>"
                 + "<a:tblGrid>\(grid)</a:tblGrid>\(trs)</a:tbl></a:graphicData></a:graphic></p:graphicFrame>")
-        }
-
-        /// The title, the station line and the page number; the cover has only its footer.
-        mutating func addFrame(subtitle: String, page: Int, pages: Int) {
-            if let title {
-                text(M, 0.3, W - 2 * M, 0.62, [title], size: 30, bold: true, color: navy)
-                text(M, 0.88, W - 2 * M, 0.42, [subtitle], size: 18, color: muted)
-                rect(M, 1.34, W - 2 * M, 0.03, fill: primary)
-                text(W - M - 2, 7.0, 2, 0.36, ["\(page)/\(pages)"], size: 12, color: muted, align: "r")
-            }
-            text(M, 7.0, 6, 0.36, ["สร้างจาก TCRoof"], size: 12, color: muted)
         }
 
         static let ns = "xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" "
@@ -389,13 +389,12 @@ public enum WeeklySlides {
 
     /// Adds the slides to the template: each slide's part and relationships (the blank layout, its pictures), the
     /// pictures, the presentation's slide list and the content types.
-    static func package(_ zip: inout ZipArchive, _ list: [Slide], subtitle: String) throws {
+    static func package(_ zip: inout ZipArchive, _ list: [Slide]) throws {
         guard var pres = zip.string("ppt/presentation.xml"), var rels = zip.string("ppt/_rels/presentation.xml.rels"),
               var types = zip.string("[Content_Types].xml") else { throw Failure.template }
         var next = (rels.components(separatedBy: "Id=\"rId").dropFirst().compactMap { Int($0.prefix { $0.isNumber }) }.max() ?? 0) + 1
         var ids = "", image = 1
-        for (n, var s) in list.enumerated().map({ ($0.offset + 1, $0.element) }) {
-            s.addFrame(subtitle: subtitle, page: n, pages: list.count)
+        for (n, s) in list.enumerated().map({ ($0.offset + 1, $0.element) }) {
             zip.set("ppt/slides/slide\(n).xml", s.xml)
             var r = "<Relationship Id=\"rId1\" Type=\"\(rel)/slideLayout\" Target=\"../slideLayouts/slideLayout7.xml\"/>"
             for (k, img) in s.images.enumerated() {
@@ -411,6 +410,13 @@ public enum WeeklySlides {
                                              with: "<Relationship Id=\"\(rid)\" Type=\"\(rel)/slide\" Target=\"slides/slide\(n).xml\"/></Relationships>")
             ids += "<p:sldId id=\"\(255 + n)\" r:id=\"\(rid)\"/>"
             types = types.replacingOccurrences(of: "</Types>", with: "<Override PartName=\"/ppt/slides/slide\(n).xml\" ContentType=\"\(slideType)\"/></Types>")
+        }
+        // the template's pictures are PNG: make sure the package names the type
+        if !types.contains("Extension=\"png\"") {
+            types = types.replacingOccurrences(of: "</Types>", with: "<Default Extension=\"png\" ContentType=\"image/png\"/></Types>")
+        }
+        if !types.contains("Extension=\"jpeg\"") {
+            types = types.replacingOccurrences(of: "</Types>", with: "<Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/></Types>")
         }
         pres = pres.replacingOccurrences(of: "</p:sldMasterIdLst>", with: "</p:sldMasterIdLst><p:sldIdLst>\(ids)</p:sldIdLst>")
         zip.set("ppt/presentation.xml", pres)

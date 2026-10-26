@@ -10,7 +10,10 @@ import Foundation
 /// are optional and hidden (`Key`), and `panelsBefore` follows the panel count.
 public struct TankLayout: Sendable {
     public enum Key {
-        public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff"
+        public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff",
+            /// The arrangement the switched-off keys were made on (`arrangement`): a key names a panel by its place in
+            /// the list, so the keys hold only while every panel still sits where it did.
+            offBase = "tankPvOffBase"
         /// The row gap the energy search picked (m), when wider than the standard's; absent means the standard.
         public static let gap = "tankPvGap"
         /// The team standard the layout was made with (`TankStandard` JSON); absent on layouts made before it was
@@ -443,7 +446,27 @@ public struct TankLayout: Sendable {
         guard params(v) != nil else { return false }
         return !standard(v).sameValues(TankStandard.Store.shared.current)
     }
-    public static func off(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
+    /// The panels switched off, while the layout still has the arrangement they were switched off on; none once the
+    /// tank, its openings or a move has cut the tables differently (docs/specs/tank-mounting-layout.md, question 8).
+    public static func off(_ v: Values) -> Set<String> {
+        let keys = storedOff(v)
+        // keys saved before the arrangement was kept have none: they stay as they are
+        let base = v.text(Key.offBase)
+        guard !keys.isEmpty, !base.isEmpty, let p = params(v), let l = TankLayout(v, params: p, off: keys) else { return keys }
+        return arrangement(l, p) == base ? keys : []
+    }
+    static func storedOff(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
+
+    /// Every panel's key and place relative to the layout's offset (so moving the whole layout keeps it), as a short
+    /// stable hash.
+    static func arrangement(_ l: TankLayout, _ p: Params) -> String {
+        let text = l.tables.flatMap(\.panels).map { q in
+            "\(q.key):" + [q.x - p.offX, q.y - p.offY, q.w, q.h].map { String(format: "%.2f", $0) }.joined(separator: ",")
+        }.sorted().joined(separator: ";")
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in text.utf8 { h = (h ^ UInt64(b)) &* 0x100000001b3 }
+        return String(h, radix: 36)
+    }
     /// The stored layout, nil before the first layout or without a size.
     public static func current(_ v: Values) -> TankLayout? {
         if let hit = currentCache.get(v) { return hit.layout }
@@ -475,6 +498,15 @@ public struct TankLayout: Sendable {
             if team.sameValues(std) { std = team }
         }
         v[Key.standard] = .text(std.json)
+        // keys made on another arrangement (a move that re-cut the tables) would switch off other panels: dropped
+        var off = off
+        if !off.isEmpty, let l = TankLayout(v, params: p, off: off) {
+            let now = arrangement(l, p), before = v.text(Key.offBase)
+            if !before.isEmpty, before != now, off == storedOff(v) { off = [] }
+            v[Key.offBase] = off.isEmpty ? nil : .text(now)
+        } else {
+            v[Key.offBase] = nil
+        }
         v[Key.off] = off.isEmpty ? nil : .text(off.sorted().joined(separator: " "))
         if let l = TankLayout(v, params: p, off: off) { v["panelsBefore"] = .text(String(l.count)) }
     }

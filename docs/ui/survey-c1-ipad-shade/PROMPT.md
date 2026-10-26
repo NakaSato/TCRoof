@@ -18,8 +18,8 @@ Work through change list items 1–5 in order, and nothing else:
    the reason when there's no GPS or no hourly weather near the site; RoofShadeTests
 3. RoofPageWide+Shade.swift: the card เงาบังแผง | Shade in place of rowSectionCard in PV mode: face tabs,
    the 8-column metrics row, Sun-path (with obstacle silhouettes) / Monthly / Hour-Month charts as Sketch, the source line
-   3b. the plan shows the modules in shadow at a picked moment (chip ☀ <date time> | เงา n แผง ›, 21 ธ.ค. 09/12/15,
-   21 มิ.ย. 09/16), the obstacles' shadow polygons, two legend rows; one projection shared with item 1
+   3b. the plan shows the modules in shadow at 21 ธ.ค. 09:00 (no moment picker), the obstacles' shadow polygons, two
+   legend rows; one projection shared with item 1
 4. PDF: one shade page per face after พลังงานไฟฟ้าโดยประมาณ, the same Sketches
 5. DEBUG -surveyC1 pvshade | pvshadenorth, one CLAUDE.md sentence, RoofShadeUITests
 

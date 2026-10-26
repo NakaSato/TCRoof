@@ -4,7 +4,8 @@ import TCRoofCore
 
 /// A task's WBS sub-tasks in its sheet (docs/specs/project-plan-wbs.md, step 2): each row's evidence and owner, ticked
 /// done by the team or the job's contractor. A tick books the row's weight into the plan (`Job.wbsTicks`), so the
-/// task's % follows; a document number can go with it.
+/// task's % follows; a document number can go with it. A row with steps under it (2.5.1 and the Inverter station's
+/// steps) is a heading: its steps are ticked, indented under it.
 struct WBSChecklist: View {
     let items: [MasterSchedule.WorkItem]
     let ticks: [String: MasterSchedule.WBSTick]
@@ -16,10 +17,12 @@ struct WBSChecklist: View {
     @State private var document = ""
 
     var body: some View {
-        let done = items.filter { ticks[$0.code] != nil }.count
+        let parents = items.parentCodes
+        let tickable = items.filter { !parents.contains($0.code) }
+        let done = tickable.filter { ticks[$0.code] != nil }.count
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("งานย่อย WBS \(done)/\(items.count)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Text("งานย่อย WBS \(done)/\(tickable.count)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 Text("ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
@@ -41,9 +44,41 @@ struct WBSChecklist: View {
     }
 
     private var rows: some View {
-        VStack(spacing: 8) {
-            ForEach(items) { row($0) }
+        let parents = items.parentCodes
+        let level = items.map(\.level).min() ?? 2
+        return VStack(spacing: 8) {
+            ForEach(items) { item in
+                Group {
+                    if parents.contains(item.code) { heading(item) } else { row(item) }
+                }
+                .padding(.leading, CGFloat(max(item.level - level, 0)) * 24)
+            }
         }
+    }
+
+    /// A row its steps add up to: no box, its weight, and the station's type when the file names it.
+    private func heading(_ item: MasterSchedule.WorkItem) -> some View {
+        let style = item.note?.components(separatedBy: " | ").first { $0.hasPrefix("รูปแบบ:") }
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(item.code).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
+                    Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let style {
+                    Text(style).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                }
+                Text("ติ๊กตามขั้นงานด้านล่าง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+            Spacer(minLength: 4)
+            Text(Self.weight(item.weight)).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("wbs.\(item.code)")
     }
 
     private func row(_ item: MasterSchedule.WorkItem) -> some View {
@@ -72,7 +107,7 @@ struct WBSChecklist: View {
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 3) {
-                Text(item.weight > 0 ? MPFormat.percent(item.weight) : "ไม่นับ").font(.sarabunFixed(13, .bold).monospacedDigit())
+                Text(item.weight > 0 ? Self.weight(item.weight) : "ไม่นับ").font(.sarabunFixed(13, .bold).monospacedDigit())
                     .foregroundStyle(Theme.muted)
                 if let who = item.responsible { Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
             }
@@ -88,6 +123,15 @@ struct WBSChecklist: View {
                 }
             }
         }
+    }
+
+    /// `0.25%`, `1.5%`, `5%`: a step's share can be under a tenth.
+    static func weight(_ x: Double) -> String {
+        let r = (x * 100).rounded() / 100
+        var t = String(format: "%.2f", r)
+        while t.hasSuffix("0") { t.removeLast() }
+        if t.hasSuffix(".") { t.removeLast() }
+        return t + "%"
     }
 
     private func box(on: Bool) -> some View {

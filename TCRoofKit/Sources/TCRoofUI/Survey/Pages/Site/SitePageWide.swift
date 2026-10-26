@@ -5,8 +5,9 @@ import PhotosUI
 import TCRoofCore
 import PDFReport
 
-/// A2 on iPad in landscape (docs/ui/survey-a2): the site picture with drawing tools on the left; picture source,
-/// symbol palette, LIST and site note on the right. Portrait and iPhone keep the schema form (`groupPage`).
+/// A2 on iPad in landscape (docs/ui/survey-a2, layout v3 in docs/ui/survey-a2-ipad-v3): the symbol rail, the site picture
+/// with drawing tools, then the side column of picture source, LIST and site note. Portrait stacks the picture over the
+/// sections (the palette as a grid card); the iPhone has its own bands (`phoneBody`).
 /// Field ids are unchanged; drawings go under `SiteShapes.key` and the new fields are optional, so completion is too.
 struct SitePageWide: View {
     @Binding var job: Job
@@ -63,8 +64,12 @@ struct SitePageWide: View {
     @State var modelGrab: (id: String, dx: Double, dy: Double)?
     @State var cardDrag: CardDrag?
     @State var fullScreen = false
-    /// iPhone full screen: the building list under the picture is open.
+    /// Full screen: the building list is open (under the picture on iPhone; floating on the right on iPad, closed
+    /// each time full screen opens there).
     @State var panelOpen = true
+    /// iPad landscape: `LIST ในภาพ` is open in the side column.
+    @State var listOpen = false
+    @FocusState var noteFocused: Bool
     /// Full-screen zoom and pan; the card always shows the whole picture.
     @State var zoom: CGFloat = 1
     @State var zoomStart: CGFloat?
@@ -73,8 +78,11 @@ struct SitePageWide: View {
     /// The full-screen picture's frame in `fullSpace`, for dropping cards.
     @State var fullFrame: CGRect = .zero
 
-    /// Picture card 860 of 1318 (v2 §1); the right column fills the rest.
+    /// Picture card 860 of 1318 (v2 §1). v3: the rail (104), the picture and the side column with gaps of 12, so the
+    /// picture keeps its width and the side column takes the rest (330 at 1366).
     var pictureWidth: CGFloat { (width - 24) * 860 / 1294 }
+    /// iPad landscape: the symbol rail and the side column (v3); portrait keeps the right column under the picture.
+    var railLayout: Bool { !isPhone && !stacked }
 
     var body: some View {
         Group {
@@ -83,11 +91,17 @@ struct SitePageWide: View {
         .foregroundStyle(Theme.navy)
         .onAppear { tickFromCover() }
         #if DEBUG
-        // `-surveyA2 layers|fullscreen` opens the layers menu or full screen (with the first placed model selected) for simulator checks
+        // `-surveyA2 layers|fullscreen` opens the layers menu or full screen (with the first placed model selected and the
+        // building panel open) for simulator checks; `rail|armed|listopen|fullpanel` are docs/ui/survey-a2-ipad-v3's
+        // states 01, 02 (Site Office armed), 04 (LIST open) and 06 (full screen with the panel open)
         .task {
             switch UserDefaults.standard.string(forKey: "surveyA2") {
             case "layers"?: showLayers = true
-            case "fullscreen"?: selectedModel = models.first?.id; fullScreen = true
+            case "fullscreen"?: selectedModel = models.first?.id; await openFull(panel: true)
+            case "fullpanel"?: await openFull(panel: true)
+            case "rail"?: tool = nil; listOpen = false
+            case "armed"?: try? await Task.sleep(nanoseconds: 600_000_000); arm(.mark(.office))
+            case "listopen"?: listOpen = true
             // `trafo|zero` opens that symbol's editor (docs/ui/a2-a3-autofill states 01 / 02)
             case let k? where k == "trafo" || k == "zero":
                 try? await Task.sleep(nanoseconds: 800_000_000)
@@ -97,6 +111,8 @@ struct SitePageWide: View {
         }
         #endif
         .onChange(of: request) { _, item in if let item { handle(item); request = nil } }
+        // iPad: full screen opens with the building panel closed (the iPhone keeps its own default)
+        .onChange(of: fullScreen) { _, on in if on, !isPhone { panelOpen = false } }
         .photosPicker(isPresented: $pickDrone, selection: $droneItem, matching: .images)
         .onChange(of: droneItem) { _, item in load(item) { img in setPicture(img, source: "drone") }; droneItem = nil }
         .photosPicker(isPresented: $pickSign, selection: $signItem, matching: .images)
@@ -128,16 +144,25 @@ struct SitePageWide: View {
                 .scrollIndicators(.hidden)
                 .frame(maxHeight: .infinity)
             } else {
-                HStack(alignment: .top, spacing: 24) {
+                HStack(alignment: .top, spacing: 12) {
+                    symbolRail
                     pictureCard.frame(width: pictureWidth).frame(maxHeight: .infinity)
-                    ScrollView { rightColumn.padding(.bottom, 4) }
-                        .scrollIndicators(.hidden)
-                        .frame(maxWidth: .infinity)
+                    sideColumn.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
                 .frame(maxHeight: .infinity)
             }
         }
     }
+
+    #if DEBUG
+    /// Opens full screen, then the building panel once the iPad's closed default has been applied.
+    func openFull(panel: Bool) async {
+        fullScreen = true
+        guard panel else { return }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+        panelOpen = true
+    }
+    #endif
 
     // MARK: values
 
@@ -299,6 +324,7 @@ struct SitePageWide: View {
 
     // MARK: right column
 
+    /// Portrait: every section under the picture, the palette as a grid.
     var rightColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             sourceSection
@@ -308,25 +334,46 @@ struct SitePageWide: View {
         }
     }
 
-    /// iPad: the section's title with a hint at its end. iPhone: the band already has the title, so only the hint.
+    /// iPad landscape (v3): the side column's cards, in a column that fits the page (only an open LIST scrolls). Notes
+    /// take the height left while LIST is closed.
+    var sideColumn: some View {
+        VStack(spacing: 12) {
+            sideCard { sourceSection }
+            listCard
+            noteCard
+        }
+    }
+
+    /// A white side-column card; `fill` stretches it to the height left.
+    func sideCard<C: View>(fill: Bool = false, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 8) { content() }
+            .frame(maxWidth: .infinity, maxHeight: fill ? .infinity : nil, alignment: .topLeading)
+            .padding(12)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+    }
+
+    /// iPad: the section's title, then its hint on a line of its own (v3). iPhone: the band already has the title, so only the hint.
     @ViewBuilder func heading(_ title: String, required: Bool = false, trailing: String) -> some View {
         if isPhone {
             Text(trailing).font(.sarabunFixed(12)).foregroundStyle(Theme.muted).frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.sarabunFixed(17, .bold)).lineLimit(1).layoutPriority(1)
-                if required { Text("*").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.danger) }
-                Spacer(minLength: 8)
-                Text(trailing).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(title).font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.85)
+                    if required { Text("*").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.danger) }
+                }
+                Text(trailing).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     var sourceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             heading("ภาพมุมสูง", required: true, trailing: "เลือก 1 แหล่ง")
-            // one above the other on an iPhone
-            let narrow = width < 600
+            // one above the other on an iPhone and in the iPad's side column
+            let narrow = width < 600 || railLayout
             let stack = narrow ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
             stack {
                 sourceButton("แผนที่ดาวเทียม", "ภาพดาวเทียมตามพิกัด A1", icon: "source-google", symbol: "map", on: source == "google") { fetchGoogle() }
@@ -372,45 +419,129 @@ struct SitePageWide: View {
         }
     }
 
-    func paletteButton(_ t: Tool) -> some View {
+    /// iPad landscape (v3): the palette as a slim rail left of the picture, one tile per row.
+    var symbolRail: some View {
+        VStack(spacing: 6) {
+            VStack(spacing: 1) {
+                Text("สัญลักษณ์").font(.sarabunFixed(14, .bold)).lineLimit(1)
+                Text("แตะ แล้วแตะบนภาพ").font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .multilineTextAlignment(.center)
+            .padding(.bottom, 2)
+            Rectangle().fill(Theme.borderSubtle).frame(height: 1)
+            ScrollView {
+                VStack(spacing: 5) { ForEach(paletteTools, id: \.self) { t in paletteButton(t, rail: true) } }
+                    .padding(2)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .padding(.vertical, 8).padding(.horizontal, 6)
+        .frame(width: 104)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+    }
+
+    func paletteText(_ t: Tool) -> (title: String, detail: String) {
+        switch t {
+        case .mark(let k): return (k.paletteTitle, k.paletteDetail)
+        case .shape(.craneEntry): return ("ทางเข้าเครน", "ลูกศรทางเข้า")
+        case .shape: return ("ร่มเงา", "สิ่งบดบังแสง")
+        }
+    }
+
+    /// A palette tile: a row with its detail line in the grid, or the rail's icon-over-title tile (`rail`). Both arm `t`.
+    func paletteButton(_ t: Tool, rail: Bool = false) -> some View {
         let on = tool == t
-        let (title, detail): (String, String) = {
-            switch t {
-            case .mark(let k): return (k.paletteTitle, k.paletteDetail)
-            case .shape(.craneEntry): return ("ทางเข้าเครน", "ลูกศรทางเข้า")
-            case .shape: return ("ร่มเงา", "สิ่งบดบังแสง")
-            }
-        }()
+        let text = paletteText(t)
         return Button { arm(t) } label: {
-            HStack(spacing: 6) {
-                ToolIcon(tool: t).frame(width: 28, height: 28)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.sarabunFixed(13, .bold)).lineLimit(1).minimumScaleFactor(0.75)
-                    Text(detail).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
-                }
-                Spacer(minLength: 0)
-                Circle().fill(placed(t) ? Theme.success : Theme.progressZero).frame(width: 7, height: 7)
-            }
-            .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
-            .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.primary : Theme.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
+            if rail { railTile(t, title: text.title, on: on) } else { gridTile(t, title: text.title, detail: text.detail, on: on) }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title + " " + detail)
+        .accessibilityLabel(text.title + " " + text.detail)
         .accessibilityValue(placed(t) ? "วางแล้ว" : "ยังไม่วาง")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
+    func gridTile(_ t: Tool, title: String, detail: String, on: Bool) -> some View {
+        HStack(spacing: 6) {
+            ToolIcon(tool: t).frame(width: 28, height: 28)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.sarabunFixed(13, .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(detail).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            Spacer(minLength: 0)
+            placedDot(t)
+        }
+        .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 44)
+        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.primary : Theme.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
+    }
+
+    /// The rail's tile (v3): the icon over the title, no detail line (VoiceOver keeps it), the placed dot in the corner.
+    func railTile(_ t: Tool, title: String, on: Bool) -> some View {
+        VStack(spacing: 4) {
+            ToolIcon(tool: t).frame(width: 30, height: 30)
+            Text(title).font(.sarabunFixed(11.5, .bold)).lineLimit(1).minimumScaleFactor(0.8).multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 4).padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 58)
+        .overlay(alignment: .topTrailing) { placedDot(t).padding(6) }
+        .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.primary : Theme.borderControl.opacity(0.5), lineWidth: on ? 2 : 1))
+        .contentShape(Rectangle())
+    }
+
+    func placedDot(_ t: Tool) -> some View {
+        Circle().fill(placed(t) ? Theme.success : Theme.progressZero).frame(width: 7, height: 7)
+    }
+
     var listSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("LIST — รายการที่ระบุในภาพ", trailing: "ติ๊กอัตโนมัติเมื่อวาง")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: isPhone ? 1 : 2), alignment: .leading, spacing: 0) {
-                ForEach(Options.list, id: \.self) { item in listRow(item) }
-            }
-            .padding(2)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
+            heading(isPhone ? "LIST — รายการที่ระบุในภาพ" : "LIST ในภาพ", trailing: "ติ๊กอัตโนมัติเมื่อวาง")
+            listGrid
+                .padding(2)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
         }
+    }
+
+    /// The LIST rows: one column on iPhone and in the iPad's side column, two in portrait.
+    var listGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: isPhone || railLayout ? 1 : 2), alignment: .leading, spacing: 0) {
+            ForEach(Options.list, id: \.self) { item in listRow(item) }
+        }
+    }
+
+    /// iPad landscape (v3): `LIST ในภาพ` with its count chip, folded by default; open, its rows scroll in the height left.
+    var listCard: some View {
+        sideCard(fill: listOpen) {
+            listHeader
+            if listOpen {
+                Text("ติ๊กอัตโนมัติเมื่อวาง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).padding(.top, -6)
+                ScrollView { listGrid }.scrollIndicators(.hidden)
+            }
+        }
+    }
+
+    var listHeader: some View {
+        let chip = PhoneBand<EmptyView>.countChip(list.count, Options.list.count)
+        return Button { withAnimation(.easeOut(duration: 0.15)) { listOpen.toggle() } } label: {
+            HStack(spacing: 8) {
+                Text("LIST ในภาพ").font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.85)
+                Spacer(minLength: 4)
+                Text(chip.text).font(.sarabunFixed(12, .bold)).foregroundStyle(chip.fg).lineLimit(1).fixedSize()
+                    .padding(.horizontal, 8).padding(.vertical, 2)
+                    .background(chip.bg, in: Capsule())
+                Image(systemName: "chevron.down").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.primary)
+                    .rotationEffect(.degrees(listOpen ? 180 : 0))
+            }
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("LIST ในภาพ \(chip.text)")
+        .accessibilityValue(listOpen ? "แสดงอยู่" : "ซ่อนอยู่")
+        .accessibilityHint("แตะเพื่อซ่อนหรือแสดงรายการ")
     }
 
     func listRow(_ item: String) -> some View {
@@ -473,11 +604,35 @@ struct SitePageWide: View {
     var noteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ | ใต้ภาพในรายงาน")
-            TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก | ต้นไม้บังแดดเช้า", text: Binding(
-                get: { job.values.text("siteNote") },
-                set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)
-                .lineLimit(1...2).font(.sarabunFixed(15))
-                .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 44)
+            noteField(fill: false)
+        }
+    }
+
+    /// iPad landscape (v3): the note fills the height left while LIST is closed, and is one or two lines while it is open.
+    var noteCard: some View {
+        sideCard(fill: !listOpen) {
+            heading("หมายเหตุหน้างาน", trailing: "ไม่บังคับ | ใต้ภาพในรายงาน")
+            noteField(fill: !listOpen)
+        }
+    }
+
+    /// The site note; `fill` grows the box to the height left, where a tap anywhere starts typing.
+    @ViewBuilder func noteField(fill: Bool) -> some View {
+        let field = TextField("เช่น รถเครนเข้าทางถนนด้านตะวันออก | ต้นไม้บังแดดเช้า", text: Binding(
+            get: { job.values.text("siteNote") },
+            set: { job.values["siteNote"] = $0.isEmpty ? nil : .text($0) }), axis: .vertical)
+            .font(.sarabunFixed(15))
+            .padding(.horizontal, 14).padding(.vertical, 10)
+        if fill {
+            field.lineLimit(1...40)
+                .focused($noteFocused)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
+                .contentShape(Rectangle())
+                .onTapGesture { noteFocused = true }
+        } else {
+            field.lineLimit(1...2).frame(minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.borderControl.opacity(0.6)))
         }

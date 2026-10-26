@@ -116,35 +116,31 @@ extension InstallTrackingPage {
         }
     }
 
-    /// The columns' widths; `งานที่ทำ` takes the rest.
-    private enum Col {
-        static let date: CGFloat = 80, status: CGFloat = 88, weather: CGFloat = 56, crew: CGFloat = 32
-        static let progress: CGFloat = 150, photos: CGFloat = 36, sign: CGFloat = 190, problem: CGFloat = 170, action: CGFloat = 140
+    /// The columns' widths; `งานที่ทำ` takes the rest. `compact` is the portrait iPad's: no `งานที่ทำ`, the two sign chips
+    /// stacked, narrower columns (the table picks it when the full one doesn't fit, `ViewThatFits`).
+    private struct Col {
+        let compact: Bool
+        let date: CGFloat = 80, status: CGFloat = 88, weather: CGFloat = 56, crew: CGFloat = 32, photos: CGFloat = 36
+        let progress: CGFloat = 150
+        var sign: CGFloat { compact ? 110 : 190 }
+        var problem: CGFloat { compact ? 130 : 170 }
+        var action: CGFloat { compact ? 120 : 140 }
+        /// `งานที่ทำ`'s ideal width, so every row asks the same width of `ViewThatFits`.
+        static let work: CGFloat = 120
     }
 
     private func reportsCard(_ d: InstallDailyData) -> some View {
         panel {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 14) {
-                    Text("ทุกรายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(\.needsWork).count),
-                                     .init("มีปัญหา", count: d.rows.filter(\.hasProblem).count)],
-                                    selection: $dailyFilter, equalWidths: false, fontSize: 15)
-                        .fixedSize()
-                    Spacer(minLength: 8)
-                    if let w = d.week {
-                        Button { go(.weekly) } label: {
-                            Label("สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")
-                        }
-                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                    }
-                    if d.hasReports {
-                        Button { shareAllDailies() } label: { Label("PDF รวม", systemImage: "arrow.down.to.line") }
-                            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                    }
+                ViewThatFits(in: .horizontal) {
+                    reportsBar(d, short: false)
+                    reportsBar(d, short: true)
                 }
                 VStack(spacing: 0) {
-                    tableHeader
+                    ViewThatFits(in: .horizontal) {
+                        tableHeader(Col(compact: false))
+                        tableHeader(Col(compact: true))
+                    }
                     let rows = filtered(d)
                     // the rows scroll under the header inside the card's fixed height
                     ScrollView {
@@ -153,7 +149,12 @@ extension InstallTrackingPage {
                                 Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
                                     .frame(maxWidth: .infinity, minHeight: 64)
                             }
-                            ForEach(rows) { reportRow($0, today: d.today) }
+                            ForEach(rows) { r in
+                                ViewThatFits(in: .horizontal) {
+                                    reportRow(r, today: d.today, col: Col(compact: false))
+                                    reportRow(r, today: d.today, col: Col(compact: true))
+                                }
+                            }
                         }
                     }
                     .scrollIndicators(.automatic)
@@ -167,18 +168,42 @@ extension InstallTrackingPage {
         .frame(height: Self.reportsHeight)
     }
 
-    private var tableHeader: some View {
+    /// `ทุกรายงาน`, its filter and buttons; `short` names the Weekly Report button without its count of reports.
+    private func reportsBar(_ d: InstallDailyData, short: Bool) -> some View {
+        HStack(spacing: 14) {
+            Text("ทุกรายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(\.needsWork).count),
+                             .init("มีปัญหา", count: d.rows.filter(\.hasProblem).count)],
+                            selection: $dailyFilter, equalWidths: false, fontSize: 15)
+                .fixedSize()
+            Spacer(minLength: 8)
+            if let w = d.week {
+                Button { go(.weekly) } label: {
+                    Label(short ? "Weekly Report W\(w.number)" : "สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityLabel("สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน")
+            }
+            if d.hasReports {
+                Button { shareAllDailies() } label: { Label("PDF รวม", systemImage: "arrow.down.to.line") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            }
+        }
+    }
+
+    private func tableHeader(_ col: Col) -> some View {
         HStack(spacing: 10) {
-            Text("วันที่").frame(width: Col.date, alignment: .leading)
-            Text("สถานะ").frame(width: Col.status, alignment: .leading)
-            Text("อากาศ").frame(width: Col.weather, alignment: .leading)
-            Text("คน").frame(width: Col.crew, alignment: .leading)
-            Text("งานที่ทำ").frame(maxWidth: .infinity, alignment: .leading)
-            Text("สะสม (แผน MP)").frame(width: Col.progress, alignment: .leading)
-            Text("รูป").frame(width: Col.photos, alignment: .leading)
-            Text("ลงนาม | รับทราบ").frame(width: Col.sign, alignment: .leading)
-            Text("ปัญหา").frame(width: Col.problem, alignment: .leading)
-            Color.clear.frame(width: Col.action, height: 1)
+            Text("วันที่").frame(width: col.date, alignment: .leading)
+            Text("สถานะ").frame(width: col.status, alignment: .leading)
+            Text("อากาศ").frame(width: col.weather, alignment: .leading)
+            Text("คน").frame(width: col.crew, alignment: .leading)
+            if !col.compact { Text("งานที่ทำ").frame(minWidth: 0, idealWidth: Col.work, maxWidth: .infinity, alignment: .leading) }
+            Text("สะสม (แผน MP)").frame(width: col.progress, alignment: .leading)
+            Text("รูป").frame(width: col.photos, alignment: .leading)
+            Text("ลงนาม | รับทราบ").frame(width: col.sign, alignment: .leading)
+            Text("ปัญหา").frame(width: col.problem, alignment: .leading)
+            if col.compact { Spacer(minLength: 0) }
+            Color.clear.frame(width: col.action, height: 1)
         }
         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 14).frame(height: 40)
@@ -186,24 +211,27 @@ extension InstallTrackingPage {
         .accessibilityHidden(true)
     }
 
-    private func reportRow(_ r: InstallDailyData.Row, today: Date) -> some View {
+    private func reportRow(_ r: InstallDailyData.Row, today: Date, col: Col) -> some View {
         let urgent = r.state == .today
         return HStack(spacing: 10) {
             Text(Self.dayLabel(r.date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                .frame(width: Col.date, alignment: .leading)
-            stateChip(r.state).frame(width: Col.status, alignment: .leading)
-            weatherCell(r).frame(width: Col.weather, alignment: .leading)
+                .frame(width: col.date, alignment: .leading)
+            stateChip(r.state).frame(width: col.status, alignment: .leading)
+            weatherCell(r).frame(width: col.weather, alignment: .leading)
             Text(r.crew.map(String.init) ?? "—").font(.sarabunFixed(15)).foregroundStyle(Theme.navy).monospacedDigit()
-                .frame(width: Col.crew, alignment: .leading)
-            Text(r.work).font(.sarabunFixed(15)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy).lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            progressCell(r).frame(width: Col.progress, alignment: .leading)
+                .frame(width: col.crew, alignment: .leading)
+            if !col.compact {
+                Text(r.work).font(.sarabunFixed(15)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy).lineLimit(1)
+                    .frame(minWidth: 0, idealWidth: Col.work, maxWidth: .infinity, alignment: .leading)
+            }
+            progressCell(r).frame(width: col.progress, alignment: .leading)
             Text("\(r.photos)").font(.sarabunFixed(15)).foregroundStyle(r.photos > 0 ? Theme.navy : Theme.inkMuted).monospacedDigit()
-                .frame(width: Col.photos, alignment: .leading)
-            signCell(r, today: today).frame(width: Col.sign, alignment: .leading)
+                .frame(width: col.photos, alignment: .leading)
+            signCell(r, today: today, stacked: col.compact).frame(width: col.sign, alignment: .leading)
             Text(r.problem.isEmpty ? "—" : r.problem).font(.sarabunFixed(14)).foregroundStyle(r.problem.isEmpty ? Theme.inkMuted : Theme.warningInk)
-                .lineLimit(1).frame(width: Col.problem, alignment: .leading)
-            actionButton(r).frame(width: Col.action)
+                .lineLimit(col.compact ? 2 : 1).frame(width: col.problem, alignment: .leading)
+            if col.compact { Spacer(minLength: 0) }
+            actionButton(r).frame(width: col.action)
         }
         .padding(.horizontal, 14).frame(minHeight: 64)
         .background(urgent ? Theme.dangerSoft.opacity(0.45) : Theme.surface)
@@ -253,7 +281,7 @@ extension InstallTrackingPage {
         }
     }
 
-    private func signCell(_ r: InstallDailyData.Row, today: Date) -> some View {
+    private func signCell(_ r: InstallDailyData.Row, today: Date, stacked: Bool) -> some View {
         let ack: (String, InstallPageData.Tone) = if let a = r.ackAt {
             ("ผู้ตรวจ ✓ " + ThaiFormat.dayMonth.string(from: a), .ok)
         } else if let s = r.signedAt {
@@ -261,7 +289,8 @@ extension InstallTrackingPage {
         } else {
             ("ผู้ตรวจ —", .idle)
         }
-        return HStack(spacing: 6) {
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 6))
+        return layout {
             chip(r.signedAt != nil ? "วิศวกร ✓" : "วิศวกร —", r.signedAt != nil ? .ok : .idle)
             chip(ack.0, ack.1)
         }

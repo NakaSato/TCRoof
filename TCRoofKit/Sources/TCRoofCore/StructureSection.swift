@@ -128,10 +128,10 @@ public struct StructureSection: Sendable {
             guard path.count >= 2 else { return [] }
             return StructureSection.offset(path, faces.top) + StructureSection.offset(path, faces.bottom).reversed()
         }
-        /// The lip line, inside the top face.
-        public var lipLine: [Pt]? {
-            guard let lip, lip > 0, lip < depth, path.count >= 2 else { return nil }
-            return StructureSection.offset(path, faces.top - lip)
+        /// The lip lines, that far inside each face, as the team draws a C seen from its side.
+        public var lipLines: [[Pt]] {
+            guard let lip, lip > 0, 2 * lip < depth, path.count >= 2 else { return [] }
+            return [StructureSection.offset(path, faces.top - lip), StructureSection.offset(path, faces.bottom + lip)]
         }
 
         /// A point on the member's centre line `t` of the way along its piece `i`.
@@ -239,6 +239,8 @@ public struct StructureSection: Sendable {
 
     static let ink = RGBA(hex: 0x1A1D22), sheetC = RGBA(hex: 0x1F4F78), navy = RGBA(hex: 0x16325C), gridC = RGBA(hex: 0x8A97AA)
     static let hatchC = RGBA(hex: 0x3A3F47), soil = RGBA(hex: 0x8B6F47)
+    /// A metal sheet's thickness as the team draws it (m).
+    public static let sheetThickness = 0.005
 
     /// Sketch ops with each one's CAD layer key (`SECTION`, `POST`, `PURLIN`, `GRID`, `LEVEL`, `DIM`; nil for what the DXF
     /// leaves out: the background, dimension texts, the soil hatch), the level chain as DIMENSIONs, and the ops that draw
@@ -293,7 +295,7 @@ public struct StructureSection: Sendable {
         }
         for m in members {
             d.add(.polygon(m.outline.map(P), stroke: Self.ink, fill: .white, width: 0.9), "SECTION")
-            if let l = m.lipLine { d.add(.polyline(l.map(P), width: 0.5, color: Self.ink), "SECTION") }
+            for l in m.lipLines { d.add(.polyline(l.map(P), width: 0.5, color: Self.ink), "SECTION") }
         }
         for c in cuts {
             let o = c.outline.map(P), tag = c.row == 1 ? "PURLIN" : "SECTION"
@@ -311,9 +313,9 @@ public struct StructureSection: Sendable {
             }
         }
         if sheet.count > 1 {
-            // the sheet, and its corrugation's valleys dashed 25 mm under it, as the team draws a metal sheet cut
+            // the sheet's top, and its underside 5 mm down resting on the purlins, as the team draws a metal sheet cut
             d.add(.polyline(sheet.map(P), width: 1.2, color: Self.sheetC), "SECTION")
-            d.add(.polyline(Self.offset(sheet, -0.025).map(P), width: 0.5, color: Self.sheetC, dash: [3, 2]), "SECTION")
+            d.add(.polyline(Self.offset(sheet, -Self.sheetThickness).map(P), width: 0.5, color: Self.sheetC), "SECTION")
         }
         if let r = ridge, let i = sheet.firstIndex(where: { abs($0.x - r.x) < 1e-9 && abs($0.y - r.y) < 1e-9 }), i > 0, i < sheet.count - 1 {
             // the ridge cap: a flashing 0.30 m down each slope, 15 mm over the sheet, folded up 40 mm at the apex
@@ -323,7 +325,7 @@ public struct StructureSection: Sendable {
             }
             let a = along(sheet[i - 1], 0.3), b = along(sheet[i + 1], 0.3)
             let cap = [Pt(a.x, a.y - 0.02), a, Pt(r.x, r.y + 0.055), b, Pt(b.x, b.y - 0.02)]
-            d.add(.polyline(cap.map(P), width: 1.2, color: Self.sheetC), "SECTION")
+            d.add(.polyline(cap.map(P), width: 1.2, color: Self.sheetC), "CAP")
         }
 
         // level marks on the right, a dashed line from the section to each, with the chain between them

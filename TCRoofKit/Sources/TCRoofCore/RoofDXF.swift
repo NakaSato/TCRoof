@@ -20,7 +20,7 @@ public enum RoofDXF {
         "POST": CADLayers.roofPost, "PURLIN": CADLayers.roofPurlin, "SKYLIGHT": CADLayers.roofSkylight, "OBSTACLE": CADLayers.obstacle,
         "SECTION_MARK": CADLayers.sectionMark, "DIM": CADLayers.dim, "TEXT": CADLayers.text, "PV": CADLayers.pvModule,
         "PV_RAIL": CADLayers.pvRail, "PV_FOOT": CADLayers.pvFoot, "PV_CUT": CADLayers.pvCut, "KEEPOUT": CADLayers.pvKeepout,
-        "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable, "LEVEL": CADLayers.dim,
+        "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable, "LEVEL": CADLayers.dim, "CAP": CADLayers.roofSection,
     ]
     static func layer(_ key: String) -> SketchDXF.Layer { standard[key] ?? CADLayers.text }
     /// Every dimension's text height (m), the team's 0.16.
@@ -252,10 +252,27 @@ public enum RoofDXF {
             // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
             let s = RoofSection(v, trueScale: true, callouts: false), top = parts.contains(.plan) ? -2.5 - drop : 0
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - s.ridgeX) / s.scale + L.lx / 2, top - p.y / s.scale) }
+            // the purlins and the ridge cap as the team's own blocks (RoofComponents), the cap only near the pitch it is drawn at
+            let blocks: (purlin: String?, cap: String?) = RoofComponents.shared.map { $0.define(&dxf) } ?? (nil, nil)
+            let capDrawn = RoofComponents.shared?.components["ridge_cap"]?.pitch ?? 15
+            let capBlock = abs(Roof.slope(v) - capDrawn) <= 3 ? blocks.cap : nil
+            func at(_ p: Pt) -> (Double, Double) { ts(s.sketchPoint(p)) }
+            if let pb = blocks.purlin, let size = RoofComponents.shared?.components["purlin_c"]?.size, size.count == 2 {
+                for c in s.model.cuts where c.row == 1 {
+                    // +x where the flanges open, +y off the rafter; a C opening the other way is the block mirrored
+                    let u = Pt(c.up.y * c.opens, -c.up.x * c.opens), hand = u.x * c.up.y - u.y * c.up.x
+                    let x = hand > 0 ? u : Pt(-u.x, -u.y)
+                    dxf.insert(CADLayers.roofPurlin, pb, at: at(c.at), rotation: atan2(x.y, x.x) * 180 / .pi,
+                               xScale: (hand > 0 ? 1 : -1) * c.profile.b / size[1], yScale: c.profile.h / size[0])
+                }
+            }
+            if let cb = capBlock, let r = s.model.ridge { dxf.insert(CADLayers.roofSection, cb, at: at(r)) }
             // the level marks' labels read from their line's left end and their values end at its right
             dxf.options.centreText = false
             for (i, (op, tag)) in zip(s.sketch.ops, s.tags).enumerated() {
                 guard let tag, !s.dimensionOps.contains(i) else { continue }
+                if tag == "PURLIN" && blocks.purlin != nil { continue }
+                if tag == "CAP" && capBlock != nil { continue }
                 // a member or post hides what it covers, as the CAD trims them
                 if case let .polygon(pts, _, fill, _) = op, fill == .white { dxf.wipeout(layer(tag), pts.map(ts)) }
                 // concrete cut by the section takes the team's AR-CONC, as their sections hatch it

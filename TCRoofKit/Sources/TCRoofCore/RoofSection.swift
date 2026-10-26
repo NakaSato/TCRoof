@@ -25,6 +25,10 @@ public struct RoofSection: Sendable {
     public let scale: Double
     /// The ridge's x in the sketch.
     public let ridgeX: Double
+    /// Maps the model's metres to the sketch: sketch x = `origin.x` + (x − `mid`) × scale, y = `origin.y` − (y − `base`) × scale.
+    let origin: Pt, mid, base: Double
+    /// A point of the model (metres) in the sketch.
+    public func sketchPoint(_ p: Pt) -> Pt { Pt(origin.x + (p.x - mid) * scale, origin.y - (p.y - base) * scale) }
     /// The section in metres.
     public let model: StructureSection
     /// With `trueScale`: the half spans, the span, the overhangs and the level chain, and the indices of the ops that
@@ -110,6 +114,7 @@ public struct RoofSection: Sendable {
         tags = d.tags
         if trueScale { dimensions = d.dimensions; dimensionOps = d.dimensionOps }
         self.span = span; self.half = half; self.rise = rise; self.bays = nH; self.scale = k; self.ridgeX = RX; self.model = m
+        self.origin = Pt(cx, yBase); self.mid = mid; self.base = base
     }
 
     // MARK: the section in metres
@@ -143,7 +148,7 @@ public struct RoofSection: Sendable {
                     x -= step
                 }
             }
-            let lift = (p?.profile.h ?? 0) + 0.01
+            let lift = (p?.profile.h ?? 0) + S.sheetThickness
             m.sheet = [Pt(-o - sn * lift - 0.05 * cs, topFace(-o) + cs * lift - 0.05 * sn), Pt(h, topFace(h) + lift / cs),
                        Pt(B + o + sn * lift + 0.05 * cs, topFace(B + o) + cs * lift - 0.05 * sn)]
             m.ridge = m.sheet[1]
@@ -164,7 +169,10 @@ public struct RoofSection: Sendable {
             let under: (Double) -> Double = { base + (h - abs($0 - h)) * tn }
             let topFace: (Double) -> Double = { under($0) + raf.depth / cs }
             let mid: (Double) -> Double = { under($0) + raf.depth / (2 * cs) }
-            let head = size(4) ?? .rc(0.2, 0.4), post = (K ? size(7) : nil) ?? .rc(0.2, 0.2)
+            // a concrete post entered without a size ("ค.ส.ล. (เดิม)") is the team's 0.30 × 0.30
+            let given = K ? size(7) : nil, entered = K ? Roof.memberSize(v, 7) : ""
+            let unsized = given?.material == .concrete && !(entered.isEmpty ? f.members[6].defaultSize : entered).contains(where: \.isNumber)
+            let head = size(4) ?? .rc(0.2, 0.4), post = unsized ? .rc(0.3, 0.3) : given ?? .rc(0.3, 0.3)
             let pw = post.material == .concrete ? post.width : post.depth
             // a boxed eave's soffit runs 0.40 under the rafter's tip, and the beam drops to it with the post going on up
             // to the head (the team's section); otherwise the beam sits right under the head
@@ -185,12 +193,12 @@ public struct RoofSection: Sendable {
                 // the boxed eave: a soffit under the beam out to a fascia raking up to the rafter's tip
                 let ys = beamBottom, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
                 let ft = max(0.025, size(6)?.width ?? 0.025)
-                // two struts from the post out to the rafter's underside, 0.22 and 0.38 m under the head (the team's section)
-                for drop in [0.22, 0.38] where base - drop > ys + 0.1 {
-                    let y = base - drop, reach = drop / tn
-                    guard reach > pw / 2 + 0.15 else { continue }
-                    m.members.append(S.Member([Pt(-reach, y), Pt(-pw / 2, y)], depth: 0.05))
-                    m.members.append(S.Member([Pt(B + pw / 2, y), Pt(B + reach, y)], depth: 0.05))
+                // a strut of the rafter's section from the post out to the rafter's underside, its top 0.167 m under the
+                // head (the team's section)
+                let sTop = base - 0.167, sMid = sTop - raf.depth / 2, reach = (base - sTop) / tn
+                if sTop - raf.depth > ys + 0.05 && reach > pw / 2 + 0.15 {
+                    m.members.append(S.Member([Pt(-reach, sMid), Pt(-pw / 2, sMid)], depth: raf.depth, lip: raf.lip))
+                    m.members.append(S.Member([Pt(B + pw / 2, sMid), Pt(B + reach, sMid)], depth: raf.depth, lip: raf.lip))
                 }
                 m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
                 m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))

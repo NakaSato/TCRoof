@@ -164,6 +164,9 @@ final class Job {
     /// A contractor changed the weekly requests here and Firestore hasn't echoed them back yet: their device pushes
     /// them (signed `weeklyRequestsBy`) and keeps them over an older copy arriving meanwhile. Device only.
     var weeklyRequestsUnsent = false
+    /// Encoded `[RoutineReport.WeeklySent]`: the Weekly Reports (R3) sent from the iPad install page, one per week; nil
+    /// until one is sent, and on jobs from before it.
+    var weeklySentJSON: String?
     /// Encoded `[MasterSchedule.WorkItem]`: the plan file's work breakdown (docs/specs/project-plan-wbs.md), kept beside
     /// the plan rather than inside `scheduleInputJSON`, so a device on an older build that saves the plan leaves it be.
     var scheduleWBSJSON: String?

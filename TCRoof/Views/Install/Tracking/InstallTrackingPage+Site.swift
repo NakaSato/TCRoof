@@ -16,6 +16,8 @@ extension InstallTrackingPage {
         if target == .docs, sizeClass != .compact { tab = .docs; return }
         // and so is คำขอรายสัปดาห์
         if target == .request, sizeClass != .compact { tab = .request; return }
+        // and Weekly Report
+        if target == .weekly, sizeClass != .compact { tab = .weekly; return }
         let today = RoutineReport.calendar.startOfDay(for: .now)
         route = switch target {
         case .daily: .day(today)

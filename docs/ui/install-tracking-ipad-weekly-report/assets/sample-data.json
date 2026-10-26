@@ -1,0 +1,272 @@
+{
+  "_note": "Example values from the board (menu 'wr'). The app reads the job's daily reports (InstallLog / RoutineReport.Daily), the MP plan (MasterSchedule), next week's request (WeeklyRequest) and the station's routine settings. Never hard-code these.",
+  "station": "การประปาบ้านโป่ง (ตัวอย่าง) · 90 kWp · ทีม TCR02 · เริ่ม 24/9/2569 · ส่งมอบ 6/10/2569",
+  "weeks": [
+    {
+      "no": 40,
+      "dates": "28 ก.ย. – 4 ต.ค. 2569",
+      "status": "draft",
+      "due": "จ. 5 ต.ค. · อีก 1 วัน"
+    },
+    {
+      "no": 39,
+      "dates": "21–27 ก.ย. 2569",
+      "status": "sent",
+      "note": "ส่ง 28/9 · เจ้าของงานรับแล้ว"
+    },
+    {
+      "no": 38,
+      "dates": "14–20 ก.ย. 2569",
+      "status": "sent",
+      "note": "ส่ง 21/9 · เจ้าของงานรับแล้ว"
+    }
+  ],
+  "steps": [
+    "รอข้อมูล",
+    "พร้อมส่ง",
+    "ส่งแล้ว"
+  ],
+  "slides": [
+    {
+      "n": 1,
+      "label": "ปก",
+      "source": "ข้อมูลโครงการ"
+    },
+    {
+      "n": 2,
+      "label": "AGENDA",
+      "source": "แม่แบบ"
+    },
+    {
+      "n": 3,
+      "label": "ความก้าวหน้า",
+      "source": "แผน MP · รายงานประจำวัน"
+    },
+    {
+      "n": 4,
+      "label": "งานรายวัน",
+      "source": "รายงานประจำวัน 7 วัน"
+    },
+    {
+      "n": 5,
+      "label": "ภาพหน้างาน 1/2",
+      "source": "รูปในรายงานประจำวัน"
+    },
+    {
+      "n": 6,
+      "label": "ภาพหน้างาน 2/2",
+      "source": "รูปในรายงานประจำวัน"
+    },
+    {
+      "n": 7,
+      "label": "Weather Report",
+      "source": "รายงานประจำวัน"
+    },
+    {
+      "n": 8,
+      "label": "ปัญหาและอุปสรรค",
+      "source": "รายงานประจำวัน"
+    }
+  ],
+  "cover": {
+    "title": "Weekly Report",
+    "project": "โครงการจัดการพลังงานไฟฟ้าจากระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ที่ติดตั้งบนหลังคา (Solar Rooftop) การประปาส่วนภูมิภาค",
+    "station": "สถานีผลิตน้ำการประปาบ้านโป่ง",
+    "range": "ประจำวันที่ 28 กันยายน 2569 ถึงวันที่ 4 ตุลาคม 2569"
+  },
+  "agenda": [
+    "CONSTRUCTION PROGRESS",
+    "Weather Report",
+    "ปัญหาและอุปสรรค"
+  ],
+  "progressBars": [
+    {
+      "week": "W35",
+      "planPct": 6,
+      "actualPct": 5
+    },
+    {
+      "week": "W36",
+      "planPct": 14,
+      "actualPct": 12
+    },
+    {
+      "week": "W37",
+      "planPct": 24,
+      "actualPct": 22
+    },
+    {
+      "week": "W38",
+      "planPct": 33,
+      "actualPct": 30
+    },
+    {
+      "week": "W39",
+      "planPct": 41,
+      "actualPct": 36
+    },
+    {
+      "week": "W40",
+      "planPct": 52,
+      "actualPct": 50
+    }
+  ],
+  "progressBox": {
+    "plan": "52 %",
+    "actual": "50 %",
+    "status": "-2 %",
+    "asOf": "ข้อมูล ณ วันที่ 4 ตุลาคม 2569"
+  },
+  "days": [
+    {
+      "label": "จ 28/9",
+      "date": "28/09/2569",
+      "state": "signed",
+      "work": "ติดตั้งแผงหลังคา A–B",
+      "weather": "แดดจัด"
+    },
+    {
+      "label": "อ 29/9",
+      "date": "29/09/2569",
+      "state": "signed",
+      "work": "เดินสายสตริง 1–6 / เข้าหัว MC4",
+      "weather": "แดดจัด"
+    },
+    {
+      "label": "พ 30/9",
+      "date": "30/09/2569",
+      "state": "signed",
+      "work": "ติดตั้งตู้ DC combiner / เดินสายสตริง 7–12",
+      "weather": "มีเมฆบางส่วน"
+    },
+    {
+      "label": "พฤ 1/10",
+      "date": "01/10/2569",
+      "state": "signed",
+      "work": "ติดป้ายเตือน",
+      "weather": "มีเมฆบางส่วน"
+    },
+    {
+      "label": "ศ 2/10",
+      "date": "02/10/2569",
+      "state": "unsigned",
+      "work": "เทฐานอินเวอร์เตอร์",
+      "weather": "พายุฝนฟ้าคะนอง"
+    },
+    {
+      "label": "ส 3/10",
+      "date": "03/10/2569",
+      "state": "signed",
+      "work": "ติดตั้ง Walkway",
+      "weather": "ฝนฟ้าคะนอง"
+    },
+    {
+      "label": "อา 4/10",
+      "date": "04/10/2569",
+      "state": "off",
+      "work": "วันหยุด",
+      "weather": "มีเมฆบางส่วน"
+    }
+  ],
+  "weekdayColours": {
+    "_note": "Day-name colours of the template's weather slide (the customer's template, not Theme)",
+    "จันทร์": "#FFFF00",
+    "อังคาร": "#FF66CC",
+    "พุธ": "#00B050",
+    "พฤหัสบดี": "#FFC000",
+    "ศุกร์": "#00B0F0",
+    "เสาร์": "#7030A0",
+    "อาทิตย์": "#FF0000"
+  },
+  "photos": {
+    "max": 6,
+    "picked": [
+      {
+        "date": "28/9",
+        "caption": "แผงหลังคา A"
+      },
+      {
+        "date": "29/9",
+        "caption": "สายสตริง 1–6"
+      },
+      {
+        "date": "30/9",
+        "caption": "ตู้ DC"
+      },
+      {
+        "date": "30/9",
+        "caption": "สายสตริง 7–12"
+      },
+      {
+        "date": "2/10",
+        "caption": "ฐานอินเวอร์เตอร์"
+      },
+      {
+        "date": "3/10",
+        "caption": "ภาพรวมหลังคา"
+      }
+    ]
+  },
+  "problems": [
+    "ตู้ AC รออนุมัติ MA-05 (เสี่ยงสูง)",
+    "ฝนตกช่วง 2–3/10",
+    "รอการไฟฟ้านัดวันตรวจ"
+  ],
+  "fixes": [
+    "วัด Voc/Isc และยื่น RFI-03",
+    "ติดตั้งอินเวอร์เตอร์ · ตู้ AC",
+    "ทดสอบระบบ · ส่งมอบ 6/10"
+  ],
+  "readiness": [
+    {
+      "title": "รายงานประจำวันเซ็นครบ",
+      "note": "เซ็นแล้ว 5/6 วันทำงาน · ศ 2 รอเซ็น",
+      "ok": false,
+      "fix": "ไปแก้"
+    },
+    {
+      "title": "แผน MP สัปดาห์ที่ 40",
+      "note": "ซิงก์แล้ว · แผนสะสม 52%",
+      "ok": true
+    },
+    {
+      "title": "รูปหน้างาน",
+      "note": "6 รูปจากรายงานประจำวัน",
+      "ok": true
+    },
+    {
+      "title": "ปัญหาและแนวทางแก้ไข",
+      "note": "รวมจากรายงานประจำวัน 3 ข้อ",
+      "ok": true
+    }
+  ],
+  "recipients": [
+    {
+      "label": "เจ้าของงาน กปภ.",
+      "picked": true
+    },
+    {
+      "label": "ผู้ตรวจ กฟภ.",
+      "picked": false
+    },
+    {
+      "label": "ทีมภายใน",
+      "picked": true
+    }
+  ],
+  "sent": {
+    "line": "ส่ง วันนี้ 11:05 · ถึง 2 ผู้รับ",
+    "note": "ส่งแล้ว · อ่านอย่างเดียว",
+    "button": "✓ ส่งแล้ว"
+  },
+  "assets": {
+    "_note": "Pictures the board's slides use (from the customer's Weekly Report Template). Ship them in the package's resources for WeeklySlides and the on-screen slide preview.",
+    "weather-sunny.png": "แดดจัด",
+    "weather-partly-cloudy.png": "มีเมฆบางส่วน",
+    "weather-thunderstorm.png": "ฝนฟ้าคะนอง / พายุฝนฟ้าคะนอง",
+    "agenda-hex-1.png": "AGENDA item 1 marker",
+    "agenda-hex-2.png": "AGENDA item 2 marker",
+    "agenda-hex-3.png": "AGENDA item 3 marker",
+    "logo-pea-seal.png": "ตราการไฟฟ้าส่วนภูมิภาค, top right of every slide (1920 × 1080 slide: x 1608, y 32, 240 × 225)"
+  }
+}

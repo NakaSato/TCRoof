@@ -99,7 +99,8 @@ extension InstallTrackingPage {
     private func subline(_ r: InstallDailyData.Row, workEnd: String) -> String {
         switch r.state {
         case .today: return "วันทำงาน | ส่งก่อน \(workEnd)"
-        case .missing: return "วันทำงาน | ยังไม่มีรายงาน"
+        // the title already says there's no report
+        case .missing: return "วันทำงาน"
         default:
             let weather = r.rainHours > 0 ? "ฝน \(r.rainHours) ชม." : r.weather?.title
             return [r.crew.map { "\($0) คน" }, weather, r.state == .draft ? "ยังไม่ลงนาม" : nil].compactMap { $0 }.joined(separator: " | ")
@@ -109,7 +110,7 @@ extension InstallTrackingPage {
     private func dayChip(_ s: InstallDailyData.State) -> some View {
         let (title, tone): (String, InstallPageData.Tone) = switch s {
         case .today: ("ยังไม่ส่ง", .danger)
-        case .missing: ("ไม่มีรายงาน", .danger)
+        case .missing: ("ขาดส่ง", .danger)
         case .draft: ("ร่าง", .warn)
         case .signed: ("ส่งแล้ว", .ok)
         case .stopped: ("หยุดงาน", .idle)

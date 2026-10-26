@@ -84,8 +84,9 @@ final class InstallTrackingUITests: XCTestCase {
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "กลาง", "Weekly Report W40")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8), "the KPI cell should open the open items")
         row.tap()
-        XCTAssertTrue(waitGone(pageBack(app)), "an item should push its screen")
-        back(app)
+        // on iPad the Weekly Report is a tab of the page: the item selects it (no push)
+        XCTAssertTrue(app.buttons["weeklySend"].waitForExistence(timeout: 8), "the item should open the Weekly Report tab")
+        XCTAssertTrue(pageBack(app).exists, "the page stays")
         XCTAssertFalse(row.exists, "the sheet should be closed after opening an item")
     }
 

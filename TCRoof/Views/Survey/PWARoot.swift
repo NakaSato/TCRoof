@@ -153,6 +153,6 @@ extension Array where Element == Job {
     /// The PWA stations being installed: those with an MP plan that aren't handed over, and those set กำลังติดตั้ง
     /// with no plan yet, such as a survey just moved to installation.
     var pwaInstalling: [Job] {
-        pwaStations.filter { $0.status == .installing || ($0.scheduleInput != nil && $0.status != .completed) }
+        filter(\.opensInstallPage)
     }
 }

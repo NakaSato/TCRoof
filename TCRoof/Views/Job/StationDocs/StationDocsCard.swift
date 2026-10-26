@@ -32,7 +32,7 @@ struct StationDocsCard: View {
                 Label(expiryText(pair.0, pair.1), systemImage: "exclamationmark.triangle.fill")
                     .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.dangerText)
             }
-            NavigationLink { StationDocsScreen(job: job) } label: {
+            InstallTabLink(job: job, tab: .docs) { StationDocsScreen(job: job) } label: {
                 Label("เปิดรายการเอกสาร", systemImage: "folder").font(.sarabun(15, .semibold, relativeTo: .subheadline))
                     .frame(maxWidth: .infinity, minHeight: touchMin)
             }

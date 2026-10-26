@@ -47,6 +47,12 @@ struct InstallTrackingPage: View {
     @Environment(\.modelContext) var context
     @Environment(\.horizontalSizeClass) var sizeClass
 
+    /// `start` opens the page at that tab (links from the job screen, notifications and the feed on iPad).
+    init(job: Job, start: Tab? = nil) {
+        self.job = job
+        _tab = State(initialValue: start ?? Debug.tab)
+    }
+
     // iPhone (docs/ui/install-tracking-iphone): every tab in place, and the header's gear
     @State var phoneTab = Debug.phoneTab
     @State var phoneSettings = Debug.settings
@@ -125,7 +131,9 @@ struct InstallTrackingPage: View {
         }
         #endif
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $route) { destination($0) }
+        .navigationDestination(item: $route) { r in
+            destination(r).environment(\.installTab) { t in route = nil; tab = t }
+        }
         .navigationDestination(item: $phoneRoute) { phoneDestination($0) }
     }
 

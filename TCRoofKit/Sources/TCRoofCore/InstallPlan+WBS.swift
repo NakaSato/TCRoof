@@ -21,9 +21,13 @@ public extension InstallPlan {
                 let done = ticked.contains(item.code) || stage.status == .done
                 let status: InstallGantt.Status = done ? .done : stage.status == .current && a <= day ? .current : .waiting
                 let float = InstallCriticalPath.float(subEnd: b, stageEnd: stage.end, nonWorking: nonWorking, calendar: cal)
-                return Row(id: stage.id + "-" + item.code, code: item.code, title: item.title.trimmingCharacters(in: .whitespaces),
-                           start: a, end: b, status: status, percent: done ? 100 : 0, float: float,
-                           critical: float == 0 && status != .done && stage.critical)
+                var row = Row(id: stage.id + "-" + item.code, code: item.code, title: item.title.trimmingCharacters(in: .whitespaces),
+                              start: a, end: b, status: status, percent: done ? 100 : 0, float: float,
+                              critical: float == 0 && status != .done && stage.critical)
+                // the file's own dates are the sub-task's baseline
+                row.baselineStart = cal.startOfDay(for: item.baselineStart!)
+                row.baselineEnd = max(cal.startOfDay(for: item.baselineEnd!), row.baselineStart!)
+                return row
             }
         }
     }

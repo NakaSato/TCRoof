@@ -74,9 +74,17 @@ struct PWARoot: View {
                 // `-installLate YES`: that station's 2.2 runs late, for the task sheet's causes
                 if UserDefaults.standard.bool(forKey: "installLate") { pick?.seedLatePlan(); try? context.save() }
                 // `-installWBS YES`: that station gets the P9-001 template's WBS rows with no ticks, for the task sheet's
-                // งานย่อย WBS (for good)
+                // งานย่อย WBS (for good), moved so the template's 2.1 starts on the station's 2.1, as a plan started
+                // from the template would have them
                 if UserDefaults.standard.bool(forKey: "installWBS"), let pick, let c = MPTemplates.cases().first,
-                   let data = try? Data(contentsOf: c.url), let wbs = try? MPWorkbook.read(data).wbs {
+                   let data = try? Data(contentsOf: c.url), var wbs = try? MPWorkbook.read(data).wbs {
+                    let cal = MasterSchedule.calendar
+                    if let input = pick.scheduleInput,
+                       let start = MasterSchedule.plan(input).first(where: { $0.task.code == "2.1" })?.start,
+                       let line = wbs.first(where: { $0.code == "2.1" })?.baselineStart,
+                       let days = cal.dateComponents([.day], from: cal.startOfDay(for: line), to: cal.startOfDay(for: start)).day {
+                        wbs = wbs.map { $0.shifted(days: days) }
+                    }
                     pick.wbsTicks = [:]
                     pick.scheduleWBS = wbs
                     try? context.save()

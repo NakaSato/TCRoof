@@ -21,6 +21,9 @@ public struct InstallPlan: Equatable, Sendable {
         public var crew: Int?
         /// `ต่อจาก`: the WBS code it follows.
         public var after: String?
+        /// Its dates in the baseline (`useBaseline`), drawn under its bar; nil without one.
+        public var baselineStart: Date?
+        public var baselineEnd: Date?
 
         public var days: Int { (MasterSchedule.calendar.dateComponents([.day], from: start, to: end).day ?? 0) + 1 }
     }

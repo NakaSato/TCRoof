@@ -80,6 +80,7 @@ extension InstallTrackingPage {
                 planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
                 if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
                 if let on = p.onPlan { planChip("สถานะแผน", on ? "ตามแผน" : "ช้ากว่าแผน", on ? Theme.successInk : Theme.dangerText) }
+                if let slip = p.slip { planChip("เทียบ Baseline", InstallPlan.slipText(slip), slip > 0 ? Theme.dangerText : Theme.successInk) }
             }
             Spacer(minLength: 8)
             TCCountSegments([.init("Gantt"), .init("ตาราง")],
@@ -130,6 +131,7 @@ extension InstallTrackingPage {
 
     private func showsCrew(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.crew != nil } }
     private func showsLinks(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.after != nil } }
+    private func showsBaseline(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.baselineEnd != nil } }
 
     private func planGantt(_ p: InstallPlan, axis: InstallAxis, waitLabel: String?) -> some View {
         VStack(spacing: 0) {
@@ -262,6 +264,7 @@ extension InstallTrackingPage {
         let status = switch r.status { case .done: "เสร็จ"; case .current: "กำลังทำ"; case .waiting: "ตามแผน" }
         return "\(r.code) \(r.title) | \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) | \(status) \(Int(r.percent.rounded()))%"
             + (r.critical ? " | เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " | เผื่อ \(r.float ?? 0) วัน" : "")
+            + (r.slip.map { " | เทียบ Baseline " + InstallPlan.slipText($0) } ?? "")
     }
 
     /// Diamonds on their days: green filled when passed, navy outlined when ahead.
@@ -297,6 +300,9 @@ extension InstallTrackingPage {
             legendSwatch(waitLabel == nil ? "วันหยุด" : "รอการไฟฟ้า") {
                 InstallHatch(ink: Theme.installFloat.opacity(0.5), line: 2).clipShape(RoundedRectangle(cornerRadius: 3))
             }
+            if showsBaseline(p) {
+                legendSwatch("Baseline") { Capsule().fill(Theme.installBaseline).frame(height: 4) }
+            }
             Spacer(minLength: 8)
             if showsLinks(p) { Text("ต่อจาก = งานก่อนหน้า (เสร็จ → เริ่ม)") }
         }
@@ -316,6 +322,7 @@ extension InstallTrackingPage {
 
     private enum TableCol {
         static let wbs: CGFloat = 60, date: CGFloat = 80, days: CGFloat = 54, crew: CGFloat = 54, after: CGFloat = 70, status: CGFloat = 100
+        static let slip: CGFloat = 104
     }
 
     private func planTable(_ p: InstallPlan) -> some View {
@@ -352,6 +359,12 @@ extension InstallTrackingPage {
             Text(r.map { "\($0.days)" } ?? "วัน").frame(width: TableCol.days, alignment: .leading)
             if showsCrew(p) { Text(r.map { $0.crew.map(String.init) ?? "–" } ?? "คน").frame(width: TableCol.crew, alignment: .leading) }
             if showsLinks(p) { Text(r.map { $0.after ?? "–" } ?? "ต่อจาก").frame(width: TableCol.after, alignment: .leading) }
+            if showsBaseline(p) {
+                Group {
+                    if let r { slipLabel(r.slip) } else { Text("เทียบ Baseline") }
+                }
+                .frame(width: TableCol.slip, alignment: .leading)
+            }
             Group {
                 if let r { statusPill(r.status) } else { Text("สถานะ") }
             }
@@ -362,6 +375,12 @@ extension InstallTrackingPage {
         .monospacedDigit()
         .padding(.horizontal, 10)
         .accessibilityElement(children: .combine)
+    }
+
+    /// A row's slip from its baseline: red when later, green otherwise, a dash without one.
+    func slipLabel(_ slip: Int?) -> some View {
+        Text(slip.map(InstallPlan.slipText) ?? "–")
+            .foregroundStyle(slip.map { $0 > 0 ? Theme.dangerText : Theme.successInk } ?? Theme.inkMuted)
     }
 
     private func statusPill(_ s: InstallGantt.Status) -> some View {
@@ -520,7 +539,7 @@ struct MilestoneDiamond: View {
 }
 
 /// A stage's 20 pt bar: the plan's track filled navy (green when done) to its percent with a white `n%`, outlined
-/// red while it is critical and not done.
+/// red while it is critical and not done, with its baseline as a thin grey line under it.
 struct PlanStageBar: View {
     let row: InstallPlan.Row
     let axis: InstallAxis
@@ -544,6 +563,12 @@ struct PlanStageBar: View {
         .overlay { if row.critical { shape.strokeBorder(Theme.installCritical, lineWidth: 2) } }
         .offset(x: x0)
         .frame(width: width, height: 44, alignment: .leading)
+        .overlay(alignment: .topLeading) {
+            if let a = row.baselineStart, let b = row.baselineEnd {
+                let bx = axis.x(a, width) + 3
+                Capsule().fill(Theme.installBaseline).frame(width: max(axis.xEnd(b, width) - 3 - bx, 4), height: 4).offset(x: bx, y: 35)
+            }
+        }
         .accessibilityHidden(true)
     }
 }

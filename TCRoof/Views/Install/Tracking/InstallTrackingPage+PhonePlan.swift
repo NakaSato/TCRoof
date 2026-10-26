@@ -12,6 +12,7 @@ extension InstallTrackingPage {
     private enum PCol {
         static let name: CGFloat = 150, stage: CGFloat = 50, sub: CGFloat = 34
         static let date: CGFloat = 64, days: CGFloat = 44, crew: CGFloat = 44, after: CGFloat = 60, status: CGFloat = 92
+        static let slip: CGFloat = 92
     }
 
     /// Re-plans saved on this station so far: `REV 0n`. The board's example starts from its baseline, REV 01.
@@ -78,7 +79,14 @@ extension InstallTrackingPage {
                             revChip(Self.rev(revisions), ink: Theme.primary, fill: Theme.primarySoft)
                         }
                     }
-                    Text(sub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(sub).foregroundStyle(Theme.inkMuted)
+                        if let slip = p.slip {
+                            Text("Baseline " + InstallPlan.slipText(slip)).fontWeight(.bold)
+                                .foregroundStyle(slip > 0 ? Theme.dangerText : Theme.successInk)
+                        }
+                    }
+                    .font(.sarabunFixed(13)).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 HStack(spacing: 6) {
                     factTile("ระยะเวลา", "\(p.days.count) วัน")
@@ -404,6 +412,7 @@ extension InstallTrackingPage {
 
     private func showsCrewPhone(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.crew != nil } }
     private func showsLinksPhone(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.after != nil } }
+    private func showsBaselinePhone(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.baselineEnd != nil } }
 
     /// A sideways-scrolling grid with the WBS and name pinned. In edit mode a stage gets `‹ ›` on its start and `− +` on
     /// its days; done stages and the sub-tasks (whose days are the reports' places) are locked.
@@ -436,6 +445,7 @@ extension InstallTrackingPage {
                         tableHead("วัน", width: days)
                         if showsCrewPhone(p) { tableHead("คน", width: PCol.crew) }
                         if showsLinksPhone(p) { tableHead("ต่อจาก", width: PCol.after) }
+                        if showsBaselinePhone(p) { tableHead("Baseline", width: PCol.slip) }
                         tableHead("สถานะ", width: PCol.status)
                     }
                     ForEach(rows, id: \.0.id) { r, stage in
@@ -496,6 +506,7 @@ extension InstallTrackingPage {
             .background(changed && draft(r).days != r.days ? Theme.warningSoft : .clear)
             if showsCrewPhone(p) { Text(r.crew.map(String.init) ?? "–").padding(.leading, 8).frame(width: PCol.crew, alignment: .leading) }
             if showsLinksPhone(p) { Text(r.after ?? "–").padding(.leading, 8).frame(width: PCol.after, alignment: .leading) }
+            if showsBaselinePhone(p) { slipLabel(r.slip).padding(.leading, 8).frame(width: PCol.slip, alignment: .leading) }
             planStatus(r.status).padding(.leading, 8).frame(width: PCol.status, alignment: .leading)
         }
         .font(.sarabunFixed(14, stage ? .bold : .regular)).foregroundStyle(Theme.navy).monospacedDigit()

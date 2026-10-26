@@ -56,9 +56,44 @@ final class InstallPlanTests: XCTestCase {
         XCTAssertEqual(dc[0].start, d(5)); XCTAssertEqual(dc[0].end, d(6))
         XCTAssertEqual(dc[1].start, d(7)); XCTAssertEqual(dc[1].end, d(9))
         XCTAssertEqual(dc[0].status, .done); XCTAssertEqual(dc[0].percent, 100)
+        XCTAssertEqual(dc[0].baselineEnd, d(4)); XCTAssertEqual(dc[0].slip, 2, "the file's own dates are its baseline")
         XCTAssertEqual(dc[1].status, .waiting, "starts after today")
         // the panels stage has no WBS rows here: its place stays
         XCTAssertEqual(p.stages[1].subs.map(\.title), ["โซน A"])
+    }
+
+    /// The baseline under each stage: the plan file's WBS lines, or the plan before its first re-plan when there is one.
+    func testStagesCarryTheirBaselineAndSlip() {
+        func line(_ code: String, _ s: Int, _ e: Int) -> MasterSchedule.WorkItem {
+            var i = MasterSchedule.WorkItem(code: code, title: code, weight: 5, level: 1)
+            i.baselineStart = d(s); i.baselineEnd = d(e)
+            return i
+        }
+        let wbs = [line("2.2", 5, 6), line("2.3", 9, 9), line("2.2.1", 5, 5)]
+        var input = MasterSchedule.Input(installStart: d(0), installEnd: d(20), kickoff: d(-30), engineeringStart: d(-25),
+                                         siteHandover: d(-1), over200kVA: false)
+        let fromFile = InstallPlan.baselineDates(input: input, wbs: wbs, calendar: cal)
+        XCTAssertEqual(fromFile["dcSide"], d(5)...d(6))
+        XCTAssertEqual(fromFile["panels"], d(9)...d(9))
+        XCTAssertEqual(fromFile.count, 2, "only the task lines, not the sub-tasks")
+
+        input.baseline = ["dcSide": .init(start: d(4), end: d(5), weight: 5)]
+        XCTAssertEqual(InstallPlan.baselineDates(input: input, wbs: wbs, calendar: cal), ["dcSide": d(4)...d(5)],
+                       "a re-plan's baseline wins over the file's")
+
+        let rows: [InstallGantt.Row] = [
+            .init(id: "dcSide", code: "2.2", title: "ระบบ DC", status: .current, start: d(5), end: d(9), percent: 30, subs: []),
+            .init(id: "panels", code: "2.3", title: "แผง", status: .waiting, start: d(9), end: d(10), percent: 0, subs: []),
+            .init(id: "inverter", code: "2.5", title: "Inverter", status: .waiting, start: d(10), end: d(11), percent: 0, subs: [])]
+        var p = InstallPlan(gantt: InstallGantt(rows: rows, today: d(6)), nonWorking: [], tracking: nil, calendar: cal)
+        XCTAssertNil(p.slip)
+        p.useBaseline(fromFile)
+        XCTAssertEqual(p.stages.map(\.row.slip), [3, 1, nil])
+        XCTAssertEqual(p.stages[0].row.baselineStart, d(5))
+        XCTAssertEqual(p.slip, 1, "the last end of the stages with a baseline against their last baseline end")
+        XCTAssertEqual(InstallPlan.slipText(3), "ช้า 3 วัน")
+        XCTAssertEqual(InstallPlan.slipText(0), "ตรงแผน")
+        XCTAssertEqual(InstallPlan.slipText(-2), "เร็ว 2 วัน")
     }
 
     func testStagesAreCriticalUntilDone() {

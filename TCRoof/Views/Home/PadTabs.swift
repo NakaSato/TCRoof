@@ -84,7 +84,7 @@ struct PadTabs<HomeRoot: View>: View {
                 case .docs: AnyView(PWADocsPadView())
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
-                case .tools: AnyView(ToolsView(modules: [.plan, .install, .travel]))
+                case .tools: AnyView(ToolsView(modules: [.plan, .travel]))
                 default: if let module = t.module { AnyView(module.destination) } else { AnyView(home()) }
                 }
             }

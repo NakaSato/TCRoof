@@ -49,6 +49,8 @@ enum LocalData {
         try? context.delete(model: Trip.self)
         try? context.delete(model: Expense.self)
         try? context.delete(model: ClaimMonth.self)
+        try? context.delete(model: ToolEvent.self)
+        try? context.delete(model: CompanyVehicle.self)
         try? context.save()
         for job in survey.jobs { survey.delete(job.id) }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

@@ -604,3 +604,18 @@ test('a claim decision: managers write it, never on their own, and the claimant 
   await assertSucceeds(getDocs(collection(db(BOSS), 'claimReviews')));
   await assertFails(deleteDoc(doc(db(BOSS), 'claimReviews', id)));
 });
+
+test('the tool and vehicle log is the team\'s: the team reads and writes it, contractors never', async () => {
+  const me = db(TEAM);
+  await assertSucceeds(setDoc(doc(me, 'toolEvents', 'e1'), { event: '{}', at: 1000 }));
+  await assertFails(setDoc(doc(me, 'toolEvents', 'e2'), { event: '{}', at: '1000' }));
+  await assertSucceeds(getDocs(collection(me, 'toolEvents')));
+  await assertSucceeds(setDoc(doc(me, 'vehicles', 'v1'), { vehicle: '{}' }));
+  await assertFails(setDoc(doc(me, 'vehicles', 'v2'), { name: 'D-Max' }));
+  await assertSucceeds(getDocs(collection(db(BOSS), 'vehicles')));
+  await assertFails(getDocs(collection(db(CON), 'toolEvents')));
+  await assertFails(getDoc(doc(db(CON), 'vehicles', 'v1')));
+  await assertFails(setDoc(doc(db(CON), 'toolEvents', 'e3'), { event: '{}', at: 1 }));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'toolEvents', 'e1')));
+  await assertSucceeds(deleteDoc(doc(me, 'toolEvents', 'e1')));
+});

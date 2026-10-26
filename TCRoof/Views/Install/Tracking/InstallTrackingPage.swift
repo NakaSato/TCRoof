@@ -373,7 +373,8 @@ struct InstallTrackingPage: View {
     func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
-         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
+         // pushes the one-page request (docs/ui/weekly-request-ipad-map); `Tab.request` stays, unused by the item
+         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),

@@ -267,8 +267,32 @@ public enum RoutineReport {
         public var description = ""
         public var level = RiskLevel.medium
         public var prevention = ""
+        /// The 5 × 5 assessment (1–5 each), when it was scored on the iPad page (`assess`); `level` follows the score so
+        /// the PDF and older devices keep working. Nil for older risks.
+        public var likelihood: Int?
+        public var severity: Int?
         public init(description: String = "", level: RiskLevel = .medium, prevention: String = "") {
             self.description = description; self.level = level; self.prevention = prevention
+        }
+
+        enum CodingKeys: String, CodingKey { case id, description, level, prevention, likelihood, severity }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+            level = try c.decodeIfPresent(RiskLevel.self, forKey: .level) ?? .medium
+            prevention = try c.decodeIfPresent(String.self, forKey: .prevention) ?? ""
+            likelihood = try c.decodeIfPresent(Int.self, forKey: .likelihood)
+            severity = try c.decodeIfPresent(Int.self, forKey: .severity)
+        }
+
+        /// As before for an unscored risk: the scores are left out while unset.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(id, forKey: .id); try c.encode(description, forKey: .description)
+            try c.encode(level, forKey: .level); try c.encode(prevention, forKey: .prevention)
+            try c.encodeIfPresent(likelihood, forKey: .likelihood); try c.encodeIfPresent(severity, forKey: .severity)
         }
     }
 
@@ -327,11 +351,17 @@ public enum RoutineReport {
         public var sentBy = ""
         /// Roles off on a day: `"<crew index>-<day>"` (`offKey`). Empty for older requests.
         public var crewOff: [String] = []
+        /// The week's working hours, as minutes after midnight, when the request sets its own; nil: the station's
+        /// (`Settings.workStart` / `workEnd`). Older requests have none.
+        public var workStart: Int?
+        public var workEnd: Int?
 
         public var id: String { MasterSchedule.Actual.key(weekStart) }
         public init(weekStart: Date) { self.weekStart = MasterSchedule.weekStart(weekStart) }
 
-        enum CodingKeys: String, CodingKey { case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy, sentAt, sentBy, crewOff }
+        enum CodingKeys: String, CodingKey {
+            case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy, sentAt, sentBy, crewOff, workStart, workEnd
+        }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -346,6 +376,8 @@ public enum RoutineReport {
             sentAt = try c.decodeIfPresent(Date.self, forKey: .sentAt)
             sentBy = try c.decodeIfPresent(String.self, forKey: .sentBy) ?? ""
             crewOff = try c.decodeIfPresent([String].self, forKey: .crewOff) ?? []
+            workStart = try c.decodeIfPresent(Int.self, forKey: .workStart)
+            workEnd = try c.decodeIfPresent(Int.self, forKey: .workEnd)
         }
 
         /// As before for a request with no role off: `crewOff` is left out while empty.
@@ -356,6 +388,7 @@ public enum RoutineReport {
             try c.encodeIfPresent(engineerSignedAt, forKey: .engineerSignedAt); try c.encodeIfPresent(approvedAt, forKey: .approvedAt)
             try c.encode(approvedBy, forKey: .approvedBy); try c.encodeIfPresent(sentAt, forKey: .sentAt); try c.encode(sentBy, forKey: .sentBy)
             if !crewOff.isEmpty { try c.encode(crewOff, forKey: .crewOff) }
+            try c.encodeIfPresent(workStart, forKey: .workStart); try c.encodeIfPresent(workEnd, forKey: .workEnd)
         }
 
         public enum Status: Sendable { case draft, sent, approved }

@@ -186,6 +186,13 @@ public enum Theme {
     public static let dailyTasks: [Color] = [Color(hex: 0x1F6FB5), Color(hex: 0x2E9E5B), Color(hex: 0xD9822B),
                                              Color(hex: 0x8E44AD), Color(hex: 0xC0392B)]
     public static let dailyPick = Color(light: 0xA8E6D4, dark: 0x2C6B5A)
+    // iPad one-page weekly request (docs/ui/weekly-request-ipad-map): the request lines' colours by order, cycling, and
+    // the 5 × 5 risk bands `ต่ำ | ปานกลาง | สูง | สูงมาก` (ink, and the grid cells' fill)
+    public static let requestLines: [Color] = [Color(hex: 0x1F6FB5), Color(hex: 0xD9822B), Color(hex: 0x2E9E5B),
+                                               Color(hex: 0x8E44AD), Color(hex: 0xC0392B)]
+    public static let riskBands: [Color] = [success, warning, danger, Color(hex: 0x8E1B12)]
+    public static let riskBandsSoft: [Color] = [Color(light: 0xE3F3EA, dark: 0x16271D), Color(light: 0xFFEBCC, dark: 0x2E2213),
+                                                Color(light: 0xF9D3CF, dark: 0x3A1C1A), Color(light: 0xE8A29B, dark: 0x5A2A26)]
     // iPhone PWA documents page (docs/ui/pwa-docs-iphone-v2): papers waiting on an outside office, and the `บริษัท` badge
     public static let outside = planInspect
     public static let outsideSoft = planInspectSoft

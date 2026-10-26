@@ -293,7 +293,12 @@ public struct RoutineReportPages {
         let range = "\(RoutineReport.thaiDate(r.weekStart)) – \(RoutineReport.thaiDate(end))"
         var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " | " + range)
         projectFacts(&f)
-        facts(&f, [("สัปดาห์", range)])
+        // the working time only when the request sets its own (docs/ui/weekly-request-ipad-map §5.1): older requests print as before
+        if let s = r.workStart, let e = r.workEnd {
+            facts(&f, [("สัปดาห์", range), ("เวลาทำงาน", Self.clock(s) + "–" + Self.clock(e))])
+        } else {
+            facts(&f, [("สัปดาห์", range)])
+        }
 
         let days = RoutineReport.WeeklyRequest.workingDays(station.settings)
         let byDay = !days.isEmpty && (r.work.contains { !$0.days.isEmpty } || !r.crewOff.isEmpty)
@@ -345,6 +350,9 @@ public struct RoutineReportPages {
                    drawn: [signature, nil])
         return f.finish()
     }
+
+    /// Minutes after midnight as `08:00`.
+    static func clock(_ minutes: Int) -> String { String(format: "%02d:%02d", minutes / 60, minutes % 60) }
 
     // MARK: - R3 weekly
 

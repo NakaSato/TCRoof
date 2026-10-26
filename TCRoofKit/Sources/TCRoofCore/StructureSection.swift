@@ -117,8 +117,18 @@ public struct StructureSection: Sendable {
         public var row: Int?
         /// A steel C's lip, drawn as a line that far inside its top face (nil: none).
         public var lip: Double?
-        public init(_ path: [Pt], depth: Double, face: Face = .centre, row: Int? = nil, lip: Double? = nil) {
-            self.path = path; self.depth = depth; self.face = face; self.row = row; self.lip = lip
+        /// A line (two points) the member's start is cut along, as where a strut meets a sloping rafter (nil: square).
+        public var trimStart: (Pt, Pt)?
+        public init(_ path: [Pt], depth: Double, face: Face = .centre, row: Int? = nil, lip: Double? = nil, trimStart: (Pt, Pt)? = nil) {
+            self.path = path; self.depth = depth; self.face = face; self.row = row; self.lip = lip; self.trimStart = trimStart
+        }
+        /// `p` with its first point moved along its first piece to `trimStart`.
+        func trimmed(_ p: [Pt]) -> [Pt] {
+            guard let (a, b) = trimStart, p.count >= 2 else { return p }
+            let d = Pt(p[1].x - p[0].x, p[1].y - p[0].y), e = Pt(b.x - a.x, b.y - a.y), den = d.x * e.y - d.y * e.x
+            guard abs(den) > 1e-12 else { return p }
+            let t = ((a.x - p[0].x) * e.y - (a.y - p[0].y) * e.x) / den
+            return [Pt(p[0].x + d.x * t, p[0].y + d.y * t)] + p.dropFirst()
         }
 
         /// How far the top and bottom faces are from the path, along its left normal.
@@ -126,12 +136,12 @@ public struct StructureSection: Sendable {
         /// The outline, mitred at every bend.
         public var outline: [Pt] {
             guard path.count >= 2 else { return [] }
-            return StructureSection.offset(path, faces.top) + StructureSection.offset(path, faces.bottom).reversed()
+            return trimmed(StructureSection.offset(path, faces.top)) + trimmed(StructureSection.offset(path, faces.bottom)).reversed()
         }
         /// The lip lines, that far inside each face, as the team draws a C seen from its side.
         public var lipLines: [[Pt]] {
             guard let lip, lip > 0, 2 * lip < depth, path.count >= 2 else { return [] }
-            return [StructureSection.offset(path, faces.top - lip), StructureSection.offset(path, faces.bottom + lip)]
+            return [trimmed(StructureSection.offset(path, faces.top - lip)), trimmed(StructureSection.offset(path, faces.bottom + lip))]
         }
 
         /// A point on the member's centre line `t` of the way along its piece `i`.

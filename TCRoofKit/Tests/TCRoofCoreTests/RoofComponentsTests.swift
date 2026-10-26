@@ -45,7 +45,12 @@ final class RoofComponentsTests: XCTestCase {
         check("sheetOverRafter", overFace)
         // the eave strut: the rafter's section, its top 0.167 m under the head
         let strut = try XCTUnwrap(m.members.first { $0.row == nil && $0.path.count == 2 && abs($0.path[0].y - $0.path[1].y) < 1e-9 && $0.path[1].x <= 0 && $0.depth > 0.1 })
-        check("strutDepth", strut.depth); check("strutTopUnderHead", base - (strut.path[0].y + strut.depth / 2))
+        // (the head as the drawing measures it: where the rafter's underside crosses the post's outer face)
+        let post = try XCTUnwrap(m.posts.first), head = base - post.width / 2 * tan(15 * Double.pi / 180)
+        check("strutDepth", strut.depth); check("strutTopUnderHead", head - (strut.path[0].y + strut.depth / 2))
+        // its end cut along the rafter's underside: the top and bottom corners on that line
+        let o = strut.outline, under: (Pt) -> Double = { base + $0.x * tan(15 * Double.pi / 180) }
+        XCTAssertEqual(o[0].y, under(o[0]), accuracy: 1e-9); XCTAssertEqual(o[o.count - 1].y, under(o[o.count - 1]), accuracy: 1e-9)
         // the post and the beam on it, and the soffit under the head (from the eave's own depth: 0.05 m tolerance)
         check("postWidth", try XCTUnwrap(m.posts.first).width)
         let beam = try XCTUnwrap(m.cuts.first { $0.row == 4 })

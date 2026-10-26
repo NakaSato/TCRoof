@@ -42,7 +42,10 @@ public struct RoofSection: Sendable {
 
     /// - Parameter highlight: member row 1…7 whose callout is filled red.
     public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false, callouts showCallouts: Bool = true) {
-        let f = Roof.frame(v), m = Self.structure(v)
+        let f = Roof.frame(v)
+        var m = Self.structure(v, structureOnly: trueScale)
+        // the CAD file is the roof structure only, as the team's drawings: no level marks
+        if trueScale { m.levels = [] }
         let span = Roof.span(v), half = span / 2, nH = Roof.bays(v)
         let ang = Roof.slope(v), rise = half * tan(ang * .pi / 180)
         let o = Roof.overhang(v), base = Roof.clearHeight(v)
@@ -94,10 +97,10 @@ public struct RoofSection: Sendable {
             }
         }
 
-        // the pitch at the left support
+        // the pitch at the left support (the page's: the CAD file leaves the arc out, as the team's sections do)
         let heel = f.isRafter ? 0 : f.heel, c = P(Pt(0, base + heel))
         d.add(.polyline((0...12).map { s in let t = Double(s) / 12 * ang * .pi / 180; return Pt(c.x + 40 * cos(t), c.y - 40 * sin(t)) },
-                        width: 0.8, color: Self.navy), "DIM")
+                        width: 0.8, color: Self.navy), trueScale ? nil : "DIM")
         text(Roof.slopeText(v), c.x + 46, c.y - 6, 11, align: .left)
 
         // the level values the page makes tappable: the clear height and the ridge
@@ -120,7 +123,9 @@ public struct RoofSection: Sendable {
     // MARK: the section in metres
 
     /// C1's frame cut across the ridge, in metres (x from the left support, y up from the ground).
-    public static func structure(_ v: Values) -> StructureSection {
+    /// `structureOnly` (the CAD file) leaves out what isn't the roof's structure: a boxed eave's soffit, its raked
+    /// fascia and the beam cut at the post heads.
+    public static func structure(_ v: Values, structureOnly: Bool = false) -> StructureSection {
         typealias S = StructureSection
         let f = Roof.frame(v), B = Roof.span(v), h = B / 2, n = Roof.bays(v)
         let ang = Roof.slope(v) * .pi / 180, tn = tan(ang), cs = cos(ang), sn = sin(ang)
@@ -176,11 +181,11 @@ public struct RoofSection: Sendable {
             let pw = post.material == .concrete ? post.width : post.depth
             // a boxed eave's soffit runs 0.40 under the rafter's tip, and the beam drops to it with the post going on up
             // to the head (the team's section); otherwise the beam sits right under the head
-            let boxed = K && o > 0.25, hh = head.profile.h
+            let boxed = K && o > 0.25, hh = head.profile.h, keepBox = !structureOnly
             let beamBottom = boxed ? min(base - hh, under(-o) - 0.4) : base - hh
             for (x, s) in [(0.0, 1.0), (B, -1.0)] {
-                m.posts.append(S.Post(x: x, width: pw, top: beamBottom + hh < base - 1e-6 ? base : beamBottom, row: K ? 7 : nil))
-                m.cuts.append(S.Cut(head.profile, at: Pt(x, beamBottom), opens: s, row: 4))
+                m.posts.append(S.Post(x: x, width: pw, top: !keepBox || beamBottom + hh < base - 1e-6 ? base : beamBottom, row: K ? 7 : nil))
+                if keepBox { m.cuts.append(S.Cut(head.profile, at: Pt(x, beamBottom), opens: s, row: 4)) }
             }
             let yc = base + (K ? 0.55 : 0.5) * rise, xt = (yc - base) / tn - raf.depth / (2 * cs * tn)
             if !K, let cp = size(7) { m.members.append(S.Member([Pt(h, yc), Pt(h, mid(h))], depth: cp.depth, row: 7)) }
@@ -193,17 +198,21 @@ public struct RoofSection: Sendable {
                 // the boxed eave: a soffit under the beam out to a fascia raking up to the rafter's tip
                 let ys = beamBottom, run = min(0.25, o / 3), sof = size(5) ?? .c(0.075)
                 let ft = max(0.025, size(6)?.width ?? 0.025)
-                // a strut of the rafter's section from the post out to the rafter's underside, its top 0.167 m under the
-                // head (the team's section)
-                let sTop = base - 0.167, sMid = sTop - raf.depth / 2, reach = (base - sTop) / tn
-                if sTop - raf.depth > ys + 0.05 && reach > pw / 2 + 0.15 {
-                    m.members.append(S.Member([Pt(-reach, sMid), Pt(-pw / 2, sMid)], depth: raf.depth, lip: raf.lip))
-                    m.members.append(S.Member([Pt(B + pw / 2, sMid), Pt(B + reach, sMid)], depth: raf.depth, lip: raf.lip))
+                // a strut of the rafter's section from the post out to the rafter's underside, its top 0.167 m under where
+                // that underside crosses the post's outer face, its end cut along the underside (the team's section)
+                let sTop = under(-pw / 2) - 0.167, sMid = sTop - raf.depth / 2, reach = (base - (sTop - raf.depth)) / tn + 0.1
+                if sTop - raf.depth > ys + 0.05 {
+                    m.members.append(S.Member([Pt(-reach, sMid), Pt(-pw / 2, sMid)], depth: raf.depth, lip: raf.lip,
+                                              trimStart: (Pt(0, base), Pt(-1, base - tn))))
+                    m.members.append(S.Member([Pt(B + reach, sMid), Pt(B + pw / 2, sMid)], depth: raf.depth, lip: raf.lip,
+                                              trimStart: (Pt(B, base), Pt(B + 1, base - tn))))
                 }
-                m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
-                m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))
-                m.members.append(S.Member([Pt(-o, under(-o)), Pt(-o + run, ys - sof.depth)], depth: ft, row: 6))
-                m.members.append(S.Member([Pt(B + o - run, ys - sof.depth), Pt(B + o, under(B + o))], depth: ft, row: 6))
+                if keepBox {
+                    m.members.append(S.Member([Pt(-o + run, ys), Pt(-pw / 2, ys)], depth: sof.depth, face: .top, row: 5))
+                    m.members.append(S.Member([Pt(B + pw / 2, ys), Pt(B + o - run, ys)], depth: sof.depth, face: .top, row: 5))
+                    m.members.append(S.Member([Pt(-o, under(-o)), Pt(-o + run, ys - sof.depth)], depth: ft, row: 6))
+                    m.members.append(S.Member([Pt(B + o - run, ys - sof.depth), Pt(B + o, under(B + o))], depth: ft, row: 6))
+                }
             } else {
                 fascia(topFace(-o))
             }

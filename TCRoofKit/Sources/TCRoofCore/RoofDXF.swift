@@ -286,8 +286,7 @@ public enum RoofDXF {
             dxf.options.centreText = true
             dxf.options.fixedTextHeight = Self.dimText
             dxf.add(s.dimensions, layer: layer("DIM"), transform: ts, pointsPerMetre: s.scale)
-            TEXT("TEXT", (L.lx / 2 - s.span / 2, top - (s.sketch.height + 2) / s.scale - 0.8), th * 1.4,
-                 "รูปตัด A-A | " + f.label + " | ช่วง " + fmt(s.span) + " ม. | ลาด " + Roof.slopeText(v), mid: false)
+            // no title: the team's sections carry none
         }
         if parts.contains(.table) {
             let tx = L.lx + 4

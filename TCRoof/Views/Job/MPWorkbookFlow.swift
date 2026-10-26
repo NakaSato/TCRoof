@@ -93,8 +93,9 @@ final class MPWorkbookFlow {
         // the file's progress replaced the job's, `fromDocuments` with it: the papers book their permits again (only
         // where the file has them below 100 %), as they would for a plan made after the approval
         job.bookPermitsFromDocs()
-        // the file's work breakdown, which books the ticks the station has against it
+        // the file's work breakdown, which books the ticks the station has against it, and the ticks made in the file
         job.scheduleWBS = imported.wbs
+        takeTicks(imported, on: job)
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
@@ -119,10 +120,26 @@ final class MPWorkbookFlow {
     static func takeProgress(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) -> Int {
         let (a, changed) = merged(imported, into: job)
         if a != job.scheduleActual { job.scheduleActual = a }
+        let ticked = takeTicks(imported, on: job)
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
-        return changed
+        return changed + ticked
+    }
+
+    /// The WBS rows ticked or unticked in the file since the app exported it (`MasterSchedule.mergingTicks`: the
+    /// record the export keeps, else the file the job keeps), in the name of who imports it. Run before the job's kept
+    /// file is replaced. Returns how many rows changed.
+    @discardableResult
+    static func takeTicks(_ imported: MPWorkbook.Imported, on job: Job, by: String? = nil) -> Int {
+        guard !imported.wbs.isEmpty else { return 0 }
+        // imports run from the screens, on the main thread
+        let by = by ?? MainActor.assumeIsolated { MemberRole.shared.permissions.email }
+        let base = imported.wbsBase ?? job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).wbsDone }
+        let (ticks, n) = MasterSchedule.mergingTicks(job.wbsTicks, fileDone: imported.wbsDone, dates: imported.wbsDoneDates,
+                                                     base: base, by: by, today: MasterSchedule.calendar.startOfDay(for: .now))
+        if ticks != job.wbsTicks { job.wbsTicks = ticks }
+        return n
     }
 
     func takeProgress(_ p: Pending, on job: Job, context: ModelContext) {
@@ -184,7 +201,7 @@ final class MPWorkbookFlow {
     func export(_ job: Job) {
         guard let original = job.scheduleWorkbook, let input = job.scheduleInput else { return }
         do {
-            let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual)
+            let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks)
             let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let url = dir.appendingPathComponent(MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName))

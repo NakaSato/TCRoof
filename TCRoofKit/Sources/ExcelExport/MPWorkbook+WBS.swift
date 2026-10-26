@@ -12,6 +12,8 @@ extension MPWorkbook {
         var evidence, responsible, weight, predecessor, lag, days: Int?
         var baselineStart, baselineEnd, forecastStart, forecastEnd: Int?
         var status, note, level, approver: Int?
+        /// `เสร็จ / นัด` under `จริง / นัด` and `เสร็จ (Y · S)`: where a tick goes (docs/specs/project-plan-wbs.md, step 3).
+        var doneDate, doneMark: Int?
     }
 
     static func wbsHeader(_ s: Sheet) -> WBSHeader? {
@@ -33,6 +35,7 @@ extension MPWorkbook {
         h.baselineStart = col("เริ่ม", under: "Baseline"); h.baselineEnd = col("เสร็จ", under: "Baseline")
         h.forecastStart = col("เริ่ม", under: "คาดการณ์"); h.forecastEnd = col("เสร็จ", under: "คาดการณ์")
         h.status = col("สถานะ"); h.note = col("มาตรฐาน"); h.level = col("ชั้น"); h.approver = col("อนุมัติ")
+        h.doneDate = col("เสร็จ", under: "จริง"); h.doneMark = col("เสร็จ (Y")
         return h
     }
 
@@ -76,6 +79,25 @@ extension MPWorkbook {
         // the tables' lines without a code (the station's `รูปแบบ`) count too
         let below = tail.first.map { first in Set(s.texts.map(\.row)).filter { $0 >= first }.union(tail).sorted() } ?? []
         return stationSteps(s, h, rows: below, into: items)
+    }
+
+    /// Every row with a WBS code in its first column, the station table's steps included.
+    static func codeRows(_ s: Sheet, _ h: WBSHeader) -> [(code: String, row: Int)] {
+        s.texts(col: h.code).filter { $0.row > h.row }.compactMap { r in
+            let code = r.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return code.range(of: #"^\d+(\.\d+)+$"#, options: .regularExpression) != nil ? (code, r.row) : nil
+        }
+    }
+
+    /// The rows the sheet marks done: `Y` in `เสร็จ (Y · S)`, with the `เสร็จ` date where there is one.
+    static func wbsDone(_ s: Sheet, _ h: WBSHeader, _ cal: Calendar) -> (codes: Set<String>, dates: [String: Date]) {
+        guard let mark = h.doneMark else { return ([], [:]) }
+        var codes = Set<String>(), dates: [String: Date] = [:]
+        for r in codeRows(s, h) where s.text(mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y" {
+            codes.insert(r.code)
+            if let col = h.doneDate, let d = s.date(col, r.row, cal) { dates[r.code] = d }
+        }
+        return (codes, dates)
     }
 
     /// The Inverter station table under the list: its `รูปแบบ` line (the station's type and size) goes into its row's

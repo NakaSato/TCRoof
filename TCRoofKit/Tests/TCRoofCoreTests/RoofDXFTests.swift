@@ -142,6 +142,21 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(lines(o.data()).contains("18"))
     }
 
+    /// Each PV module is one INSERT of a block of its size holding a frameless WIPEOUT, the team's cells and the frame
+    /// as a closed polyline; no loose wipeout is left on the module layer.
+    func testModulesAreOneBlockEach() throws {
+        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.pv]).data, raw = t.rawEntities(d)
+        let modules = raw.filter { $0.first?.1 == "INSERT" && t.value($0, "2")?.hasPrefix("TC_PV_MODULE_") == true }
+        XCTAssertFalse(modules.isEmpty)
+        XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "P-MODL-N" })
+        XCTAssertFalse(raw.contains { $0.first?.1 == "WIPEOUT" && t.value($0, "8") == "P-MODL-N" })
+        let l = lines(d), name = try XCTUnwrap(t.value(modules[0], "2"))
+        let start = try XCTUnwrap(l.indices.first { l[$0] == name && l[$0 - 1] == "2" && l[$0 - 3] == "AcDbBlockBegin" || (l[$0] == name && l[$0 - 1] == "2" && l.indices.contains($0 - 6) && l[$0 - 6] == "AcDbEntity") })
+        let end = try XCTUnwrap(l[start...].firstIndex(of: "ENDBLK"))
+        let body = l[start..<end]
+        for type in ["WIPEOUT", "LWPOLYLINE", "INSERT"] { XCTAssertTrue(body.contains(type), type) }
+    }
+
     func testStructureScheduleDetailsAndMarks() throws {
         var v = roof()
         v["comp2"] = .text("C100x50x20x3.2")

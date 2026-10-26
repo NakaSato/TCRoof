@@ -107,17 +107,24 @@ public enum RoofDXF {
     /// A module on plan (its corners from the eave-side corner, along the eave first) as an INSERT of the team's PV
     /// panel block (`TK_MODULE_PLAN`, portrait), its long side along the module's long side, stretched to the module;
     /// false without the components.
-    static func modulePanel(_ dxf: inout SketchDXF, _ l: SketchDXF.Layer, _ q: [(Double, Double)]) -> Bool {
-        guard let comps = TankComponents.shared, let block = TankComponents.names["module_plan"]?.block, q.count == 4 else { return false }
-        comps.define(&dxf, only: ["module_plan"])
+    /// One PV module as one INSERT of a block of its size (`TC_PV_MODULE_1134x2278`, in mm, short side × long side):
+    /// a frameless WIPEOUT that hides the purlins and grid under it, the module's frame as a closed polyline, and the
+    /// team's PV panel cells stretched to it. Its x runs along the short side from the corner `q[0]`, the same hand as `q`.
+    static func moduleBlock(_ dxf: inout SketchDXF, _ l: SketchDXF.Layer, _ q: [(Double, Double)]) -> Bool {
+        guard q.count == 4 else { return false }
         let a = (q[1].0 - q[0].0, q[1].1 - q[0].1), b = (q[3].0 - q[0].0, q[3].1 - q[0].1)
         let la = hypot(a.0, a.1), lb = hypot(b.0, b.1)
         guard la > 1e-6, lb > 1e-6 else { return false }
-        // the block's x (its short side) along the module's short side, its y along the long one, the same hand
-        let (x, y, lx, ly) = la <= lb ? (a, b, la, lb) : (b, a, lb, la)
+        let (x, y, w, h) = la <= lb ? (a, b, la, lb) : (b, a, lb, la)
         let hand: Double = x.0 * y.1 - x.1 * y.0 >= 0 ? 1 : -1
-        dxf.insert(l, block, at: q[0], rotation: atan2(x.1, x.0) * 180 / .pi,
-                   xScale: lx / TankComponents.modulePlanDrawn.w, yScale: hand * ly / TankComponents.modulePlanDrawn.h)
+        let cells = TankComponents.shared.flatMap { c -> String? in c.define(&dxf, only: ["module_plan"])["module_plan"] }
+        let rect = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)]
+        let name = dxf.block("TC_PV_MODULE_\(Int((w * 1000).rounded()))x\(Int((h * 1000).rounded()))") { d in
+            d.wipeout(l, rect)
+            if let cells { d.insert(l, cells, at: (0, 0), xScale: w / TankComponents.modulePlanDrawn.w, yScale: h / TankComponents.modulePlanDrawn.h) }
+            d.polyline(l, rect, closed: true)
+        }
+        dxf.insert(l, name, at: q[0], rotation: atan2(x.1, x.0) * 180 / .pi, xScale: 1, yScale: hand)
         return true
     }
 
@@ -231,8 +238,8 @@ public enum RoofDXF {
                 // a module hides the purlins and grid under it, and is the team's PV panel block fitted to it
                 if tag == "pv", case let .polygon(pts, _, _, _) = op, pts.count == 4 {
                     let q = pts.map(tp)
+                    if moduleBlock(&dxf, layer(l), q) { continue }
                     dxf.wipeout(layer(l), q)
-                    if modulePanel(&dxf, layer(l), q) { continue }
                 }
                 write(op, l, tp, L.k, text: th)
             }

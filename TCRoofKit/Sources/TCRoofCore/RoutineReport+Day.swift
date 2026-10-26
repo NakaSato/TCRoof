@@ -150,6 +150,13 @@ extension RoutineReport {
         thaiWeekdaysShort[(calendar.component(.weekday, from: d) - 1) % 7] + " " + thaiDate(d)
     }
 
+    public static let thaiWeekdaysFull = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
+
+    /// "2 ก.ค. 2568 (วันพุธ)", the iPad daily report's title after `รายงานประจำวันที่ `.
+    public static func thaiDateFullWeekday(_ d: Date) -> String {
+        thaiDate(d) + " (วัน" + thaiWeekdaysFull[(calendar.component(.weekday, from: d) - 1) % 7] + ")"
+    }
+
     /// The working day before or after `date` (the day switcher), skipping days off; nil past `limit` going forward.
     public static func reportDay(from date: Date, by step: Int, settings: Settings, limit: Date? = nil) -> Date? {
         var d = day(date)

@@ -49,6 +49,42 @@ final class DailyOnePageUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "ผู้ตรวจงาน")).firstMatch.exists)
     }
 
+    /// The TC view of a sent report (docs/ui/daily-report-ipad-v4, `-routineDailyState ack|acked`, nothing saved): the
+    /// team sees `ลงนามรับทราบ` in place of the reporter's card and its box opens the inspector sheet; with a drawn
+    /// acknowledgement `ยืนยันรับทราบ` is on; a contractor on the same report gets the reporter's view.
+    func testTeamAcknowledgesOnThePage() throws {
+        func launch(_ state: String, role: String) -> XCUIApplication {
+            let app = XCUIApplication()
+            app.launchArguments = ["-screen", "daily", "-routineDaily", "onepage", "-routineKeyPlan", "YES", "-routineDailyState", state,
+                                   "-role", role, "-jobTeam", "none", "-noNotificationPrompt", "YES"]
+            app.launch()
+            return app
+        }
+        let team = launch("ack", role: "internal")
+        try XCTSkipIf(UIDevice.current.userInterfaceIdiom != .pad, "the one-page layout is iPad only")
+        let box = team.buttons["dailyAck"]
+        XCTAssertTrue(box.waitForExistence(timeout: slow), "the team sees the acknowledgement card")
+        XCTAssertTrue(team.staticTexts["ลงนามรับทราบ"].exists)
+        XCTAssertFalse(team.staticTexts["ลงนามผู้รายงาน"].exists)
+        XCTAssertFalse(team.buttons["dailyAckConfirm"].isEnabled, "nothing to confirm before the acknowledgement")
+        XCTAssertTrue(team.buttons["dailySendBack"].exists)
+        box.tap()
+        XCTAssertTrue(team.navigationBars["Inspector รับทราบ"].waitForExistence(timeout: 10))
+        team.buttons["ยกเลิก"].tap()
+        team.terminate()
+
+        let acked = launch("acked", role: "internal")
+        XCTAssertTrue(acked.otherElements["dailyAckSigned"].waitForExistence(timeout: slow)
+                      || acked.buttons["ล้างลายเซ็นรับทราบ"].waitForExistence(timeout: 5))
+        XCTAssertTrue(acked.buttons["dailyAckConfirm"].isEnabled)
+        acked.terminate()
+
+        let contractor = launch("ack", role: "external")
+        XCTAssertTrue(contractor.buttons["ล้างลายเซ็นผู้รายงาน"].waitForExistence(timeout: slow), "the reporter's signed card")
+        XCTAssertFalse(contractor.buttons["dailyAck"].exists)
+        XCTAssertFalse(contractor.buttons["dailySendBack"].exists)
+    }
+
     /// The daily list's `รับทราบ` on a signed report not yet acknowledged: the team opens the inspector sheet (cancelled,
     /// nothing saved); a contractor has no button. Any simulator.
     func testDailyListAcknowledge() {

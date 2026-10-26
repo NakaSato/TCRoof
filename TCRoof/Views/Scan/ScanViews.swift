@@ -46,7 +46,6 @@ struct ScanJobListView: View {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             TCNavBar(title: "สแกนอุปกรณ์", trail: ["หน้าหลัก"], current: "สแกนอุปกรณ์") {
-                TopBarLink(title: "ประวัติการสแกน", systemImage: "clock.arrow.circlepath") { ScanHistoryView() }
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())

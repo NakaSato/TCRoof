@@ -235,6 +235,43 @@ final class TankLayoutTests: XCTestCase {
         XCTAssertEqual(TankLayout.params(v)!.offX, TankLayout.auto(tank()).offX)
     }
 
+    /// A switched-off panel is kept by its key (row.table.column.panel) only while the panels still sit where they did:
+    /// moving the whole layout keeps it; a hatch that cuts its row in two drops it (tank-mounting-layout.md question 8).
+    func testSwitchedOffPanelsHoldOnlyOnTheirArrangement() throws {
+        var v = tank(points: false)
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        let full = try XCTUnwrap(TankLayout.current(v)).count
+        let row0 = try XCTUnwrap(TankLayout.current(v)?.tables.first { $0.row == 0 })
+        let key = try XCTUnwrap(row0.panels.last?.key)      // the row's far end
+        TankLayout.toggle(&v, key)
+        XCTAssertEqual(TankLayout.off(v), [key])
+
+        // the whole layout moved a little: the same panels in the same order, the panel stays off
+        var p = try XCTUnwrap(TankLayout.params(v))
+        p.offX += 0.05
+        TankLayout.save(&v, p, off: TankLayout.off(v))
+        XCTAssertEqual(TankLayout.off(v), [key])
+        XCTAssertEqual(TankLayout.current(v)?.count, full - 1)
+
+        // a hatch cuts row 0 in two: the key would now name another panel, so nothing stays off
+        v[Roof.Key.obstacles] = .obstacles([Obstacle(label: "H1", x: "20", y: "36", w: "0.8", h: "0.8", kind: TankPoints.hatch)])
+        XCTAssertEqual(TankLayout.off(v), [])
+        let cut = try XCTUnwrap(TankLayout.current(v))
+        XCTAssertEqual(cut.count, TankLayout(v, params: TankLayout.params(v)!)!.count, "every panel of the new arrangement is on")
+        // saving again (opening the step) clears the stale keys for good
+        TankLayout.save(&v, TankLayout.params(v)!, off: TankLayout.off(v))
+        XCTAssertEqual(v.text(TankLayout.Key.off), "")
+    }
+
+    /// Keys saved before the arrangement was kept stay as they are.
+    func testOldSwitchedOffKeysStay() throws {
+        var v = tank(points: false)
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        let key = try XCTUnwrap(TankLayout.current(v)?.tables.first?.panels.first?.key)
+        v[TankLayout.Key.off] = .text(key)
+        XCTAssertEqual(TankLayout.off(v), [key])
+    }
+
     func testCompletionCountsAsBefore() {
         var v = tank()
         v["tankType"] = .choice("ค.ส.ล.", other: "")

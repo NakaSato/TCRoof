@@ -385,7 +385,9 @@ Done when:
 6. Grounding: one lug per table as drawn, plus ground plates at the tank edge (detail H): how many and where?
 7. ~~Should the structure standard be editable, and which module?~~ Answered 2026-10-20: one team standard synced
    through Firestore, managers only, each job keeping a copy; the module is part of the standard.
-8. Should a drag, or a change of the tank or its points, clear the switched-off panels (as the prototype does) instead of
-   keeping their index keys?
+8. ~~Should a drag, or a change of the tank or its points, clear the switched-off panels?~~ Built 2026-10-26: the keys
+   are kept with the arrangement they were made on (`tankPvOffBase`, a hash of every panel's key and place relative to
+   the offset). Moving the whole layout keeps them; a change that cuts the tables differently (the tank, its points, a
+   move across an opening) drops them, so a key never switches off another panel. Keys saved before stay as they are.
 9. The board's tilt (15°) and table types (full 6 × 2, short 3–5 columns) differ from the reference sheets' 19.7° and
    one table per free run, which the app follows. Which is the team standard?

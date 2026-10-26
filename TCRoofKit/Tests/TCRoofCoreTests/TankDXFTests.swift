@@ -72,8 +72,8 @@ final class TankDXFTests: XCTestCase {
         XCTAssertTrue(far.isEmpty)
         XCTAssertNil(ents.first { t.value($0, "62") != nil }, "layer colours only")
         XCTAssertNil(TankDXF.build(Values()))
-        // the north arrow's solid head is outlined
-        XCTAssertGreaterThanOrEqual(ents.filter { layerOf($0) == "G-ANNO-NRTH" && $0[0].1 == "LINE" }.count, 4)
+        // the north arrow is the team's block (NorthArrow), one INSERT on the north layer
+        XCTAssertEqual(ents.filter { layerOf($0) == "G-ANNO-NRTH" && $0[0].1 == "INSERT" && t.value($0, "2") == NorthArrow.blockName }.count, 1)
     }
 
     func testPanelLayout() throws {

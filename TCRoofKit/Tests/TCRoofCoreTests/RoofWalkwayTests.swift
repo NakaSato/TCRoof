@@ -234,18 +234,18 @@ final class RoofRidgeWalkwayTests: XCTestCase {
         XCTAssertEqual(m.quantities.walkway.cagedLadders, 1)
     }
 
-    func testSwitchedOffAndAnOlderJobHaveNone() {
+    /// Switched off it stays off once saved; a choice kept before the switch existed (no key) gets the walkway, the
+    /// default the iPad tab no longer switches.
+    func testSwitchedOffStaysOffAndAnOlderJobHasIt() throws {
         var v = plain()
         var c = RoofMount.choice(v); c.walkwayRidge = false; RoofMount.setChoice(&v, c)
+        XCTAssertFalse(RoofMount.choice(v).walkwayRidge, "saved off, read back off")
         XCTAssertTrue(RoofWalkway.walkways(RoofMount.layout(v, latitude: 15).layout).isEmpty)
-        // a choice kept before the switch existed (no key): off, and the same digest as then
         let old = #"{"avoidShade":true,"digest":"","faceUse":{},"placements":{},"removed":[],"ribClamp":false}"#
-        let decoded = try! JSONDecoder().decode(RoofMount.Choice.self, from: Data(old.utf8))
-        XCTAssertFalse(decoded.walkwayRidge)
+        let decoded = try JSONDecoder().decode(RoofMount.Choice.self, from: Data(old.utf8))
+        XCTAssertTrue(decoded.walkwayRidge)
         let input = RoofMount.input(plain(), latitude: 15)
-        var before = RoofMount.Choice(); before.walkwayRidge = false
-        XCTAssertEqual(RoofMount.digest(input, choice: decoded), RoofMount.digest(input, choice: before))
-        XCTAssertNotEqual(RoofMount.digest(input, choice: RoofMount.Choice()), RoofMount.digest(input, choice: before))
+        XCTAssertEqual(RoofMount.digest(input, choice: decoded), RoofMount.digest(input, choice: RoofMount.Choice()))
     }
 
     /// A shed roof has no ridge: no ridge walkway, and the layout as without it.

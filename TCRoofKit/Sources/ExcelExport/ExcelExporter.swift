@@ -40,7 +40,8 @@ public struct ExcelExporter {
 
     /// - Parameters:
     ///   - photoData: bytes of a stored photo (JPEG or PNG).
-    ///   - planImage: rendered plan (PNG) for a roof or tank section without a hand-drawn plan photo.
+    ///   - planImage: rendered plan (PNG) for a roof or tank section without a hand-drawn plan photo; the app draws its
+    ///     sections under it (`Drawings.planWithSections`).
     ///   - siteMapImage: the site picture with its symbols drawn in (made by the app); nil uses the plain photo.
     public func export(_ job: Job, photoData: @escaping (Photo) -> Data?, planImage: (SurveyModule) -> ExcelImage? = { _ in nil },
                        siteMapImage: ExcelImage? = nil) throws -> Result {

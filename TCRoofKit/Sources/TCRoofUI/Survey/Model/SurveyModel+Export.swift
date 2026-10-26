@@ -23,7 +23,8 @@ extension SurveyModel {
     func excelData(_ job: Job) throws -> ExcelExporter.Result {
         let store = self.store
         return try ExcelExporter().export(job, photoData: { store.data(of: $0, in: job.id) }, planImage: { m in
-            guard let sk = Drawings.plan(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
+            // the plan with its sections under it: NO.224 has one drawing box per roof / tank sheet
+            guard let sk = Drawings.planWithSections(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
             return ExcelImage(data: r.0, width: r.1, height: r.2, isPNG: true)
         }, siteMapImage: markedSiteMap(job))
     }

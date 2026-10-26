@@ -115,6 +115,30 @@ final class ProjectPlanTemplateTests: XCTestCase {
         XCTAssertFalse(wbs.contains { $0.title.hasPrefix("หลังคาลอนคู่") }, "the installation points stay out")
     }
 
+    /// 2.1's sub-tasks follow the case's site type (the full workbook's `จุดติดตั้ง` table): a clear water tank's
+    /// topping footings, a buried tank's digging, each weighing its share of 2.1.
+    func testTheStructureSubTasksFollowTheSiteType() throws {
+        XCTAssertEqual(Set(MPTemplates.siteSteps.keys), ["หลังคาลอนคู่", "หลังคาเมทัลชีท", "หลังคา", "ถังน้ำใส", "ถังดินกลบ", "Carport"])
+        for (site, steps) in MPTemplates.siteSteps {
+            XCTAssertEqual(steps.map(\.step), Array(1...7), site)
+            XCTAssertEqual(steps.reduce(0) { $0 + $1.percent }, 100, accuracy: 1e-9, site)
+        }
+        var titles: [String: [String]] = [:]
+        for c in MPTemplates.cases() {
+            let wbs = try MPWorkbook.read(Data(contentsOf: c.url)).wbs
+            let line = try XCTUnwrap(wbs.first { $0.code == "2.1" })
+            let subs = wbs.items(for: .structure)
+            let steps = try XCTUnwrap(MPTemplates.siteSteps[c.site], "\(c.id): \(c.site) has no steps")
+            XCTAssertEqual(subs.map(\.title), steps.map(\.title), c.id)
+            XCTAssertEqual(subs.reduce(0) { $0 + $1.weight }, line.weight, accuracy: 1e-9, c.id)
+            XCTAssertEqual(subs[2].weight, line.weight * steps[2].percent / 100, accuracy: 1e-9, c.id)
+            XCTAssertNotNil(subs[2].evidence, "\(c.id): the generic row's evidence stays")
+            titles[c.site] = subs.map(\.title)
+        }
+        XCTAssertEqual(Set(titles.values.map { $0 }).count, titles.count, "every site type has its own list")
+        XCTAssertTrue(titles["ถังน้ำใส"]?[2].hasPrefix("ฐาน Concrete topping") == true)
+    }
+
     func testAPlanWithoutTheSheetHasNoWBS() throws {
         let bangsai = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures/mp-weekly-bangsai.xlsx")
         XCTAssertEqual(try MPWorkbook.read(Data(contentsOf: bangsai)).wbs, [])

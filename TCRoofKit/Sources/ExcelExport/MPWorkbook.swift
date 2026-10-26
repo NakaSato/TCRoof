@@ -129,7 +129,7 @@ public enum MPWorkbook {
                         coverage: .init(tasks: Set(layout.rows.filter { $0.actual != nil }.map(\.task.rawValue)),
                                         weeks: Set(layout.weeks.map(\.key))),
                         base: Snapshot.read(book.zip),
-                        wbs: book.detail.map { wbs($0, cal) } ?? [])
+                        wbs: book.detail.map { siteSpecific(wbs($0, cal), sheet: $0) } ?? [])
     }
 
     /// The Actual rows' start, finish and weekly points as the sheet holds them.

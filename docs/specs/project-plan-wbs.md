@@ -99,7 +99,11 @@ column M is a reference into `อัปเดตงาน WBS`, a sheet the impo
   indented. A plan imported before this has no steps until it is imported again.
 - Installation points: left out. They are the template's own figures per site type (points, panels, kWp, standard
   designs); a real station's come from its survey.
-- Per site type plans: `make_template.py` with each type's durations; the files ship through `PlanTemplates` as they are.
+- Per site type (built): the site types share every date; what differs is 2.1's sub-tasks, named and split in the full
+  workbook's `จุดติดตั้ง` sheet (columns Z–AD). `tools/plan-template/site_steps.py` writes them to ExcelExport's
+  `site-steps.json`, and `MPWorkbook.read` gives a template file's 2.1.1–2.1.7 its site type's titles and shares of 2.1
+  (`MPTemplates.applySite`, the type from the sheet's title), so `เริ่มจากแม่แบบ` and an import of a template file both
+  get them. Run the script again when the workbook's table changes.
 
 ## Decisions (2026-10-26)
 

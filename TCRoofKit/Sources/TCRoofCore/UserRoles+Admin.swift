@@ -91,7 +91,7 @@ public extension Capability {
     static let enforcedByRules: Set<Capability> = [
         .jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall,
         .surveyEdit, .customerPersonalDocs, .permitPPIM, .ercFlow, .stationDocsDrafts,
-        .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .usersManage,
+        .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .iclSiteFill, .iclSiteSign, .usersManage,
     ]
 
     /// The Maintainer's own capabilities.

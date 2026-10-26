@@ -1,0 +1,995 @@
+{
+ "version": 1,
+ "source": "Master Plan ประปา เฟส 3–4, ชีต ICL ตรวจหน้างาน (icl_items.py)",
+ "holds": {
+  "H": "Hold: หยุดรอ วศ. ตรวจก่อนทำต่อ",
+  "W": "Witness: แจ้ง วศ. มาดู",
+  "R": "Review: ตรวจจากรูป / เอกสาร"
+ },
+ "mounts": [
+  "หลังคาลอนคู่",
+  "หลังคาเมทัลชีท",
+  "หลังคา",
+  "ถังน้ำใส",
+  "ถังดินกลบ",
+  "Carport"
+ ],
+ "groups": [
+  {
+   "id": "2.1",
+   "wbs": "2.1.7",
+   "title": "โครงสร้างรองรับแผง, บันได, Walkway",
+   "applies": "ตามประเภทจุดติดตั้ง (ชีตจุดติดตั้ง)",
+   "perPoint": true
+  },
+  {
+   "id": "2.2",
+   "wbs": "2.2.5",
+   "title": "ระบบ DC และตู้ DC-DB",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "2.3",
+   "wbs": "2.3.5",
+   "title": "แผงและ String",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "2.4",
+   "wbs": "2.4.2, 3.1.4",
+   "title": "ตู้ FTS-DB (Firefighter safety switch)",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "2.5",
+   "wbs": "2.5.4",
+   "title": "Inverter station และ Inverter",
+   "applies": "ตามรูปแบบ Inverter station",
+   "perPoint": false
+  },
+  {
+   "id": "2.6",
+   "wbs": "2.6.5",
+   "title": "ระบบ AC และระบบดิน",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "2.7",
+   "wbs": "2.7.3",
+   "title": "ตู้ AC-DB และ METER-DB",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "2.8",
+   "wbs": "2.8.5",
+   "title": "กันย้อน (Zero export) และสื่อสาร",
+   "applies": "แยก HV / LV",
+   "perPoint": false
+  },
+  {
+   "id": "2.9",
+   "wbs": "2.9.2",
+   "title": "Solar Monitoring",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  },
+  {
+   "id": "3.1",
+   "wbs": "3.1.2–3.1.6",
+   "title": "ทดสอบระบบ IEC 62446 และ Start-up",
+   "applies": "ทุกสถานี",
+   "perPoint": false
+  }
+ ],
+ "items": [
+  {
+   "id": "ICL-2.1-01",
+   "group": "2.1",
+   "title": "ผังจุดยึดตรงตาม Shop drawing",
+   "criterion": "ระยะยึดตามระยะแป / ระยะเสาตามแบบ",
+   "method": "ตลับเมตร เทียบแบบ",
+   "hold": "W",
+   "evidence": "รูปผังที่ Mark",
+   "reference": "C09, C15, STEEL SUPPORT",
+   "applies": "ทุกประเภท",
+   "appStep": "structure"
+  },
+  {
+   "id": "ICL-2.1-02",
+   "group": "2.1",
+   "title": "Hanger bolt เข้าแปทุกจุด และซีลกันซึม",
+   "criterion": "ครบทุกจุด ไม่มีรูเจาะเปล่า",
+   "method": "ตรวจด้วยตา ก่อนวางราง",
+   "hold": "H",
+   "evidence": "รูปทุกแถวก่อนวางราง",
+   "reference": "C09",
+   "applies": "หลังคาลอนคู่",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่"
+   ]
+  },
+  {
+   "id": "ICL-2.1-03",
+   "group": "2.1",
+   "title": "แรงขันน็อตยึดโครง",
+   "criterion": "M8 = 12 N·m, M10 = 21 N·m และมาร์คสีทุกตัว",
+   "method": "ประแจทอร์ก สุ่มอย่างน้อย 10% ของจุด",
+   "hold": "W",
+   "evidence": "บันทึกค่า + เลขเครื่องมือ",
+   "reference": "C09",
+   "applies": "หลังคาลอนคู่",
+   "appStep": "structure",
+   "unit": "N·m",
+   "mounts": [
+    "หลังคาลอนคู่"
+   ]
+  },
+  {
+   "id": "ICL-2.1-04",
+   "group": "2.1",
+   "title": "แรงขันน็อตยึดโครง (หลังคาอื่น / ถัง)",
+   "criterion": "ตามคู่มือผู้ผลิตโครงยึด และมาร์คสีทุกตัว",
+   "method": "ประแจทอร์ก สุ่มอย่างน้อย 10% ของจุด",
+   "hold": "W",
+   "evidence": "บันทึกค่า + เลขเครื่องมือ",
+   "reference": "คู่มือผู้ผลิต",
+   "applies": "เมทัลชีท, หลังคา, ถังน้ำใส, ถังดินกลบ, Carport",
+   "appStep": "structure",
+   "unit": "N·m",
+   "mounts": [
+    "หลังคาเมทัลชีท",
+    "หลังคา",
+    "ถังน้ำใส",
+    "ถังดินกลบ",
+    "Carport"
+   ]
+  },
+  {
+   "id": "ICL-2.1-05",
+   "group": "2.1",
+   "title": "ทดสอบรั่วซึมทุกจุดเจาะ",
+   "criterion": "ไม่มีน้ำซึมใต้หลังคา",
+   "method": "ฉีดน้ำแล้วตรวจใต้หลังคา",
+   "hold": "W",
+   "evidence": "รูป / วิดีโอใต้หลังคา",
+   "reference": "C09",
+   "applies": "หลังคาลอนคู่, หลังคา",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่",
+    "หลังคา"
+   ]
+  },
+  {
+   "id": "ICL-2.1-06",
+   "group": "2.1",
+   "title": "กระเบื้องที่แตกระหว่างติดตั้ง",
+   "criterion": "เปลี่ยนครบ ไม่มีแผ่นแตกหรือร้าว",
+   "method": "ตรวจด้วยตาทั้งหลังคา",
+   "hold": "R",
+   "evidence": "รูปก่อน / หลังเปลี่ยน",
+   "reference": "แบบสำรวจ C1",
+   "applies": "หลังคาลอนคู่",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่"
+   ]
+  },
+  {
+   "id": "ICL-2.1-07",
+   "group": "2.1",
+   "title": "Kliplok บนหลังคาเมทัลชีท",
+   "criterion": "แน่นทุกจุด ไม่มีรอยเจาะแผ่น",
+   "method": "ตรวจด้วยตา + ลองโยก",
+   "hold": "W",
+   "evidence": "รูปทุกแถว",
+   "reference": "C17",
+   "applies": "หลังคาเมทัลชีท",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาเมทัลชีท"
+   ]
+  },
+  {
+   "id": "ICL-2.1-08",
+   "group": "2.1",
+   "title": "พุกยึดฐานบนหลังคาถัง",
+   "criterion": "Expansion bolt M12 ครบ 4 ตัว / ฐาน, ไม่เจาะทะลุ slab",
+   "method": "ตรวจความลึกเจาะก่อนใส่พุก",
+   "hold": "H",
+   "evidence": "รูปทุกฐานก่อนเท Topping",
+   "reference": "C15",
+   "applies": "ถังน้ำใส",
+   "appStep": "structure",
+   "mounts": [
+    "ถังน้ำใส"
+   ]
+  },
+  {
+   "id": "ICL-2.1-09",
+   "group": "2.1",
+   "title": "ฐาน Concrete topping",
+   "criterion": "300 × 300 × 150 มม., เว้นช่องท่อและฝาถัง",
+   "method": "ตลับเมตร",
+   "hold": "W",
+   "evidence": "รูปทุกฐาน",
+   "reference": "C15",
+   "applies": "ถังน้ำใส",
+   "appStep": "structure",
+   "mounts": [
+    "ถังน้ำใส"
+   ]
+  },
+  {
+   "id": "ICL-2.1-10",
+   "group": "2.1",
+   "title": "ระยะเสาและความสูงโครง",
+   "criterion": "เสาห่าง 2.70 × 2.80 ม., Front / Back post 2.00 / 1.00 ม., Bracing ครบ",
+   "method": "ตลับเมตร",
+   "hold": "W",
+   "evidence": "รูป + บันทึกระยะ",
+   "reference": "C15",
+   "applies": "ถังน้ำใส",
+   "appStep": "structure",
+   "mounts": [
+    "ถังน้ำใส"
+   ]
+  },
+  {
+   "id": "ICL-2.1-11",
+   "group": "2.1",
+   "title": "Ground lug / Ground plate บน Rail",
+   "criterion": "ครบตามผังต่อลงดิน",
+   "method": "ตรวจด้วยตาตามผัง",
+   "hold": "R",
+   "evidence": "รูปทุกแถว",
+   "reference": "C15",
+   "applies": "ถังน้ำใส",
+   "appStep": "structure",
+   "mounts": [
+    "ถังน้ำใส"
+   ]
+  },
+  {
+   "id": "ICL-2.1-12",
+   "group": "2.1",
+   "title": "ฐาน Steel support ก่อนกลบดิน",
+   "criterion": "ถ่ายรูปทุกต้นก่อนกลบ, Plate 8\" × 8\" × 6 มม. + Expansion bolt M12 + คอนกรีตหุ้ม",
+   "method": "ตรวจด้วยตา",
+   "hold": "H",
+   "evidence": "รูปทุกต้นก่อนกลบดิน",
+   "reference": "STEEL SUPPORT",
+   "applies": "ถังดินกลบ",
+   "appStep": "structure",
+   "mounts": [
+    "ถังดินกลบ"
+   ]
+  },
+  {
+   "id": "ICL-2.1-13",
+   "group": "2.1",
+   "title": "ความยาว Steel support",
+   "criterion": "ตรงกับความลึกดินที่วัดได้ (300–800 มม.)",
+   "method": "วัดความลึกดินทุกต้น",
+   "hold": "W",
+   "evidence": "บันทึกความลึก / ความยาว",
+   "reference": "STEEL SUPPORT",
+   "applies": "ถังดินกลบ",
+   "appStep": "structure",
+   "unit": "มม.",
+   "mounts": [
+    "ถังดินกลบ"
+   ]
+  },
+  {
+   "id": "ICL-2.1-14",
+   "group": "2.1",
+   "title": "ผิวชุบ HDG",
+   "criterion": "ไม่ถลอก หรือซ่อมสีกันสนิมแล้ว",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "STEEL SUPPORT, C16",
+   "applies": "ถังดินกลบ, Walkway",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่",
+    "หลังคาเมทัลชีท",
+    "หลังคา",
+    "ถังดินกลบ"
+   ]
+  },
+  {
+   "id": "ICL-2.1-15",
+   "group": "2.1",
+   "title": "แนวดิ่งและระดับโครง",
+   "criterion": "ตามแบบ",
+   "method": "ระดับน้ำ / เลเซอร์",
+   "hold": "W",
+   "evidence": "บันทึกค่า",
+   "reference": "แบบ Carport",
+   "applies": "Carport",
+   "appStep": "structure",
+   "mounts": [
+    "Carport"
+   ]
+  },
+  {
+   "id": "ICL-2.1-16",
+   "group": "2.1",
+   "title": "ความสะอาดถังและฝาปิดหลังติดตั้ง",
+   "criterion": "ไม่มีเศษวัสดุตกค้าง ฝาปิดสนิท",
+   "method": "ตรวจด้วยตา",
+   "hold": "H",
+   "evidence": "รูปฝาถังทุกฝา",
+   "reference": "C15",
+   "applies": "ถังน้ำใส, ถังดินกลบ",
+   "appStep": "structure",
+   "mounts": [
+    "ถังน้ำใส",
+    "ถังดินกลบ"
+   ]
+  },
+  {
+   "id": "ICL-2.1-17",
+   "group": "2.1",
+   "title": "บันไดเซอร์วิส",
+   "criterion": "ยึดผนัง Stud bolt ø12 มม. ครบ, กรงต่อเนื่องถึงชานบน, ยื่นเหนือหลังคา 1.00 ม., ทาสีกันสนิม",
+   "method": "ตรวจด้วยตา + ลองรับน้ำหนัก",
+   "hold": "H",
+   "evidence": "รูป + ลงนามก่อนเปิดใช้",
+   "reference": "C18",
+   "applies": "อาคารสูง ≥ 3 ม. ไม่มีบันได",
+   "appStep": "structure"
+  },
+  {
+   "id": "ICL-2.1-18",
+   "group": "2.1",
+   "title": "Walkway HDG",
+   "criterion": "ยึดครบทุก 1.20 ม. ไม่โยก, แถบทางเดินรวม 0.90 ม.",
+   "method": "เดินทดสอบ",
+   "hold": "W",
+   "evidence": "รูปตลอดแนว",
+   "reference": "C16",
+   "applies": "หลังคา (มี Walkway)",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่",
+    "หลังคาเมทัลชีท",
+    "หลังคา"
+   ]
+  },
+  {
+   "id": "ICL-2.1-19",
+   "group": "2.1",
+   "title": "Lifeline",
+   "criterion": "สลิง 6 มม. ตึง, Wire rope clips และ Thimbles ครบทั้งสองปลาย, L-feet ทุก 2.40 ม.",
+   "method": "ตรวจด้วยตา + ดึงทดสอบ",
+   "hold": "H",
+   "evidence": "รูปปลายสลิงทั้งสองข้าง",
+   "reference": "C16",
+   "applies": "หลังคา (มี Lifeline)",
+   "appStep": "structure",
+   "mounts": [
+    "หลังคาลอนคู่",
+    "หลังคาเมทัลชีท",
+    "หลังคา"
+   ]
+  },
+  {
+   "id": "ICL-2.1-20",
+   "group": "2.1",
+   "title": "ท่อน้ำล้างแผงและก๊อก",
+   "criterion": "ท่อ PPR ¾\" ไม่รั่ว ก๊อกใช้งานได้",
+   "method": "เปิดน้ำทดสอบ",
+   "hold": "W",
+   "evidence": "รูป / วิดีโอ",
+   "reference": "C16",
+   "applies": "หลังคา (มีท่อน้ำ)",
+   "mounts": [
+    "หลังคาลอนคู่",
+    "หลังคาเมทัลชีท",
+    "หลังคา"
+   ]
+  },
+  {
+   "id": "ICL-2.2-01",
+   "group": "2.2",
+   "title": "รางเดินสาย DC",
+   "criterion": "ขนาดตามจำนวนสาย, ฝาปิดครบ, Hold-down clamp ทุกจุด Rail, ห่างแผง 300 มม.",
+   "method": "ตรวจด้วยตา",
+   "hold": "W",
+   "evidence": "รูปตลอดแนว",
+   "reference": "C16, C17",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-02",
+   "group": "2.2",
+   "title": "สาย PV",
+   "criterion": "H1Z2Z2-K 1C × 6 ตร.มม., สี PV+ แดง / PV− ดำ / ดิน เขียว",
+   "method": "ตรวจฉลากสาย",
+   "hold": "R",
+   "evidence": "รูปฉลากสาย",
+   "reference": "E10",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-03",
+   "group": "2.2",
+   "title": "ขั้วต่อ MC4",
+   "criterion": "เข้าล็อกสนิท, ตัวผู้-ตัวเมียยี่ห้อและรุ่นเดียวกัน",
+   "method": "ตรวจด้วยตา + ดึงทดสอบ",
+   "hold": "W",
+   "evidence": "รูปสุ่ม",
+   "reference": "IEC 62548",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-04",
+   "group": "2.2",
+   "title": "ป้ายสายและป้ายสตริง",
+   "criterion": "ครบทุกเส้นตาม String map",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E10",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-05",
+   "group": "2.2",
+   "title": "DC fuse ในตู้ DC-DB",
+   "criterion": "25 A 1,000 Vdc ครบทั้งขั้ว + และ − ทุกสตริง",
+   "method": "ตรวจด้วยตา",
+   "hold": "W",
+   "evidence": "รูปในตู้",
+   "reference": "E10",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-06",
+   "group": "2.2",
+   "title": "DC SPD และสายดิน SPD",
+   "criterion": "อาคารมีล่อฟ้า T1/T2, ไม่มี T2; สายดิน Class II ≥ 6, Class I ≥ 16 ตร.มม.",
+   "method": "ตรวจรุ่นและขนาดสาย",
+   "hold": "W",
+   "evidence": "รูปฉลาก SPD",
+   "reference": "E10",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.2-07",
+   "group": "2.2",
+   "title": "ตู้ที่อยู่นอกอาคาร",
+   "criterion": "IP65, เคเบิลแกลนด์ซีลครบ",
+   "method": "ตรวจฉลากตู้",
+   "hold": "R",
+   "evidence": "รูปฉลาก",
+   "reference": "E10, E11, E13, E16, E17",
+   "applies": "ตู้นอกอาคาร",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.2-08",
+   "group": "2.2",
+   "title": "Bonding โครงแผงลงดิน",
+   "criterion": "ต่อเนื่องทุกแถว (Continuity ผ่าน)",
+   "method": "มัลติมิเตอร์ / Low-ohm meter",
+   "hold": "W",
+   "evidence": "บันทึกค่า Ω",
+   "reference": "IEC 62446-1",
+   "applies": "ทุกสถานี",
+   "appStep": "dc",
+   "unit": "Ω"
+  },
+  {
+   "id": "ICL-2.2-09",
+   "group": "2.2",
+   "title": "Polarity ก่อนต่อเข้าตู้",
+   "criterion": "ถูกขั้วทุกสตริง",
+   "method": "มัลติมิเตอร์ CAT III 1000 V",
+   "hold": "H",
+   "evidence": "บันทึกในแอป IEC ขั้น 2",
+   "reference": "IEC 62446-1",
+   "applies": "ทุกสถานี",
+   "appStep": "voc"
+  },
+  {
+   "id": "ICL-2.3-01",
+   "group": "2.3",
+   "title": "สภาพแผง",
+   "criterion": "ไม่แตก ร้าว หรือมีรอยขีด, ฉลากครบ",
+   "method": "ตรวจด้วยตาทุกแผง",
+   "hold": "R",
+   "evidence": "รูปมุมสูง",
+   "reference": "",
+   "applies": "ทุกสถานี",
+   "appStep": "panels"
+  },
+  {
+   "id": "ICL-2.3-02",
+   "group": "2.3",
+   "title": "Clamp และระยะแผง",
+   "criterion": "End / Mid clamp ตามแรงบิดผู้ผลิต, ช่องห่างแผง 20 มม., ปลาย Rail ยื่น 70 มม.",
+   "method": "ประแจทอร์ก สุ่ม + ตลับเมตร",
+   "hold": "W",
+   "evidence": "บันทึกค่า",
+   "reference": "C09",
+   "applies": "ทุกสถานี",
+   "appStep": "panels"
+  },
+  {
+   "id": "ICL-2.3-03",
+   "group": "2.3",
+   "title": "String ตาม String map",
+   "criterion": "จำนวนแผง / สตริงตามแบบ",
+   "method": "นับเทียบแบบ",
+   "hold": "W",
+   "evidence": "String map ที่ลงนาม",
+   "reference": "1.2.1",
+   "applies": "ทุกสถานี",
+   "appStep": "panels"
+  },
+  {
+   "id": "ICL-2.3-04",
+   "group": "2.3",
+   "title": "สายใต้แผง",
+   "criterion": "ยึดด้วยคลิป / เคเบิลไทกัน UV ไม่ห้อยแตะหลังคา",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูปสุ่ม",
+   "reference": "IEC 62548",
+   "applies": "ทุกสถานี",
+   "appStep": "dc"
+  },
+  {
+   "id": "ICL-2.3-05",
+   "group": "2.3",
+   "title": "S/N แผงและภาพมุมสูง",
+   "criterion": "S/N ครบทุกแผง, ภาพมุมสูงเห็นทุกแถว",
+   "method": "สแกน S/N, โดรน",
+   "hold": "R",
+   "evidence": "ไฟล์ S/N + ภาพ",
+   "reference": "",
+   "applies": "ทุกสถานี",
+   "appStep": "panels"
+  },
+  {
+   "id": "ICL-2.4-01",
+   "group": "2.4",
+   "title": "จำนวน FTS",
+   "criterion": "สตริง ÷ 4 (ปัดขึ้น), ขนาดตู้ตามจำนวน FTS",
+   "method": "นับเทียบแบบ",
+   "hold": "R",
+   "evidence": "รูปในตู้",
+   "reference": "E11",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.4-02",
+   "group": "2.4",
+   "title": "E-Stop และป้ายเตือน",
+   "criterion": "เข้าถึงได้ ป้ายเตือนครบ",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E11",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.4-03",
+   "group": "2.4",
+   "title": "ทดสอบตัดวงจร FTS",
+   "criterion": "กด E-Stop แล้ว DC ถูกตัดตามที่ผู้ผลิตกำหนด",
+   "method": "มัลติมิเตอร์ วัดก่อน / หลังกด",
+   "hold": "W",
+   "evidence": "บันทึกค่า + วิดีโอ",
+   "reference": "E11, วสท. 022013-22",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.5-01",
+   "group": "2.5",
+   "title": "โรงเรือน / ที่ตั้ง Inverter",
+   "criterion": "แนวดิ่งและระดับโครงตามแบบ, กันสนิม, หลังคาไม่รั่ว",
+   "method": "ระดับน้ำ, ตรวจด้วยตา",
+   "hold": "W",
+   "evidence": "รูป",
+   "reference": "E09",
+   "applies": "ตามรูปแบบ Inverter station",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-02",
+   "group": "2.5",
+   "title": "ระยะเว้นรอบ Inverter",
+   "criterion": "ตามคู่มือผู้ผลิต อากาศถ่ายเท",
+   "method": "ตลับเมตร",
+   "hold": "W",
+   "evidence": "รูป + บันทึกระยะ",
+   "reference": "E09, คู่มือผู้ผลิต",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-03",
+   "group": "2.5",
+   "title": "Inverter บน Rack",
+   "criterion": "ยึดแน่น, S/N บันทึก",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป S/N",
+   "reference": "E09",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-04",
+   "group": "2.5",
+   "title": "รางสายและช่องเจาะ",
+   "criterion": "Tray มีฝาครบ, ช่องเจาะอุดกันไฟ / กันสัตว์",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E09",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-05",
+   "group": "2.5",
+   "title": "แรงขันขั้วสาย AC / DC ที่ Inverter",
+   "criterion": "ตามคู่มือผู้ผลิต และมาร์คสี",
+   "method": "ประแจทอร์ก",
+   "hold": "W",
+   "evidence": "บันทึกค่า",
+   "reference": "คู่มือผู้ผลิต",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-06",
+   "group": "2.5",
+   "title": "ค่าตั้ง Grid code / Protection",
+   "criterion": "ตรงกับค่าตั้งที่อนุมัติ (1.2.3)",
+   "method": "อ่านจากหน้าจอ / แอปผู้ผลิต",
+   "hold": "H",
+   "evidence": "ภาพหน้าจอค่าตั้ง",
+   "reference": "1.2.3",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-2.5-07",
+   "group": "2.5",
+   "title": "ไฟส่องสว่างและเต้ารับ",
+   "criterion": "ใช้งานได้",
+   "method": "ทดสอบเปิด",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E09",
+   "applies": "Inverter station สร้างใหม่"
+  },
+  {
+   "id": "ICL-2.6-01",
+   "group": "2.6",
+   "title": "แนวสาย AC และขนาดสาย",
+   "criterion": "ตามแบบและรายการคำนวณ (1.2.2)",
+   "method": "ตรวจฉลากสาย",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E09, E18",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.6-02",
+   "group": "2.6",
+   "title": "Breaker / Busbar จุดเชื่อม",
+   "criterion": "ขนาดตามแบบ, แรงขันขั้วตามผู้ผลิต, ทำในวันดับไฟพร้อม LOTO",
+   "method": "ประแจทอร์ก",
+   "hold": "H",
+   "evidence": "รูป + บันทึก LOTO",
+   "reference": "0.3, 2.10.1",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.6-03",
+   "group": "2.6",
+   "title": "ค่าความต้านทานดิน",
+   "criterion": "≤ 5 Ω",
+   "method": "เครื่องวัดดิน (3 จุด)",
+   "hold": "W",
+   "evidence": "บันทึกค่า + รูปหน้าจอ",
+   "reference": "วสท.",
+   "applies": "ทุกสถานี",
+   "appStep": "ground",
+   "unit": "Ω"
+  },
+  {
+   "id": "ICL-2.6-04",
+   "group": "2.6",
+   "title": "ความต้านทานฉนวนสาย AC",
+   "criterion": "≥ 1 MΩ ที่ 500 Vdc",
+   "method": "Insulation tester",
+   "hold": "W",
+   "evidence": "บันทึกค่า",
+   "reference": "IEC 60364-6, วสท.",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb",
+   "unit": "MΩ"
+  },
+  {
+   "id": "ICL-2.6-05",
+   "group": "2.6",
+   "title": "ลำดับเฟสที่จุดเชื่อม",
+   "criterion": "ถูกต้อง",
+   "method": "Phase rotation meter",
+   "hold": "H",
+   "evidence": "บันทึกผล",
+   "reference": "2.10.2",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.6-06",
+   "group": "2.6",
+   "title": "หลักดินที่เสา 22 kV",
+   "criterion": "หลักดิน HV ห่างเสา 2 ม., LV > 5 ม., ดิน Surge / DOF แยกจาก CT / VT",
+   "method": "ตลับเมตร, ตรวจด้วยตา",
+   "hold": "W",
+   "evidence": "รูป + บันทึกระยะ",
+   "reference": "E18",
+   "applies": "กันย้อน HV",
+   "appStep": "ground",
+   "zeroExport": "HV"
+  },
+  {
+   "id": "ICL-2.7-01",
+   "group": "2.7",
+   "title": "อุปกรณ์ตู้ AC-DB",
+   "criterion": "MCCB, ELR, SPD, DPM รุ่นและขนาดตามแบบ",
+   "method": "ตรวจฉลาก",
+   "hold": "R",
+   "evidence": "รูปในตู้",
+   "reference": "E09, E16",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.7-02",
+   "group": "2.7",
+   "title": "การต่อ CT / VT ของ Revenue meter",
+   "criterion": "CT IN / OUT และ VT ตามตาราง, CT class 0.5S",
+   "method": "ตรวจตามตาราง",
+   "hold": "W",
+   "evidence": "รูปขั้วต่อ",
+   "reference": "E16",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.7-03",
+   "group": "2.7",
+   "title": "Revenue meter และ VPN",
+   "criterion": "CEWE Prometer 100 ตั้งค่าแล้ว ส่งข้อมูลผ่าน VPN ได้",
+   "method": "ทดสอบส่งข้อมูล",
+   "hold": "W",
+   "evidence": "ภาพหน้าจอ",
+   "reference": "E16",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.7-04",
+   "group": "2.7",
+   "title": "ป้ายชื่อตู้และป้ายเตือน",
+   "criterion": "ครบทุกตู้",
+   "method": "ตรวจด้วยตา",
+   "hold": "R",
+   "evidence": "รูป",
+   "reference": "E16",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-2.8-01",
+   "group": "2.8",
+   "title": "อุปกรณ์บนเสา 22 kV",
+   "criterion": "VT 22 kV × 3, CT 20/5 A cl. 0.5 × 3, Drop-out fuse 27 kV, Lightning arrester 21 kV ตามแบบ",
+   "method": "ตรวจฉลาก",
+   "hold": "H",
+   "evidence": "รูป + ผลทดสอบ CT / VT จาก กฟภ.",
+   "reference": "E18",
+   "applies": "กันย้อน HV",
+   "appStep": "acdb",
+   "zeroExport": "HV"
+  },
+  {
+   "id": "ICL-2.8-02",
+   "group": "2.8",
+   "title": "ขั้ว CT / VT และ PQM",
+   "criterion": "ตรงเฟส, PQM อ่านค่าได้, UPS ทำงาน",
+   "method": "อ่านค่าเทียบมิเตอร์",
+   "hold": "W",
+   "evidence": "ภาพหน้าจอ PQM",
+   "reference": "E13",
+   "applies": "กันย้อน HV",
+   "appStep": "acdb",
+   "zeroExport": "HV"
+  },
+  {
+   "id": "ICL-2.8-03",
+   "group": "2.8",
+   "title": "ทิศ CT กันย้อนฝั่ง LV",
+   "criterion": "วัดด้านรับไฟจาก กฟภ. ทิศถูก",
+   "method": "อ่านค่าทิศกำลังไฟ",
+   "hold": "W",
+   "evidence": "ภาพหน้าจอ",
+   "reference": "E17",
+   "applies": "กันย้อน LV",
+   "appStep": "acdb",
+   "zeroExport": "LV"
+  },
+  {
+   "id": "ICL-2.8-04",
+   "group": "2.8",
+   "title": "เครือข่ายสื่อสาร",
+   "criterion": "Fiber / CAT6 / RS485 ถึง Inverter station ทุกตัว อ่านค่าได้ครบ",
+   "method": "ทดสอบอ่านค่า",
+   "hold": "W",
+   "evidence": "ภาพหน้าจอ SEM",
+   "reference": "E13, E16, E17",
+   "applies": "ทุกสถานี"
+  },
+  {
+   "id": "ICL-2.9-01",
+   "group": "2.9",
+   "title": "Data logger",
+   "criterion": "ส่งข้อมูลถึง Data center กปภ.",
+   "method": "ทดสอบส่งข้อมูล",
+   "hold": "W",
+   "evidence": "ภาพหน้าจอระบบ",
+   "reference": "E16",
+   "applies": "ทุกสถานี"
+  },
+  {
+   "id": "ICL-2.9-02",
+   "group": "2.9",
+   "title": "Weather station",
+   "criterion": "Irradiance ระนาบเดียวกับแผง, วัดอุณหภูมิแผงได้",
+   "method": "ตรวจด้วยตา + อ่านค่า",
+   "hold": "R",
+   "evidence": "รูป + ค่า",
+   "reference": "IEC 61724-1",
+   "applies": "ทุกสถานี"
+  },
+  {
+   "id": "ICL-3.1-01",
+   "group": "3.1",
+   "title": "Mechanical completion",
+   "criterion": "Walk-down ลงนาม, Punch list A ปิดครบ ก่อนจ่ายไฟ",
+   "method": "เดินตรวจร่วม",
+   "hold": "H",
+   "evidence": "ใบ Walk-down + Punch list",
+   "reference": "3.1.1",
+   "applies": "ทุกสถานี"
+  },
+  {
+   "id": "ICL-3.1-02",
+   "group": "3.1",
+   "title": "Continuity ตัวนำป้องกัน",
+   "criterion": "ต่อเนื่อง ไม่ขาด",
+   "method": "Low-ohm meter",
+   "hold": "W",
+   "evidence": "แอป IEC ขั้น 2",
+   "reference": "IEC 62446-1",
+   "applies": "ทุกสถานี",
+   "appStep": "dc",
+   "unit": "Ω"
+  },
+  {
+   "id": "ICL-3.1-03",
+   "group": "3.1",
+   "title": "Insulation resistance ราย String",
+   "criterion": "min(+E, −E) ≥ 1 MΩ ที่ 1000 V",
+   "method": "Insulation tester",
+   "hold": "W",
+   "evidence": "แอป IEC ขั้น 2 + รูปหน้าจอ",
+   "reference": "IEC 62446-1",
+   "applies": "ทุกสถานี",
+   "appStep": "voc",
+   "unit": "MΩ"
+  },
+  {
+   "id": "ICL-3.1-04",
+   "group": "3.1",
+   "title": "Voc ราย String",
+   "criterion": "ต่างจากค่ามัธยฐานของสตริงที่แผงเท่ากัน ≤ 5%",
+   "method": "มัลติมิเตอร์ CAT III 1000 V",
+   "hold": "W",
+   "evidence": "แอป IEC ขั้น 2 + รูปหน้าจอ",
+   "reference": "IEC 62446-1",
+   "applies": "ทุกสถานี",
+   "appStep": "voc",
+   "unit": "%"
+  },
+  {
+   "id": "ICL-3.1-05",
+   "group": "3.1",
+   "title": "Thermography แผง",
+   "criterion": "ครบ 100% ที่แสง ≥ 600 W/m², จุดร้อนผิดปกติแก้ไขตามรายงาน",
+   "method": "กล้องถ่ายภาพความร้อน / โดรน",
+   "hold": "R",
+   "evidence": "รายงาน Thermography",
+   "reference": "IEC 62446-3",
+   "applies": "ทุกสถานี",
+   "appStep": "panels"
+  },
+  {
+   "id": "ICL-3.1-06",
+   "group": "3.1",
+   "title": "FTS / ELR / Shunt trip / SPD",
+   "criterion": "ทำงานตามที่ออกแบบ",
+   "method": "ทดสอบสั่งการ",
+   "hold": "W",
+   "evidence": "บันทึกผล + วิดีโอ",
+   "reference": "วสท. 022013-22",
+   "applies": "ทุกสถานี",
+   "appStep": "acdb"
+  },
+  {
+   "id": "ICL-3.1-07",
+   "group": "3.1",
+   "title": "Start-up และกันย้อน",
+   "criterion": "Inverter ไม่มี Fault, ไม่จ่ายไฟย้อนเข้าระบบ กฟภ. ตามค่าตั้งที่อนุมัติ",
+   "method": "ทดสอบลดโหลดขณะผลิตไฟ",
+   "hold": "H",
+   "evidence": "บันทึกผล + ภาพหน้าจอ",
+   "reference": "ระเบียบ กฟภ. 2559 ข้อ 7.1.8",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-3.1-08",
+   "group": "3.1",
+   "title": "Anti-islanding",
+   "criterion": "หยุดจ่ายไฟเมื่อไฟ กฟภ. ดับ ตามค่าตั้งที่อนุมัติ",
+   "method": "ปลด Breaker ฝั่ง กฟภ.",
+   "hold": "H",
+   "evidence": "บันทึกเวลาตัด + วิดีโอ",
+   "reference": "ระเบียบ กฟภ. 2559 ข้อ 7.1.15",
+   "applies": "ทุกสถานี",
+   "appStep": "inverter"
+  },
+  {
+   "id": "ICL-3.1-09",
+   "group": "3.1",
+   "title": "Vmp / Imp หลังเชื่อม และผลผลิต 7 วัน",
+   "criterion": "Vmp ต่างจากค่ามัธยฐาน ≤ 5%, มี PR และ Yf ครบทุก Inverter",
+   "method": "มัลติมิเตอร์, แคลมป์มิเตอร์, Weather station",
+   "hold": "R",
+   "evidence": "แอป IEC ขั้น 4–6",
+   "reference": "IEC 62446-1, IEC 61724-1",
+   "applies": "ทุกสถานี",
+   "appStep": "voc"
+  }
+ ]
+}

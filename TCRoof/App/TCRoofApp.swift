@@ -18,7 +18,7 @@ struct TCRoofApp: App {
     let container: ModelContainer = {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
-            Inspection.self, PhotoAsset.self, DocumentAsset.self,
+            Inspection.self, ICLSheet.self, PhotoAsset.self, DocumentAsset.self,
         ])
         do {
             return try ModelContainer(for: schema)
@@ -148,7 +148,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "siteicl", "members", "useradmin", "assistant"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -208,6 +208,8 @@ struct DebugScreen: View {
         case "selfcert": if let job { SelfCertificationView(job: job) }
         case "homework": if let job { HomeWorkView(job: job) }
         case "stationdocs": if let job { StationDocsScreen(job: job) }
+        // the PWA site ICL (`SiteICL`) of the first job
+        case "siteicl": if let job { SiteICLScreen(job: job) }
         case "members": MembersView()
         case "useradmin": UserAdminView().debugBoard()
         // `-assistantDemo YES` answers from a stand-in for Qwen; `-assistantFocus YES` opens it on the first job

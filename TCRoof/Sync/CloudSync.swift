@@ -137,6 +137,7 @@ final class CloudSync {
             listen(ScannedDevice.self)
             listen(InstallLog.self)
             listen(Inspection.self)
+            listen(ICLSheet.self, optional: true)   // optional until firestore.rules has `iclSheets`
             listen(PhotoAsset.self, optional: true)
             listenSurveys()
             listenRevisions()
@@ -294,6 +295,10 @@ final class CloudSync {
         collect(ScannedDevice.self, context, &changes, &present)
         collect(InstallLog.self, context, &changes, &present)
         collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
+        // the site ICL: a contractor fills and sends their sheets (`icl.site_fill`); the rules refuse a sent or signed one.
+        // Committed on its own, so a refusal (rules not deployed yet, a sheet signed meanwhile) never holds back the rest.
+        var iclSheets: [Change] = []
+        collect(ICLSheet.self, context, &iclSheets, &present)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
         var contacts = external == nil ? contactChanges(context, &present) : []
@@ -311,6 +316,7 @@ final class CloudSync {
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
+            else if key.hasPrefix("\(ICLSheet.collection)/") { iclSheets.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
             else { changes.append(change) }
         }
@@ -318,6 +324,7 @@ final class CloudSync {
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
+        commitSeparately(iclSheets, "site ICL upload", size: external == nil ? 400 : 1)
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
         // by one, so a refused photo doesn't hold back the rest.
@@ -502,7 +509,7 @@ final class CloudSync {
             }
         }
         // records waiting for their job, and photos waiting for their log or inspection
-        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self {
+        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self {
             for (key, retry) in pending where retry() { pending[key] = nil }
         }
         try? context.save()

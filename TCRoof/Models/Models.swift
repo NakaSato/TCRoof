@@ -135,6 +135,8 @@ final class Job {
     @Relationship(deleteRule: .cascade, inverse: \DocumentAsset.job) var documents: [DocumentAsset] = []
     /// Photos of the IEC 62446 test, tagged with the id the `IECReport` keeps for them.
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.iecJob) var iecPhotos: [PhotoAsset] = []
+    /// The PWA site ICL's sheets (`ICLSheet`, `SiteICL`).
+    @Relationship(deleteRule: .cascade, inverse: \ICLSheet.job) var iclSheets: [ICLSheet] = []
     /// Project folder on Google Drive, set after the first upload.
     var driveFolderURL: String?
     /// Firestore document id shared by every device; nil only on records made before cloud sync.
@@ -569,6 +571,8 @@ final class PhotoAsset {
     var survey: SurveyForm?
     var log: InstallLog?
     var inspection: Inspection?
+    /// The site ICL sheet of a photo (`SiteICL`), tagged `sheet#item`.
+    var iclSheet: ICLSheet?
     /// The job of an IEC 62446 test photo.
     var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).

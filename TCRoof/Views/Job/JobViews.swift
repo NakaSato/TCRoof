@@ -181,10 +181,18 @@ struct JobDetailView: View {
             action("สแกนอุปกรณ์", "barcode.viewfinder", "\(job.devices.count) รายการ") { JobDevicesView(job: job) }
             action("บันทึกงานติดตั้ง", "hammer", "\(job.logs.count) บันทึก") { JobInstallLogsView(job: job) }
             action("ใบตรวจรับงาน (ICL)", "checkmark.seal", inspectionStatus) { InspectionView(job: job) }
+            if job.kind == .pwa {
+                action("ICL ตรวจหน้างาน (กปภ.)", "checklist.checked", siteICLStatus) { SiteICLScreen(job: job) }
+            }
             if job.kind == .home {
                 action("งานบ้าน ครบวงจร", "house", "สำรวจ · ขออนุญาต PEA · ติดตั้ง · ขนานไฟ") { HomeWorkView(job: job) }
             }
         }
+    }
+
+    private var siteICLStatus: String {
+        let t = job.siteICLTally
+        return t.total == 0 ? "ยังไม่เริ่ม · 10 หมวด" : "ลงนามแล้ว \(t.signed)/\(t.total) ใบ"
     }
 
     private var inspectionStatus: String {

@@ -10,7 +10,15 @@ import Foundation
 /// are optional and hidden (`Key`), and `panelsBefore` follows the panel count.
 public struct TankLayout: Sendable {
     public enum Key {
-        public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff"
+        public static let orient = "tankPvOrient", offX = "tankPvOffX", offY = "tankPvOffY", off = "tankPvOff",
+            /// The arrangement the switched-off keys were made on (`arrangement`): a key names a panel by its place in
+            /// the list, so the keys hold only while every panel still sits where it did.
+            offBase = "tankPvOffBase"
+        /// The row gap the energy search picked (m), when wider than the standard's; absent means the standard.
+        public static let gap = "tankPvGap"
+        /// The team standard the layout was made with (`TankStandard` JSON); absent on layouts made before it was
+        /// editable, which used the built-in one.
+        public static let standard = "tankPvStd"
     }
 
     // MARK: the structure standard (§1)
@@ -33,6 +41,9 @@ public struct TankLayout: Sendable {
         public var maxCantilever = 1.0, minPairGap = 0.6
         /// Module columns and rows moved from the west / south setback (m).
         public var offX = 0.0, offY = 0.0
+        /// The standard's row gap (`rowGap` may be wider, from the energy search) and the standard's revision.
+        public var standardGap = 2.7
+        public var standardRevision = 0
         public init() {}
 
         public var tilt: Double { atan((hBack - hFront) / postDY) * 180 / .pi }
@@ -76,6 +87,10 @@ public struct TankLayout: Sendable {
 
     public struct TableBOM: Hashable, Sendable {
         public var modules, posts, footings, rafters, railClamps, midClamps, endClamps, braces, groundLugs: Int
+        /// The team's section 1 and detail 1: an aluminium base at every post on its concrete topping (`footings`), two
+        /// M12 expansion bolts per base (its two slots), the front and back braces of every post pair's frame and its
+        /// outer strut.
+        public var bases = 0, anchors = 0, sideBraces = 0, struts = 0
         public var railLength: Double
         /// One table of `columns` × 2 modules, `length` m long, on `pairs` post pairs.
         public init(columns c: Int, length: Double, pairs: Int) {
@@ -90,10 +105,12 @@ public struct TankLayout: Sendable {
             // X in every post bay, front and back lines
             braces = 2 * max(0, pairs - 1)
             groundLugs = c > 0 ? 1 : 0
+            bases = posts; anchors = 2 * posts; sideBraces = 2 * pairs; struts = pairs
         }
     }
     public struct BOM: Hashable, Sendable {
         public var posts = 0, footings = 0, rafters = 0, railClamps = 0, midClamps = 0, endClamps = 0, braces = 0, groundLugs = 0
+        public var bases = 0, anchors = 0, sideBraces = 0, struts = 0
         public var railLength = 0.0
     }
 
@@ -116,6 +133,9 @@ public struct TankLayout: Sendable {
 
     public let params: Params
     public let size: (w: Double, h: Double)
+    /// A round tank's roof (its bounding square is `size`): module columns are clipped to it less the edge setback and
+    /// footings stay inside it; nil for a rectangle, whose results are unchanged.
+    public let circle: TankPoints.Circle?
     /// Quarter turns from the tank plan to the layout's frame: 0 the bottom wall faces south, 1 the right, 2 the top, 3 the left.
     public let turn: Int
     public let tables: [Table]
@@ -175,7 +195,7 @@ public struct TankLayout: Sendable {
     /// The layout for the tank in `v`; `off` are the panels switched off by hand. nil without a size.
     public init?(_ v: Values, params p: Params, off: Set<String> = []) {
         guard let t = TankPoints.tankSize(v) else { return nil }
-        self.init(size: t, turn: Self.turn(v), openings: Self.openings(v), params: p, off: off)
+        self.init(size: t, turn: Self.turn(v), openings: Self.openings(v), params: p, off: off, circle: TankPoints.circle(v))
     }
 
     struct Row { var upper: Double; var free: [Int]; var ventsUnder: Set<Int>; var headroom: Double? }
@@ -185,7 +205,7 @@ public struct TankLayout: Sendable {
     }
 
     /// Each row's free module columns (§3 steps 2–4, no posts).
-    static func rows(_ fr: Frame, _ open: [Opening], _ p: Params) -> [Row] {
+    static func rows(_ fr: Frame, _ open: [Opening], _ p: Params, circle: TankPoints.Circle? = nil) -> [Row] {
         let e = p.clearance, n = p.columns(fr.fw), x0 = x0(fr, p)
         guard n > 0 else { return [] }
         let fo = open.map { Opening(rect: fr.rect($0.rect), vent: $0.vent) }
@@ -196,6 +216,9 @@ public struct TankLayout: Sendable {
             var row = Row(upper: upper, free: [], ventsUnder: [], headroom: nil)
             for c in 0..<n {
                 let strip = TankPoints.Rect(x: x0 + Double(c) * (p.cellW + p.moduleGap), y: upper, w: p.cellW, h: p.depth)
+                // a round tank: the column's two modules inside the circle less the setback (a quarter turn of the
+                // bounding square keeps the circle where it is)
+                if let circle, !circle.contains(strip, margin: p.clearance) { continue }
                 var ok = true
                 for (i, o) in fo.enumerated() {
                     let grown = TankPoints.Rect(x: o.rect.x - p.openClear, y: o.rect.y - p.openClear, w: o.rect.w + 2 * p.openClear, h: o.rect.h + 2 * p.openClear)
@@ -222,8 +245,9 @@ public struct TankLayout: Sendable {
         return out
     }
 
-    init(size t: (w: Double, h: Double), turn q: Int, openings open: [Opening], params p: Params, off: Set<String>) {
-        params = p; size = t; turn = q
+    init(size t: (w: Double, h: Double), turn q: Int, openings open: [Opening], params p: Params, off: Set<String>,
+         circle: TankPoints.Circle? = nil) {
+        params = p; size = t; turn = q; self.circle = circle
         let fr = Frame(q: q, W: t.w, H: t.h), x0 = Self.x0(fr, p)
         func colX(_ c: Int) -> Double { x0 + Double(c) * (p.cellW + p.moduleGap) }
         // footing keep-out: each opening grown by the clearance and half a footing
@@ -234,50 +258,19 @@ public struct TankLayout: Sendable {
         func free(_ x: Double, _ ys: [Double]) -> Bool {
             ys.allSatisfy { y in
                 x >= p.footing / 2 && x <= fr.fw - p.footing / 2 && y >= p.footing / 2 && y <= fr.fh - p.footing / 2
+                    && (circle?.contains(x, y, margin: p.footing / 2) ?? true)
                     && !keep.contains { x > $0.x + 1e-9 && x < $0.x + $0.w - 1e-9 && y > $0.y + 1e-9 && y < $0.y + $0.h - 1e-9 }
             }
         }
-        func grid(_ lo: Double, _ hi: Double) -> [Double] {
-            guard hi >= lo - 1e-9 else { return [] }
-            return (0...Int(((hi - lo) / TankPoints.grid + 1e-9).rounded(.down))).map { lo + Double($0) * TankPoints.grid }
-        }
-        /// Post pairs for a table from `a` to `b` (frame x): the equal spacing, else greedy from the west end (§3 step 6);
-        /// nil and where it failed when no pair fits.
-        func pairs(_ a: Double, _ b: Double, _ ys: [Double]) -> (xs: [Double]?, fail: Double) {
-            let len = b - a, k = max(1, Int(((len - 2 * p.endOver) / p.postDX).rounded(.up))) + 1
-            let even = (0..<k).map { a + p.endOver + (len - 2 * p.endOver) * Double($0) / Double(k - 1) }
-            if len > 2 * p.endOver, even.allSatisfy({ free($0, ys) }) { return (even, 0) }
-            guard var x = grid(a, a + p.maxCantilever).filter({ free($0, ys) }).min(by: { abs($0 - a - p.endOver) < abs($1 - a - p.endOver) })
-            else { return (nil, a + p.cellW / 2) }
-            var xs = [x]
-            while b - x > p.maxCantilever + 1e-9 {
-                let reach = grid(x + p.minPairGap, min(b, x + p.postDX)).filter { free($0, ys) }
-                if let last = reach.filter({ b - $0 <= p.maxCantilever + 1e-9 }).min(by: { abs(b - p.endOver - $0) < abs(b - p.endOver - $1) }) {
-                    xs.append(last); return (xs, 0)
-                }
-                guard let next = reach.max() else { return (nil, min(b, x + p.postDX)) }
-                x = next; xs.append(x)
-            }
-            return (xs, 0)
-        }
-
         var list: [Table] = [], cutList: [Cut] = []
         var under = Set<Int>(), headroom: Double?
-        for (r, row) in Self.rows(fr, open, p).enumerated() {
+        for (r, row) in Self.rows(fr, open, p, circle: circle).enumerated() {
             under.formUnion(row.ventsUnder)
             if let h = row.headroom { headroom = min(headroom ?? h, h) }
             let upper = row.upper, yF = upper + p.depth - p.frontIn, ys = [yF, yF - p.postDY]
-            var queue = Self.runs(row.free).filter { $0.count >= 2 }, done: [([Int], [Double])] = [], guardN = 0
-            while !queue.isEmpty && guardN < 500 {
-                let run = queue.removeFirst(); guardN += 1
-                let res = pairs(colX(run.first!), colX(run.last!) + p.cellW, ys)
-                if let xs = res.xs { done.append((run, xs)); continue }
-                // cut the column where it failed and post the parts again
-                let c = run.min { abs(colX($0) + p.cellW / 2 - res.fail) < abs(colX($1) + p.cellW / 2 - res.fail) }!
-                cutList.append(Cut(x: colX(c), y: upper, w: p.cellW, h: p.depth))
-                queue.insert(contentsOf: [run.filter { $0 < c }, run.filter { $0 > c }].filter { $0.count >= 2 }, at: 0)
-            }
-            for (index, (run, xs)) in done.sorted(by: { $0.0.first! < $1.0.first! }).enumerated() {
+            let posted = Self.post(row.free, colX: colX, ys: ys, p, free: free)
+            cutList += posted.cut.map { Cut(x: colX($0), y: upper, w: p.cellW, h: p.depth) }
+            for (index, (run, xs)) in posted.tables.enumerated() {
                 var panels: [Panel] = []
                 for (ci, c) in run.enumerated() {
                     for k in 0..<2 {
@@ -303,13 +296,15 @@ public struct TankLayout: Sendable {
             b.posts += q.posts; b.footings += q.footings; b.rafters += q.rafters; b.railClamps += q.railClamps
             b.midClamps += q.midClamps; b.endClamps += q.endClamps; b.braces += q.braces; b.groundLugs += q.groundLugs
             b.railLength += q.railLength
+            b.bases += q.bases; b.anchors += q.anchors; b.sideBraces += q.sideBraces; b.struts += q.struts
         }
         bom = b
 
         var ck = Checks()
         let on = built.flatMap { $0.panels.filter(\.on) }
         if !on.isEmpty {
-            ck.edge = on.map { min($0.x, $0.y, t.w - ($0.x + $0.w), t.h - ($0.y + $0.h)) }.min()
+            if let circle { ck.edge = on.map { circle.clearance(TankPoints.Rect(x: $0.x, y: $0.y, w: $0.w, h: $0.h)) }.min() }
+            else { ck.edge = on.map { min($0.x, $0.y, t.w - ($0.x + $0.w), t.h - ($0.y + $0.h)) }.min() }
             ck.edgeOK = (ck.edge ?? 0) >= p.clearance - 1e-6
         }
         ck.ventsUnder = under.count
@@ -328,13 +323,58 @@ public struct TankLayout: Sendable {
         checks = ck
     }
 
+    // MARK: posts (§3 step 6)
+
+    static func grid(_ lo: Double, _ hi: Double) -> [Double] {
+        guard hi >= lo - 1e-9 else { return [] }
+        return (0...Int(((hi - lo) / TankPoints.grid + 1e-9).rounded(.down))).map { lo + Double($0) * TankPoints.grid }
+    }
+
+    /// Post pairs for a table from `a` to `b` along the row: the equal spacing, else greedy from the west end;
+    /// nil and where it failed when no pair fits. `free` says whether a pair at x with its footings at `ys` is clear.
+    static func pairs(_ a: Double, _ b: Double, _ ys: [Double], _ p: Params, free: (Double, [Double]) -> Bool) -> (xs: [Double]?, fail: Double) {
+        let len = b - a, k = max(1, Int(((len - 2 * p.endOver) / p.postDX).rounded(.up))) + 1
+        let even = (0..<k).map { a + p.endOver + (len - 2 * p.endOver) * Double($0) / Double(k - 1) }
+        if len > 2 * p.endOver, even.allSatisfy({ free($0, ys) }) { return (even, 0) }
+        guard var x = grid(a, a + p.maxCantilever).filter({ free($0, ys) }).min(by: { abs($0 - a - p.endOver) < abs($1 - a - p.endOver) })
+        else { return (nil, a + p.cellW / 2) }
+        var xs = [x]
+        while b - x > p.maxCantilever + 1e-9 {
+            let reach = grid(x + p.minPairGap, min(b, x + p.postDX)).filter { free($0, ys) }
+            if let last = reach.filter({ b - $0 <= p.maxCantilever + 1e-9 }).min(by: { abs(b - p.endOver - $0) < abs(b - p.endOver - $1) }) {
+                xs.append(last); return (xs, 0)
+            }
+            guard let next = reach.max() else { return (nil, min(b, x + p.postDX)) }
+            x = next; xs.append(x)
+        }
+        return (xs, 0)
+    }
+
+    /// One row's tables: each run of ≥ 2 free columns posted, a column cut where no pair fits and the parts posted
+    /// again. The tables west to east with their pair positions, and the columns cut.
+    static func post(_ freeColumns: [Int], colX: (Int) -> Double, ys: [Double], _ p: Params,
+                     free: (Double, [Double]) -> Bool) -> (tables: [([Int], [Double])], cut: [Int]) {
+        var queue = runs(freeColumns).filter { $0.count >= 2 }, done: [([Int], [Double])] = [], cut: [Int] = [], guardN = 0
+        while !queue.isEmpty && guardN < 500 {
+            let run = queue.removeFirst(); guardN += 1
+            let res = pairs(colX(run.first!), colX(run.last!) + p.cellW, ys, p, free: free)
+            if let xs = res.xs { done.append((run, xs)); continue }
+            let c = run.min { abs(colX($0) + p.cellW / 2 - res.fail) < abs(colX($1) + p.cellW / 2 - res.fail) }!
+            cut.append(c)
+            queue.insert(contentsOf: [run.filter { $0 < c }, run.filter { $0 > c }].filter { $0.count >= 2 }, at: 0)
+        }
+        return (done.sorted { $0.0.first! < $1.0.first! }, cut)
+    }
+
     // MARK: offsets and the max search
 
     /// How far the columns can move from the west setback and the rows from the south one.
     public static func offsetRange(_ v: Values, _ p: Params) -> (x: Double, y: Double) {
         guard let t = TankPoints.tankSize(v) else { return (0, 0) }
         let fr = Frame(q: turn(v), W: t.w, H: t.h), uw = fr.fw - 2 * p.clearance, uh = fr.fh - 2 * p.clearance
-        let sy = uh >= p.depth ? (uh - p.depth).truncatingRemainder(dividingBy: p.rowPitch) : 0
+        // a rectangle's row count is fixed, so only the remainder moves; a circle's rows can take any phase of a pitch
+        let sy = uh >= p.depth ? (TankPoints.circle(v) == nil ? (uh - p.depth).truncatingRemainder(dividingBy: p.rowPitch)
+                                                              : min(p.rowPitch, uh - p.depth)) : 0
         return (max(0, uw - p.width(p.columns(fr.fw))), max(0, sy))
     }
     public static func snap(_ d: Double) -> Double { TankPoints.snap(d) }
@@ -348,28 +388,30 @@ public struct TankLayout: Sendable {
     }
 
     /// The modules without posts (the search's first stage).
-    static func count(size t: (w: Double, h: Double), turn q: Int, openings: [Opening], params p: Params) -> Int {
-        rows(Frame(q: q, W: t.w, H: t.h), openings, p).reduce(0) { $0 + runs($1.free).filter { $0.count >= 2 }.reduce(0) { $0 + 2 * $1.count } }
+    static func count(size t: (w: Double, h: Double), turn q: Int, openings: [Opening], params p: Params,
+                      circle: TankPoints.Circle? = nil) -> Int {
+        rows(Frame(q: q, W: t.w, H: t.h), openings, p, circle: circle).reduce(0) { $0 + runs($1.free).filter { $0.count >= 2 }.reduce(0) { $0 + 2 * $1.count } }
     }
 
     /// `หาผังแผงมากสุด`: every offset on the 5 cm grid; stage 1 counts modules without posts, stage 2 lays out the ten
     /// best with posts, as a cut column can change the order (§3a step 5). The most modules wins, then the smallest offset.
-    public static func best(_ v: Values, base: Params? = nil) -> Params? {
+    /// `stepX` / `stepY` (m, multiples of the 5 cm grid) make the energy search's coarser pass (§3a step 5).
+    public static func best(_ v: Values, base: Params? = nil, stepX: Double = TankPoints.grid, stepY: Double = TankPoints.grid) -> Params? {
         let base = base ?? defaults(v)
         guard let t = TankPoints.tankSize(v) else { return nil }
-        let q = turn(v), open = openings(v), r = offsetRange(v, base)
-        let nx = Int((r.x / TankPoints.grid + 1e-9).rounded(.down)), ny = Int((r.y / TankPoints.grid + 1e-9).rounded(.down))
+        let q = turn(v), open = openings(v), r = offsetRange(v, base), circle = TankPoints.circle(v)
+        let nx = Int((r.x / stepX + 1e-9).rounded(.down)), ny = Int((r.y / stepY + 1e-9).rounded(.down))
         var found: [(n: Int, p: Params)] = []
         for j in 0...ny {
             for i in 0...nx {
                 var p = base
-                p.offX = snap(Double(i) * TankPoints.grid); p.offY = snap(Double(j) * TankPoints.grid)
-                found.append((count(size: t, turn: q, openings: open, params: p), p))
+                p.offX = snap(Double(i) * stepX); p.offY = snap(Double(j) * stepY)
+                found.append((count(size: t, turn: q, openings: open, params: p, circle: circle), p))
             }
         }
         let top = found.enumerated().sorted { $0.element.n != $1.element.n ? $0.element.n > $1.element.n : $0.offset < $1.offset }
             .prefix(10).map(\.element.p)
-        let laid = top.map { TankLayout(size: t, turn: q, openings: open, params: $0, off: []) }
+        let laid = top.map { TankLayout(size: t, turn: q, openings: open, params: $0, off: [], circle: circle) }
         var pick: TankLayout?
         for l in laid where pick == nil || l.count > pick!.count { pick = l }
         return pick?.params
@@ -377,12 +419,8 @@ public struct TankLayout: Sendable {
 
     // MARK: stored answers
 
-    /// The standard with the catalogue's default module.
-    public static func defaults() -> Params {
-        var p = Params(); let m = RoofPlan.Module.catalogDefault
-        p.moduleL = m.length; p.moduleW = m.width; p.moduleKW = m.kW
-        return p
-    }
+    /// The team's standard (`TankStandard.Store`): what a new layout is made with.
+    public static func defaults() -> Params { TankStandard.Store.shared.current.params }
     /// The standard for this tank: the measured vent height when there is one.
     public static func defaults(_ v: Values) -> Params {
         var p = defaults()
@@ -392,11 +430,43 @@ public struct TankLayout: Sendable {
     /// The stored layout's parameters, nil before the first layout.
     public static func params(_ v: Values) -> Params? {
         guard !v.text(Key.orient).isEmpty else { return nil }
-        var p = defaults(v)
+        var p = standard(v).params
+        if let h = Tank.ventHeight(v) { p.ventH = h }
         p.offX = v.number(Key.offX) ?? 0; p.offY = v.number(Key.offY) ?? 0
+        // never closer than the standard (maintenance access and bracing, §3a step 5)
+        if let g = v.number(Key.gap) { p.rowGap = max(p.rowGap, g) }
         return p
     }
-    public static func off(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
+    /// The standard the stored layout was made with: its copy, else the built-in one (layouts made before it was editable).
+    public static func standard(_ v: Values) -> TankStandard {
+        TankStandard.decode(v.text(Key.standard)) ?? .builtIn
+    }
+    /// The team's standard has changed since the stored layout was made (`จัดแผงใหม่` takes it).
+    public static func standardChanged(_ v: Values) -> Bool {
+        guard params(v) != nil else { return false }
+        return !standard(v).sameValues(TankStandard.Store.shared.current)
+    }
+    /// The panels switched off, while the layout still has the arrangement they were switched off on; none once the
+    /// tank, its openings or a move has cut the tables differently (docs/specs/tank-mounting-layout.md, question 8).
+    public static func off(_ v: Values) -> Set<String> {
+        let keys = storedOff(v)
+        // keys saved before the arrangement was kept have none: they stay as they are
+        let base = v.text(Key.offBase)
+        guard !keys.isEmpty, !base.isEmpty, let p = params(v), let l = TankLayout(v, params: p, off: keys) else { return keys }
+        return arrangement(l, p) == base ? keys : []
+    }
+    static func storedOff(_ v: Values) -> Set<String> { Set(v.text(Key.off).split(separator: " ").map(String.init)) }
+
+    /// Every panel's key and place relative to the layout's offset (so moving the whole layout keeps it), as a short
+    /// stable hash.
+    static func arrangement(_ l: TankLayout, _ p: Params) -> String {
+        let text = l.tables.flatMap(\.panels).map { q in
+            "\(q.key):" + [q.x - p.offX, q.y - p.offY, q.w, q.h].map { String(format: "%.2f", $0) }.joined(separator: ",")
+        }.sorted().joined(separator: ";")
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in text.utf8 { h = (h ^ UInt64(b)) &* 0x100000001b3 }
+        return String(h, radix: 36)
+    }
     /// The stored layout, nil before the first layout or without a size.
     public static func current(_ v: Values) -> TankLayout? {
         if let hit = currentCache.get(v) { return hit.layout }
@@ -421,6 +491,22 @@ public struct TankLayout: Sendable {
     public static func save(_ v: inout Values, _ p: Params, off: Set<String>) {
         v[Key.orient] = .text("portrait")
         v[Key.offX] = .text(fmt(snap(p.offX))); v[Key.offY] = .text(fmt(snap(p.offY)))
+        v[Key.gap] = p.rowGap > p.standardGap + 1e-6 ? .text(fmt(p.rowGap)) : nil
+        var std = TankStandard(p)
+        if let kept = TankStandard.decode(v.text(Key.standard)), kept.sameValues(std) { std = kept } else {
+            let team = TankStandard.Store.shared.current
+            if team.sameValues(std) { std = team }
+        }
+        v[Key.standard] = .text(std.json)
+        // keys made on another arrangement (a move that re-cut the tables) would switch off other panels: dropped
+        var off = off
+        if !off.isEmpty, let l = TankLayout(v, params: p, off: off) {
+            let now = arrangement(l, p), before = v.text(Key.offBase)
+            if !before.isEmpty, before != now, off == storedOff(v) { off = [] }
+            v[Key.offBase] = off.isEmpty ? nil : .text(now)
+        } else {
+            v[Key.offBase] = nil
+        }
         v[Key.off] = off.isEmpty ? nil : .text(off.sorted().joined(separator: " "))
         if let l = TankLayout(v, params: p, off: off) { v["panelsBefore"] = .text(String(l.count)) }
     }

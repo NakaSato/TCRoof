@@ -217,7 +217,7 @@ public enum IECWord {
             var out = ""
             for start in stride(from: 0, to: r.thermalPhotos.count, by: 6) {
                 let cells = r.thermalPhotos[start..<min(start + 6, r.thermalPhotos.count)].enumerated().map { k, id -> String in
-                    let place = r.thermalPlaces[id].map { " · " + $0 } ?? ""
+                    let place = r.thermalPlaces[id].map { " | " + $0 } ?? ""
                     return paragraph(run("ภาพถ่ายความร้อน \(start + k + 1)\(place)", size: 16, bold: true), align: "center", spacingAfter: 40)
                         + photoOrGap(id, photos, maxW: 3.1, maxH: 2.55)
                 }

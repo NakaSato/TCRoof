@@ -8,7 +8,14 @@ export const LIMITS = {
   chars: 80_000,
   /** Tokens the model may answer with. */
   maxTokens: 1_500,
+  /** Requests one question may take (the app's tool rounds), so a day allows at most this × the daily limit. */
+  roundsPerQuestion: 5,
 };
+
+/** A request starting a new question (it ends with the person's message), as opposed to a tool round of one. */
+export function isQuestion(messages: Message[]): boolean {
+  return messages[messages.length - 1]?.role === 'user';
+}
 
 export const ALLOWED_TOOLS: ReadonlySet<string> = new Set(allowedTools);
 

@@ -147,20 +147,27 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(due[0].tone, .ok)
         XCTAssertEqual(due[0].opens, .docs)
 
-        // the site's holiday moves the limit; past it the row is late
+        // the site's holiday moves the limit, and 23 Oct (a public holiday) once more; past it the row is late
         s.holidays = ["2026-10-13"]
         due = PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }
-        XCTAssertEqual(due[0].date, day(2026, 10, 23))
+        XCTAssertEqual(due[0].date, day(2026, 10, 26))
         due = PWAPlan.deadlines([s], today: day(2026, 10, 27)).filter { $0.id.hasPrefix("erc-") }
-        XCTAssertEqual(due[0].chip, "เกินกำหนด 2 วันทำการ")
+        XCTAssertEqual(due[0].chip, "เกินกำหนด 1 วันทำการ")
         XCTAssertEqual(due[0].tone, .late)
 
-        // answered, or a station under 200 kVA: no row
+        // answered: no row
         s.docs.erc?.add(.designResult, day: "2026-10-20")
         XCTAssertTrue(PWAPlan.deadlines([s], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+
+        // a station under 200 kVA has its own flow, with the same limit on the design answer
         var small = station("t", start: day(2026, 10, 1), end: day(2026, 12, 20))
-        small.docs.erc = r
-        XCTAssertTrue(PWAPlan.deadlines([small], today: today).filter { $0.id.hasPrefix("erc-") }.isEmpty)
+        var rs = ERCFlow.Record(variant: .under200)
+        rs.add(.designRequest, day: "2026-10-01"); rs.add(.designResult, day: "2026-10-02"); rs.add(.install, day: "2026-10-05")
+        rs.add(.inspectionRequest, day: "2026-10-06")
+        small.docs.erc = rs
+        due = PWAPlan.deadlines([small], today: today).filter { $0.id.hasPrefix("erc-") }
+        XCTAssertEqual(due.map(\.id), ["erc-inspectionResult-t"])
+        XCTAssertTrue(due[0].subtitle.hasSuffix("ลำดับ กกพ. ข้อ 4"), due[0].subtitle)
     }
 
     func testSubmissionsComeFromThePlanAndClearWhenSubmitted() {
@@ -244,7 +251,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(installs.last?.status, .onPlan)
         XCTAssertEqual(installs.first?.ref, "MP 189")
         XCTAssertEqual(installs.first?.title.hasPrefix("2."), true)
-        XCTAssertEqual(installs.first?.subtitle.hasPrefix("a · ผู้รับเหมา A · TCR01"), true)
+        XCTAssertEqual(installs.first?.subtitle.hasPrefix("a | ผู้รับเหมา A | TCR01"), true)
     }
 
     func testAgendaRemindsOnlyTodayAboutUnsentReports() {
@@ -258,7 +265,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(notices.count, 1)
         XCTAssertEqual(notices[0].day, today)
         XCTAssertEqual(notices[0].start, 16 * 60)
-        XCTAssertEqual(notices[0].subtitle, "ยังไม่ส่ง 1 สถานี · a")
+        XCTAssertEqual(notices[0].subtitle, "ยังไม่ส่ง 1 สถานี | a")
         XCTAssertEqual(notices[0].opens, .dailies)
         XCTAssertEqual(notices[0].station, "a")
         // the timed reminder comes after the day's untimed rows
@@ -276,7 +283,7 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(items[1].ref, "TC-0012")
         XCTAssertEqual(items[1].opens, .survey)
         XCTAssertEqual(items[0].status, .mustSubmit)
-        XCTAssertEqual(items[0].subtitle, "1 · ครบกำหนดวันนี้")
+        XCTAssertEqual(items[0].subtitle, "1 | ครบกำหนดวันนี้")
     }
 
     func testTeamKeysAndFilter() {
@@ -291,7 +298,7 @@ final class PWAPlanTests: XCTestCase {
     }
 
     func testShortNameAndSearch() {
-        XCTAssertEqual(PWAPlan.shortName("สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล"), "ทุ่งน้อย")
+        XCTAssertEqual(PWAPlan.shortName("สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล"), "ทุ่งน้อย")
         XCTAssertEqual(PWAPlan.shortName("การประปาวัดชัย"), "วัดชัย")
         XCTAssertEqual(PWAPlan.shortName("สถานี"), "สถานี")
         XCTAssertEqual(PWAPlan.clock(8 * 60 + 5), "08:05")

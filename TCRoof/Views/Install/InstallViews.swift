@@ -2,6 +2,8 @@ import SwiftUI
 import TCRoofUI
 import SwiftData
 
+/// `บันทึกงานติดตั้ง และใบตรวจรับงาน` across jobs: the phone's list (`PhoneInstallList`), on any width. The iPad has no list of
+/// its own: a job's install logs and ICL open from its job screen, and the iPad tools tab doesn't offer this module.
 struct InstallRecordsView: View {
     enum Tab: String, CaseIterable, Identifiable {
         case logs = "บันทึกงานติดตั้ง"
@@ -9,95 +11,13 @@ struct InstallRecordsView: View {
         var id: String { rawValue }
     }
 
-    @Query(sort: \Job.installStart) private var jobs: [Job]
-    @State private var tab: Tab = .logs
-    @State private var window: DateWindow = .week
-    @State private var search = ""
-    @State private var showPicker = false
-    @State private var pendingJob: Job?
-    @State private var newLogJob: Job?
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    var body: some View { PhoneInstallList() }
 
-    private var filtered: [Job] {
-        jobs.filter { window.overlaps($0.installInterval) && $0.matches(search) }
-    }
-
-    var body: some View {
-        if sizeClass == .compact { PhoneInstallList() } else { padList }
-    }
-
-    /// iPad; the phone has `PhoneInstallList`.
-    private var padList: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                TCSegmented(Tab.allCases.map(\.rawValue),
-                            selection: Binding(get: { tab.rawValue }, set: { tab = Tab(rawValue: $0) ?? .logs }))
-                    .frame(maxWidth: 560)
-                QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
-                if filtered.isEmpty {
-                    TCEmptyState("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
-                } else {
-                    LazyVGrid(columns: cardColumns, spacing: 16) {
-                        ForEach(filtered) { job in
-                            switch tab {
-                            case .logs:
-                                JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
-                                    JobInstallLogsView(job: job)
-                                } footer: {
-                                    footer("\(job.logs.count) รายการ", color: job.logs.isEmpty ? Theme.muted : Theme.teal)
-                                }
-                            case .inspection:
-                                JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
-                                    InspectionView(job: job)
-                                } footer: {
-                                    inspectionFooter(job)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(24)
-            .frame(maxWidth: 1100)
-            .frame(maxWidth: .infinity)
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            TCNavBar(title: "บันทึกงานติดตั้งและใบตรวจรับงาน", trail: ["หน้าหลัก"], current: "บันทึกงานติดตั้งและใบตรวจรับงาน") {
-                TopBarLink(title: "ประวัติบันทึกทั้งหมด", systemImage: "clock.arrow.circlepath") { InstallLogHistoryView() }
-            }
-        }
-        .background(Theme.pageGradient.ignoresSafeArea())
-        .overlay(alignment: .bottomTrailing) {
-            TCFab("plus", accessibilityLabel: "เพิ่มบันทึกงานติดตั้ง", gradient: Theme.tealGradient) { showPicker = true }
-                .tcFabPlacement(compact: isPhone)
-        }
-        .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showPicker, onDismiss: {
-            if let job = pendingJob {
-                pendingJob = nil
-                newLogJob = job
-            }
-        }) {
-            JobPickerSheet(title: "เลือกงานที่จะบันทึก") { pendingJob = $0 }
-        }
-        .sheet(item: $newLogJob) { job in InstallLogFormView(job: job, log: nil) }
-    }
-
-    private func footer(_ text: String, color: Color) -> some View {
-        JobCardStrip(key: "บันทึกแล้ว", value: text, valueColor: color)
-    }
-
-    private func inspectionFooter(_ job: Job) -> some View {
-        let status = Self.inspectionStatus(job)
-        return JobCardStrip(key: "ใบตรวจรับ", value: status.text, valueColor: status.color,
-                            progress: job.inspection.map { Double($0.completedCount) / Double(InspectionStep.all.count) })
-    }
-
-    /// The ICL state of a job, for the iPad footer and the iPhone status box.
+    /// The ICL state of a job, for the iPhone status box.
     static func inspectionStatus(_ job: Job) -> (text: String, color: Color) {
         guard let inspection = job.inspection else { return ("ยังไม่เริ่มตรวจรับ", Theme.muted) }
         if inspection.submittedAt != nil {
-            return inspection.allPassed ? ("ตรวจรับแล้ว · ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว · มีข้อไม่ผ่าน", Theme.danger)
+            return inspection.allPassed ? ("ตรวจรับแล้ว | ผ่านทุกข้อ", Theme.success) : ("ตรวจรับแล้ว | มีข้อไม่ผ่าน", Theme.danger)
         }
         return ("กำลังตรวจ \(inspection.completedCount)/\(InspectionStep.all.count) ขั้นตอน", .orange)
     }
@@ -118,7 +38,7 @@ struct JobInstallLogsView: View {
                 header {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(job.projectName).font(.sarabun(28, .bold, relativeTo: .title)).foregroundStyle(Theme.navy)
-                        Text("\(job.code) · \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
+                        Text("\(job.code) | \(job.installStart.thaiLong) – \(job.installEnd.thaiLong)")
                             .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                     }
                     if !isPhone { Spacer() }
@@ -174,7 +94,7 @@ private struct LogCard: View {
                     .background(.orange.opacity(0.12), in: Capsule())
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
             }
-            Text(log.detailLines.prefix(3).joined(separator: " · "))
+            Text(log.detailLines.prefix(3).joined(separator: " | "))
                 .font(.sarabun(15, relativeTo: .subheadline))
                 .lineLimit(2)
             let photos = log.sortedPhotos
@@ -214,7 +134,7 @@ struct InstallLogFormView: View {
         NavigationStack {
             PadForm(maxWidth: 720) {
                 PadSection {
-                    InfoRow(title: "โครงการ", value: "\(job.code) · \(job.projectName)")
+                    InfoRow(title: "โครงการ", value: "\(job.code) | \(job.projectName)")
                     DatePicker("วันที่บันทึก", selection: $date, displayedComponents: .date)
                     TextField("ผู้บันทึก", text: $recorder)
                 }
@@ -381,10 +301,10 @@ struct InstallLogHistoryView: View {
                 ForEach(logs) { log in
                     PadLink { InstallLogDetailView(log: log) } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(log.job?.code ?? "-") · \(log.job?.projectName ?? "")").bold()
-                            Text("\(log.date.thaiLong) · \(log.recorder) · \(log.sortedPhotos.count) รูป")
+                            Text("\(log.job?.code ?? "-") | \(log.job?.projectName ?? "")").bold()
+                            Text("\(log.date.thaiLong) | \(log.recorder) | \(log.sortedPhotos.count) รูป")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
-                            Text(log.detailLines.joined(separator: " · ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
+                            Text(log.detailLines.joined(separator: " | ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)
                         }
                         .foregroundStyle(Theme.navy)
                     }

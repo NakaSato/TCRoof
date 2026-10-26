@@ -10,9 +10,17 @@ extension MPWorkbook {
         static let namespace = "urn:tcroof:mp-progress"
         static let relationshipID = "rIdTCRoofProgress"
 
+        /// The WBS rows ticked when the app exported the file (`MasterSchedule.mergingTicks`), in a part of their own.
+        static let ticksNamespace = "urn:tcroof:wbs-ticks"
+
         static func read(_ zip: ZipArchive) -> MasterSchedule.Actual? {
             guard let path = part(zip), let xml = zip.string(path), let body = content(xml) else { return nil }
             return try? JSONDecoder().decode(MasterSchedule.Actual.self, from: Data(XML.unescape(body).utf8))
+        }
+
+        static func readTicks(_ zip: ZipArchive) -> Set<String>? {
+            guard let path = part(zip, ticksNamespace), let xml = zip.string(path), let body = content(xml) else { return nil }
+            return (try? JSONDecoder().decode([String].self, from: Data(XML.unescape(body).utf8))).map(Set.init)
         }
 
         /// Writes the record, replacing the one the file has, else adding the part with its properties, relationships
@@ -21,10 +29,18 @@ extension MPWorkbook {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
             guard let json = try? encoder.encode(actual) else { return }
+            write(String(decoding: json, as: UTF8.self), root: "progress", namespace: namespace, into: &zip)
+        }
+
+        static func writeTicks(_ codes: Set<String>, into zip: inout ZipArchive) {
+            guard let json = try? JSONEncoder().encode(codes.sorted()) else { return }
+            write(String(decoding: json, as: UTF8.self), root: "ticks", namespace: ticksNamespace, into: &zip)
+        }
+
+        static func write(_ json: String, root: String, namespace: String, into zip: inout ZipArchive) {
             let item = #"<?xml version="1.0" encoding="UTF-8" standalone="no"?>"# + "\n"
-                + #"<tc:progress xmlns:tc="\#(namespace)" version="1">"# + XML.escape(String(decoding: json, as: UTF8.self))
-                + "</tc:progress>"
-            if let path = part(zip) { zip.set(path, item); return }
+                + #"<tc:\#(root) xmlns:tc="\#(namespace)" version="1">"# + XML.escape(json) + "</tc:\(root)>"
+            if let path = part(zip, namespace) { zip.set(path, item); return }
 
             var n = 1
             while zip.contains("customXml/item\(n).xml") || zip.contains("customXml/itemProps\(n).xml") { n += 1 }
@@ -55,8 +71,8 @@ extension MPWorkbook {
             }
         }
 
-        /// The custom XML part that holds the record.
-        static func part(_ zip: ZipArchive) -> String? {
+        /// The custom XML part that holds a record.
+        static func part(_ zip: ZipArchive, _ namespace: String = namespace) -> String? {
             zip.paths.first { p in
                 p.hasPrefix("customXml/item") && p.hasSuffix(".xml") && !p.hasPrefix("customXml/itemProps")
                     && (zip.string(p)?.contains(namespace) ?? false)

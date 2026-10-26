@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// Section 6 · Media (docs/ui/components/sections/06-media.png).
+/// Section 6 | Media (docs/ui/components/sections/06-media.png).
 
 /// A photo slot. Empty: dashed pink box with the hint, `อัปโหลด` and `กล้อง`.
 /// Filled: the photo, a green ✓, ✕ to delete, a caption chip bottom-left and an optional teal mark.

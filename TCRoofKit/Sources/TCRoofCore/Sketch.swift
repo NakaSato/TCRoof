@@ -25,6 +25,8 @@ public struct RGBA: Hashable, Sendable {
     public static let ink2 = RGBA(hex: 0x555555), rule = RGBA(hex: 0x9a9a9a), faint = RGBA(hex: 0x999999)
     public static let red = RGBA(hex: 0xE0433A), dark = RGBA(hex: 0x333333), tag = RGBA(hex: 0xC00000)
     public static let tick = RGBA(hex: 0x70AD47), band = RGBA(hex: 0xE2EFDA), blue = RGBA(hex: 0x1F4E79)
+    /// The same colour at opacity `a`.
+    public func withAlpha(_ a: Double) -> RGBA { RGBA(r, g, b, a) }
 }
 public enum TextAlign: Sendable { case left, center, right }
 
@@ -44,7 +46,7 @@ public struct TextRun: Hashable, Sendable {
     }
 }
 
-public enum DrawOp: Sendable {
+public enum DrawOp: Equatable, Sendable {
     case line(Pt, Pt, width: Double, color: RGBA, dash: [Double] = [])
     case rect(Box, stroke: RGBA?, fill: RGBA?, width: Double = 1)
     /// Diagonal hatching clipped to a rect (obstacles).
@@ -99,13 +101,62 @@ public struct Sketch: Sendable {
 // MARK: - survey drawings
 
 public enum Drawings {
+    /// The plan with its sections under it, for a sheet's one drawing box (NO.224's roof and tank sheets, `box` its
+    /// width ÷ height): a C1 roof adds section A-A, a tank sections 1–1 and 2–2 side by side, titled as in the PDF. The
+    /// plan's canvas already has about the box's shape, so the sections get only the height that keeps the plan at
+    /// `keep` of its size alone or more, scaled down (and centred) to fit it; the plan alone when that leaves too
+    /// little. Nil where `plan` is nil.
+    public static func planWithSections(_ v: Values, tank: Bool, width W: Double = 690, box: Double = 792.0 / 614,
+                                        keep: Double = 0.75) -> Sketch? {
+        guard let plan = plan(v, tank: tank, width: W) else { return nil }
+        // a tank's sections carry their own titles, and are drawn only once the tank has a height (else they're a note)
+        var sections: [(title: String?, sketch: Sketch)] = []
+        if tank, (Tank.height(v) ?? 0) > 0 {
+            for across in [false, true] {
+                if let s = TankDrawings.section(v, across: across, width: W) { sections.append((nil, s)) }
+            }
+        } else if !tank, Roof.hasFrame(v) {
+            sections.append(("รูปตัด A-A | " + Roof.frame(v).title + " (หน่วย ม.)", RoofSection(v, callouts: false).sketch))
+        }
+        guard !sections.isEmpty else { return plan }
+        // fitted into a box of height 1, a picture is scaled by min(box ÷ width, 1 ÷ height); the plan keeps `keep` of
+        // its scale alone while the picture is no taller than 1 ÷ (keep × that scale)
+        let alone = min(box / W, 1 / plan.height), maxHeight = 1 / (keep * alone)
+        let gap = 16.0, titleSize = 20.0, top = plan.height + 14
+        let title = sections.contains { $0.title != nil } ? titleSize + 10 : 0
+        let room = maxHeight - top - title - 8
+        // side by side, each in its column; or one per row, as wide as the plan: whichever draws them wider
+        let column = (W - gap * Double(sections.count - 1)) / Double(sections.count)
+        let sideScales = sections.map { min(column / $0.sketch.width, room / $0.sketch.height) }
+        // the drawings shrink to fit the room; the gaps between rows don't
+        let rowsHeight = sections.reduce(0) { $0 + $1.sketch.height * (W / $1.sketch.width) }
+        let shrink = min(1, (room - gap * Double(sections.count - 1)) / rowsHeight)
+        let rowScales = sections.map { W / $0.sketch.width * shrink }
+        let stacked = sections.count > 1 && zip(sections, rowScales).map { $0.sketch.width * $1 }.min()!
+            > zip(sections, sideScales).map { $0.sketch.width * $1 }.min()!
+        let scales = stacked ? rowScales : sideScales
+        let narrowest = zip(sections, scales).map { $0.sketch.width * $1 / (stacked ? W : column) }.min()!
+        guard room > 40, narrowest >= 0.4 else { return plan }
+        var ops: [DrawOp] = [], row = 0.0, y = top
+        for (i, (s, k)) in zip(sections, scales).enumerated() {
+            let w = s.sketch.width * k
+            let x = stacked ? (W - w) / 2 : Double(i) * (column + gap) + (column - w) / 2
+            if let t = s.title { ops.append(.text(t, at: Pt(x + 2, y + titleSize / 2 + 2), size: titleSize, bold: true)) }
+            ops += s.sketch.translated(x, y + title, scale: k)
+            if stacked { y += title + s.sketch.height * k + gap; row = y - top - gap } else { row = max(row, title + s.sketch.height * k) }
+        }
+        let H = (top + row + 8).rounded()
+        return Sketch(width: W, height: H, ops: [.rect(Box(0, 0, W, H), stroke: nil, fill: .white)] + plan.ops + ops)
+    }
+
     /// Dimensioned plan from column spans (m) and obstacles, as on the roof / clear-water-tank sheets.
     /// A roof whose frame type was chosen on the C1 page draws the C1 plan (frame lines, posts, ridge, skylights);
     /// a tank draws `TankPlan` (the D1 page's plan).
     public static func plan(_ v: Values, tank: Bool, width W: Double = 690) -> Sketch? {
+        // a tank draws from `Tank.spans` (a round tank from its diameter)
+        if tank { return TankPlan(v, width: W, details: true)?.sketch }
         let sx = parseSpans(v.text("spansX")), sy = parseSpans(v.text("spansY"))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
-        if tank { return TankPlan(v, width: W)?.sketch }
         if Roof.hasFrame(v) {
             let p = RoofPlan(v).sketch, k = W / p.width
             return Sketch(width: W, height: p.height * k, ops: p.translated(0, 0, scale: k))

@@ -132,11 +132,12 @@ struct SiteSignatureSheet: View {
             VStack(alignment: .leading, spacing: Space.l) {
                 PermitField("ชื่อผู้ลงนาม", text: $name, required: true)
                 TCFieldLabel("ลายเซ็น")
-                SignaturePad(signature: $png)
+                AccountSignatureCanvas(signature: $png)
                     .frame(height: 220)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
                     .accessibilityLabel("ช่องลายเซ็น")
+                MySignatureActions(signature: $png)
                 TCButton("ล้างลายเซ็น", systemImage: "eraser", kind: .secondary, size: .card) { png = nil }
                 Spacer()
             }

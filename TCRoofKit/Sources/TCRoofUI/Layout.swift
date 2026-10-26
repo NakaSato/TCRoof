@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 
 /// Survey step header (`g-head` + `g-prog` + `g-caps`): the gradient title block, then `5/13`, the step name and 13 capsules.
-/// iPad: title 20 / sub 15, capsules 8 high (mint done · gradient current · grey todo), step name on the right.
-/// iPhone: title 19 / sub 13, capsules 6 high (green done · blue current), the step name after the number and
+/// iPad: title 20 / sub 15, capsules 8 high (mint done | gradient current | grey todo), step name on the right.
+/// iPhone: title 19 / sub 13, capsules 6 high (green done | blue current), the step name after the number and
 /// `status` (usually a `ขาด n ช่อง` chip) at the end of the step line.
 public struct TCSurveyHeader<Status: View>: View {
     let title: String
@@ -268,7 +268,7 @@ public struct TCBarSearchField: View {
     }
 }
 
-/// Columns whose widths follow `fractions` (2 : 1 for form + info card, 1 : 2 : 1.4 for filter · list · detail).
+/// Columns whose widths follow `fractions` (2 : 1 for form + info card, 1 : 2 : 1.4 for filter | list | detail).
 public struct TCFractionColumns: Layout {
     public var fractions: [CGFloat]
     public var spacing: CGFloat
@@ -302,7 +302,7 @@ public struct TCFractionColumns: Layout {
 }
 
 /// Page scaffold: iPad columns by `fractions`, top aligned; iPhone one column, margin 16, gap 12, scrolling.
-/// Presets: `.twoColumn` (form / picture · info cards), `.threePane` (filter · list · detail).
+/// Presets: `.twoColumn` (form / picture | info cards), `.threePane` (filter | list | detail).
 public struct TCPageColumns<Content: View>: View {
     public static var twoColumn: [CGFloat] { [2, 1] }
     public static var threePane: [CGFloat] { [1, 2, 1.4] }
@@ -422,7 +422,7 @@ public struct TCTabItem<ID: Hashable>: Identifiable {
     public var badge: Int
     /// The badge's fill, when it isn't the red of appointments (orange for papers waiting to be sent).
     public var badgeColor = Theme.danger
-    /// VoiceOver label when it should say more than the title (`สำรวจ · นัดวันนี้ 2`).
+    /// VoiceOver label when it should say more than the title (`สำรวจ | นัดวันนี้ 2`).
     public var accessibilityLabel: String?
     public var action: (() -> Void)?
 

@@ -6,10 +6,10 @@ import TCRoofCore
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request }
 
     /// A screen the page pushes.
-    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec }
+    enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
 
     let job: Job
     @State var tab = Debug.tab
@@ -30,7 +30,7 @@ struct InstallTrackingPage: View {
     @State var sheet: Sheet? = Debug.sheet
     @State var siteTab = Debug.site
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
-    @State var dailyFilter = 0
+    @State var dailyFilter = Debug.dailyFilter
     @State var shared: Shared?
     /// `แผนก่อสร้าง`'s plan file: import and export of the station's own workbook.
     @State var workbook = MPWorkbookFlow()
@@ -38,18 +38,98 @@ struct InstallTrackingPage: View {
     /// The debug flags apply once: `.task` runs again each time the page reappears (back from a pushed screen).
     @State private var debugApplied = false
     /// ผู้ช่วยโครงการ, opened on this station.
-    @State private var assistant = false
+    @State var assistant = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
     @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
     @State private var survey = SurveyModel.shared
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var context
+    @Environment(\.modelContext) var context
+    @Environment(\.horizontalSizeClass) var sizeClass
+
+    // iPhone (docs/ui/install-tracking-iphone): every tab in place, and the header's gear
+    @State var phoneTab = Debug.phoneTab
+    @State var phoneSettings = Debug.settings
+    @State var settingsCategory: SettingsCategory? = Debug.settingsCategory
+    /// `แผนก่อสร้าง`'s edit mode: the stages' new start and days by id, and the reason.
+    @State var planEditing = false
+    @State var planDraft: [String: PlanDraft] = [:]
+    @State var planReason = ""
+    /// `คำขอรายสัปดาห์` and `Weekly Report`: weeks from their default one.
+    @State var requestWeek = Debug.requestWeek
+    /// iPad `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request): the week's request as edited, the
+    /// requester's drawn signature and name (kept only until it is sent: `engineerSignedAt` records the signing), the open
+    /// sheet, a short note, and `ดึงจากแผน MP`'s time and spinner.
+    @State var request: RoutineReport.WeeklyRequest?
+    @State var reqSignature: Data?
+    @State var reqSignedAt: Date?
+    @State var reqName = ""
+    @State var reqSheet: RequestSheet?
+    @State var reqToast: String?
+    @State var reqPulledAt: Date?
+    @State var reqPulling = false
+    @State var reportWeek = 0
+    /// `เอกสาร`'s selected permit stage.
+    @State var docsStage: StationDocs.Package? = Debug.docsPackage
+    /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first
+    /// page, and a note after an export with nothing to put in.
+    @State var docsPaper: String? = Debug.docsPaper
+    @State var docsSheet: StationDocs.Kind?
+    @State var docsLibrary = StationDocsStore.loadLibrary()
+    @State var docsThumbnail: UIImage?
+    @State var docsNote: String?
+    @Environment(PadDock.self) var dock: PadDock?
+    /// The phone page's pushed screens that the iPad routes don't cover.
+    @State var phoneRoute: PhoneRoute?
+    @State var phoneSheet: PhoneSheet?
 
     var body: some View {
         let data = self.data
+        Group {
+            if sizeClass == .compact { phoneBody(data) } else { padBody(data) }
+        }
+        .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
+        .overlay { if let s = sheet { pageSheet(s, data) } }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
+        .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        }
+        .mpWorkbook(workbook, job: job)
+        #if DEBUG
+        // `-installStage n` opens the nth task's sheet
+        .task {
+            guard !debugApplied else { return }
+            debugApplied = true
+            // `-installDetail YES` opens รายละเอียดงาน
+            if Debug.detail { route = .detail }
+            // `-iecOpen YES` opens ทดสอบ IEC 62446
+            if Debug.iec { route = .iec }
+            // `-installPlanEdit YES` opens แผนก่อสร้าง's edit mode (iPhone)
+            if Debug.planEdit, sizeClass == .compact { startPlanEdit(data) }
+            guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
+            stage = rows[n - 1]
+        }
+        #endif
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $route) { destination($0) }
+        .navigationDestination(item: $phoneRoute) { phoneDestination($0) }
+    }
+
+    /// The iPad page (docs/ui/install-tracking-ipad, -v2).
+    private func padBody(_ data: InstallPageData) -> some View {
         VStack(spacing: 0) {
             header(data)
             tabBar(data)
+            // คำขอรายสัปดาห์ scrolls its form and keeps its panel still
+            if tab == .request {
+                requestTab()
+                    .task(id: requestWeek) {
+                        loadRequest()
+                        #if DEBUG
+                        applyRequestState()
+                        #endif
+                    }
+            } else {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
@@ -62,6 +142,10 @@ struct InstallTrackingPage: View {
                             dailyTab(dailyData, site: data.site)
                         case .plan:
                             planTab(data)
+                        case .docs:
+                            docsTab()
+                        case .request:
+                            EmptyView()
                         }
                     }
                     // the last cards end above the dock
@@ -79,39 +163,25 @@ struct InstallTrackingPage: View {
                 }
                 #endif
             }
+            }
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .padDock(fade: nil)
-        .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
-        .overlay { if let s = sheet { pageSheet(s, data) } }
-        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
-        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
-        .mpWorkbook(workbook, job: job)
-        #if DEBUG
-        // `-installStage n` opens the nth task's sheet
-        .task {
-            guard !debugApplied else { return }
-            debugApplied = true
-            // `-installDetail YES` opens รายละเอียดงาน
-            if Debug.detail { route = .detail }
-            // `-iecOpen YES` opens ทดสอบ IEC 62446
-            if Debug.iec { route = .iec }
-            guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
-            stage = rows[n - 1]
-        }
-        #endif
-        .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $route) { destination($0) }
     }
 
-    private var data: InstallPageData {
+    var data: InstallPageData {
         #if DEBUG
-        if Debug.demo { return .demo() }
+        if Debug.demo {
+            // the board's header has `รายงานสำรวจ`: any survey on the device stands in for the station's
+            var d = InstallPageData.demo(late: Debug.demoLate)
+            d.surveyReport = survey.jobs.first?.id
+            return d
+        }
         #endif
         return InstallPageData(job: job, survey: survey)
     }
 
-    @ViewBuilder private func destination(_ r: Route) -> some View {
+    @ViewBuilder func destination(_ r: Route) -> some View {
         switch r {
         case .request: WeeklyRequestScreen(job: job)
         case .weekly: RoutineSummaryScreen(job: job, period: .week)
@@ -122,11 +192,12 @@ struct InstallTrackingPage: View {
         case .survey(let id): SurveyReportEditor(jobID: id)
         case .detail: JobDetailView(job: job)
         case .iec: IECTestScreen(job: job)
+        case .devices: JobDevicesView(job: job)
         }
     }
 
     /// The task's sheet over a dimmed page, dock included.
-    private func stageSheet(_ row: InstallGantt.Row, _ g: InstallGantt) -> some View {
+    func stageSheet(_ row: InstallGantt.Row, _ g: InstallGantt) -> some View {
         ZStack {
             Theme.navySolid.opacity(0.35).ignoresSafeArea()
                 .onTapGesture { stage = nil }
@@ -134,9 +205,46 @@ struct InstallTrackingPage: View {
             InstallStageSheet(row: row, count: g.rows.count, index: (g.rows.firstIndex { $0.id == row.id } ?? 0) + 1,
                               photos: photos(for: row), cause: cause(row.id), setCause: { setCause($0, task: row.id) },
                               confirmation: job.scheduleActual.confirmations.last { $0.task == row.id }, close: { stage = nil },
-                              openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) })
+                              openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) },
+                              wbs: wbsItems(row.id), ticks: job.wbsTicks, canTick: permissions.mayTickWBS(on: job.access),
+                              canTakeBack: { permissions.mayTakeBack($0, on: job.access) },
+                              toggleWBS: toggleWBS, setDocument: setWBSDocument)
         }
         .transition(.opacity)
+    }
+
+    /// The task's WBS sub-tasks, without the other case's rows.
+    private func wbsItems(_ task: String) -> [MasterSchedule.WorkItem] {
+        guard let t = MasterSchedule.Task(rawValue: task) else { return [] }
+        return job.scheduleWBS.items(for: t).filter { !$0.notForThisStation }
+    }
+
+    /// Ticks a WBS row done today, or takes the tick back; the job books it into the plan (`Job.wbsTicks`). A contractor's
+    /// device sends it signed with their email.
+    private func toggleWBS(_ item: MasterSchedule.WorkItem) {
+        var ticks = job.wbsTicks
+        if let tick = ticks[item.code] {
+            guard permissions.mayTakeBack(tick, on: job.access) else { return }
+            ticks[item.code] = nil
+        } else {
+            guard permissions.mayTickWBS(on: job.access) else { return }
+            ticks[item.code] = .init(by: permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now))
+        }
+        saveWBS(ticks)
+    }
+
+    private func setWBSDocument(_ item: MasterSchedule.WorkItem, _ text: String) {
+        var ticks = job.wbsTicks
+        guard let tick = ticks[item.code], permissions.mayTakeBack(tick, on: job.access) else { return }
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        ticks[item.code]?.document = t.isEmpty ? nil : t
+        saveWBS(ticks)
+    }
+
+    private func saveWBS(_ ticks: [String: MasterSchedule.WBSTick]) {
+        job.wbsTicks = ticks
+        if permissions.role == .external { job.wbsTicksUnsent = true }
+        try? context.save()
     }
 
     private func cause(_ task: String) -> MasterSchedule.LateCause? {
@@ -158,7 +266,7 @@ struct InstallTrackingPage: View {
     }
 
     /// The daily reports' photos tagged with a progress line of the task.
-    private func photos(for row: InstallGantt.Row) -> [Data] {
+    func photos(for row: InstallGantt.Row) -> [Data] {
         guard let task = MasterSchedule.Task(rawValue: row.id) else { return [] }
         return job.dailyLogs.flatMap { log -> [Data] in
             guard let r = log.report else { return [] }
@@ -189,11 +297,10 @@ struct InstallTrackingPage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
             if permissions.can(.assistantUse), job.scheduleInput != nil {
-                headerButton("ผู้ช่วย", "sparkles") { assistant = true }
+                headerButton("ผู้ช่วย AI", "sparkles", primary: true) { assistant = true }
             }
-            headerButton("รายละเอียดงาน", "info.circle") { route = .detail }
             if let id = data.surveyReport {
-                headerButton("รายงานสำรวจ (ดูอย่างเดียว)", "lock") { route = .survey(id) }
+                headerButton("รายงานสำรวจ", "lock", accessibility: "รายงานสำรวจ (ดูอย่างเดียว)") { route = .survey(id) }
             }
         }
         .foregroundStyle(Theme.onPrimary)
@@ -204,24 +311,29 @@ struct InstallTrackingPage: View {
         }
     }
 
-    /// An outlined button on the blue header.
-    private func headerButton(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    /// A button on the blue header: outlined, or filled white with a blue label (`primary`, the board's `ผู้ช่วย AI`).
+    private func headerButton(_ title: String, _ symbol: String, primary: Bool = false, accessibility: String? = nil,
+                              action: @escaping () -> Void) -> some View {
+        let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        return Button(action: action) {
             Label(title, systemImage: symbol)
-                .font(.sarabunFixed(15, .semibold))
+                .font(.sarabunFixed(15, primary ? .bold : .semibold))
+                .foregroundStyle(primary ? Theme.primary : Theme.onPrimary)
                 .padding(.horizontal, 16).frame(height: 44)
-                .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
+                .background(primary ? Theme.surface : Theme.onPrimary.opacity(0.14), in: frame)
+                .overlay { if !primary { frame.strokeBorder(Theme.onPrimary.opacity(0.6)) } }
+                .shadow(color: primary ? Theme.navySolid.opacity(0.18) : .clear, radius: 4, y: 2)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel(accessibility ?? title)
     }
 
     // MARK: tabs
 
     /// One tab of the bar: in place (`tab`) or a pushed screen (`route`).
-    private struct Item: Identifiable {
+    struct Item: Identifiable {
         let id: String
         let title: String
         let symbol: String
@@ -230,13 +342,13 @@ struct InstallTrackingPage: View {
         var dot = false
     }
 
-    private func items(_ data: InstallPageData) -> [Item] {
+    func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
-         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
+         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", route: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
-         Item(id: "docs", title: "เอกสาร", symbol: "doc.text", route: .docs),
+         Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan)]
     }
 
@@ -276,7 +388,7 @@ struct InstallTrackingPage: View {
 
     // MARK: KPI strip
 
-    private struct Cell: Identifiable {
+    struct Cell: Identifiable {
         var id: String { label }
         let label: String
         let value: String
@@ -288,11 +400,11 @@ struct InstallTrackingPage: View {
         var opensActions = false
     }
 
-    /// `ความคืบหน้า · กำหนดการ · คาดส่งมอบ · SPI · ต้องดำเนินการ`. Without an MP plan only the open items are left.
-    private func cells(_ data: InstallPageData) -> [Cell] {
+    /// `ความคืบหน้า | กำหนดการ | คาดส่งมอบ | SPI | ต้องดำเนินการ`. Without an MP plan only the open items are left.
+    func cells(_ data: InstallPageData) -> [Cell] {
         var out: [Cell] = []
         if let t = data.tracking {
-            let gain = t.gainThisWeek.map { " · ▲\($0)% สัปดาห์นี้" } ?? ""
+            let gain = t.gainThisWeek.map { " | ▲\($0)% สัปดาห์นี้" } ?? ""
             out.append(Cell(label: "ความคืบหน้า", value: "\(Int(t.actual.rounded()))%", ink: Theme.primary,
                             note: "แผน \(Int(t.planned.rounded()))%" + gain, weight: 1.45))
             let (title, ink): (String, Color) = switch t.schedule {
@@ -312,7 +424,7 @@ struct InstallTrackingPage: View {
         }
         let open = data.actions
         out.append(Cell(label: "ต้องดำเนินการ", value: open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง", ink: open.isEmpty ? Theme.successInk : Theme.pending,
-                        note: open.prefix(3).map(\.title).joined(separator: " · "), weight: 1.4, opensActions: !open.isEmpty))
+                        note: open.prefix(3).map(\.title).joined(separator: " | "), weight: 1.4, opensActions: !open.isEmpty))
         return out
     }
 
@@ -348,7 +460,8 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily|plan`, `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
+    /// `-installTab overview|daily|plan|docs|request`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
+    /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
     enum Debug {
@@ -358,19 +471,43 @@ struct InstallTrackingPage: View {
         static let planView = UserDefaults.standard.string(forKey: "installPlanView").flatMap(PlanView.init) ?? .gantt
         static let planCollapsed = UserDefaults.standard.bool(forKey: "installPlanCollapsed")
         static let stage: Int? = UserDefaults.standard.object(forKey: "installStage") == nil ? nil : UserDefaults.standard.integer(forKey: "installStage")
-        static let demo = UserDefaults.standard.bool(forKey: "installDemo")
+        /// `-installDemo YES`, or `late` for a station behind its plan (iPhone board state 02).
+        static let demo = UserDefaults.standard.bool(forKey: "installDemo") || demoLate
+        static let demoLate = UserDefaults.standard.string(forKey: "installDemo") == "late"
+        /// `-installDailyFilter todo|problem` (iPhone): `รายงานประจำวัน`'s filter.
+        static let dailyFilter = ["todo": 1, "problem": 2][UserDefaults.standard.string(forKey: "installDailyFilter") ?? ""] ?? 0
         static let sheet: Sheet? = UserDefaults.standard.string(forKey: "installSheet").map { $0 == "actions" ? .actions : .doc($0) }
         static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
         static let detail = UserDefaults.standard.bool(forKey: "installDetail")
         static let iec = UserDefaults.standard.bool(forKey: "iecOpen")
+        static let docsPackage = UserDefaults.standard.string(forKey: "installDocsPackage").flatMap(StationDocs.Package.init)
+        /// `-installRequestWeek 0|1|2`: next week, the week before, the one before that.
+        static let requestWeek = -UserDefaults.standard.integer(forKey: "installRequestWeek")
+        /// `-installRequestState sign|signed|sent|approved|pdf|edited`.
+        static let requestState = UserDefaults.standard.string(forKey: "installRequestState")
+        static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
+        /// iPhone: `-installTab request|weekly|iec|docs|settings` too, `-installSettings team|routine|connection` and
+        /// `-installPlanEdit YES`.
+        static let phoneTab = UserDefaults.standard.string(forKey: "installTab").flatMap(PhoneTab.init) ?? .overview
+        static let settings = UserDefaults.standard.string(forKey: "installTab") == "settings" || settingsCategory != nil
+        static let settingsCategory = UserDefaults.standard.string(forKey: "installSettings").flatMap(SettingsCategory.init)
+        static let planEdit = UserDefaults.standard.bool(forKey: "installPlanEdit")
         #else
+        static let phoneTab = PhoneTab.overview
+        static let settings = false
+        static let settingsCategory: SettingsCategory? = nil
+        static let demo = false
+        static let dailyFilter = 0
         static let tab = Tab.overview
         static let view = ProgressView.gantt
         static let planView = PlanView.gantt
         static let planCollapsed = false
         static let sheet: Sheet? = nil
         static let site = SiteTab.info
+        static let docsPackage: StationDocs.Package? = nil
+        static let docsPaper: String? = nil
+        static let requestWeek = 0
         #endif
     }
 }

@@ -344,13 +344,13 @@ final class UserAdminStore {
         for inv in invites {
             let jobs = inv.jobs.compactMap { id in jobChoices.first { $0.id == id }?.label }
             out.append((.user, "เพิ่ม \(inv.name.isEmpty ? inv.email : inv.name) ในรายชื่อสมาชิก",
-                        (["บทบาท " + inv.role.label] + jobs).joined(separator: " · ")))
+                        (["บทบาท " + inv.role.label] + jobs).joined(separator: " | ")))
         }
         for (email, role) in roleChanges.sorted(by: { $0.key < $1.key }) {
             let from = members.first { $0.email == email }?.role ?? .internalTeam
             let c = RoleChange(from: from, to: role, overrides: overrides)
             out.append((.role, "เปลี่ยนบทบาท \(label(email)): \(from.label) → \(role.label)",
-                        "\(email) · ได้เพิ่ม \(c.gained.count) · เสีย \(c.lost.count)"))
+                        "\(email) | ได้เพิ่ม \(c.gained.count) | เสีย \(c.lost.count)"))
         }
         for (email, on) in suspensions.sorted(by: { $0.key < $1.key }) {
             out.append((.sus, on ? "ปิดบัญชี \(label(email))" : "เปิดใช้งาน \(label(email)) อีกครั้ง", email))
@@ -379,7 +379,7 @@ final class UserAdminStore {
     private static func message(_ error: Error) -> String {
         let e = error as NSError
         if e.domain == FirestoreErrorDomain, e.code == FirestoreErrorCode.permissionDenied.rawValue {
-            return "บันทึกไม่สำเร็จ · บัญชีนี้ไม่มีสิทธิ์ (firestore.rules ปฏิเสธ)"
+            return "บันทึกไม่สำเร็จ | บัญชีนี้ไม่มีสิทธิ์ (firestore.rules ปฏิเสธ)"
         }
         return error.localizedDescription
     }
@@ -406,7 +406,7 @@ final class UserAdminStore {
             m("อารีย์ มั่นคง", "aree@contractor-a.example", .external, ["MP 189 ทุ่งน้อย", "MP 98 บ้านโป่ง", "MP 133 บางปะกง"]),
             m("เกียรติศักดิ์ บุญมา", "kiattisak@contractor-b.example", .external, ["MP 120 วัดชัย", "MP 77 โชคชัย"]),
             m("ธีรพงษ์ สายทอง", "teerapong@contractor-c.example", .external, ["MP 154 แพรกหนามแดง", "MP 142 หนองแค"]),
-            m("สุรเชษฐ์ พรหมมา", "surachet@eng-firm.example", .external, ["ออกแบบ MP 61 แม่ข่ายชนบท · ผู้ลงนาม"]),
+            m("สุรเชษฐ์ พรหมมา", "surachet@eng-firm.example", .external, ["ออกแบบ MP 61 แม่ข่ายชนบท | ผู้ลงนาม"]),
             m("จิราพร ทองคำ", "jiraporn@contractor-d.example", .external, ["MP 171 สามโคก"]),
             m("โอภาส ชัยวัฒน์", "opas@contractor-c.example", .external, [], suspended: true),
         ]
@@ -418,12 +418,12 @@ final class UserAdminStore {
             AuditEntry(id: t, at: now - ago, by: me, kind: k, title: t, detail: d)
         }
         log = [
-            l(0.2 * day, "ปิด / ระงับบัญชี: เฉพาะ Maintainer", "users.suspend · ผู้จัดการไม่มีสิทธิ์นี้แล้ว", .perm),
-            l(0.21 * day, "ตั้ง Chanthawat Kiriyadee เป็น Maintainer", "ทำได้ทุกอย่าง · ไม่ขึ้นกับ 3 บทบาท", .role),
+            l(0.2 * day, "ปิด / ระงับบัญชี: เฉพาะ Maintainer", "users.suspend | ผู้จัดการไม่มีสิทธิ์นี้แล้ว", .perm),
+            l(0.21 * day, "ตั้ง Chanthawat Kiriyadee เป็น Maintainer", "ทำได้ทุกอย่าง | ไม่ขึ้นกับ 3 บทบาท", .role),
             l(1.1 * day, "มอบหมาย MP 133 บางปะกง ให้ อารีย์ มั่นคง", "วิศวกรภายนอก / ผู้รับเหมา", .role),
             l(1.5 * day, "drive.upload: ผู้รับเหมาใช้ Drive ของตัวเอง", "ตามข้อตกลง drive-by-role", .perm),
             l(3 * day, "handover.final_signoff: ทีมภายใน → เฉพาะวิศวกรผู้ควบคุมงาน", "เซ็นตรวจรับงานขั้นสุดท้าย", .perm),
-            l(6 * day, "เพิ่ม จิราพร ทองคำ ในรายชื่อสมาชิก", "บทบาท วิศวกรภายนอก / ผู้รับเหมา · MP 171 สามโคก", .user),
+            l(6 * day, "เพิ่ม จิราพร ทองคำ ในรายชื่อสมาชิก", "บทบาท วิศวกรภายนอก / ผู้รับเหมา | MP 171 สามโคก", .user),
             l(8 * day, "เปลี่ยนคีย์นักพัฒนา", "หมดอายุใน 30 วัน", .key),
             l(16 * day, "ปิดบัญชี โอภาส ชัยวัฒน์", "opas@contractor-c.example", .sus),
         ]

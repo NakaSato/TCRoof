@@ -1,0 +1,23 @@
+{
+  "_note": "Example values from the board (iPhoneC1.dc.html, design canvas, 24 ต.ค. 2569). For screenshots only; never hard-code them. Engineering values come from the job, RoofMountStandard, RoofWalkway and the module catalog.",
+  "job": { "title": "C1 หลังคา · 1 โรงกรอง", "doc": "แบบสำรวจ NO.224 · GRF2567-23407", "step": "10/13" },
+  "roof": { "plan": "19.00 × 16.00 ม.", "slope": "15°", "purlins": "1.00 ม.", "ridge": "นอน (along the plan's width, 8.00 m from the top edge)" },
+  "module": { "name": "Znshine ZXM7-UHLDD144 570 W", "size": "2,278 × 1,134 มม.", "voc": "51.1 V", "source": "จากมาตรฐานโครงการ" },
+  "controls": {
+    "orientation": ["แนวตั้ง", "แนวนอน"],
+    "landscapeArrangement": ["วางชิดกัน", "วางคู่ 2 แผ่น"],
+    "pairGap": { "board": "0.40 ม.", "range": "0.20–1.00 ม.", "step": "0.10 ม." },
+    "inPairGap": "0.4 ซม. (board note; see open question 2)",
+    "edgeDistance": { "board": "0.50 ม.", "range": "0.30–1.50 ม.", "step": "0.10 ม." },
+    "ridgeWalkwayWidth": { "board": "0.60 ม.", "range": "0.40–1.20 ม.", "step": "0.10 ม.", "note": "the team's walkway detail band is RoofWalkway.band; see open question 3" },
+    "roofAccess": ["ด้านซ้าย", "ด้านขวา"],
+    "roofAccessDefault": "ด้านขวา (board); code default accessRight = false"
+  },
+  "summary": {
+    "portrait": { "modules": 78, "kWp": 44.5 },
+    "afterThreeRemoved": { "modules": 75, "kWp": 42.7, "perRow": 15, "strings": "5 × 14 แผง, เหลือ 5 แผง", "area": "194 ตร.ม." },
+    "landscapePairs": { "modules": 54, "kWp": 30.8 },
+    "stringNote": "14 modules per string is a board example with no source in the job; see open question 4"
+  },
+  "editHint": "แตะแผงบนแปลนเพื่อเอาออกหรือใส่กลับ · เอาออกแล้ว n แผ่น"
+}

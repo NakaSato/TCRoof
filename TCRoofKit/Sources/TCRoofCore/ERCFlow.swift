@@ -1,10 +1,54 @@
 import Foundation
 
-/// The ERC's แจ้งยกเว้นฯ flow for a system of 200 to under 1,000 kVA on a utility's network, per station: twelve
-/// numbered steps between the operator, the utility, the ERC office and DEDE (`docs/specs/erc-exemption-flow-swift.md`,
-/// from the diagrams in `docs/permit/`). The station keeps what happened (`Record`); where it stands, whose turn it
-/// is and when a time limit ends are worked out from that.
+/// The ERC's แจ้งยกเว้นฯ flow for a system on a utility's network, per station (`docs/specs/erc-exemption-flow-swift.md`,
+/// `docs/reference/forms/erc/exemption-flow.json`): under 200 kVA, seven numbered steps between the operator and the
+/// utility, which passes its letter to the ERC itself (`utility_lt200`); 200 to under 1,000 kVA, twelve, with พค.2
+/// through the ERC office and DEDE (`utility_200_1000`). The station keeps what happened (`Record`); where it stands,
+/// whose turn it is and when a time limit ends are worked out from that.
 public enum ERCFlow {
+
+    // MARK: Size
+
+    /// Inverters (kVA, the datasheets' total) of this much or more need พค.2 and the 200–1,000 kVA flow. The one place
+    /// the threshold is decided: `StationDocs.Context` and `MasterSchedule.Input.isOver200kVA` read it.
+    public static let pk2ThresholdKVA = 200.0
+    /// From this size up the ERC asks for a generating licence, not the exemption (outside both flows).
+    public static let licenceKVA = 1000.0
+
+    /// 200 kVA or more: the station needs พค.2.
+    public static func needsPK2(kVA: Double) -> Bool { kVA >= pk2ThresholdKVA }
+
+    /// Which of the ERC's flows a station follows. PWA stations are all on the utility's network (กฟภ.), so the two
+    /// private-network flows of the JSON are not built. Raw values are the JSON's flow ids, kept in the job's JSON.
+    public enum Variant: String, Codable, Sendable, CaseIterable {
+        case under200 = "utility_lt200"
+        /// Also every station of 1,000 kVA and over, as before the small flow: those need a licence, which no flow
+        /// here covers, and the 200–1,000 kVA steps are the nearest the team can track.
+        case from200 = "utility_200_1000"
+
+        /// The station's flow from its size.
+        public init(kVA: Double) { self = ERCFlow.needsPK2(kVA: kVA) ? .from200 : .under200 }
+        /// From `StationDocs.Context.over200kVA`, which may be set by hand.
+        public init(over200kVA: Bool) { self = over200kVA ? .from200 : .under200 }
+
+        /// The flow's steps in order.
+        public var steps: [Step] {
+            switch self {
+            case .from200: Step.allCases
+            case .under200: [.designRequest, .designResult, .install, .inspectionRequest, .inspectionResult, .utilityToERC, .cod, .exemptionResult]
+            }
+        }
+
+        public var title: String {
+            switch self {
+            case .under200: "แจ้งยกเว้นฯ โครงข่ายการไฟฟ้า ต่ำกว่า 200 kVA"
+            case .from200: "แจ้งยกเว้นฯ โครงข่ายการไฟฟ้า 200 ถึงต่ำกว่า 1,000 kVA"
+            }
+        }
+
+        /// The sections that have steps in this flow.
+        public var sections: [Section] { Section.allCases.filter { s in steps.contains { $0.section == s } } }
+    }
 
     public enum Party: String, Sendable, CaseIterable {
         case us, utility, erc, dede
@@ -22,11 +66,13 @@ public enum ERCFlow {
     public enum Section: Int, Sendable, CaseIterable {
         case design, install, permit, connect
 
-        public var title: String {
+        public var title: String { title(in: .from200) }
+
+        public func title(in variant: Variant) -> String {
             switch self {
             case .design: "ออกแบบและขอความเห็นแบบ"
             case .install: "ติดตั้ง"
-            case .permit: "พค.2 และตรวจระบบ (ทำคู่ขนานกันได้)"
+            case .permit: variant == .under200 ? "ตรวจระบบโดยการไฟฟ้า" : "พค.2 และตรวจระบบ (ทำคู่ขนานกันได้)"
             case .connect: "ขนานไฟและผลแจ้งยกเว้น"
             }
         }
@@ -39,9 +85,16 @@ public enum ERCFlow {
 
         public var id: String { rawValue }
 
-        /// The diagram's number; installation has none.
-        public var number: Int? {
-            switch self {
+        /// The step's number in the 200–1,000 kVA flow; installation has none.
+        public var number: Int? { number(in: .from200) }
+
+        /// The step's number in a flow: its place among the flow's numbered steps. Nil for installation and for a
+        /// step the flow doesn't have.
+        public func number(in variant: Variant) -> Int? {
+            if variant == .under200 {
+                return variant.steps.filter { $0 != .install }.firstIndex(of: self).map { $0 + 1 }
+            }
+            let n: Int? = switch self {
             case .designRequest: 1
             case .designResult: 2
             case .install: nil
@@ -56,6 +109,7 @@ public enum ERCFlow {
             case .cod: 11
             case .exemptionResult: 12
             }
+            return n
         }
 
         public var title: String {
@@ -145,9 +199,31 @@ public enum ERCFlow {
         public var events: [Event]
         /// Whether the utility wants พค.2 before it connects (step 10); nil = not known yet.
         public var utilityWantsPK2: Bool?
+        /// The flow the record was started in (`pin`). Nil in a new record and in records from before the small flow,
+        /// which were all 200–1,000 kVA.
+        public var variant: Variant?
 
-        public init(events: [Event] = [], utilityWantsPK2: Bool? = nil) {
-            self.events = events; self.utilityWantsPK2 = utilityWantsPK2
+        public init(events: [Event] = [], utilityWantsPK2: Bool? = nil, variant: Variant? = nil) {
+            self.events = events; self.utilityWantsPK2 = utilityWantsPK2; self.variant = variant
+        }
+
+        /// The flow the record follows. An empty record follows the station's size; once anything is recorded it keeps
+        /// the flow it was started in, so a station whose size moves across 200 kVA loses nothing. An event of a step
+        /// only the 200–1,000 kVA flow has always keeps that flow (an older build may have dropped `variant`), and a
+        /// record with events but no `variant` follows the station: the small flow's steps are all in the big one, so
+        /// either flow shows every event.
+        public func variant(_ ctx: Context) -> Variant {
+            if events.contains(where: { !Variant.under200.steps.contains($0.step) }) { return .from200 }
+            if !events.isEmpty, let variant { return variant }
+            return ctx.variant
+        }
+
+        /// Keeps the flow the record follows now; called before each change the team makes.
+        public mutating func pin(_ ctx: Context) { variant = variant(ctx) }
+
+        /// Whether the record can move to another flow without hiding anything recorded.
+        public func canSwitch(to other: Variant) -> Bool {
+            !events.contains { !other.steps.contains($0.step) }
         }
 
         public init(from decoder: Decoder) throws {
@@ -155,6 +231,8 @@ public enum ERCFlow {
             // an event of a step this build doesn't know is dropped, not the whole record
             events = (try? c.decodeIfPresent([Lossy].self, forKey: .events))?.compactMap(\.event) ?? []
             utilityWantsPK2 = try? c.decodeIfPresent(Bool.self, forKey: .utilityWantsPK2)
+            // a flow from a newer build reads as none
+            variant = try? c.decodeIfPresent(Variant.self, forKey: .variant)
         }
 
         private struct Lossy: Decodable {
@@ -178,9 +256,11 @@ public enum ERCFlow {
         public var installDone: String?
         /// `yyyy-MM-dd` days that don't count as working days.
         public var holidays: Set<String>
+        /// The flow the station's size gives now (a record that has started keeps its own: `Record.variant(_:)`).
+        public var variant: Variant
 
-        public init(installDone: String? = nil, holidays: Set<String> = []) {
-            self.installDone = installDone; self.holidays = holidays
+        public init(installDone: String? = nil, holidays: Set<String> = [], variant: Variant = .from200) {
+            self.installDone = installDone; self.holidays = holidays; self.variant = variant
         }
     }
 
@@ -200,7 +280,9 @@ public enum ERCFlow {
 
     // MARK: States
 
+    /// Each step of the record's flow (`Record.variant(_:)`); the other flow's steps have no state.
     public static func states(_ r: Record, _ ctx: Context = Context()) -> [Step: State] {
+        let big = r.variant(ctx) == .from200
         var s: [Step: State] = [:]
         func last(_ step: Step) -> (index: Int, event: Event)? {
             r.events.indices.last { r.events[$0].step == step }.map { ($0, r.events[$0]) }
@@ -233,24 +315,31 @@ public enum ERCFlow {
         if let d = last(.install)?.event.day ?? ctx.installDone { s[.install] = .done(day: d) }
         else { s[.install] = done(.designResult) ? .open : .blocked }
 
-        if let e = last(.pk2Request)?.event { s[.pk2Request] = .done(day: e.day) }
-        else { s[.pk2Request] = done(.install) ? .open : .blocked }
-        theirs(.ercToDede, after: .pk2Request, skippedBy: .pk2Signed)
-        theirs(.dedeOpinion, after: .ercToDede, skippedBy: .pk2Signed)
-        theirs(.pk2Signed, after: .pk2Request)
+        if big {
+            if let e = last(.pk2Request)?.event { s[.pk2Request] = .done(day: e.day) }
+            else { s[.pk2Request] = done(.install) ? .open : .blocked }
+            theirs(.ercToDede, after: .pk2Request, skippedBy: .pk2Signed)
+            theirs(.dedeOpinion, after: .ercToDede, skippedBy: .pk2Signed)
+            theirs(.pk2Signed, after: .pk2Request)
+        }
 
         pair(.inspectionRequest, .inspectionResult, ready: done(.install))
         theirs(.utilityToERC, after: .inspectionResult, skippedBy: .exemptionResult)
 
-        if r.utilityWantsPK2 == false { s[.pk2ToUtility] = .notNeeded }
-        else if let e = last(.pk2ToUtility)?.event { s[.pk2ToUtility] = .done(day: e.day) }
-        else { s[.pk2ToUtility] = done(.pk2Signed) && done(.inspectionResult) ? .open : .blocked }
+        // under 200 kVA there is no พค.2: the utility connects once its inspection has passed
+        let wantsPK2 = big && r.utilityWantsPK2 == true
+        if big {
+            if r.utilityWantsPK2 == false { s[.pk2ToUtility] = .notNeeded }
+            else if let e = last(.pk2ToUtility)?.event { s[.pk2ToUtility] = .done(day: e.day) }
+            else { s[.pk2ToUtility] = done(.pk2Signed) && done(.inspectionResult) ? .open : .blocked }
+        }
 
         if let e = last(.cod)?.event { s[.cod] = .done(day: e.day) }
-        else if done(.inspectionResult), r.utilityWantsPK2 != true || done(.pk2ToUtility) {
+        else if done(.inspectionResult), !wantsPK2 || done(.pk2ToUtility) {
             s[.cod] = .waiting(since: max(day(.inspectionResult), day(.pk2ToUtility)), due: nil)
         } else { s[.cod] = .blocked }
 
+        // the ERC answers on พค.2 or the utility's letter (200 kVA and over); under 200, on the utility's letter alone
         if let e = last(.exemptionResult)?.event { s[.exemptionResult] = .done(day: e.day) }
         else if done(.inspectionResult) || done(.pk2Signed) {
             s[.exemptionResult] = .waiting(since: max(day(.inspectionResult), day(.pk2Signed)), due: nil)
@@ -262,7 +351,7 @@ public enum ERCFlow {
     public static func current(_ r: Record, _ ctx: Context = Context()) -> [Step] {
         let s = states(r, ctx)
         if s[.exemptionResult]?.isDone == true, s[.cod]?.isDone == true { return [] }
-        return Step.allCases.filter {
+        return r.variant(ctx).steps.filter {
             switch s[$0] {
             case .open, .waiting: true
             default: false
@@ -299,6 +388,12 @@ public enum ERCFlow {
         public var due: String
         /// Days left as the step counts them; negative once the limit has passed.
         public var left: Int
+        /// The step's number in the record's flow.
+        public var number: Int?
+
+        public init(step: Step, since: String, due: String, left: Int, number: Int? = nil) {
+            self.step = step; self.since = since; self.due = due; self.left = left; self.number = number ?? step.number
+        }
 
         public var unit: String { step.limit?.working == true ? "วันทำการ" : "วัน" }
         /// `เหลือ 3 วันทำการ`, `ครบกำหนดวันนี้`, `เกินกำหนด 2 วัน`.
@@ -311,17 +406,17 @@ public enum ERCFlow {
 
     /// The waiting steps that have a time limit, in the flow's order.
     public static func waits(_ r: Record, _ ctx: Context = Context(), today: Date = .now) -> [Wait] {
-        let s = states(r, ctx)
-        return Step.allCases.compactMap { step in
+        let s = states(r, ctx), variant = r.variant(ctx)
+        return variant.steps.compactMap { step in
             guard case .waiting(let since, let due?) = s[step], let left = daysLeft(step, due: due, on: today, ctx) else { return nil }
-            return Wait(step: step, since: since, due: due, left: left)
+            return Wait(step: step, since: since, due: due, left: left, number: step.number(in: variant))
         }
     }
 
     /// One line for the job's card: what is ours to do, else who has it.
     public static func headline(_ r: Record, _ ctx: Context = Context()) -> String {
-        let s = states(r, ctx), now = current(r, ctx)
-        func name(_ step: Step) -> String { step.number.map { "ข้อ \($0) \(step.title)" } ?? step.title }
+        let s = states(r, ctx), now = current(r, ctx), variant = r.variant(ctx)
+        func name(_ step: Step) -> String { step.number(in: variant).map { "ข้อ \($0) \(step.title)" } ?? step.title }
         if now.isEmpty { return "ครบทุกขั้นแล้ว" }
         if let ours = now.first(where: { s[$0] == .open }) { return "ถึงคิวทีมเรา: " + name(ours) }
         return now.first.map { "รอ\($0.party.title): " + name($0) } ?? ""
@@ -342,7 +437,8 @@ public enum ERCFlow {
 
     static func isWorking(_ date: Date, _ ctx: Context) -> Bool {
         let weekday = MasterSchedule.calendar.component(.weekday, from: date)
-        return weekday != 1 && weekday != 7 && !ctx.holidays.contains(day(date))
+        let key = day(date)
+        return weekday != 1 && weekday != 7 && !ctx.holidays.contains(key) && !PublicHolidays.days.contains(key)
     }
 
     /// The last day of a step's time limit, counted from the day after `asked`.

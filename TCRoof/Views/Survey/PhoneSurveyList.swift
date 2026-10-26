@@ -13,6 +13,7 @@ struct PhoneSurveyList: View {
     @State private var status: JobStatus? = Self.debugStatus
     @State private var search = Self.debugQuery ?? ""
     @State private var showNewJob = false
+    @Environment(\.permissions) private var permissions
     @State private var openedJob: Job?
     @State private var surveyJob: Job?
     @StateObject private var drive = DriveEstimate()
@@ -67,7 +68,7 @@ struct PhoneSurveyList: View {
         .safeAreaInset(edge: .top, spacing: 0) { header(now: now) }
         .background(Theme.background.ignoresSafeArea())
         .overlay(alignment: .bottom) {
-            SurveyHomeDock(next: next, now: now, open: { surveyJob = $0 }, add: { showNewJob = true })
+            SurveyHomeDock(next: next, now: now, open: { surveyJob = $0 }, add: permissions.can(.jobEdit) ? { showNewJob = true } : nil)
                 // as a tab root the floating tab dock is the safe-area inset under it, `PhoneTab.barGap` further down
                 .padding(.horizontal, 12).padding(.bottom, 6)
         }
@@ -110,7 +111,7 @@ struct PhoneSurveyList: View {
     private func header(now: Date) -> some View {
         let greeting = SurveyGreeting.text(hour: Calendar.current.component(.hour, from: now))
         return TCGradientHeader(title: "สำรวจหน้างาน",
-                                subtitle: "\(greeting) · \(ThaiFormat.weekdayShortYear.string(from: now))",
+                                subtitle: "\(greeting) | \(ThaiFormat.weekdayShortYear.string(from: now))",
                                 large: true) { EmptyView() }
     }
 

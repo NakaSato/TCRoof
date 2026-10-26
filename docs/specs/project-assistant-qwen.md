@@ -4,6 +4,7 @@
 `TCRoofKit/Sources/TCRoofCore/Assistant/` (`AssistantTests`), the `assistant.use` capability, and the app's chat in
 `TCRoof/Assistant/` (`AssistantUITests` on the demo stand-in). It calls the function over HTTPS with the account's ID
 token (`AssistantClient`), so the app needs no FirebaseFunctions SDK.
+Not built: the Cloud Function isn't deployed, and App Check isn't enforced.
 **Goal:** a chat assistant that helps the team keep each PWA station's MP plan on schedule: which stations and tasks
 are behind, what pace each task needs, and booking progress, actual dates and late causes from the conversation.
 
@@ -15,11 +16,13 @@ are behind, what pace each task needs, and booking progress, actual dates and la
 App (team / manager / Maintainer; assistant.use)
   ├─ Assistant.Session: the conversation, kept on the device
   ├─ Assistant.Toolbox: runs the model's tool calls on the device's jobs
-  │     read: list_stations, get_schedule, get_week_tasks
+  │     read: list_stations, get_schedule, get_project, get_week_tasks
   │     propose: propose_progress, propose_dates, propose_late_cause → PendingAction (nothing saved)
-  └─ Transport → Firebase callable `assistant` (asia-southeast1)
+  │     strategy: what_if, station_priorities, look_ahead, suggest_replan; propose_replan → PendingAction
+  └─ AssistantRouter: Qwen directly with this device's key when it has one (§6), else
+     Transport → Firebase callable `assistant` (asia-southeast1)
                    ├─ members/<email>: not external, not suspended
-                   ├─ assistantUsage/<email>_<Bangkok day>: at most ASSISTANT_DAILY_LIMIT (50) a day
+                   ├─ assistantUsage/<email>_<Bangkok day>: at most ASSISTANT_DAILY_LIMIT (50) questions a day
                    ├─ checks every message and tool against functions/src/allowed-tools.json
                    └─ POST {QWEN_BASE_URL}/chat/completions with QWEN_API_KEY (Secret Manager)
 ```
@@ -34,6 +37,21 @@ App (team / manager / Maintainer; assistant.use)
   `Session.resolve(id, confirmed:)` tells the model.
 - **No customer data.** `Assistant.Job` carries the station name, MP number, kWp, the plan, progress and daily reports;
   never the customer's name, phone or address.
+- **How it answers.** Like an experienced site engineer: plain Thai sentences, no field names or JSON, the main point
+  first; then what the numbers show, the cause, what it affects and what to do, with its assumptions. Each task's
+  `floatDays` (`InstallCriticalPath` on the plan's dates; 0 = critical path) lets it say which delays move the
+  finish, and it never trades tests, the manufacturer's installation rules, permits or the utility's steps for speed.
+- **Tokens.** The system prompt and the tool descriptions are short English (Thai takes two to three times the
+  tokens; the model is told to answer in Thai), `get_project` takes `sections` (survey, papers, erc, iec, weekly, icl,
+  devices, logs, inspections; default all) and leaves out empty parts; its papers are each package's count and the 5
+  open papers due soonest (`moreOpen` counts the rest), and `package` lists every open paper of one package, and earlier questions' tool results aren't
+  sent again. A question that reads one station's project costs about 5,000–6,000 tokens over its two rounds.
+- **The whole project, on demand.** `get_project` answers the rest of one station (`Assistant.ProjectFacts`): the job's
+  basics, its NO.224 surveys (completion, each section's facts, what is missing; never A1's answers), the station's
+  papers by package with those not ready or expiring, the ERC flow's headline and waits, the IEC 62446 test (each
+  step done / confirmed / missing, each inverter's strings, kWp, PR and pass, `9 ภาพถ่ายติดตั้งระบบ`), the last four
+  weekly requests R1, the ICL, scanned devices, install logs and upcoming inspections. The app builds it only for the
+  station asked (`Session`'s `project`, `Job.assistantProject`), and it works on stations without an MP plan too.
 
 ## 2. Core (`TCRoofCore/Assistant/`)
 
@@ -42,8 +60,11 @@ App (team / manager / Maintainer; assistant.use)
 | `ScheduleRecovery.swift` | `MasterSchedule.recovery(plan:actual:today:)`: per task with weight, points done and left, weeks left, needed points per week, pace so far, projected finish (the Saturday of the week it ends at that pace), slip days, and a state (`done`, `upcoming`, `onTrack`, `atRisk`, `overdue`) |
 | `ScheduleBrief.swift` | One station as JSON for the model: plan vs actual, per part, per task with its recovery numbers and late cause, this and the next two weeks' tasks, the projected station finish, and the last 14 days of daily reports (crew, rain hours, stop reason, progress lines, open problems) |
 | `AssistantChat.swift` | The OpenAI-compatible messages, `Request` / `Reply`, the `Transport` protocol, `JSONValue` |
-| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the six tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
-| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message; the Thai system prompt |
+| `ProjectFacts.swift` | `Assistant.ProjectFacts`: one station's project besides its MP plan, for `get_project` (`AssistantProjectTests`) |
+| `AssistantTools.swift` | `Assistant.Job`, `PendingAction`, `Toolbox` (the twelve tools, their JSON schemas and checks: a job found by id, MP number or name; a task by code; no booking ahead of this week; actual dates not after today; `canEdit` from `mp.progress`) |
+| `AssistantStrategy.swift` | `Assistant.Strategy`: the planning tools of §5 (`what_if`, `station_priorities`, `look_ahead`, `suggest_replan`, `propose_replan`) and the shared task-by-task forecast |
+| `AssistantOpenAI.swift` | `Assistant.OpenAI`: the request and reply checks for calling Qwen directly with the device's key (§6), and the daily limit per device |
+| `AssistantSession.swift` | The loop: up to 5 tool rounds per message, a newer proposal for the same task and kind replaces the older, history trimmed to 30 messages and 60,000 characters at a person's message, and tool results of earlier questions sent as a one-line note (`droppedResult`; the device keeps them whole, the model calls again when it needs them); the system prompt |
 
 ## 3. Server (`functions/`)
 
@@ -52,7 +73,7 @@ App (team / manager / Maintainer; assistant.use)
   message not the model's), `cleanReply` (drops fields such as reasoning text; a call to an unknown tool becomes words).
 - `src/index.ts`: the callable. Counts the request before calling Qwen (a failed call still counts), stores token
   counts only, never the text. `temperature` 0.2, `max_tokens` 1,500, 80 s timeout.
-- Parameters: `QWEN_MODEL` (default `qwen-plus`), `QWEN_BASE_URL` (default `https://maas.qwencloudapi.com/compatible-mode/v1`),
+- Parameters: `QWEN_MODEL` (default `qwen3.8-max`, on Model Studio's free quota only: "Free quota only" on in the console, so calls are refused, never billed, once it is used up), `QWEN_BASE_URL` (default `https://maas.qwencloudapi.com/compatible-mode/v1`),
   `ASSISTANT_DAILY_LIMIT` (50); secret `QWEN_API_KEY`.
 - `npm test` builds and runs the guard tests; `tools/firestore-rules-tests` checks no client touches `assistantUsage`.
 
@@ -65,9 +86,11 @@ App (team / manager / Maintainer; assistant.use)
 
 ## 4. The app (built)
 
-- `AssistantClient` (`Assistant.Transport`) through `FirebaseFunctions` (add the product to the app target),
-  `httpsCallable("assistant")` in `asia-southeast1`; errors in Thai (`resource-exhausted`: the day's limit).
-- Jobs → `Assistant.Job`: only jobs with an MP plan, `canEdit = permissions.can(.mpProgress, on: job.access)`.
+- `AssistantClient` (`Assistant.Transport`) POSTs the callable's JSON with the account's ID token to
+  `https://asia-southeast1-<project>.cloudfunctions.net/assistant` (no FirebaseFunctions SDK); errors in Thai
+  (`resource-exhausted`: the day's limit). `AssistantRouter` picks the device's key first (§6).
+- Jobs → `Assistant.Job`: every PWA station (`list_stations` adds those without an MP plan, last, for `filter: all`;
+  the plan's tools answer that they have none), `canEdit = permissions.can(.mpProgress, on: job.access)`.
 - `AssistantChatView` from TC components: opened from the install tracking page header (focus on that station),
   แผน MP ทุกสถานี and `MPScheduleScreen`; prompt chips `สถานีไหนช้ากว่าแผน`, `ต้องเร่งงานอะไรสัปดาห์นี้`,
   `ร่างสรุปประชุมประจำสัปดาห์`, `อัปเดตความก้าวหน้าจากรายงานประจำวัน`; proposal cards with ยืนยัน / ยกเลิก, shown
@@ -75,7 +98,7 @@ App (team / manager / Maintainer; assistant.use)
 - `ยืนยัน` saves through the same path as บันทึกความก้าวหน้า (so sync, the plan file and the Gantt follow).
 - DEBUG `-screen assistant -assistantDemo YES` with a stub transport, and `AssistantUITests`.
 
-## 6. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
+## 5. Strategy (`AssistantStrategy.swift`, `AssistantStrategyTests`)
 
 Swift works out every figure; the model compares, explains and recommends. For the station's handover the model
 quotes `handoverForecast` / `handoverSlipDays`, the install tracking page's `คาดส่งมอบ` (the period stretched by the
@@ -91,7 +114,7 @@ with its crew and working days, and a task with no progress yet runs at the plan
 | `suggest_replan` | A plan from today: a task under way ends when its pace finishes it (never earlier), a task not started moves by as much as its predecessors' ends moved (keeping the plan's overlaps), finished tasks stay. |
 | `propose_replan` | A card (`mp.setup` only) with the new dates; `ยืนยัน` turns the plan's dates into fixed ones (as an imported plan's), moves the tasks and fits the install window. Progress is untouched. |
 
-## 7. The key on the device (no Blaze plan)
+## 6. The key on the device (no Blaze plan)
 
 The project is on the Spark plan, which can't host functions or Secret Manager, so the app can also call Qwen
 directly (`AssistantRouter`: the key on this device, else the function).
@@ -99,17 +122,43 @@ directly (`AssistantRouter`: the key on this device, else the function).
 - A manager enters the key in ตั้งค่า › ผู้ช่วยโครงการ (AI) (`AssistantSettingsPage`), with the model and endpoint
   (https only), and `ทดสอบ` sends one short request. The team sees whether the device has a key and today's use.
 - `AssistantKey`: Keychain, `AfterFirstUnlockThisDeviceOnly` (not synced, not in backups); model and endpoint in
-  defaults; 50 requests a day per device (`Assistant.OpenAI.dailyLimit`), counted before each call.
+  defaults; 50 questions a day per device (`Assistant.OpenAI.dailyLimit`), counted before each call. A question's
+  tool rounds don't count (`Request.isNewQuestion`: the request ends with the person's message); every request still
+  counts against `dailyRequestLimit` (50 × 5 rounds), which stops a runaway loop. The function does the same
+  (`isQuestion`, `LIMITS.roundsPerQuestion`; `assistantUsage` keeps `count` of questions and `requests`).
 - `Assistant.OpenAI` builds the request and checks the reply as `functions/src/guard.ts` does (only the app's tools;
   an unknown tool call becomes words); `AssistantOpenAITests`.
+- **Any provider (2026-10-22).** The key can be for any of `Assistant.Provider` (`AssistantProviders.swift`): Qwen,
+  OpenAI, Claude (Anthropic), Gemini, DeepSeek, Groq, OpenRouter, Mistral, Grok (xAI), or another OpenAI-compatible
+  endpoint. Each keeps its own Keychain item (`com.tcroof.assistant.<id>`; Qwen's is the one from before), model and
+  endpoint (`assistant.model.<id>`; Qwen keeps `assistant.model`); the settings page picks a provider, and saving
+  makes it the one in use (`AssistantKey.provider`, `DirectAIClient`). The defaults are starting points the person
+  can change, since providers rename models. All but Claude take the OpenAI-style body (OpenAI itself with
+  `max_completion_tokens` and no `temperature`). Claude goes through `Assistant.Anthropic`: Anthropic's Messages API
+  (`anthropic-version` 2026-10-21, `x-api-key`, `max_tokens` 16,000, no sampling parameters), the system prompt as
+  `system`, tool calls as `tool_use` and results as `tool_result` blocks, adaptive thinking on the models that have
+  it with `block_binding.prefix_mismatch_behavior: "drop_block"` (beta `thinking-binding-controls-2026-08-01`) and
+  `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`) on Fable 5.1 / Opus 5.5 / Opus 5 / Sonnet 5.5. The
+  reply's own blocks ride on `Message.providerBlocks` (never encoded) and go back unchanged within the question
+  they belong to; from earlier questions only text and tool calls go back, since the session shortens old turns (a
+  leading run of thinking blocks may be dropped). A `refusal` stop answers in words. `AssistantProvidersTests`.
+  The Cloud Function stays Qwen-only.
+- **Per use and backup (2026-10-22).** The chat and the feed's daily summary each have a route (`Assistant.Use`,
+  `AssistantKey.route`): the summary can take another provider and a cheaper model (`assistant.digestProvider`,
+  `assistant.digestModel`; nil / empty = the chat's). A backup provider (`assistant.backupProvider`) answers a request
+  when the main one fails with a bad key, busy, down, its quota used up or no answer (`Assistant.Failover`); the
+  device's daily limit and a cancel are never passed on, and the next request tries the main one again.
+  `AssistantRouter` counts the request once for both. Replies say who answered (`Reply.servedBy`, `| สำรอง` for the
+  backup), shown under the chat's input. Only providers with a key are offered; removing a key clears a use or
+  backup on it. `AssistantFailoverTests`.
 - Trade-off: a key on a device can be extracted by someone with that device and tools, and the limit is per device,
   not per person. Use a key with a spending cap in the Qwen console, and rotate it if a device is lost. Moving to
   the Cloud Function later only needs the Blaze plan and the deploy; a device without a key then uses it.
 
-## 5. Open questions
+## 7. Open questions
 
 1. Which model ids the Qwen account offers on that endpoint; try Thai answers on two before picking (`QWEN_MODEL`).
-2. Is the Firebase project on Blaze?
+2. ~~Is the Firebase project on Blaze?~~ No, it is on Spark (§6).
 3. ~~Should progress confirmed through the assistant be marked in an audit trail?~~ Yes (19/10/2569): each confirmed
    card adds a line to `MasterSchedule.Actual.confirmations` (task, the confirmer's email, time, the card's before and
    after); the progress sheet and the install page's task sheet show the latest as `ผ่านผู้ช่วย · 60% · name · date`.
@@ -120,3 +169,18 @@ directly (`AssistantRouter`: the key on this device, else the function).
    it replaces in `MasterSchedule.Input.baseline` (later re-plans keep that first one; an imported workbook starts
    without one). Planned % stays against the new plan; the MP screen and its PDF add `แผนเดิม x%` and a thin grey bar
    per moved task, and the assistant's brief has `originalInstallEnd` / `originalPlannedPercent`.
+
+## Daily summary on the feed (`สรุปโดย AI`, built 2026-10-22)
+
+- The home feed's `สรุปวันนี้` (`FeedBuilder.summaries`, 18:00) gets a `สรุปโดย AI` box (`TCFeedPost`'s `note`): 3–5
+  plain Thai lines on the day, the stations that need attention and why, open issues and tomorrow's focus.
+- `Assistant.DailyDigest.facts` gives the model every number: reports sent of those due, the mean change, each
+  station due a report (sent or not, its whole % against the plan's, the day's change, crew, rain, stop reason, work
+  lines, new problems), furthest behind first, and up to ten open issues. Stations are named by their project name or
+  MP number (`Job.digestStation`), never the customer's name. One request with no tools (`DailyDigest.request`; the
+  function sends no `tools` / `tool_choice` then).
+- Per device (the person's choice, 2026-10-22): `FeedDigestStore` asks when the feed shows the day's summary, for
+  `assistant.use` only, and keeps the text in the device's defaults for 7 days; it asks again only when the facts'
+  JSON changed (a report signed later), at most once an hour and three times a day. A contractor never asks nor sees
+  it. It counts as one question against the day's limit.
+

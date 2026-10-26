@@ -64,6 +64,13 @@ extension TankPageWide {
             i == 1 ? TankPoints.done(values) : i == 2 ? TankLayout.done(values) : s[safe: i]?.done ?? false
         }
         return HStack(spacing: 0) {
+            phoneTabRow(done)
+            undoButtons(compact: true)
+        }
+    }
+
+    func phoneTabRow(_ done: [Bool]) -> some View {
+        HStack(spacing: 0) {
             ForEach(Array(Self.phoneTitles.enumerated()), id: \.offset) { i, title in
                 // a connector is green from a finished sub-step to one that is finished or open
                 let reached = { (k: Int) in done[k] || tab == k + 1 }
@@ -183,11 +190,9 @@ extension TankPageWide {
         }
     }
 
-    /// "แปลนหลังคาถังน้ำใส 40 × 40 ม. · หน่วย ม."
+    /// "แปลนหลังคาถังน้ำใส 40 × 40 ม. | หน่วย ม." (a round tank: "… Ø 30 ม. …")
     var planCaption: String? {
-        let s = Tank.spans(values)
-        guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
-        return "แปลนหลังคาถังน้ำใส \(fmt(s.x.reduce(0, +))) × \(fmt(s.y.reduce(0, +))) ม. · หน่วย ม."
+        Tank.sizeText(values).map { "แปลนหลังคาถังน้ำใส " + $0 + " | หน่วย ม." }
     }
 
     /// The full plan with the span numbers to edit, full screen.
@@ -218,6 +223,7 @@ extension TankPageWide {
             sizeField
             typeField
             phoneLevels
+            volumeLine
             field("ตำแหน่งถัง", required: true) { positionControl }
             phoneSurfaceRow
             azimuthField

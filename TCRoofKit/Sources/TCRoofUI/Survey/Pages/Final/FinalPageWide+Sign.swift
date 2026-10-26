@@ -33,7 +33,7 @@ extension FinalPageWide {
     var surveyorCard: some View {
         let name = v.text("engineer").trimmingCharacters(in: .whitespaces)
         return signatureCard(title: Self.surveyorRole, field: "surveyorSign", role: Self.surveyorRole, emptyTint: Theme.inkMuted,
-                             signing: $signingSurveyor, who: Self.surveyorRole + (name.isEmpty ? "" : " · " + name)) {
+                             signing: $signingSurveyor, who: Self.surveyorRole + (name.isEmpty ? "" : " | " + name)) {
             Text("( \(name.isEmpty ? "ยังไม่ระบุชื่อใน A1" : name) )").font(.sarabunFixed(15, .semibold))
                 .foregroundStyle(name.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1)
                 .frame(minHeight: 36).allowsHitTesting(false)
@@ -43,7 +43,7 @@ extension FinalPageWide {
     var customerCard: some View {
         let name = v.text("customerName").trimmingCharacters(in: .whitespaces)
         return signatureCard(title: Self.customerRole, field: "customerSign", role: Self.customerRole, emptyTint: Theme.danger,
-                             signing: $signingCustomer, who: Self.customerRole + (name.isEmpty ? "" : " · " + name)) {
+                             signing: $signingCustomer, who: Self.customerRole + (name.isEmpty ? "" : " | " + name)) {
             HStack(spacing: 4) {
                 Text("(")
                 TextField("ชื่อผู้ประสานงาน", text: Binding(get: { v.text("customerName") },
@@ -87,7 +87,7 @@ extension FinalPageWide {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
         .shadow(color: Theme.navy.opacity(0.08), radius: 2, y: 1)
-        .signaturePad(isPresented: signing, who: who) { img in
+        .signaturePad(isPresented: signing, who: who, mine: field == "surveyorSign") { img in
             if let img, let p = model.addPhoto(img, to: job.id, maxSide: 900, png: true) { set(field, .photo(p)) }
         }
     }
@@ -155,7 +155,7 @@ extension FinalPageWide {
                 .allowsHitTesting(false)
                 VStack(spacing: 2) {
                     label
-                    Text(role + " · " + Self.thaiDate(photo?.takenAt ?? Date())).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                    Text(role + " | " + Self.thaiDate(photo?.takenAt ?? Date())).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).allowsHitTesting(false)
                 }
                 .fixedSize()
@@ -168,7 +168,7 @@ extension FinalPageWide {
     var reviewerRow: some View {
         HStack(spacing: 12) {
             Text("ผู้ตรวจสอบ").font(.sarabunFixed(15, .bold))
-            if !narrow { Text("ไม่บังคับ · ลงนามบนกระดาษ").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+            if !narrow { Text("ไม่บังคับ | ลงนามบนกระดาษ").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             Spacer(minLength: 8)
             TextField(narrow ? "ไม่บังคับ" : "ชื่อผู้ตรวจสอบ", text: Binding(get: { v.text("reviewer") }, set: { set("reviewer", $0.isEmpty ? nil : .text($0)) }))
                 .font(.sarabunFixed(15))

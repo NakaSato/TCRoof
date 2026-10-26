@@ -240,27 +240,27 @@ extension PWAPlanPhoneView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(PWAPlanFormat.weekday.string(from: d)) \(PWAPlanFormat.dayMonth.string(from: d))" + (isToday ? " · วันนี้" : "")
-                            + (types > 0 ? " · \(types) ประเภทงาน" : " · ไม่มีงาน"))
+        .accessibilityLabel("\(PWAPlanFormat.weekday.string(from: d)) \(PWAPlanFormat.dayMonth.string(from: d))" + (isToday ? " | วันนี้" : "")
+                            + (types > 0 ? " | \(types) ประเภทงาน" : " | ไม่มีงาน"))
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     // MARK: heading and filter
 
-    /// `งานสัปดาห์นี้ 15 รายการ · เลื่อนดูได้`, counting every day in the list, and the filter button.
+    /// `งานสัปดาห์นี้ 15 รายการ | เลื่อนดูได้`, counting every day in the list, and the filter button.
     private func listHeading(_ items: [PWAPlan.AgendaItem], shown: Int, teams: [String], today: Date) -> some View {
         let title = calendarMode == .month ? "งานทั้งเดือน"
             : weekStart == Self.monday(of: today) ? "งานสัปดาห์นี้" : "งานสัปดาห์ที่ \(PWAPlan.calendar.component(.weekOfYear, from: weekStart))"
         return HStack(spacing: 8) {
             Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
-            Text(isFiltered || searching ? "\(shown) จาก \(items.count) รายการ" : "\(items.count) รายการ · เลื่อนดูได้")
+            Text(isFiltered || searching ? "\(shown) จาก \(items.count) รายการ" : "\(items.count) รายการ | เลื่อนดูได้")
                 .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().minimumScaleFactor(0.8)
             Spacer(minLength: 0)
             if !pad {
                 Button { showFilter.toggle() } label: { TCFilterCircle(open: showFilter, filtered: isFiltered) }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("กรองตารางงาน: \(type?.title ?? "ทุกประเภท") · \(team.map(teamTitle) ?? "ทุกทีม") · \(shown) รายการ")
+                    .accessibilityLabel("กรองตารางงาน: \(type?.title ?? "ทุกประเภท") | \(team.map(teamTitle) ?? "ทุกทีม") | \(shown) รายการ")
                     .popover(isPresented: $showFilter, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
                         filterPopover(items, shown: shown, teams: teams)
                             .presentationCompactAdaptation(.popover).presentationBackground(Theme.surface)
@@ -323,7 +323,7 @@ extension PWAPlanPhoneView {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Circle().fill(on ? Theme.primary : .clear).frame(width: 6, height: 6)
-                Text("\(PWAPlanFormat.weekday.string(from: d)) \(PWAPlanFormat.dayMonth.string(from: d))" + (isToday ? " · วันนี้" : ""))
+                Text("\(PWAPlanFormat.weekday.string(from: d)) \(PWAPlanFormat.dayMonth.string(from: d))" + (isToday ? " | วันนี้" : ""))
                     .font(.sarabunFixed(13, .bold)).foregroundStyle(on ? Theme.primary : Theme.navy)
                     .accessibilityAddTraits(.isHeader)
                 if all > 0 {
@@ -514,7 +514,7 @@ extension PWAPlanPhoneView {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([item.start.map(PWAPlan.clock) ?? "ทั้งวัน", item.type.title, item.ref, item.title, item.subtitle, item.status.title]
-            .filter { !$0.isEmpty }.joined(separator: " · "))
+            .filter { !$0.isEmpty }.joined(separator: " | "))
         .accessibilityAddTraits(.isButton)
     }
 }

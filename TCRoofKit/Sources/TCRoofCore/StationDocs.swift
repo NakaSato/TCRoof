@@ -96,7 +96,7 @@ public enum StationDocs {
     public static let kinds: [Kind] = [
         // ภายใน — ทีมเราทำ
         Kind("site_map", "แผนผังแสดงที่ตั้ง / แผนที่ Google Map", .internalDoc, .site, [.gridConnection, .pk2],
-             note: "ไฟล์เดียวใช้ทั้งขนานไฟและ พค.2 · ทำจากพิกัดในแบบสำรวจ"),
+             note: "ไฟล์เดียวใช้ทั้งขนานไฟและ พค.2 | ทำจากพิกัดในแบบสำรวจ"),
         Kind("layout_plan", "แผนผังบริเวณ (Layout) วิศวกรรับรอง", .internalDoc, .site, [.pk2], signBy: "วิศวกรไฟฟ้า"),
         Kind("route_line", "แผนผังรวมแปลงโฉนด (Route Line)", .internalDoc, .site, [.pk2], signBy: "วิศวกรไฟฟ้า"),
         Kind("sld", "Single Line Diagram + เอกสารวิศวกรไฟฟ้า", .internalDoc, .site, [.gridConnection, .pk2],
@@ -140,7 +140,7 @@ public enum StationDocs {
         Kind("owner_signoff", "เอกสารเจ้าของพื้นที่ (ส่งผู้มีอำนาจ กปภ. ลงนาม)", .signoff, .site, [.gridConnection, .pk2],
              signBy: "ผู้มีอำนาจ กปภ."),
         Kind("self_cert_vspp", "หนังสือรับรองตนเอง (แบบ VSPP ของ กฟภ.)", .signoff, .site, [.gridConnection, .handover],
-             signBy: "ผู้มีอำนาจ กปภ. · วิศวกรเซ็นรับรอง"),
+             signBy: "ผู้มีอำนาจ กปภ. | วิศวกรเซ็นรับรอง"),
         Kind("self_cert_k1", "หนังสือรับรองตนเอง ก.1", .signoff, .site, [.gridConnection], signBy: "ผู้มีอำนาจ กปภ."),
         // ภายนอก — ขอจาก กปภ. หน่วยงานรัฐ ผู้ผลิต
         Kind("pwa_act", "พ.ร.บ. การประปาส่วนภูมิภาค", .external, .org, [.gridConnection, .pk2], obtainFrom: "กปภ. ส่วนกลาง"),
@@ -164,7 +164,7 @@ public enum StationDocs {
         Kind("erc_qr", "QR Code คำขอ (ระบบ กกพ.)", .external, .site, [.pk2], obtainFrom: "สำนักงาน กกพ.",
              condition: .over200kVA),
         Kind("outage_attachment", "เอกสารแนบหนังสือแจ้งดับไฟ", .external, .site, [.gridConnection],
-             note: "ขอตามที่การไฟฟ้ากำหนด · ใช้คู่กับหนังสือแจ้งดับไฟ"),
+             note: "ขอตามที่การไฟฟ้ากำหนด | ใช้คู่กับหนังสือแจ้งดับไฟ"),
     ]
 
     public static func kind(_ id: String) -> Kind? { kinds.first { $0.id == id } }
@@ -283,7 +283,7 @@ public enum StationDocs {
         public var dueDates: [String: String]
         /// The answers of หนังสือแจ้งดับไฟ, once the team has drafted it in the app.
         public var outageLetter: OutageLetter?
-        /// Where the station stands in the ERC's exemption flow (200 kVA and over), once the team records it.
+        /// Where the station stands in the ERC's exemption flow (either size, `ERCFlow.Variant`), once the team records it.
         public var erc: ERCFlow.Record?
         /// The PWA branch (สาขา) and region (เขต) the station belongs to, for the hand-over file names
         /// (`AS-Built {station_name} {branch}`, `คู่มือ… พื้นที่{region}`); empty until the team types them.
@@ -357,7 +357,7 @@ public enum StationDocs {
         public var srtProject: Bool
 
         public init(_ station: Station, inverterKW: Double?) {
-            over200kVA = station.over200kVA ?? ((inverterKW ?? 0) >= 200)
+            over200kVA = station.over200kVA ?? ERCFlow.needsPK2(kVA: inverterKW ?? 0)
             buildingRoute = station.buildingRoute
             requestType = station.requestType
             sellsPower = station.sellsPower
@@ -473,7 +473,7 @@ public enum StationDocs {
         CheckItem(20, "รายใหม่: Solar Rooftop ได้ยกเว้นผังเมือง", when: .request(.new)),
         CheckItem(21, "หนังสือมุ่งมั่นป้องกันสินบน", ["anti_bribery"]),
         CheckItem(22, "ไฟล์คำขอ + เอกสารประกอบ (ถ้ามี)"),
-        CheckItem(23, "อื่นๆ: อ.1 · ภพ.20 · รายงานภาพถ่ายติดตั้ง",
+        CheckItem(23, "อื่นๆ: อ.1 | ภพ.20 | รายงานภาพถ่ายติดตั้ง",
                   ["building_permit_o1", "vat_pp20", "install_photo_report"]),
     ]
 

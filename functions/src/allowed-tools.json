@@ -1,6 +1,7 @@
 [
   "list_stations",
   "get_schedule",
+  "get_project",
   "get_week_tasks",
   "propose_progress",
   "propose_dates",

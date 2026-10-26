@@ -86,6 +86,10 @@ public struct SLBreaker: Hashable, Sendable, Identifiable {
     public var name = ""
     /// Load block under an outgoing breaker of the connection board.
     public var destination: [SLText] = []
+    /// Level 2: feeder cable and conduit, drawn rotated left of the feeder ("4x50,1x10-IEC01, ø50mm. UPVC"); "" when not entered.
+    public var feeder = ""
+    /// Level 2: a spare breaker, drawn with `SPARE` and no cable or load.
+    public var spare = false
     public var target: SLTarget { SLTarget(.electrical, trafo: trafo, board: board, breaker: id) }
     /// Text lines, in drawing order.
     public var lines: [SLText] { [type, at, af, ic, brand] + [condition, note].compactMap { $0 } }
@@ -100,6 +104,10 @@ public struct SLBoard: Hashable, Sendable, Identifiable {
     public var isMain: Bool
     public var main: SLBreaker
     public var breakers: [SLBreaker]
+    /// Level 2: label above the bus; "" when not entered.
+    public var busbar = ""
+    /// Level 2: ground conductor; the N/G bar and ground rod are drawn when it is given.
+    public var ground = ""
     public var target: SLTarget { SLTarget(.electrical, trafo: trafo, board: index) }
 }
 
@@ -116,6 +124,8 @@ public struct SLTransformer: Hashable, Sendable, Identifiable {
     public var boards: [SLBoard]
     public var kva: Double?
     public var zPercent: Double?
+    /// A3's HV protection: `DO fuse`, `DS`, `VCB` or "" (drawn as its own symbol).
+    public var protection = ""
     public var target: SLTarget { SLTarget(.electrical, trafo: index) }
 }
 
@@ -124,6 +134,15 @@ public struct SLMissing: Hashable, Sendable, Identifiable {
     public var id: String
     public var label: String
     public var blocking: Bool
+    public var target: SLTarget
+}
+
+/// A level 2 check printed under the diagram ("ค่าที่คำนวณจากข้อมูลสำรวจ"). Never an error: `flagged` only colours it.
+public struct SLNote: Hashable, Sendable, Identifiable {
+    public var id: String
+    public var text: String
+    /// Outside its usual range (main AT against the full-load current, AT over AF, PV over the transformer).
+    public var flagged = false
     public var target: SLTarget
 }
 
@@ -140,13 +159,13 @@ public struct SLCheck: Hashable, Sendable, Identifiable {
     public var icKA: Double?
     public var state: SLCheckState
     public var target: SLTarget
-    /// "50 kA" / "25 kA · เผื่อน้อย" / "20 kA · ไม่พอ" / "ยังไม่รู้"
+    /// "50 kA" / "25 kA | เผื่อน้อย" / "20 kA | ไม่พอ" / "ยังไม่รู้"
     public var value: String {
         let ic = icKA.map { SingleLine.fmt($0) + " kA" } ?? ""
         switch state {
         case .ok: return ic
-        case .marginal: return ic + " · เผื่อน้อย"
-        case .insufficient: return ic + " · ไม่พอ"
+        case .marginal: return ic + " | เผื่อน้อย"
+        case .insufficient: return ic + " | ไม่พอ"
         case .unknown: return "ยังไม่รู้"
         }
     }
@@ -192,6 +211,10 @@ public struct SingleLine: Sendable {
     public var sourceLabel: String
     public var meter: [SLText]
     public var protection: SLText
+    /// The one HV protection every transformer has (its symbol on the tap), "" when they differ or none is answered.
+    public var protectionKind = ""
+    /// The job has a B5 section: the FTS cut and the emergency button are drawn (decided 2026-10-19).
+    public var hasB5 = true
     /// B4 "กันย้อนที่แรงสูง"
     public var zeroExportHV: Bool
     /// The job has a B4 section, so the toggle edits it; otherwise it only previews.
@@ -206,6 +229,8 @@ public struct SingleLine: Sendable {
     public var checks: [SLCheck]
     public var missing: [SLMissing]
     public var assumptions: [SLAssumption]
+    /// Level 2 checks on the connection board and its transformer, printed under the diagram.
+    public var notes: [SLNote] = []
     public var flood: SLFlood?
     public var conditionCounts: (bad: Int, fair: Int)
     public var projectLine: String
@@ -221,7 +246,7 @@ public struct SingleLine: Sendable {
 public enum SLConstants {
     /// Line voltage of the LV side (V).
     public static let lineVoltage = 400.0
-    /// Breaker rating over inverter current.
+    /// Breaker rating over inverter current: the team's rule (confirmed 2026-10-19), not an assumption.
     public static let breakerFactor = 1.25
     /// IC must be at least this much above the prospective Isc to count as enough.
     public static let icMargin = 1.25

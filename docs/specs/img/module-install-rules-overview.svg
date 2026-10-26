@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" font-family="-apple-system, 'Helvetica Neue', 'Sarabun', sans-serif">
+  <rect width="1200" height="560" fill="#ffffff"/>
+  <text x="40" y="44" font-size="24" font-weight="700" fill="#1F3A5F">Module installation rules (ZNSHINE manual §5) — ModuleRules</text>
+  <text x="40" y="70" font-size="15" fill="#5B6B7F">Reference data → one engine → four places a job is checked → block / warn / info → submit and sign-off gates</text>
+
+  <!-- data -->
+  <g font-size="15">
+    <text x="40" y="112" font-size="13" font-weight="700" fill="#5B6B7F" letter-spacing="1">VERSIONED JSON</text>
+    <rect x="40" y="124" width="250" height="78" rx="10" fill="#EEF4FB" stroke="#9CB8D8"/>
+    <text x="58" y="152" font-weight="700" fill="#1F3A5F">Module catalog</text>
+    <text x="58" y="176" fill="#334155">ZXM7-UHLDD144 565–595 W</text>
+    <text x="58" y="194" font-size="12.5" fill="#5B6B7F">59-model list still to come</text>
+    <rect x="40" y="216" width="250" height="78" rx="10" fill="#EEF4FB" stroke="#9CB8D8"/>
+    <text x="58" y="244" font-weight="700" fill="#1F3A5F">Mounting profiles</text>
+    <text x="58" y="268" fill="#334155">bolt | tracker | 2V | clamp</text>
+    <text x="58" y="286" font-size="12.5" fill="#5B6B7F">torque, washer, load ratings</text>
+    <rect x="40" y="308" width="250" height="78" rx="10" fill="#EEF4FB" stroke="#9CB8D8"/>
+    <text x="58" y="336" font-weight="700" fill="#1F3A5F">Rule set</text>
+    <text x="58" y="360" fill="#334155">33 rules, Thai + English</text>
+    <text x="58" y="378" font-size="12.5" fill="#5B6B7F">22 block | 10 warn | 1 info</text>
+  </g>
+
+  <!-- arrows to engine -->
+  <g stroke="#7A8CA3" stroke-width="2" fill="none" marker-end="url(#a)">
+    <path d="M290 163 C 330 163 330 240 368 248"/>
+    <path d="M290 255 L 368 255"/>
+    <path d="M290 347 C 330 347 330 270 368 262"/>
+  </g>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#7A8CA3"/></marker></defs>
+
+  <!-- engine -->
+  <rect x="372" y="150" width="260" height="210" rx="12" fill="#1F3A5F"/>
+  <text x="392" y="184" font-size="19" font-weight="700" fill="#ffffff">RuleEngine</text>
+  <text x="392" y="210" font-size="14" fill="#C9D7E8">conditions in code,</text>
+  <text x="392" y="228" font-size="14" fill="#C9D7E8">severity + messages from JSON</text>
+  <line x1="392" y1="246" x2="612" y2="246" stroke="#3E5C80"/>
+  <text x="392" y="272" font-size="14" font-weight="700" fill="#ffffff">ModuleRules calculators</text>
+  <text x="392" y="294" font-size="13.5" fill="#C9D7E8">max modules in series</text>
+  <text x="392" y="313" font-size="13.5" fill="#C9D7E8">cable ampacity (1.25 × Isc × Np)</text>
+  <text x="392" y="332" font-size="13.5" fill="#C9D7E8">recommended tilt | clamp zone</text>
+
+  <!-- stages -->
+  <g font-size="15">
+    <text x="690" y="112" font-size="13" font-weight="700" fill="#5B6B7F" letter-spacing="1">WHERE A JOB IS CHECKED</text>
+    <rect x="690" y="124" width="230" height="56" rx="10" fill="#ffffff" stroke="#9CB8D8"/>
+    <text x="708" y="150" font-weight="700" fill="#1F3A5F">Survey</text><text x="708" y="170" font-size="13" fill="#5B6B7F">9 rules | altitude, sea, tilt…</text>
+    <rect x="690" y="190" width="230" height="56" rx="10" fill="#ffffff" stroke="#9CB8D8"/>
+    <text x="708" y="216" font-weight="700" fill="#1F3A5F">Layout</text><text x="708" y="236" font-size="13" fill="#5B6B7F">19 rules | clamps, strings, cable</text>
+    <rect x="690" y="256" width="230" height="56" rx="10" fill="#ffffff" stroke="#9CB8D8"/>
+    <text x="708" y="282" font-weight="700" fill="#1F3A5F">Install (daily report)</text><text x="708" y="302" font-size="13" fill="#5B6B7F">10 rules | torque, washer, crew</text>
+    <rect x="690" y="322" width="230" height="56" rx="10" fill="#ffffff" stroke="#9CB8D8"/>
+    <text x="708" y="348" font-weight="700" fill="#1F3A5F">Commission</text><text x="708" y="368" font-size="13" fill="#5B6B7F">ZN-110 | polarity, Voc ±10 V</text>
+  </g>
+  <g stroke="#7A8CA3" stroke-width="2" fill="none" marker-end="url(#a)">
+    <path d="M632 230 C 660 230 660 152 686 152"/>
+    <path d="M632 245 C 660 245 660 218 686 218"/>
+    <path d="M632 265 C 660 265 660 284 686 284"/>
+    <path d="M632 280 C 660 280 660 350 686 350"/>
+  </g>
+
+  <!-- results -->
+  <g font-size="15">
+    <text x="975" y="112" font-size="13" font-weight="700" fill="#5B6B7F" letter-spacing="1">RESULT</text>
+    <rect x="975" y="124" width="190" height="56" rx="10" fill="#FDECEA" stroke="#E0433A"/>
+    <text x="993" y="150" font-weight="700" fill="#B42318">block</text><text x="993" y="170" font-size="13" fill="#7A2A22">stops submit and sign-off</text>
+    <rect x="975" y="190" width="190" height="56" rx="10" fill="#FFF4E0" stroke="#E08A1E"/>
+    <text x="993" y="216" font-weight="700" fill="#A15C00">warn</text><text x="993" y="236" font-size="13" fill="#7A4A10">needs a written reason</text>
+    <rect x="975" y="256" width="190" height="56" rx="10" fill="#E8F1FB" stroke="#5B9BD5"/>
+    <text x="993" y="282" font-weight="700" fill="#1D4ED8">info</text><text x="993" y="302" font-size="13" fill="#1F3A5F">a hint only</text>
+  </g>
+  <g stroke="#7A8CA3" stroke-width="2" fill="none" marker-end="url(#a)"><path d="M920 250 L 970 250"/></g>
+
+  <!-- footer -->
+  <rect x="40" y="420" width="1125" height="104" rx="12" fill="#F3F6FA"/>
+  <text x="62" y="452" font-size="15" font-weight="700" fill="#1F3A5F">Every check keeps its rule-set and catalog versions</text>
+  <text x="62" y="476" font-size="14" fill="#334155">A signed report re-opens with the rules it was signed under. Phase 1 (#118): the target and its tests.</text>
+  <text x="62" y="500" font-size="14" fill="#334155">Phases 2–5: the survey card, the layout, the daily report checklist and the string test show these results on screen.</text>
+</svg>

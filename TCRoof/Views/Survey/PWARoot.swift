@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import TCRoofUI
 import TCRoofCore
+import ExcelExport
 
 /// Root of the main dock's PWA stack, `กปภ.` on iPhone and `โครงการ` on iPad (docs/ui/pwa-solar-survey-iphone-v3 §1,
 /// docs/ui/pwa-solar-survey-ipad-v3 §2): the PWA project home, with what its header and nav open. The MP plans, the
@@ -29,8 +30,9 @@ struct PWARoot: View {
         SolarSurveyEntryView()
             .environment(\.pwaOverview, overview)
             .navigationDestination(item: $station) { job in
-                // iPad: a station being installed opens its install tracking page (docs/ui/install-tracking-ipad)
-                if sizeClass != .compact, jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
+                // a station being installed opens its install tracking page (docs/ui/install-tracking-ipad, and on
+                // iPhone docs/ui/install-tracking-iphone)
+                if jobs.pwaInstalling.contains(job) { InstallTrackingPage(job: job) } else { JobDetailView(job: job) }
             }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(item: $maintenanceStation) { s in
@@ -54,10 +56,10 @@ struct PWARoot: View {
                 try? await Task.sleep(for: .milliseconds(600))
                 showPlan = true
             }
-            // `-installOpen YES` (iPad): the first installing station's install tracking page, seeding one with an MP
-            // plan and daily reports when none is installing. It changes that job for good.
+            // `-installOpen YES`: the first installing station's install tracking page, seeding one with an MP plan and
+            // daily reports when none is installing. It changes that job for good.
             .task {
-                guard sizeClass != .compact, UserDefaults.standard.bool(forKey: "installOpen") else { return }
+                guard UserDefaults.standard.bool(forKey: "installOpen") else { return }
                 if jobs.pwaInstalling.isEmpty, let job = jobs.first(where: { $0.kind == .pwa }) ?? jobs.first {
                     job.kind = .pwa
                     job.seedRoutineDemo(context)
@@ -71,6 +73,22 @@ struct PWARoot: View {
                 if UserDefaults.standard.bool(forKey: "installSeed") { pick?.seedRoutineDemo(context) }
                 // `-installLate YES`: that station's 2.2 runs late, for the task sheet's causes
                 if UserDefaults.standard.bool(forKey: "installLate") { pick?.seedLatePlan(); try? context.save() }
+                // `-installWBS YES`: that station gets the P9-001 template's WBS rows with no ticks, for the task sheet's
+                // งานย่อย WBS (for good), moved so the template's 2.1 starts on the station's 2.1, as a plan started
+                // from the template would have them
+                if UserDefaults.standard.bool(forKey: "installWBS"), let pick, let c = MPTemplates.cases().first,
+                   let data = try? Data(contentsOf: c.url), var wbs = try? MPWorkbook.read(data).wbs {
+                    let cal = MasterSchedule.calendar
+                    if let input = pick.scheduleInput,
+                       let start = MasterSchedule.plan(input).first(where: { $0.task.code == "2.1" })?.start,
+                       let line = wbs.first(where: { $0.code == "2.1" })?.baselineStart,
+                       let days = cal.dateComponents([.day], from: cal.startOfDay(for: line), to: cal.startOfDay(for: start)).day {
+                        wbs = wbs.map { $0.shifted(days: days) }
+                    }
+                    pick.wbsTicks = [:]
+                    pick.scheduleWBS = wbs
+                    try? context.save()
+                }
                 station = pick
             }
             #endif

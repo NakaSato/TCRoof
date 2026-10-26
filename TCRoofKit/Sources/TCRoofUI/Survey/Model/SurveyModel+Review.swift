@@ -26,7 +26,7 @@ extension SurveyModel {
         case photosNotHere, alreadyIssued(String)
         var errorDescription: String? {
             switch self {
-            case .photosNotHere: return "รูปบางรูปยังไม่อยู่ในเครื่องนี้ · ดึงรูปจาก Drive ให้ครบก่อนออก REV"
+            case .photosNotHere: return "รูปบางรูปยังไม่อยู่ในเครื่องนี้ | ดึงรูปจาก Drive ให้ครบก่อนออก REV"
             case .alreadyIssued(let r): return "REV \(r) ออกไปแล้วด้วยข้อมูลอื่น"
             }
         }

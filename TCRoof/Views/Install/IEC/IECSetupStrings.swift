@@ -13,7 +13,7 @@ extension IECSetupPage {
                 Spacer()
                 // the board has no field for the panel; its W is in every string's Wp
                 Button { module = true } label: {
-                    Label((r.module.brand.isEmpty ? "แผง" : r.module.brand) + " · " + (r.module.powerW > 0 ? IECFormat.number(r.module.powerW, digits: 0) + " W" : "ยังไม่ระบุ W"),
+                    Label((r.module.brand.isEmpty ? "แผง" : r.module.brand) + " | " + (r.module.powerW > 0 ? IECFormat.number(r.module.powerW, digits: 0) + " W" : "ยังไม่ระบุ W"),
                           systemImage: "square.grid.3x3")
                         .font(.sarabunFixed(13, .bold)).foregroundStyle(r.module.powerW > 0 ? Theme.primary : Theme.warningInk).frame(minHeight: 44)
                 }
@@ -73,7 +73,7 @@ extension IECSetupPage {
             .frame(width: 64, height: 52).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 0) {
                 Text("รุ่นอินเวอร์เตอร์").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text(inv.model ?? "ไม่ระบุรุ่น · \(inv.mpptCount) MPPT").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(inv.model ?? "ไม่ระบุรุ่น | \(inv.mpptCount) MPPT").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
             }
             Spacer(minLength: 8)
             IECSerialField(serial: inv.serial, editing: $editingSerial) { s in job.updateIEC(context) { $0.inverters[i].serial = s } }
@@ -265,7 +265,7 @@ struct IECDashedTextField: View {
     }
 }
 
-/// `อากาศ · E29  34.3 °C`: a condition typed in its tile.
+/// `อากาศ | E29  34.3 °C`: a condition typed in its tile.
 struct IECConditionTile: View {
     let label: String
     let unit: String
@@ -314,7 +314,7 @@ struct IECInstrumentRow: View {
                     Section("จากทะเบียนเครื่องมือ") {
                         ForEach(tools) { t in
                             let sn = t.serial.isEmpty ? t.code : t.serial
-                            Button(t.name + " · " + sn) { set(sn) }
+                            Button(t.name + " | " + sn) { set(sn) }
                         }
                     }
                 }

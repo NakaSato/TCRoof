@@ -1,6 +1,25 @@
 #if canImport(UIKit)
 import Foundation
 import DriveSync
+import TCRoofCore
+
+/// Drive uploads through iOS's background transfer (`DriveBackgroundTransfer`), for the app delegate, which links
+/// TCRoofUI and not DriveSync.
+public enum DriveBackground {
+    /// At launch: every Drive client made after sends its uploads through the background session, and iOS hands over
+    /// the ones that finished while the app was closed.
+    public static func activate() {
+        DriveBackgroundTransfer.shared.activate()
+        DriveClient.backgroundTransfer = DriveBackgroundTransfer.shared
+    }
+
+    /// `application(_:handleEventsForBackgroundURLSession:completionHandler:)`; false for another session's events.
+    public static func handleEvents(_ identifier: String, completion: @escaping () -> Void) -> Bool {
+        guard identifier == DriveBackgroundTransfer.identifier else { return false }
+        DriveBackgroundTransfer.shared.handleEvents(completion: completion)
+        return true
+    }
+}
 
 /// A file the host app puts in one of its own project folders on Google Drive.
 public struct DriveUpload: Sendable {
@@ -36,6 +55,31 @@ public extension SurveyModel {
         for email in emails { try await client.share(folderID, with: email) }
     }
 
+    /// Shares Drive refused this run ("<folder> <email>").
+    @MainActor static var refusedShares: Set<String> = []
+
+    /// Lets everyone who can open a job read its Drive folder, so their devices download the photos its report prints:
+    /// each address once per folder (remembered on this device), never this account's own. An address Google refuses
+    /// is tried again next time; the others go on.
+    public func shareJobFolder(_ folderID: String, with emails: [String]) async {
+        let key = "drive.sharedTo.\(folderID)"
+        var done = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        let me = google.email.map(Permissions.normalized)
+        let todo = Set(emails.map(Permissions.normalized)).subtracting(done)
+            .filter { $0.contains("@") && $0 != me && !Self.refusedShares.contains(folderID + " " + $0) }
+        guard !todo.isEmpty else { return }
+        let client = DriveClient(tokens: google)
+        for email in todo.sorted() {
+            do { try await client.share(folderID, with: email); done.insert(email) }
+            catch {
+                // another account's folder, or an address Google doesn't know: not again until the app starts again
+                Self.refusedShares.insert(folderID + " " + email)
+                print("Drive: share \(folderID) with \(email): \(error.localizedDescription)")
+            }
+        }
+        UserDefaults.standard.set(done.sorted(), forKey: key)
+    }
+
     /// Finds or creates the folders of `path` under a folder from `driveFolder`, one inside the next, and returns the last id.
     func driveSubfolder(_ path: [String], under parentID: String) async throws -> String {
         let client = DriveClient(tokens: google)
@@ -46,7 +90,15 @@ public extension SurveyModel {
 
     /// Uploads one file into a folder from `driveFolder` and returns its id; the same file already there is reused.
     func driveUpload(_ file: DriveUpload, to folderID: String) async throws -> String {
-        try await DriveClient(tokens: google).uploadOnce(file.data, name: file.name, mimeType: file.mimeType, parent: folderID).id
+        try await driveStartUpload(file, to: folderID).value
+    }
+
+    /// `driveUpload` in two steps: returns once the file is handed to the background transfer (`DriveBackground`),
+    /// and the task gives its id when it lands. Start every file of a pass first, then wait: iOS goes on sending them
+    /// all when the person leaves the app.
+    func driveStartUpload(_ file: DriveUpload, to folderID: String) async throws -> Task<String, Error> {
+        let pending = try await DriveClient(tokens: google).startUploadOnce(file.data, name: file.name, mimeType: file.mimeType, parent: folderID)
+        return Task { try await pending.value.id }
     }
 
     /// Downloads one file by id, such as a photo another device uploaded.

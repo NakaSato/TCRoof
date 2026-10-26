@@ -31,6 +31,15 @@ public final class SurveyModel {
     /// Called with a survey's linked job (`jobSyncID`) once it has moved to installation. TCRoof sets that job to
     /// `กำลังติดตั้ง` from here.
     @ObservationIgnored public var onMovedToInstall: ((String) -> Void)?
+    /// Host-supplied: makes (or finds) the host job of a survey in installation that isn't linked to one, and returns its
+    /// syncID. The install tracking page belongs to a host job, so without one the survey's card could only open the survey.
+    @ObservationIgnored public var makeInstallJob: ((Job) -> String?)?
+    /// Called with a survey's linked job once it has moved back to the survey stage. TCRoof takes that job out of
+    /// `กำลังติดตั้ง` from here when nothing was planned or logged on it.
+    @ObservationIgnored public var onMovedBackToSurvey: ((String) -> Void)?
+    /// Called with a survey just before it is deleted. TCRoof deletes the job `makeInstallJob` made for it from here,
+    /// when nothing was recorded on that job.
+    @ObservationIgnored public var onDeleted: ((Job) -> Void)?
     let cache = NSCache<NSString, UIImage>()
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
@@ -55,6 +64,11 @@ public final class SurveyModel {
         self.settings = s
         self.google = GoogleAuth(clientID: s.googleClientID)
         reload()
+        // the standard design library (docs/specs/standard-designs.md §5), next to the app's other support files
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        DesignLibrary.shared.configure(url: support.appendingPathComponent("standard-designs.json"))
+        TankStandard.Store.shared.configure(url: support.appendingPathComponent("tank-standard.json"))
     }
 
     public func reload() {
@@ -101,6 +115,7 @@ public final class SurveyModel {
     }
 
     public func delete(_ id: UUID) {
+        if let j = job(id) { onDeleted?(j) }
         pendingSave[id]?.cancel()
         try? store.delete(id)
         jobs.removeAll { $0.id == id }
@@ -125,10 +140,23 @@ public final class SurveyModel {
     @discardableResult
     public func moveToInstall(_ id: UUID, evenIfIncomplete: Bool = false) -> Bool {
         guard var j = job(id), j.moveToInstall(evenIfIncomplete: evenIfIncomplete) else { return false }
+        if j.jobSyncID == nil { j.jobSyncID = makeInstallJob?(j) }
         update(j)
         flush(id)
         if let link = j.jobSyncID { onMovedToInstall?(link) }
         return true
+    }
+
+    /// Links each survey in installation that has no host job to one (`makeInstallJob`): those moved before the host made
+    /// them, or on a device without the hook.
+    public func linkInstallJobs() {
+        guard let make = makeInstallJob else { return }
+        for var j in jobs where j.stage == .install && j.jobSyncID == nil {
+            guard let link = make(j) else { continue }
+            j.jobSyncID = link
+            update(j)
+            flush(j.id)
+        }
     }
 
     /// Returns an installation job to the survey stage, dropping its installation progress.
@@ -137,6 +165,7 @@ public final class SurveyModel {
         guard var j = job(id), j.moveBackToSurvey() else { return false }
         update(j)
         flush(id)
+        if let link = j.jobSyncID { onMovedBackToSurvey?(link) }
         return true
     }
 
@@ -202,10 +231,13 @@ public final class SurveyModel {
         if let d = p.date { put("date", ISODate.string(d)) }
     }
 
-    /// Host-supplied name of a linked job ("TC-0012 · สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
+    /// Host-supplied name of a linked job ("TC-0012 | สถานีสูบน้ำ"), shown on the report cards; nil when it isn't found.
     @ObservationIgnored public var linkedJobLabel: ((String) -> String?)?
     /// Host-supplied external people and supervising engineer of a linked job (by its syncID), for the role checks.
     @ObservationIgnored public var linkedJobAccess: ((String) -> JobAccess?)?
+    /// Host-supplied: everyone who should read a survey's photos on Drive (the team, and the linked job's contractors
+    /// and supervisor). Their folder is shared with them after each upload.
+    @ObservationIgnored public var driveReaders: ((Job) -> [String])?
 
     /// Who a survey's linked job is open to; nil for a survey with no linked job.
     public func access(_ job: Job) -> JobAccess? {

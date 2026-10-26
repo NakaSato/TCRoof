@@ -36,7 +36,7 @@ final class PDFReportTests: XCTestCase {
             job.modules[ti].values["shade"] = .choice("มี", other: ""); job.modules[ti].values["shadeFrom"] = .multi(["ต้นไม้", "หอถังสูง"])
             job.modules[ti].values["shadeDir"] = .multi(["S", "SW"]); job.modules[ti].values["shadeNote"] = .text("ต้นไม้สูง ~8 ม. ห่าง 5 ม.")
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
-            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
+            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. | กึ่งฝัง")
             // D1 wide page answers: the report draws the tank plan with the caption, level tags and the turned N arrow
             Tank.apply(&job.modules[ti].values, Tank.presets[1])
             Tank.setHeight(&job.modules[ti].values, 4.5); Tank.setExposed(&job.modules[ti].values, 1.2)
@@ -70,6 +70,27 @@ final class PDFReportTests: XCTestCase {
     }
 
     /// B3's water point is drawn on the A2 picture in the water section, named by the water mode; no pin, no extra block.
+    /// C1 with spans and a frame prints the roof PV layout after section A-A, with its detail A.
+    func testRoofPVLayoutInReport() {
+        var job = Job.new(template: JobTemplate.all[2])
+        var roof = SurveyModule(type: .roof)
+        roof.values["spansX"] = .text("1.5,4,4,4,4,1.5"); roof.values["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&roof.values, .h); Roof.setFrame(&roof.values, .pratt)
+        job.modules.append(roof)
+        let units = ReportLayout(job: job, header: ReportHeader()).planSection(roof)
+        let texts = units.flatMap(\.ops).compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("แปลนวางแผงบนหลังคา (หน่วย ม.)"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("ผังแผงอัตโนมัติ ") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("BOQ: ราง ") })
+        XCTAssertTrue(texts.contains("รายละเอียด A | รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)"))
+        // a flat roof has no layout
+        var flat = roof
+        flat.values[Roof.Key.shape] = .choice("หลังคาคอนกรีต (ดาดฟ้า)", other: "")
+        let none = ReportLayout(job: job, header: ReportHeader()).planSection(flat).flatMap(\.ops)
+            .compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertFalse(none.contains("แปลนวางแผงบนหลังคา (หน่วย ม.)"))
+    }
+
     func testWaterPointInReport() throws {
         let fx = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../ExcelExportTests/Fixtures/job215.json")
         let store = JobStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("pdf-" + UUID().uuidString))
@@ -194,11 +215,51 @@ final class PhotoStampReportTests: XCTestCase {
         XCTAssertTrue(draft.contains("ยังไม่ออก"))
         XCTAssertTrue(draft.contains("รายการที่แก้จาก REV 00"))
         XCTAssertTrue(draft.contains("สถานี ข"))
-        XCTAssertFalse(draft.contains { $0.contains("· รหัสตรวจสอบ") }, "no lock footer")
+        XCTAssertFalse(draft.contains { $0.contains("| รหัสตรวจสอบ") }, "no lock footer")
         // a long list continues with the column titles repeated
         let many = (0..<120).flatMap { _ in changes }
         let long = texts(ReportLayout(job: j, header: ReportHeader(changes: many)).pages())
         XCTAssertTrue(long.contains("รายการที่แก้จาก REV 00 (ต่อ)"))
         XCTAssertGreaterThan(long.filter { $0 == "เดิม" }.count, 1)
+    }
+}
+
+final class TankLayoutPDFTests: XCTestCase {
+    /// D1's layout prints the side section and the front elevation of a table (tank-mounting-layout.md §5).
+    func testTheTankLayoutPrintsTheSectionAndTheFrontElevation() {
+        var v = Values()
+        Tank.apply(&v, Tank.presets[0]); TankPoints.seed(&v)
+        TankLayout.save(&v, TankLayout.auto(v), off: [])
+        let units = ReportLayout(job: Job.new(template: JobTemplate.all[2]), header: ReportHeader()).tankLayoutUnits(v)
+        let texts = units.flatMap(\.ops).compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("ภาพตัดโต๊ะแผง"))
+        XCTAssertTrue(texts.contains("รูปด้านหน้าโต๊ะแผง"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านหน้าโต๊ะแผง แถว ") })
+        // the plan prints with its structure legend
+        XCTAssertTrue(texts.contains { $0.hasPrefix("จุดยึดราง (rail clamp) ") })
+    }
+}
+
+final class RoofEnergyPDFTests: XCTestCase {
+    /// The roof layout's energy prints the range, the chart, the chain, the source and both disclaimers.
+    func testTheEnergyUnit() throws {
+        var v = Values()
+        v[Roof.Key.spansX] = .text("6@5"); v[Roof.Key.spansY] = .text("3@6")
+        var job = Job.new(template: JobTemplate.all[0])
+        job.values["gps"] = .text("13.80, 100.55")
+        let e = RoofMount.printed(v, job: job).energy
+        XCTAssertTrue(e.isHourly)
+        let unit = ReportLayout(job: job, header: ReportHeader()).roofEnergyUnit(e)
+        let texts = unit.ops.compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
+        XCTAssertTrue(texts.contains("พลังงานไฟฟ้าโดยประมาณ"))
+        XCTAssertTrue(texts.contains { $0.contains("(P90–P50)") })
+        XCTAssertTrue(texts.contains("พลังงานรายเดือน (MWh, P50 ปีแรก)"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("จากแสงแนวราบถึงไฟเข้าระบบ") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("ประมาณการเบื้องต้น") })
+        XCTAssertTrue(texts.contains { $0.hasPrefix("Preliminary estimate") })
+        XCTAssertTrue(texts.contains { $0.contains("PVGIS © European Union") })
+        // every line fits inside the unit
+        let ys = unit.ops.compactMap { op -> Double? in if case .text(_, let at, _, _, _, _, _) = op { return at.y }; return nil }
+        XCTAssertLessThan(ys.max() ?? 0, unit.h)
     }
 }

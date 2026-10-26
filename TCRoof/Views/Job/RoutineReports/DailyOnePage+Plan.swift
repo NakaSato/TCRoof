@@ -29,18 +29,15 @@ extension DailyOnePage {
         selected = line.id
     }
 
+    /// The key plan at the top of the left card's scroll (v2 §2–3).
     var keyPlanCard: some View {
-        AnyView(
-            planCanvas(large: false)
-                .padding(12)
-                .dailyCard()
-        )
+        AnyView(planCanvas(large: false))
     }
 
     var fullPlan: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("ผังสถานี · งานวันนี้ · " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold))
+                Text("ผังสถานี | งานวันนี้ | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold))
                 Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อกรอก").font(.sarabunFixed(14)).opacity(0.85)
                 Spacer()
                 Button { mapFull = false } label: {
@@ -58,28 +55,44 @@ extension DailyOnePage {
     }
 
     @ViewBuilder private func planCanvas(large: Bool) -> some View {
-        if let image = job.keyPlanPicture?.image {
+        if let image = keyPlanImage {
             ZStack {
                 Theme.paper
                 Image(uiImage: image).resizable().scaledToFit().saturation(0.75)
                     .overlay { GeometryReader { g in AnyView(markers(in: g.size, large: large)) } }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(alignment: .topTrailing) { if !large { expandButton } }
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(alignment: .topLeading) { if !large { planBadge.padding(8) } }
+            .overlay(alignment: .topTrailing) { if !large { planButtons.padding(4) } }
             .overlay(alignment: .bottomLeading) { legend.padding(8) }
         } else {
             AnyView(placeList)
         }
     }
 
-    private var expandButton: some View {
-        Button { mapFull = true } label: {
-            Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.navy).frame(width: 44, height: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    /// `KEY PLAN | หน้า 2`: it prints on the DAILY REPORT's page 2.
+    private var planBadge: some View {
+        HStack(spacing: 6) {
+            Text("KEY PLAN").font(.sarabunFixed(12, .bold)).tracking(1).foregroundStyle(Theme.onPrimary)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            Text("หน้า 2").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy)
         }
-        .padding(10)
-        .accessibilityLabel("ขยายผังเต็มจอ")
+        .padding(4).padding(.trailing, 4)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("ผังตำแหน่งงาน หน้า 2 ของรายงาน")
+    }
+
+    var planButtons: some View {
+        HStack(spacing: 0) {
+            uploadButton
+            Button { mapFull = true } label: {
+                planChip(Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 12, weight: .bold)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("ขยายผังเต็มจอ")
+        }
     }
 
     private var legend: some View {
@@ -154,7 +167,7 @@ extension DailyOnePage {
                     .frame(width: size, height: size).background(c, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.paper, lineWidth: 2.5))
                     .shadow(color: Theme.navySolid.opacity(0.3), radius: 3, y: 1)
-                Text(on ? "\(line.location) · \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
+                Text(on ? "\(line.location) | \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
                     .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1).fixedSize()
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(on ? c : Theme.paper, in: RoundedRectangle(cornerRadius: 4))
@@ -182,10 +195,15 @@ extension DailyOnePage {
 
     // MARK: no picture
 
-    /// No A2 picture on this device: the locations as chips, each with its pins and `+`.
+    /// No key plan on this device: the locations as chips, each with its pins and `+`, and the upload button.
     private var placeList: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ยังไม่มีภาพสถานที่ (A2) ในแบบสำรวจของงานนี้ · แสดงตำแหน่งเป็นรายการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            HStack(alignment: .top) {
+                Text("ยังไม่มีผังของสถานีนี้ (อัปโหลดผัง หรือภาพ A2 จากแบบสำรวจ) | แสดงตำแหน่งเป็นรายการ")
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Spacer(minLength: 8)
+                uploadButton
+            }
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], alignment: .leading, spacing: 10) {
                     ForEach(settings.locations, id: \.self) { place in

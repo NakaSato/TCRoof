@@ -12,6 +12,10 @@ extension InstallTrackingPage {
 
     func go(_ target: InstallPageData.Target) {
         sheet = nil
+        // the iPad's เอกสาร is a tab of the page; the iPhone pushes the station's papers
+        if target == .docs, sizeClass != .compact { tab = .docs; return }
+        // and so is คำขอรายสัปดาห์
+        if target == .request, sizeClass != .compact { tab = .request; return }
         let today = RoutineReport.calendar.startOfDay(for: .now)
         route = switch target {
         case .daily: .day(today)
@@ -21,6 +25,7 @@ extension InstallTrackingPage {
         case .docs: .docs
         case .plan: .plan
         case .iec: .iec
+        case .devices: .devices
         }
     }
 
@@ -64,7 +69,7 @@ extension InstallTrackingPage {
     private func docTile(_ t: InstallPageData.DocTile) -> some View {
         Button { sheet = .doc(t.id) } label: {
             HStack(spacing: 10) {
-                Circle().fill(Self.ink(t.tone)).frame(width: 8, height: 8)
+                Circle().fill(Self.ink(t.tone)).frame(width: 9, height: 9)
                 Text(t.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 6)
                 chip(t.chip, t.tone).layoutPriority(1)
@@ -92,6 +97,7 @@ extension InstallTrackingPage {
         case .warn: Theme.warningInk
         case .danger: Theme.dangerText
         case .info: Theme.primary
+        case .waiting: Theme.planInspect
         case .idle: Theme.inkMuted
         }
     }
@@ -102,6 +108,7 @@ extension InstallTrackingPage {
         case .warn: Theme.warningSoft
         case .danger: Theme.dangerSoft
         case .info: Theme.primarySoft
+        case .waiting: Theme.planInspectSoft
         case .idle: Theme.hairline
         }
     }
@@ -144,6 +151,15 @@ extension InstallTrackingPage {
 
     /// The MP tasks' % (the board's installed quantities have no model) beside the four tiles.
     private func siteInfo(_ s: InstallPageData.Site) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            siteInfoBody(s)
+            // the job's own screen: customer, schedule, scans, install logs, ICL, R4, survey link, documents and Drive
+            Button { route = .detail } label: { Label("รายละเอียดงาน", systemImage: "info.circle") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+        }
+    }
+
+    private func siteInfoBody(_ s: InstallPageData.Site) -> some View {
         HStack(alignment: .top, spacing: 16) {
             if !s.tasks.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
@@ -235,7 +251,7 @@ extension InstallTrackingPage {
                 if s.plannedManDays != nil { legendSwatch(Theme.track, "แผน") }
                 legendSwatch(Theme.primary, "จริง")
                 Spacer(minLength: 8)
-                Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " · แผนทั้งโครงการ \($0)" } ?? ""))
+                Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " | แผนทั้งโครงการ \($0)" } ?? ""))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             HStack(alignment: .bottom, spacing: 6) {
@@ -259,7 +275,7 @@ extension InstallTrackingPage {
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(ThaiFormat.dayMonth.string(from: d.date))
-                    .accessibilityValue([d.plan.map { "แผน \($0) คน" }, d.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " · "))
+                    .accessibilityValue([d.plan.map { "แผน \($0) คน" }, d.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " | "))
                 }
             }
         }
@@ -293,7 +309,8 @@ extension InstallTrackingPage {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.sarabunFixed(26, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text(about).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                    // up to two lines (the 4.2 sheet's state)
+                    Text(about).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 if let chip { self.chip(chip.0, chip.1).padding(.top, 10) }
@@ -315,13 +332,15 @@ extension InstallTrackingPage {
             .frame(maxHeight: 640)
             .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(width: width)
+        // as wide as the board's sheet, or the phone's width less its margins
+        .frame(maxWidth: width)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+        .padding(.horizontal, 12)
     }
 
     private func actionsSheet(_ actions: [InstallPageData.Action]) -> some View {
-        sheetFrame(width: 730, title: "ต้องดำเนินการ", about: "รายการที่ค้างจากแผน รายงาน และเอกสาร · แตะเพื่อเปิดรายการ", chip: nil) {
+        sheetFrame(width: 730, title: "ต้องดำเนินการ", about: "รายการที่ค้างจากแผน รายงาน และเอกสาร | แตะเพื่อเปิดรายการ", chip: nil) {
             if actions.isEmpty {
                 Text("ไม่มีรายการค้าง").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }
@@ -352,26 +371,45 @@ extension InstallTrackingPage {
                 Text("ยังไม่มีรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }
             ForEach(t.items) { item in
-                Button { if let target = item.target { go(target) } } label: {
-                    HStack(alignment: .top, spacing: 16) {
-                        if !item.code.isEmpty {
-                            Text(item.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                            Text(item.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                        }
-                        Spacer(minLength: 8)
-                        chip(item.chip, item.tone)
-                    }
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(item.target == nil)
-                .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+                docRow(item).overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
             }
         }
+    }
+
+    /// A line of a tile's sheet: the whole row opens its target, or its own button does (`เปิดบันทึก ›`).
+    @ViewBuilder private func docRow(_ item: InstallPageData.DocItem) -> some View {
+        if let title = item.button, let target = item.target {
+            HStack(alignment: .center, spacing: 16) {
+                docRowLabel(item)
+                Button(title) { go(target) }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
+                    .fixedSize()
+            }
+            .padding(.vertical, 14)
+            .accessibilityElement(children: .contain)
+        } else {
+            Button { if let target = item.target { go(target) } } label: {
+                docRowLabel(item)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(item.target == nil)
+        }
+    }
+
+    private func docRowLabel(_ item: InstallPageData.DocItem) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            if !item.code.isEmpty {
+                Text(item.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text(item.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            }
+            Spacer(minLength: 8)
+            chip(item.chip, item.tone)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

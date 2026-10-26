@@ -1,0 +1,46 @@
+{
+  "_note": "Example values from the board (menu 'wq'). The app reads RoutineReport.WeeklyRequest, the MP plan, the tools register and the job's settings. Never hard-code these.",
+  "station": "การประปาบ้านโป่ง (ตัวอย่าง) · 90 kWp · ทีม TCR02",
+  "weeks": [
+    { "no": 41, "dates": "5–11 ต.ค. 2569", "status": "draft", "due": "ส่งก่อน ศ. 2 ต.ค. 15:00 · อีก 2 วัน" },
+    { "no": 40, "dates": "28 ก.ย. – 4 ต.ค. 2569", "status": "approved", "note": "อนุมัติ 27/9/2569 · ผู้ตรวจ กฟภ." },
+    { "no": 39, "dates": "21–27 ก.ย. 2569", "status": "approved", "note": "อนุมัติ 19/9/2569 · ผู้ตรวจ กฟภ." }
+  ],
+  "days": ["จ", "อ", "พ", "พฤ", "ศ", "ส"],
+  "crew": [
+    { "role": "ผู้ควบคุมงาน", "count": 1, "lastWeek": 1 },
+    { "role": "หัวหน้างาน", "count": 1, "lastWeek": 1 },
+    { "role": "ช่างไฟฟ้า", "count": 2, "lastWeek": 2 },
+    { "role": "ผู้ปฏิบัติงาน", "count": 4, "lastWeek": 3 }
+  ],
+  "crewRule": "A role works every day that has at least one work line, unless that cell is switched off (หยุด). Days with no work show –.",
+  "tools": [
+    { "name": "เครื่องวัดฉนวน (Megger)", "count": 1, "calibration": "สอบเทียบถึง มี.ค. 2570", "state": "ok" },
+    { "name": "แคลมป์มิเตอร์ DC", "count": 1, "calibration": "สอบเทียบครบ 12 พ.ย. 2569", "state": "soon" },
+    { "name": "สว่านไร้สาย", "count": 2, "calibration": "ไม่ต้องสอบเทียบ", "state": "none" },
+    { "name": "รถกระเช้า", "count": 1, "calibration": "ตรวจสภาพ 1 ต.ค. 2569", "state": "ok" }
+  ],
+  "work": [
+    { "mp": "7.1", "title": "ตรวจร่วม Punch list กับเจ้าของงาน", "location": "ทั้งสถานี", "qty": "1 ครั้ง", "days": [0], "kind": "mp" },
+    { "mp": "7.2", "title": "แก้ไขรายการ Punch list", "location": "ตามรายการ", "qty": "—", "days": [0, 1], "kind": "mp" },
+    { "mp": "5.5", "title": "Data Logger · Monitoring (ต่อจากสัปดาห์นี้)", "location": "ห้อง MDB", "qty": "1 ชุด", "days": [0], "kind": "carry", "tag": "ยกมา · ช้า 1 วัน" },
+    { "mp": "7.3", "title": "การไฟฟ้าตรวจขนานไฟ (รอนัด)", "location": "ตู้ AC · มิเตอร์", "qty": "1 ครั้ง", "days": [], "kind": "wait", "tag": "ยังไม่มีวัน · รอนัด" },
+    { "mp": "7.4", "title": "ส่งมอบงาน · อบรมผู้ใช้", "location": "อาคารสำนักงาน", "qty": "1 ครั้ง", "days": [1], "kind": "mp" },
+    { "mp": "7.5", "title": "แบบ As-built · เอกสารส่งมอบ", "location": "สำนักงาน", "qty": "1 ชุด", "days": [1, 2], "kind": "mp" }
+  ],
+  "risks": [
+    { "title": "งานบนที่สูง (หลังคา)", "level": "high", "prevention": "สายรัดตัวนิรภัย · ราวกันตก · จป. ตรวจก่อนขึ้น" },
+    { "title": "งานไฟฟ้ามีแรงดัน (ขนานไฟ)", "level": "high", "prevention": "LOTO · ถุงมือฉนวน · ช่างไฟฟ้ามีใบอนุญาตคุมงาน" },
+    { "title": "ฝนตก · ฟ้าผ่า", "level": "medium", "prevention": "หยุดงานบนหลังคาเมื่อฝนตก · ปิดเบรกเกอร์ DC" }
+  ],
+  "riskSuggestions": ["ยกของหนัก", "ความร้อน", "ทำงานใกล้ถังน้ำ"],
+  "checks": [
+    "แผนงานตรงกับแผน MP สัปดาห์ที่ n",
+    "ทุกงานมีตำแหน่งและวัน (n งานยังไม่มีวัน)",
+    "ประเมินความเสี่ยงงานบนที่สูงและงานไฟฟ้า",
+    "กำลังคนยืนยันกับผู้รับเหมา",
+    "ผู้ส่งคำขอลงนาม"
+  ],
+  "flow": ["ร่างคำขอ · Site Engineer", "ส่งขออนุมัติ (PDF) · ส่งถึงผู้ตรวจ", "อนุมัติ · ผู้ตรวจ"],
+  "signer": "นายสมชาย ใจดี · SITE ENGINEER"
+}

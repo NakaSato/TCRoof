@@ -67,7 +67,7 @@ struct AddWorkSheet: View {
                         }
                     }
                 } footer: {
-                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง · ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
+                    Text("หนึ่งบรรทัดต่อหนึ่งตำแหน่ง | ตั้งรายการตำแหน่งของสถานีได้ที่ ตั้งค่ารายงาน")
                 }
                 PadSection("รายละเอียด") {
                     TextField(task?.title ?? "รายละเอียดงาน", text: $description, axis: .vertical)
@@ -95,34 +95,48 @@ struct AddWorkSheet: View {
 
 struct DailySignSheet: View {
     let warnings: [RoutineReport.Warning]
+    /// Construction tasks the report brings to 100 % in the MP plan while their install photos are missing: listed, and
+    /// asked about again on ลงนาม (`บันทึกทั้งที่ยังไม่มีรูป`).
+    let photos: [MPMissingPhotos]
     /// The name, and the drawn signature (PNG) when there is one.
     let onSign: (String, Data?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var engineer: String
     @State private var signature: Data?
+    @State private var asking: [MPMissingPhotos] = []
 
-    init(warnings: [RoutineReport.Warning], engineer: String, onSign: @escaping (String, Data?) -> Void) {
-        self.warnings = warnings; self.onSign = onSign
+    init(warnings: [RoutineReport.Warning], photos: [MPMissingPhotos] = [], engineer: String,
+         onSign: @escaping (String, Data?) -> Void) {
+        self.warnings = warnings; self.photos = photos; self.onSign = onSign
         _engineer = State(initialValue: engineer)
+    }
+
+    private func sign() {
+        onSign(engineer.trimmingCharacters(in: .whitespaces), signature)
+        dismiss()
     }
 
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 640) {
                 PadSection("ตรวจก่อนลงนาม") {
-                    if warnings.isEmpty {
+                    if warnings.isEmpty && photos.isEmpty {
                         Label("ครบถ้วน พร้อมลงนาม", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.okText)
                     }
                     ForEach(warnings, id: \.self) { w in
                         Label(w.text, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.dangerText)
                     }
+                    ForEach(photos) { m in
+                        Label("\(m.task.code) ครบ 100% แต่ยังไม่มีรูปติดตั้ง \(m.labels.count) รูป", systemImage: "camera.badge.ellipsis")
+                            .foregroundStyle(Theme.warningInk)
+                    }
                 } footer: {
-                    if !warnings.isEmpty { Text("ลงนามได้ แต่ควรแก้รายการด้านบนก่อน") }
+                    if !warnings.isEmpty || !photos.isEmpty { Text("ลงนามได้ แต่ควรแก้รายการด้านบนก่อน") }
                 }
                 PadSection("Site Engineer") {
                     TextField("ชื่อผู้ลงนาม", text: $engineer)
                 }
-                SignatureField(signature: $signature)
+                SignatureField(signature: $signature, mine: true)
                 PadSection {
                     Text("ลงนามแล้วระบบจะสร้าง PDF เก็บในเอกสารโครงการ (อัปโหลดขึ้น Drive ได้จากหน้างาน) และอัปเดตความก้าวหน้าในแผน MP")
                         .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
@@ -133,10 +147,11 @@ struct DailySignSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("ลงนาม") { onSign(engineer.trimmingCharacters(in: .whitespaces), signature); dismiss() }
+                    Button("ลงนาม") { if photos.isEmpty { sign() } else { asking = photos } }
                         .bold().disabled(engineer.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            .mpMissingPhotos($asking, onSave: sign)
         }
         .presentationDetents([.medium, .large])
     }
@@ -187,10 +202,14 @@ struct InspectorAckSheet: View {
 /// ลายมือชื่อ, optional: drawn with Apple Pencil or a finger; printed on the DAILY REPORT's page 3 when given.
 struct SignatureField: View {
     @Binding var signature: Data?
+    /// The signed-in person signs: offer their saved signature (`MySignature`).
+    var mine = false
 
     var body: some View {
         PadSection("ลายมือชื่อ (ไม่บังคับ)") {
-            SignaturePad(signature: $signature)
+            Group {
+                if mine { AccountSignatureCanvas(signature: $signature) } else { SignaturePad(signature: $signature) }
+            }
                 .frame(height: 180)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.45)))
@@ -201,9 +220,10 @@ struct SignatureField: View {
                     }
                 }
                 .accessibilityIdentifier("signaturePad")
+            if mine { MySignatureActions(signature: $signature) }
             Button("ล้างลายเซ็น") { signature = nil }.disabled(signature == nil).frame(minHeight: touchMin)
         } footer: {
-            Text("พิมพ์ในหน้า 3 ของรายงาน · ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
+            Text("พิมพ์ในหน้า 3 ของรายงาน | ไม่เซ็นก็ได้ รายงานจะพิมพ์ชื่อและวันที่")
         }
     }
 }
@@ -271,7 +291,7 @@ struct RoutineSettingsSheet: View {
                     TextField("ชื่อสัญญา / โครงการ", text: $s.contractName, axis: .vertical)
                     TextField("ผู้ว่าจ้าง", text: $s.employer)
                     TextField("ผู้รับจ้าง", text: $s.contractor)
-                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) · เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
+                    TextField("ผู้รับเหมาช่วงที่ติดตั้ง (ชื่อย่อ เช่น A) | เว้นว่างถ้าทีม TC ติดตั้งเอง", text: $s.subcontractor)
                     TextField("Site Engineer", text: $s.siteEngineer)
                     TextField("Inspector", text: $s.inspector)
                 }
@@ -318,7 +338,7 @@ struct RoutineSettingsSheet: View {
                         }
                     }
                 } footer: {
-                    Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน")
+                    Text("วันทำงานที่ไม่มีรายงานจะแสดงเป็นวันที่ขาดในรายงานสัปดาห์และเดือน | " + Self.publicHolidaysNote)
                 }
                 inspections
                 ListEditor(title: "ตำแหน่งงาน (กำลังคน)", placeholder: "เพิ่มตำแหน่ง", items: $s.roles)
@@ -338,6 +358,12 @@ struct RoutineSettingsSheet: View {
 }
 
 extension RoutineSettingsSheet {
+    /// Public holidays count as days off already (`PublicHolidays`); the station's own list is for anything else.
+    static var publicHolidaysNote: String {
+        guard let end = PublicHolidays.coveredUntil.flatMap(ISODate.date) else { return "เพิ่มวันหยุดของหน้างานเอง" }
+        return "วันหยุดราชการนับเป็นวันหยุดให้แล้วถึง \(ThaiFormat.numericDate.string(from: end)) เพิ่มเฉพาะวันหยุดของหน้างานเอง"
+    }
+
     /// Which locations each task's % is averaged over for the MP; a task left empty uses the places it was reported at.
     var taskLocations: some View {
         PadSection("ตำแหน่งของแต่ละงาน (คิด % ให้แผน MP)") {

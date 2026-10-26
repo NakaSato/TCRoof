@@ -1,0 +1,258 @@
+import XCTest
+@testable import TCRoofCore
+
+/// C1's walkways drawn as the team's walkway detail, and the detail sheet beside the PV plan.
+final class RoofWalkwayTests: XCTestCase {
+    let t = SketchDXFTests()
+    func roof(every n: Int) -> Values {
+        var v = RoofDXFTests().roof()
+        var c = RoofMount.choice(v); c.walkwayEvery = n; RoofMount.setChoice(&v, c)
+        return v
+    }
+
+    func roofCentre() -> Values {
+        var v = RoofDXFTests().roof()
+        var c = RoofMount.choice(v); c.walkwayCentre = true; RoofMount.setChoice(&v, c)
+        return v
+    }
+
+    /// Most roofs have one walkway down the middle: the column nearest each face's centre along the eave.
+    func testCentreWalkway() throws {
+        let v = roofCentre()
+        XCTAssertTrue(RoofMount.choice(v).walkwayCentre)
+        XCTAssertTrue(v.text(RoofMount.Key.choice).contains("walkwayCentre"))
+        let m = RoofMount.layout(v, latitude: 15).layout
+        XCTAssertTrue(m.options.walkwayCentre)
+        let ws = RoofWalkway.walkways(m)
+        let used = m.faces.filter(\.used)
+        XCTAssertFalse(ws.isEmpty)
+        for f in used {
+            let mine = ws.filter { $0.face.id == f.face.id && !$0.ridge }
+            XCTAssertEqual(mine.count, 1, "one walkway on face \(f.face.id)")
+            // in the middle: no other column's centre is nearer the face's middle
+            let us = f.face.polygon.map(\.x), mid = ((us.min() ?? 0) + (us.max() ?? 0)) / 2
+            let w = try XCTUnwrap(mine.first)
+            XCTAssertLessThanOrEqual(abs(w.u + w.width / 2 - mid), m.moduleAlong / 2 + m.standard.moduleGap + 1e-6)
+            // it starts at the first row and runs on past the last one up to the ridge
+            XCTAssertFalse(w.access, "a gable roof is reached at the ridge, not the eave")
+            XCTAssertEqual(w.v0, f.rows.first?.v ?? -1, accuracy: 1e-9)
+            XCTAssertGreaterThan(w.v1, (f.rows.last?.v ?? 0) + m.moduleUp)
+            XCTAssertEqual(w.v1, w.ridgeEnd - RoofWalkway.band / 2, accuracy: 1e-9)
+            XCTAssertEqual(w.v1, f.face.slopeLength - RoofWalkway.band / 2, accuracy: 1e-6, "it meets the ridge walkway")
+        }
+        // older choices without it keep their digest; the DXF draws it with the detail
+        XCTAssertFalse(RoofMount.choice(RoofDXFTests().roof()).walkwayCentre)
+        // and one walkway along the ridge, centred on it, from the access landing at its left end (by default) to 0.50 m
+        // in from the other; the modules keep clear of its band
+        let ridge = try XCTUnwrap(ws.filter(\.ridge).first)
+        XCTAssertEqual(ws.filter(\.ridge).count, 1)
+        XCTAssertEqual(ridge.b0 + RoofWalkway.band / 2, ridge.face.slopeLength, accuracy: 1e-9)
+        let (lo, hi) = try XCTUnwrap(ridge.face.span(atV: ridge.face.slopeLength))
+        XCTAssertTrue(ridge.access); XCTAssertTrue(ridge.accessAtStart)
+        XCTAssertEqual(ridge.wallS, lo, accuracy: 1e-9, "the ladder stands at the gable wall")
+        XCTAssertEqual(ridge.v0, lo + RoofWalkway.landing, accuracy: 1e-9); XCTAssertEqual(ridge.v1, hi - RoofWalkway.ridgeInset, accuracy: 1e-9)
+        XCTAssertGreaterThanOrEqual(m.standard.setRidge, RoofWalkway.ridgeClear - 1e-9)
+        for f in used { for row in f.rows { XCTAssertLessThanOrEqual(row.v + m.moduleUp, f.face.slopeLength - RoofWalkway.band / 2 + 1e-6) } }
+        // one roof access only, on one side
+        XCTAssertEqual(ws.filter(\.access).count, 1)
+        let out = RoofDXF.build(v, parts: [.pv])
+        XCTAssertTrue(out.layers.contains("P-LADD-N"))
+        let s = String(decoding: out.data, as: UTF8.self)
+        XCTAssertTrue(s.contains("TC_ROOF_ACCESS")); XCTAssertTrue(s.contains("ONE SIDE ONLY (LEFT)"))
+        XCTAssertEqual(t.records(out.data).filter { r in r.first?.1 == "INSERT" && r.contains { $0.0 == "2" && $0.1 == "TC_ROOF_ACCESS" } }.count, 1)
+        // the right end when picked: the landing at the ridge's other end
+        var right = v; var c = RoofMount.choice(right); c.accessRight = true; RoofMount.setChoice(&right, c)
+        XCTAssertEqual(RoofMount.digest(RoofMount.input(right, latitude: 15), choice: c), RoofMount.digest(RoofMount.input(v, latitude: 15), choice: RoofMount.choice(v)))
+        let r2 = try XCTUnwrap(RoofWalkway.walkways(RoofMount.layout(right, latitude: 15).layout).first(where: \.ridge))
+        XCTAssertFalse(r2.accessAtStart); XCTAssertEqual(r2.wallS, hi, accuracy: 1e-9)
+        XCTAssertEqual(r2.v1, hi - RoofWalkway.landing, accuracy: 1e-9)
+        XCTAssertTrue(String(decoding: RoofDXF.build(right, parts: [.pv]).data, as: UTF8.self).contains("ONE SIDE ONLY (RIGHT)"))
+        XCTAssertTrue(out.layers.contains("P-WALK-N")); XCTAssertFalse(out.layers.contains("G-DETL"))
+    }
+
+    /// The page's plan and the PDF draw the walkways and the way up too (simplified), only when there are walkways.
+    func testThePlanDrawsThem() throws {
+        let v = roofCentre(), m = RoofMount.layout(v, latitude: 15).layout
+        let p = RoofPlan(v, mode: .pv, mount: m)
+        XCTAssertEqual(p.tags.filter { $0 == "walkway" }.count, 3 * RoofWalkway.walkways(m).count)
+        XCTAssertTrue(p.tags.contains("access"))
+        // the face labels stay on top of them
+        let lastWalk = try XCTUnwrap(p.tags.lastIndex(of: "walkway")), firstLabel = try XCTUnwrap(p.tags.firstIndex(of: "facelabel"))
+        XCTAssertLessThan(lastWalk, firstLabel)
+        // without walkways: none, and the plan as before
+        let plain = RoofDXFTests().roof()
+        let q = RoofPlan(plain, mode: .pv, mount: RoofMount.layout(plain, latitude: 15).layout)
+        XCTAssertFalse(q.tags.contains("walkway")); XCTAssertFalse(q.tags.contains("access"))
+        // the CAD export draws its own, so the plan's are left out of it
+        XCTAssertNil(RoofDXF.pvLayers["walkway"]); XCTAssertNil(RoofDXF.pvLayers["access"])
+    }
+
+    /// Each module of the roof's CAD plan is one INSERT of a block of its size on plan (wipeout, the team's PV panel
+    /// cells fitted to it, the frame polyline).
+    func testModulesAreThePanelBlock() throws {
+        let v = roofCentre(), out = RoofDXF.build(v, parts: [.pv])
+        let m = RoofMount.layout(v, latitude: 15).layout
+        let inserts = t.records(out.data).filter { $0.first?.1 == "INSERT" && t.value($0, "2")?.hasPrefix("TC_PV_MODULE_") == true }
+        XCTAssertEqual(inserts.count, m.quantities.modules)
+        XCTAssertTrue(inserts.allSatisfy { t.value($0, "8") == "P-MODL-N" })
+        // named by the module on plan in mm (portrait: the short side along the eave, the long side up the slope,
+        // foreshortened by the tilt)
+        let first = try XCTUnwrap(inserts.first), tilt = try XCTUnwrap(m.faces.first).face.tilt
+        let size = try XCTUnwrap(t.value(first, "2")).dropFirst("TC_PV_MODULE_".count).split(separator: "x").compactMap { Double($0) }
+        XCTAssertEqual(size[0] / 1000, m.moduleAlong, accuracy: 0.001)
+        XCTAssertEqual(size[1] / 1000, m.moduleUp * cos(tilt), accuracy: 0.001)
+        // only the panel block of the tank components goes into a roof file
+        let lines = t.lines(out.data)
+        XCTAssertTrue(lines.contains("TK_MODULE_PLAN"))
+        XCTAssertFalse(lines.contains("TK_TOPPING")); XCTAssertFalse(lines.contains("TK_MODULE_SIDE"))
+    }
+
+    /// The BOQ counts the walkways' materials from the walkways drawn: gratings, cross rails with two L-feet each, the
+    /// lifeline and its supports, the tray, and one caged ladder on a gable roof down the middle.
+    func testTheBOQCountsThem() throws {
+        let v = roofCentre(), m = RoofMount.layout(v, latitude: 15).layout, ws = RoofWalkway.walkways(m)
+        let w = m.quantities.walkway
+        XCTAssertEqual(w.walkways, ws.count)
+        XCTAssertEqual(w.length, ws.map { $0.v1 - $0.v0 }.reduce(0, +), accuracy: 1e-9)
+        XCTAssertEqual(w.gratings, ws.map(\.panels.count).reduce(0, +))
+        XCTAssertEqual(w.crossRails, ws.map(\.feet.count).reduce(0, +)); XCTAssertEqual(w.lFeet, 2 * w.crossRails)
+        XCTAssertEqual(w.supports, ws.map(\.supports.count).reduce(0, +))
+        XCTAssertEqual(w.ladders, 1); XCTAssertEqual(w.cagedLadders, 1)
+        let line = RoofMount.walkwayLine(m.quantities)
+        XCTAssertTrue(line.contains("ตะแกรง HDG 0.30×2.40 \(w.gratings) แผ่น")); XCTAssertTrue(line.contains("บันไดลิงพร้อมกรงและชานพัก 1"))
+        // every n columns: an eave ladder, no cage
+        let e = RoofMount.layout(roof(every: 3), latitude: 15).layout.quantities.walkway
+        XCTAssertEqual(e.ladders, 1); XCTAssertEqual(e.cagedLadders, 0)
+        // none without walkways, and no line
+        let plain = RoofDXFTests().roof()
+        XCTAssertEqual(RoofMount.layout(plain, latitude: 15).layout.quantities.walkway, RoofWalkwayQuantities([]))
+        XCTAssertEqual(RoofMount.walkwayLine(RoofMount.layout(plain, latitude: 15).layout.quantities), "")
+    }
+
+    func testWalkwaysFromTheLayout() throws {
+        let m = RoofMount.layout(roof(every: 3), latitude: 15).layout
+        let ws = RoofWalkway.walkways(m)
+        XCTAssertFalse(ws.isEmpty)
+        for w in ws {
+            XCTAssertGreaterThan(w.v1, w.v0)
+            XCTAssertEqual(w.width, m.moduleAlong, accuracy: 1e-9)
+            // the panels cover the walkway end to end, none longer than 2.40
+            let p = w.panels
+            XCTAssertEqual(p.first?.0 ?? -1, w.v0, accuracy: 1e-9); XCTAssertEqual(p.last?.1 ?? -1, w.v1, accuracy: 1e-9)
+            XCTAssertTrue(zip(p, p.dropFirst()).allSatisfy { abs($0.1 - $1.0) < 1e-9 })
+            XCTAssertTrue(p.allSatisfy { $0.1 - $0.0 <= RoofWalkway.panel + 1e-9 })
+            // lifeline supports every 2.40 from 0.65 in, inside the walkway; L-feet every 1.20 from 0.63 in
+            let s = w.supports
+            XCTAssertFalse(s.isEmpty)
+            if w.v1 - w.v0 > 2 * RoofWalkway.supportStart { XCTAssertEqual(s[0], w.v0 + RoofWalkway.supportStart, accuracy: 1e-9) }
+            XCTAssertTrue(s.allSatisfy { $0 > w.v0 && $0 < w.v1 })
+            XCTAssertTrue(zip(s, s.dropFirst()).allSatisfy { abs($1 - $0 - RoofWalkway.support) < 1e-9 })
+            if let f = w.feet.first { XCTAssertEqual(f, w.v0 + RoofWalkway.footStart, accuracy: 1e-9) }
+            XCTAssertTrue(zip(w.feet, w.feet.dropFirst()).allSatisfy { abs($1 - $0 - RoofWalkway.foot) < 1e-9 })
+            // the band sits inside its gap
+            XCTAssertGreaterThanOrEqual(w.b0, w.u - 1e-9); XCTAssertLessThanOrEqual(w.b0 + RoofWalkway.band, w.u + w.width + 1e-9)
+        }
+        XCTAssertTrue(RoofWalkway.walkways(RoofMount.layout(roof(every: 0), latitude: 15).layout).isEmpty)
+    }
+
+    func testTheDXFDrawsThem() throws {
+        let v = roof(every: 3), out = RoofDXF.build(v, parts: [.pv]), recs = t.rawEntities(out.data)
+        let ws = RoofWalkway.walkways(RoofMount.layout(v, latitude: nil).layout)
+        for l in ["P-WALK-N", "P-LIFE-N", "P-CTRY-N"] { XCTAssertTrue(out.layers.contains(l), l) }
+        func count(_ type: String, _ layer: String) -> Int { recs.filter { $0.first?.1 == type && t.value($0, "8") == layer }.count }
+        let panels = ws.map(\.panels.count).reduce(0, +), feet = ws.map(\.feet.count).reduce(0, +)
+        // each panel's outline and inner frame; an L-foot square at both grating edges and each lifeline support on
+        // their own layers (every object ByLayer)
+        XCTAssertEqual(count("LWPOLYLINE", "P-WALK-N"), 2 * panels)
+        XCTAssertEqual(count("LWPOLYLINE", "P-WALK-FOOT-N"), 2 * feet)
+        XCTAssertEqual(count("LWPOLYLINE", "P-LIFE-SUPT-N"), ws.map(\.supports.count).reduce(0, +))
+        XCTAssertFalse(recs.contains { ["P-WALK-N", "P-WALK-FOOT-N", "P-WALK-RAIL-N", "P-LIFE-N", "P-LIFE-SUPT-N"].contains(t.value($0, "8") ?? "") && t.value($0, "62") != nil })
+        XCTAssertEqual(count("LWPOLYLINE", "P-CTRY-N"), ws.count)
+        // a cross rail at every L-foot, under the whole band (outline and the hat section's two inner lines), drawn
+        // before the tray and grating so their WIPEOUTs cover it
+        XCTAssertEqual(count("LWPOLYLINE", "P-WALK-RAIL-N"), feet)
+        let lines = t.lines(out.data)
+        let firstRail = try XCTUnwrap(lines.indices.first { lines[$0] == "LWPOLYLINE" && lines[$0 + 8] == "P-WALK-RAIL-N" })
+        let firstTray = try XCTUnwrap(lines.indices.first { lines[$0] == "WIPEOUT" && lines[$0 + 8] == "P-CTRY-N" })
+        XCTAssertLessThan(firstRail, firstTray)
+        // the top view's hatches, each on its layer's HATC layer: grating crossed (ANSI37), the tray dotted, the rail solid
+        let hatches = recs.filter { $0.first?.1 == "HATCH" }
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "ANSI37" && t.value($0, "8") == "P-WALK-HATC-N" }.count, panels)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "DOTS" && t.value($0, "8") == "P-CTRY-HATC-N" }.count, ws.count)
+        XCTAssertEqual(hatches.filter { t.value($0, "2") == "SOLID" && t.value($0, "8") == "P-LIFE-RAIL-HATC-N" }.count, ws.count)
+        // the grating and the tray hide what is under them
+        XCTAssertEqual(count("WIPEOUT", "P-WALK-N"), panels)
+        // no walkway detail sheet beside the drawing (the team asked for it to be left out)
+        XCTAssertFalse(recs.contains { $0.first?.1 == "INSERT" && t.value($0, "2") == "TC_DETAIL_WALKWAY" })
+        XCTAssertFalse(out.layers.contains("G-DETL"))
+        // no walkway: none of it
+        let none = RoofDXF.build(roof(every: 0), parts: [.pv])
+        XCTAssertFalse(none.layers.contains("P-WALK-N")); XCTAssertFalse(none.layers.contains("G-DETL"))
+    }
+
+    func testTheDetailIsTheTeamsSheet() throws {
+        let d = try XCTUnwrap(CADDetail.walkway)
+        XCTAssertEqual(d.source, "Walkway.dxf")
+        XCTAssertEqual(d.size[0], 326.5, accuracy: 1); XCTAssertEqual(d.size[1], 186.7, accuracy: 1)
+        let words = Set(d.texts.map(\.text))
+        for w in ["TOP VIEW", "ELEVATION 1", "DETAIL 1", "WIRE ROPE STEEL 6 mm.", "WALKWAY 0.30x2.40x0.03 m."] { XCTAssertTrue(words.contains(w), w) }
+        // as a block, every primitive kept
+        var x = SketchDXF()
+        x.detailBlock(d, name: "D")
+        let l = t.lines(x.data())
+        let b = try XCTUnwrap(l.indices.first { l[$0] == "D" && l[$0 - 2] == "AcDbBlockBegin" })
+        let body = l[b..<l[b...].firstIndex(of: "ENDBLK")!]
+        // nearly every primitive kept (zero-length pieces and repeated points are dropped)
+        let written = body.filter { $0 == "AcDbLine" || $0 == "AcDbPolyline" }.count
+        XCTAssertGreaterThan(Double(written), 0.95 * Double(d.lines.count + d.polylines.count))
+        XCTAssertLessThanOrEqual(written, d.lines.count + d.polylines.count)
+        XCTAssertTrue(body.contains("G-DETL"))
+    }
+}
+
+/// The walkway along the ridge: on by default for a new layout, alone (no walkways down the faces), with the roof
+/// access at its end; a job kept before it existed keeps its layout.
+final class RoofRidgeWalkwayTests: XCTestCase {
+    func plain() -> Values {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        return v
+    }
+
+    func testANewLayoutHasTheRidgeWalkwayOnly() throws {
+        let v = plain()
+        XCTAssertTrue(RoofMount.choice(v).walkwayRidge)
+        let m = RoofMount.layout(v, latitude: 15).layout
+        XCTAssertTrue(m.options.ridgeWalkway); XCTAssertFalse(m.options.walkwayCentre)
+        let ws = RoofWalkway.walkways(m)
+        XCTAssertEqual(ws.count, 1)
+        let r = try XCTUnwrap(ws.first)
+        XCTAssertTrue(r.ridge); XCTAssertTrue(r.access, "a gable roof is reached up its gable wall at the ridge")
+        // the modules keep clear of the band
+        XCTAssertGreaterThanOrEqual(m.standard.setRidge, RoofWalkway.ridgeClear)
+        XCTAssertEqual(m.quantities.walkway.cagedLadders, 1)
+    }
+
+    func testSwitchedOffAndAnOlderJobHaveNone() {
+        var v = plain()
+        var c = RoofMount.choice(v); c.walkwayRidge = false; RoofMount.setChoice(&v, c)
+        XCTAssertTrue(RoofWalkway.walkways(RoofMount.layout(v, latitude: 15).layout).isEmpty)
+        // a choice kept before the switch existed (no key): off, and the same digest as then
+        let old = #"{"avoidShade":true,"digest":"","faceUse":{},"placements":{},"removed":[],"ribClamp":false}"#
+        let decoded = try! JSONDecoder().decode(RoofMount.Choice.self, from: Data(old.utf8))
+        XCTAssertFalse(decoded.walkwayRidge)
+        let input = RoofMount.input(plain(), latitude: 15)
+        var before = RoofMount.Choice(); before.walkwayRidge = false
+        XCTAssertEqual(RoofMount.digest(input, choice: decoded), RoofMount.digest(input, choice: before))
+        XCTAssertNotEqual(RoofMount.digest(input, choice: RoofMount.Choice()), RoofMount.digest(input, choice: before))
+    }
+
+    /// A shed roof has no ridge: no ridge walkway, and the layout as without it.
+    func testAShedRoofHasNone() {
+        var v = plain()
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let m = RoofMount.layout(v, latitude: 15).layout
+        XCTAssertFalse(RoofWalkway.walkways(m).contains { $0.ridge })
+    }
+}

@@ -10,17 +10,18 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { defineInt, defineSecret, defineString } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
-import { bangkokDay, checkMember, checkRequest, cleanReply, LIMITS } from './guard';
+import { bangkokDay, checkMember, checkRequest, cleanReply, isQuestion, LIMITS } from './guard';
 
 initializeApp();
 
 const QWEN_API_KEY = defineSecret('QWEN_API_KEY');
-const QWEN_MODEL = defineString('QWEN_MODEL', { default: 'qwen-plus', description: 'Qwen model id' });
+// free quota only: turn on "Free quota only" for this model in the Model Studio console (calls are refused, never billed)
+const QWEN_MODEL = defineString('QWEN_MODEL', { default: 'qwen3.8-max', description: 'Qwen model id' });
 const QWEN_BASE_URL = defineString('QWEN_BASE_URL', {
   default: 'https://maas.qwencloudapi.com/compatible-mode/v1',
   description: 'OpenAI-compatible base URL of the Qwen service',
 });
-const DAILY_LIMIT = defineInt('ASSISTANT_DAILY_LIMIT', { default: 50, description: 'Requests per person per day' });
+const DAILY_LIMIT = defineInt('ASSISTANT_DAILY_LIMIT', { default: 50, description: 'Questions per person per day' });
 
 export const assistant = onCall(
   { region: 'asia-southeast1', secrets: [QWEN_API_KEY], timeoutSeconds: 90, memory: '256MiB', maxInstances: 10 },
@@ -35,16 +36,21 @@ export const assistant = onCall(
     const body = checkRequest(request.data);
     if ('code' in body) throw new HttpsError(body.code, body.message);
 
-    // count the request before calling, so a failed call still counts against a runaway loop
+    // count before calling, so a failed call still counts: questions against the limit (a question's tool rounds are
+    // free), and every request against the limit × the rounds a question may take, which stops a runaway loop
     const limit = DAILY_LIMIT.value();
+    const question = isQuestion(body.messages);
     const usage = db.doc(`assistantUsage/${email}_${bangkokDay(new Date())}`);
     const { allowed, used } = await db.runTransaction(async (tx) => {
-      const n = ((await tx.get(usage)).data()?.count as number | undefined) ?? 0;
-      if (n >= limit) return { allowed: false, used: n };
-      tx.set(usage, { email, day: bangkokDay(new Date()), count: n + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return { allowed: true, used: n + 1 };
+      const data = (await tx.get(usage)).data();
+      const n = (data?.count as number | undefined) ?? 0;
+      const requests = (data?.requests as number | undefined) ?? n;
+      if ((question && n >= limit) || requests >= limit * LIMITS.roundsPerQuestion) return { allowed: false, used: n };
+      tx.set(usage, { email, day: bangkokDay(new Date()), count: n + (question ? 1 : 0), requests: requests + 1,
+        updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return { allowed: true, used: n + (question ? 1 : 0) };
     });
-    if (!allowed) throw new HttpsError('resource-exhausted', `ใช้ผู้ช่วยครบ ${limit} ครั้งของวันนี้แล้ว`);
+    if (!allowed) throw new HttpsError('resource-exhausted', `ถามผู้ช่วยครบ ${limit} คำถามของวันนี้แล้ว`);
 
     let res: Response;
     try {
@@ -54,8 +60,8 @@ export const assistant = onCall(
         body: JSON.stringify({
           model: QWEN_MODEL.value(),
           messages: body.messages,
-          tools: body.tools,
-          tool_choice: 'auto',
+          // a request without tools (the feed's daily summary) sends neither
+          ...(body.tools.length ? { tools: body.tools, tool_choice: 'auto' } : {}),
           max_tokens: LIMITS.maxTokens,
           temperature: 0.2,
         }),

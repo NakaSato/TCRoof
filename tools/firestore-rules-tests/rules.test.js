@@ -54,8 +54,8 @@ test('the team reads and writes everything, as before roles', async () => {
   await assertSucceeds(getDocs(collection(db(BOSS), 'jobs')));
 });
 
-test('only a manager deletes a job', async () => {
-  await assertFails(deleteDoc(doc(db(TEAM), 'jobs', 'mine')));
+test('the team deletes a job, a contractor never', async () => {
+  await assertSucceeds(deleteDoc(doc(db(TEAM), 'jobs', 'mine')));
   await assertFails(deleteDoc(doc(db(CON), 'jobs', 'mine')));
   await assertSucceeds(deleteDoc(doc(db(BOSS), 'jobs', 'mine')));
   // the team still creates them
@@ -129,6 +129,24 @@ test('an external member sends the weekly request of their own job, signed with 
   await assertFails(setDoc(job, { iecReport: '{"x":3}', iecState: 'open', weeklyRequests: '[{"w":6}]', weeklyRequestsBy: CON }, { merge: true }));
   // the team writes the requests under any name
   await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { weeklyRequests: '[]', weeklyRequestsBy: TEAM }, { merge: true }));
+});
+
+test('an external member sends the WBS ticks of their own job, signed with their email', async () => {
+  const d = db(CON);
+  const job = doc(d, 'jobs', 'mine');
+  await assertSucceeds(setDoc(job, { wbsTicks: '{"2.1.1":{}}', wbsTicksBy: CON }, { merge: true }));
+  // with the IEC test and the weekly request in the same write, as the app sends them
+  await assertSucceeds(setDoc(job, { iecReport: '{"x":1}', iecState: 'open', weeklyRequests: '[]', weeklyRequestsBy: CON,
+                                     wbsTicks: '{}', wbsTicksBy: CON }, { merge: true }));
+  // someone else's name, or none
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.2":{}}', wbsTicksBy: TEAM }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.2":{}}', wbsTicksBy: null }, { merge: true }));
+  // another job, or the plan's progress alongside (the team books the ticks)
+  await assertFails(setDoc(doc(d, 'jobs', 'theirs'), { wbsTicks: '{}', wbsTicksBy: CON }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.3":{}}', wbsTicksBy: CON, scheduleActual: '{}' }, { merge: true }));
+  await assertFails(setDoc(job, { wbsTicks: '{"2.1.3":{}}', wbsTicksBy: CON, scheduleWBS: '[]' }, { merge: true }));
+  // the team writes the rows and ticks under any name
+  await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { scheduleWBS: '[]', wbsTicks: '{}', wbsTicksBy: TEAM }, { merge: true }));
 });
 
 test('an external member fills daily reports but never signs them', async () => {
@@ -483,4 +501,106 @@ test('assistantUsage is the assistant function\'s only: no client reads or write
     await assertFails(getDoc(ref));
     await assertFails(setDoc(ref, { count: 0 }));
   }
+});
+
+test('tank standard: every member reads it, a manager saves a newer revision signed by themselves', async () => {
+  const ref = (who) => doc(db(who), 'config', 'tankStandard');
+  const std = (by, revision) => ({ json: '{"rowGap":3}', revision, savedBy: by, updatedAt: serverTimestamp() });
+  await assertFails(setDoc(ref(TEAM), std(TEAM, 1)));
+  await assertFails(setDoc(ref(CON), std(CON, 1)));
+  await assertFails(setDoc(ref(BOSS), std(TEAM, 1)));
+  await assertSucceeds(setDoc(ref(BOSS), std(BOSS, 1)));
+  for (const who of [TEAM, CON, BOSS]) await assertSucceeds(getDoc(ref(who)));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'tankStandard')));
+  await assertFails(setDoc(ref(BOSS), std(BOSS, 1)));
+  await assertFails(setDoc(ref(BOSS), { ...std(BOSS, 2), extra: 1 }));
+  await assertSucceeds(setDoc(ref(BOSS), std(BOSS, 2)));
+  await assertSucceeds(setDoc(ref(DEV), std(DEV, 3)));
+  await assertFails(deleteDoc(ref(BOSS)));
+});
+
+test('standard designs: every member reads them, only the team saves, never an older revision', async () => {
+  const design = { json: '{}', revision: 2, savedBy: TEAM };
+  await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), design));
+  await assertSucceeds(getDoc(doc(db(CON), 'standardDesigns', 'team-1')));
+  await assertSucceeds(getDocs(collection(db(CON), 'standardDesigns')));
+  await assertFails(setDoc(doc(db(CON), 'standardDesigns', 'team-2'), design));
+  await assertFails(updateDoc(doc(db(CON), 'standardDesigns', 'team-1'), { revision: 3 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'standardDesigns', 'team-1'), { revision: 3, json: '{"a":1}' }));
+  await assertFails(updateDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), { revision: 2 }));
+  await assertFails(deleteDoc(doc(db(BOSS), 'standardDesigns', 'team-1')));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'standardDesigns', 'team-1')));
+});
+
+test('a standard design\'s sheet pages: every member reads, the team writes', async () => {
+  const page = { design: 'team-1', data: 'AAAA', width: 10, height: 10 };
+  await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p1'), page));
+  await assertSucceeds(getDoc(doc(db(CON), 'standardDesignSheets', 'p1')));
+  await assertFails(setDoc(doc(db(CON), 'standardDesignSheets', 'p2'), page));
+  await assertFails(setDoc(doc(db(TEAM), 'standardDesignSheets', 'p3'), { width: 1 }));
+  await assertFails(deleteDoc(doc(db(BOSS), 'standardDesignSheets', 'p1')));
+});
+
+test('the travel log is personal: its owner and managers read it, only the owner writes it', async () => {
+  const MATE = 'mate@tcroof.co';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const d = ctx.firestore();
+    await setDoc(doc(d, 'members', MATE), {});
+    await setDoc(doc(d, 'expenses', 'e1'), { ownerEmail: TEAM, amount: 5000 });
+    await setDoc(doc(d, 'trips', 't1'), { ownerEmail: TEAM, stops: '[]' });
+    await setDoc(doc(d, 'claims', 'c1'), { ownerEmail: TEAM, month: '2026-10' });
+  });
+  const me = db(TEAM), mate = db(MATE);
+  // the owner lists theirs with the app's query, writes and deletes them
+  await assertSucceeds(getDocs(query(collection(me, 'expenses'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(getDocs(query(collection(me, 'trips'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(getDocs(query(collection(me, 'claims'), where('ownerEmail', '==', TEAM))));
+  await assertSucceeds(updateDoc(doc(me, 'expenses', 'e1'), { amount: 6000 }));
+  await assertSucceeds(setDoc(doc(me, 'expenses', 'e2'), { ownerEmail: TEAM, amount: 100 }));
+  await assertFails(setDoc(doc(me, 'expenses', 'e3'), { ownerEmail: TEAM, amount: '100' }));
+  // nobody makes a record in someone else's name, or hands theirs over
+  await assertFails(setDoc(doc(me, 'expenses', 'e4'), { ownerEmail: MATE, amount: 100 }));
+  await assertFails(updateDoc(doc(me, 'trips', 't1'), { ownerEmail: MATE }));
+  // another team member neither reads nor changes them
+  await assertFails(getDoc(doc(mate, 'expenses', 'e1')));
+  await assertFails(getDocs(collection(mate, 'expenses')));
+  await assertFails(updateDoc(doc(mate, 'expenses', 'e1'), { amount: 1 }));
+  await assertFails(deleteDoc(doc(mate, 'trips', 't1')));
+  // a manager reads everyone's, but doesn't write them
+  await assertSucceeds(getDocs(collection(db(BOSS), 'expenses')));
+  await assertSucceeds(getDoc(doc(db(BOSS), 'claims', 'c1')));
+  await assertFails(updateDoc(doc(db(BOSS), 'expenses', 'e1'), { amount: 1 }));
+  // contractors have no travel log here
+  await assertFails(getDoc(doc(db(CON), 'expenses', 'e1')));
+  await assertFails(setDoc(doc(db(CON), 'expenses', 'e9'), { ownerEmail: CON, amount: 1 }));
+  await assertSucceeds(deleteDoc(doc(me, 'expenses', 'e1')));
+});
+
+test('a claim decision: managers write it, never on their own, and the claimant reads theirs', async () => {
+  const MATE = 'mate@tcroof.co';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'members', MATE), {});
+  });
+  const r = (o) => ({ ownerEmail: TEAM, month: '2026-10', submittedAt: 1000, decision: 'approved', note: '', total: 500,
+                      reviewedBy: BOSS, reviewerName: '', reviewedAt: 2000, ...o });
+  const id = `${TEAM}_2026-10`;
+  await assertSucceeds(setDoc(doc(db(BOSS), 'claimReviews', id), r()));
+  await assertSucceeds(setDoc(doc(db(BOSS), 'claimReviews', id), r({ decision: 'returned', note: 'ใบเสร็จไม่ชัด' })));
+  // signed as someone else, a wrong id, an unknown decision or a text time
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ reviewedBy: 'x@tcroof.co' })));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', `${MATE}_2026-10`), r()));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ decision: 'paid' })));
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', id), r({ submittedAt: '1000' })));
+  // a manager's own claim
+  await assertFails(setDoc(doc(db(BOSS), 'claimReviews', `${BOSS}_2026-10`), r({ ownerEmail: BOSS })));
+  // the claimant and the rest of the team don't write it
+  await assertFails(setDoc(doc(db(TEAM), 'claimReviews', id), r({ reviewedBy: TEAM })));
+  await assertFails(updateDoc(doc(db(TEAM), 'claimReviews', id), { decision: 'approved' }));
+  await assertFails(setDoc(doc(db(MATE), 'claimReviews', id), r({ reviewedBy: MATE })));
+  // the claimant reads theirs with the app's query, the others don't, managers read all
+  await assertSucceeds(getDocs(query(collection(db(TEAM), 'claimReviews'), where('ownerEmail', '==', TEAM))));
+  await assertFails(getDoc(doc(db(MATE), 'claimReviews', id)));
+  await assertFails(getDoc(doc(db(CON), 'claimReviews', id)));
+  await assertSucceeds(getDocs(collection(db(BOSS), 'claimReviews')));
+  await assertFails(deleteDoc(doc(db(BOSS), 'claimReviews', id)));
 });

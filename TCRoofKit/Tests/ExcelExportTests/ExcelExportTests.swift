@@ -58,7 +58,7 @@ final class ExcelExportTests: XCTestCase {
             job.modules[ti].values["shade"] = .choice("มี", other: ""); job.modules[ti].values["shadeFrom"] = .multi(["ต้นไม้", "หอถังสูง"])
             job.modules[ti].values["shadeDir"] = .multi(["S", "SW"]); job.modules[ti].values["shadeNote"] = .text("ต้นไม้สูง ~8 ม. ห่าง 5 ม.")
             XCTAssertEqual(Schema.shadeText(job.modules[ti].values), "เงาบัง: ต้นไม้, หอถังสูง ทิศ S, SW (ต้นไม้สูง ~8 ม. ห่าง 5 ม.)")
-            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. · กึ่งฝัง")
+            XCTAssertEqual(Schema.tankKind(job.modules[ti].values), "ถัง ค.ส.ล. | กึ่งฝัง")
         }
         let png = try Data(contentsOf: fixtures.appendingPathComponent("plan.png"))
         let size = ImageSize.of(png)!
@@ -76,6 +76,23 @@ final class ExcelExportTests: XCTestCase {
         let wb = z.string("xl/workbook.xml")!
         XCTAssertEqual(wb.components(separatedBy: "<sheet ").count - 1, result.sheets.count)
         XCTAssertTrue(z.string("xl/worksheets/sheet5.xml")!.contains("1250"))
+    }
+}
+
+extension ExcelExportTests {
+    /// The roof PV layout's figures and BOQ go into the roof sheet's blank rows 38–39.
+    func testRoofPVLayoutRows() throws {
+        var (job, store) = try importFixture()
+        guard let i = job.modules.firstIndex(where: { $0.type == .roof }) else { return XCTFail("the fixture has a roof") }
+        job.modules[i].values["spansX"] = .text("1.5,4,4,4,4,1.5"); job.modules[i].values["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        job.modules[i].values[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "")
+        Roof.setFrame(&job.modules[i].values, .pratt)
+        let result = try ExcelExporter().export(job, photoData: { store.data(of: $0, in: job.id) })
+        let z = try ZipArchive(result.data)
+        let sheets = z.paths.filter { $0.hasPrefix("xl/worksheets/sheet") }.compactMap { z.string($0) }
+        let roof = try XCTUnwrap(sheets.first { $0.contains("ผังแผงอัตโนมัติ") })
+        XCTAssertTrue(roof.contains(#"r="A38""#))
+        XCTAssertTrue(roof.contains("BOQ: ราง "))
     }
 }
 

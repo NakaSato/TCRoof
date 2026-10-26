@@ -23,6 +23,9 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
     public var pitch: Double?
     /// Model identifier, e.g. "iPad14,8".
     public var device: String?
+    /// The surveyor's note, and what it shows (D1: an opening "V9", a range "V1–V10" or "บันได"), printed under it.
+    public var note: String?
+    public var tag: String?
     public init(id: UUID = UUID(), fileName: String, width: Int, height: Int, takenAt: Date = Date()) {
         self.id = id; self.fileName = fileName; self.width = width; self.height = height; self.takenAt = takenAt
     }
@@ -33,7 +36,13 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
         lat = stamp.lat; lon = stamp.lon; accuracy = stamp.accuracy; heading = stamp.heading; pitch = stamp.pitch; device = stamp.device
     }
 
-    /// "17.0062, 99.8235 · หันทิศ 195° · 29/9/2569 10:42" under the photo in the report; nil without a position or direction.
+    /// `V9 | ฝาปล่องแตก`: the tag and the note for a caption; nil when neither is set.
+    public var caption: String? {
+        let parts = [tag, note].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " | ")
+    }
+
+    /// "17.0062, 99.8235 | หันทิศ 195° | 29/9/2569 10:42" under the photo in the report; nil without a position or direction.
     public var stampLine: String? {
         var parts: [String] = []
         if let lat, let lon { parts.append(String(format: "%.4f, %.4f", lat, lon)) }
@@ -41,7 +50,7 @@ public struct Photo: Codable, Hashable, Identifiable, Sendable {
         guard !parts.isEmpty else { return nil }
         let c = Calendar(identifier: .buddhist).dateComponents([.day, .month, .year, .hour, .minute], from: takenAt)
         parts.append(String(format: "%d/%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.year ?? 0, c.hour ?? 0, c.minute ?? 0))
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 }
 
@@ -79,6 +88,10 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
     public var note = ""
     /// D1: marked `ok` with `ยืนยันที่เหลือ n จุดว่าตรงแบบ`, not one by one (printed as ยืนยันแบบรวม).
     public var bulk = false
+    /// C1: height above the roof (m) of a turbine, stack, pipe or other obstacle, for its shade; "" = the kind's default.
+    public var height = ""
+    /// D1 from a standard design: the photo that shows a point missing, moved or added on site (docs/specs/standard-designs.md §3.2).
+    public var photo: Photo?
     public init(label: String = "", x: String = "", y: String = "", w: String = "", h: String = "", kind: String = "", canCover: Bool = false,
                 status: String = "", origin: String = "", stdX: String = "", stdY: String = "", note: String = "") {
         self.label = label; self.x = x; self.y = y; self.w = w; self.h = h; self.kind = kind; self.canCover = canCover
@@ -100,6 +113,8 @@ public struct Obstacle: Codable, Hashable, Identifiable, Sendable {
         stdY = try c.decodeIfPresent(String.self, forKey: .stdY) ?? ""
         note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
         bulk = try c.decodeIfPresent(Bool.self, forKey: .bulk) ?? false
+        height = try c.decodeIfPresent(String.self, forKey: .height) ?? ""
+        photo = try c.decodeIfPresent(Photo.self, forKey: .photo)
     }
 }
 
@@ -116,6 +131,17 @@ public struct Breaker: Codable, Hashable, Identifiable, Sendable {
     /// ดี / พอใช้ / ชำรุด
     public var condition = ""
     public var count = 1
+    // SLD level 2 (optional, drawn on the single line diagram only)
+    /// Feeder cable as written on the drawing ("4x50,1x10-IEC01").
+    public var cable = ""
+    /// "ø50mm. UPVC" / "IN WIRE WAY"
+    public var conduit = ""
+    /// Load name under the load block ("LC11").
+    public var load = ""
+    /// Where the load is ("1st FL.").
+    public var floor = ""
+    /// A spare breaker: drawn with `SPARE`, no cable or load.
+    public var spare = false
     public init(at: String = "", af: String = "", ic: String = "", poles: String = "", brand: String = "", target: String = "", condition: String = "", count: Int = 1) {
         self.at = at; self.af = af; self.ic = ic; self.poles = poles; self.brand = brand; self.target = target; self.condition = condition; self.count = count
     }
@@ -130,6 +156,11 @@ public struct Breaker: Codable, Hashable, Identifiable, Sendable {
         target = try c.decodeIfPresent(String.self, forKey: .target) ?? ""
         condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
         count = try c.decodeIfPresent(Int.self, forKey: .count) ?? 1
+        cable = try c.decodeIfPresent(String.self, forKey: .cable) ?? ""
+        conduit = try c.decodeIfPresent(String.self, forKey: .conduit) ?? ""
+        load = try c.decodeIfPresent(String.self, forKey: .load) ?? ""
+        floor = try c.decodeIfPresent(String.self, forKey: .floor) ?? ""
+        spare = try c.decodeIfPresent(Bool.self, forKey: .spare) ?? false
     }
 }
 
@@ -154,6 +185,11 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
     public var location = ""
     /// Sub-boards: one optional photo. The main board's four photos are `tr{i}_feedPhoto`, `_mdbOpen`, `_mdbBreaker`, `_mdbSpace`.
     public var photos: [Photo] = []
+    // SLD level 2 (optional)
+    /// Label above the bus ("4x300A. Cu. BUSBAR W/GROUND BUS").
+    public var busbar = ""
+    /// Ground conductor to the rod ("1x35-IEC01 ø20 PVC."); drawn with the N/G bar when given.
+    public var ground = ""
     public init(name: String = "", isMain: Bool = false, at: String = "") { self.name = name; self.isMain = isMain; self.at = at }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
@@ -171,6 +207,8 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         conditionNote = try c.decodeIfPresent(String.self, forKey: .conditionNote) ?? ""
         location = try c.decodeIfPresent(String.self, forKey: .location) ?? ""
         photos = try c.decodeIfPresent([Photo].self, forKey: .photos) ?? []
+        busbar = try c.decodeIfPresent(String.self, forKey: .busbar) ?? ""
+        ground = try c.decodeIfPresent(String.self, forKey: .ground) ?? ""
     }
 }
 
@@ -357,6 +395,7 @@ public struct Values: Codable, Hashable, Sendable {
             case .photo(let p): return [p]
             case .photos(let a): return a
             case .transformers(let a): return a.flatMap { $0.boards.flatMap(\.photos) }
+            case .obstacles(let a): return a.compactMap(\.photo)
             default: return []
             }
         }
@@ -526,8 +565,8 @@ public struct InstallInfo: Codable, Hashable, Sendable {
         self.doneSteps = doneSteps; self.currentFraction = currentFraction; self.team = team; self.dueDate = dueDate; self.movedAt = movedAt
     }
 
-    public static let steps = ["ส่งวัสดุเข้าหน้างาน", "ติดตั้งโครงสร้างราง", "ติดตั้งแผงโซลาร์", "เดินสาย DC · ตู้ DC",
-                               "ติดตั้งอินเวอร์เตอร์ · ตู้ AC", "ทดสอบระบบ", "ขนานไฟ · ส่งมอบ"]
+    public static let steps = ["ส่งวัสดุเข้าหน้างาน", "ติดตั้งโครงสร้างราง", "ติดตั้งแผงโซลาร์", "เดินสาย DC | ตู้ DC",
+                               "ติดตั้งอินเวอร์เตอร์ | ตู้ AC", "ทดสอบระบบ", "ขนานไฟ | ส่งมอบ"]
 
     public var isDone: Bool { doneSteps >= Self.steps.count }
     /// Step in progress; nil once handed over.

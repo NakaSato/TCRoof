@@ -14,6 +14,7 @@ struct PhotoField: View {
     /// When set, offers "แผนที่ดาวเทียม" to fill the frame with a satellite picture of this location.
     var mapGPS: String? = nil
     @Environment(SurveyModel.self) private var model
+    @Environment(\.photoDetails) private var details
     @State private var fetchingMap = false
     @State private var mapError: String?
     @State private var showPicker = false
@@ -63,10 +64,30 @@ struct PhotoField: View {
         }
         .photoSources(picker: $showPicker, camera: $showCamera) { img in photo = model.addPhoto(img, to: jobID) }
         .sheet(isPresented: $showFull) {
-            if let p = photo, let img = model.image(p, in: jobID) { PhotoViewer(image: img, title: label) }
+            if let p = photo, let img = model.image(p, in: jobID) {
+                if let details {
+                    PhotoDetailSheet(photo: $photo, image: img, title: label, context: details) {
+                        Task { @MainActor in try? await Task.sleep(nanoseconds: 400_000_000); retake() }
+                    }
+                } else {
+                    PhotoViewer(image: img, title: label)
+                }
+            }
         }
         .errorAlert($mapError)
+        #if DEBUG
+        .task {
+            // `-surveyD1 photodetails`: the first photo with details opens them, once
+            guard details != nil, photo != nil, UserDefaults.standard.bool(forKey: "debug.openPhotoDetails") else { return }
+            UserDefaults.standard.set(false, forKey: "debug.openPhotoDetails")
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            showFull = true
+        }
+        #endif
     }
+
+    /// The camera when there is one, else the library.
+    func retake() { if UIImagePickerController.isSourceTypeAvailable(.camera) { showCamera = true } else { showPicker = true } }
 
     @ViewBuilder var mapButton: some View {
         if mapGPS != nil {
@@ -97,6 +118,12 @@ struct PhotosField: View {
                 }), jobID: jobID, height: 180)
                 .overlay(alignment: .topLeading) {
                     Text("\(i + 1)").font(.sarabun(12, .bold, relativeTo: .caption)).padding(6).background(.thinMaterial, in: Circle()).padding(6)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if let c = p.caption {
+                        Text(c).font(.sarabun(12, .bold, relativeTo: .caption)).lineLimit(1).padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(.thinMaterial, in: Capsule()).padding(6)
+                    }
                 }
             }
             if photos.count < max {
@@ -160,6 +187,8 @@ struct CameraPicker: UIViewControllerRepresentable {
 struct SignatureField: View {
     @Binding var photo: Photo?
     let jobID: UUID
+    /// The signed-in person signs here: offer their saved signature (`MySignature`).
+    var mine = false
     @Environment(SurveyModel.self) private var model
     @State private var signing = false
     var body: some View {
@@ -174,28 +203,30 @@ struct SignatureField: View {
             .onTapGesture { signing = true }
             if photo != nil { Button("ลบลายเซ็น", role: .destructive) { photo = nil } }
         }
-        .signaturePad(isPresented: $signing) { img in if let img { photo = model.addPhoto(img, to: jobID, maxSide: 900, png: true) } }
+        .signaturePad(isPresented: $signing, mine: mine) { img in if let img { photo = model.addPhoto(img, to: jobID, maxSide: 900, png: true) } }
     }
 }
 
 extension View {
     /// The signature pad: full screen over a dimmed page on iPad (docs/ui/survey-e1 states/05), a sheet on iPhone.
-    func signaturePad(isPresented: Binding<Bool>, who: String? = nil, done: @escaping (UIImage?) -> Void) -> some View {
-        modifier(SignaturePadPresenter(isPresented: isPresented, who: who, done: done))
+    /// With `mine`, the pad offers the account's saved signature and to keep the one drawn (`MySignature`).
+    func signaturePad(isPresented: Binding<Bool>, who: String? = nil, mine: Bool = false, done: @escaping (UIImage?) -> Void) -> some View {
+        modifier(SignaturePadPresenter(isPresented: isPresented, who: who, mine: mine, done: done))
     }
 }
 
 private struct SignaturePadPresenter: ViewModifier {
     @Binding var isPresented: Bool
     let who: String?
+    let mine: Bool
     let done: (UIImage?) -> Void
     @Environment(\.horizontalSizeClass) private var sizeClass
     func body(content: Content) -> some View {
         if sizeClass == .compact {
-            content.sheet(isPresented: $isPresented) { SignaturePad(who: who, done: done) }
+            content.sheet(isPresented: $isPresented) { SignaturePad(who: who, mine: mine, done: done) }
         } else {
             content.fullScreenCover(isPresented: $isPresented) {
-                SignaturePad(who: who, done: done).presentationBackground(.clear)
+                SignaturePad(who: who, mine: mine, done: done).presentationBackground(.clear)
             }
         }
     }
@@ -204,12 +235,16 @@ private struct SignaturePadPresenter: ViewModifier {
 /// Sign with Apple Pencil or a finger. On iPad it is a card inset 32 pt over a dimmed page; on iPhone it fills its sheet.
 /// The PNG is the drawing's bounds plus 12 pt, at scale 2, drawn in the light trait so the ink stays black.
 struct SignaturePad: View {
-    /// "วิศวกรผู้สำรวจ · <name>" under the title.
+    /// "วิศวกรผู้สำรวจ | <name>" under the title.
     var who: String? = nil
+    /// The signed-in person signs: `ใช้ลายเซ็นของฉัน` and `จำลายเซ็นนี้ไว้ในเครื่อง` (`MySignature`).
+    var mine = false
     let done: (UIImage?) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var canvas = PKCanvasView()
+    @State private var mySignature = MySignature.shared
+    @State private var keep: Bool?
 
     static let fill = Theme.padFill
     static let line = Theme.padLine
@@ -222,7 +257,9 @@ struct SignaturePad: View {
             VStack(spacing: 12) {
                 topBar(phone: phone)
                 pad(phone: phone)
-                Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                if mine && mySignature.account?.isEmpty == false { mineRow } else {
+                    Text("เซ็นชื่อเหนือเส้นด้วย Apple Pencil หรือนิ้ว").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                }
             }
             .padding(.horizontal, phone ? 16 : 20).padding(.top, 14).padding(.bottom, 18)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: phone ? 0 : 20))
@@ -247,6 +284,7 @@ struct SignaturePad: View {
                     let r = d.bounds.insetBy(dx: -12, dy: -12)
                     var img: UIImage?
                     UITraitCollection(userInterfaceStyle: .light).performAsCurrent { img = d.image(from: r, scale: 2) }
+                    if mine, keeping, let img { mySignature.save(img) }
                     done(img)
                 }
                 dismiss()
@@ -256,6 +294,37 @@ struct SignaturePad: View {
                     .background(Self.save, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    /// Keep the drawing as the account's signature: on by default only while none is saved.
+    var keeping: Bool { keep ?? !mySignature.hasSignature }
+
+    var mineRow: some View {
+        HStack(spacing: 12) {
+            if let saved = mySignature.image {
+                Button {
+                    done(saved)
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(uiImage: saved).resizable().scaledToFit().frame(width: 64, height: 32)
+                        Text("ใช้ลายเซ็นของฉัน").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.primary)
+                    }
+                    .padding(.horizontal, 12).frame(minHeight: 44)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.4)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("signature.useMine")
+            }
+            Spacer(minLength: 8)
+            Toggle(isOn: Binding(get: { keeping }, set: { keep = $0 })) {
+                Text(mySignature.hasSignature ? "แทนลายเซ็นที่จำไว้" : "จำลายเซ็นนี้ไว้ในเครื่อง")
+                    .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            }
+            .fixedSize()
+            .tint(Theme.primary)
+            .accessibilityIdentifier("signature.keep")
         }
     }
 

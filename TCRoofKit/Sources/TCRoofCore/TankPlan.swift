@@ -18,10 +18,21 @@ public struct TankPlan: Sendable {
     public let tags: [String?]
     /// The tank's top-left corner on the sketch and its points per metre.
     public let frame: (ox: Double, oy: Double, k: Double)
+    /// The span chains and totals (the ops tagged dim / dimtxt) as dimensions, for the DXF's DIMENSIONs.
+    public let dimensions: [SketchDXF.Dimension]
 
     /// nil without spans. `chips` leaves the span numbers to the page (it draws them as buttons); `hints` adds the
-    /// page's note about sub-step 2.
-    public init?(_ v: Values, width W: Double = 690, chips: Bool = false, hints: Bool = false) {
+    /// page's note about sub-step 2. `details` is the printed sheet (the PDF, the Excel picture and the DXF,
+    /// docs/specs/auto-drawing.md §5.5): the beams as double dashed bands on the inner grid lines, the section marks
+    /// 1–1 and 2–2 at the centre lines, the cross-shaped vents of a `cross` design, and under the caption the size and
+    /// volume summary and the note that it is not a construction drawing.
+    public init?(_ v: Values, width W: Double = 690, chips: Bool = false, hints: Bool = false, details: Bool = false) {
+        if Tank.isRound(v) {
+            // a round tank: the circle, its centre lines and the diameter (`TankPlan+Round`); no spans to tap
+            guard let r = Self.round(v, width: W, hints: hints, details: details) else { return nil }
+            sketch = r.sketch; self.chips = []; tags = r.tags; frame = r.frame; dimensions = r.dimensions
+            return
+        }
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
         guard !sx.isEmpty, !sy.isEmpty else { return nil }
         let TW = sx.reduce(0, +), TH = sy.reduce(0, +)
@@ -60,6 +71,19 @@ public struct TankPlan: Sendable {
         o.append(.rect(Box(ox + 3, oy + 3, max(0, w - 6), max(0, h - 6)), stroke: ink, fill: nil, width: 0.8))
 
         tag("out")
+        if details {
+            // beams: a band 0.30 m wide (assumed) on every inner grid line, as on the กปภ. sheets
+            let half = max(1.2, Self.beam / 2 * k), beam = RGBA(hex: 0x9AA8BA)
+            for x in xs.dropFirst().dropLast() {
+                for d in [-half, half] { o.append(.line(Pt(ox + x * k + d, oy + 3), Pt(ox + x * k + d, oy + h - 3), width: 0.4, color: beam, dash: [3, 2])) }
+            }
+            for y in ys.dropFirst().dropLast() {
+                for d in [-half, half] { o.append(.line(Pt(ox + 3, oy + y * k + d), Pt(ox + w - 3, oy + y * k + d), width: 0.4, color: beam, dash: [3, 2])) }
+            }
+            tag("beam")
+            o += Self.sectionMarks(ox: ox, oy: oy, w: w, h: h)
+            tag("sect", text: "txt")
+        }
         // level tags in the four quadrants
         if let e = v.number(Tank.Key.exposed) {
             let t = "ระดับหลังถัง +" + String(format: "%.2f", e)
@@ -72,6 +96,7 @@ public struct TankPlan: Sendable {
 
         tag("txt")
         // obstacles (sub-step 2), as on the old plan; points marked ไม่มีจริง are left out
+        let crossVents = TankDesign.current(v)?.design.ventStyle == "cross"
         for ob in v.obstacles(Roof.Key.obstacles) where !ob.isAbsent {
             guard let x = NumberInput.value(ob.x), let y = NumberInput.value(ob.y), let ow = NumberInput.value(ob.w), let oh = NumberInput.value(ob.h), ow > 0, oh > 0 else { continue }
             if TankPoints.onWall(ob.kind) {
@@ -92,7 +117,8 @@ public struct TankPlan: Sendable {
                 continue
             }
             let b = Box(ox + x * k, oy + y * k, ow * k, oh * k)
-            o.append(.rect(b, stroke: nil, fill: .white)); o.append(.hatch(b, color: .red)); o.append(.rect(b, stroke: .red, fill: nil, width: 1))
+            if details && crossVents && ob.kind == TankPoints.vent { o += Self.crossVent(b) }
+            else { o.append(.rect(b, stroke: nil, fill: .white)); o.append(.hatch(b, color: .red)); o.append(.rect(b, stroke: .red, fill: nil, width: 1)) }
             if !ob.label.isEmpty { o.append(.text("\(ob.label) \(fmt(ow))x\(fmt(oh))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark)) }
         }
 
@@ -113,6 +139,16 @@ public struct TankPlan: Sendable {
             else { o.append(.text(String(format: "%.2f", s), at: p, size: fsX, color: ink, align: .center)) }
         }
         o.append(.text(String(format: "%.2f", TW), at: Pt(ox + w / 2, ty - 7), size: 9, bold: true, color: ink, align: .center))
+        var dims: [SketchDXF.Dimension] = []
+        for (i, s) in sx.enumerated() {
+            dims.append(.init(Pt(ox + xs[i] * k, oy + h + 6), Pt(ox + xs[i + 1] * k, oy + h + 6), at: Pt(0, cy), text: String(format: "%.2f", s), size: fsX))
+        }
+        dims.append(.init(Pt(ox, cy), Pt(ox + w, cy), at: Pt(0, ty), text: String(format: "%.2f", TW), size: 9))
+        for (j, s) in sy.enumerated() {
+            dims.append(.init(Pt(ox + w + 6, oy + ys[j] * k), Pt(ox + w + 6, oy + ys[j + 1] * k), at: Pt(cx, 0), vertical: true,
+                              text: String(format: "%.2f", s), size: fsY))
+        }
+        dims.append(.init(Pt(cx, oy), Pt(cx, oy + h), at: Pt(tx, 0), vertical: true, text: String(format: "%.2f", TH), size: 9))
 
         o.append(.line(Pt(cx, oy - 4), Pt(cx, oy + h + 4), width: 0.6, color: ink))
         o.append(.line(Pt(tx, oy - 4), Pt(tx, oy + h + 4), width: 0.6, color: ink))
@@ -129,7 +165,7 @@ public struct TankPlan: Sendable {
         tag("dim", text: "dimtxt")
         // note, north arrow, caption
         let wall = Tank.typeName(v).map { "ผนัง " + $0 }
-        let note = ([wall] + [hints ? "สิ่งกีดขวางระบุในขั้นที่ 2" : nil]).compactMap { $0 }.joined(separator: " · ")
+        let note = ([wall] + [hints ? "สิ่งกีดขวางระบุในขั้นที่ 2" : nil]).compactMap { $0 }.joined(separator: " | ")
         if !note.isEmpty { o.append(.text(note, at: Pt(W - 50, 14), size: 8, color: .ink2, align: .right)) }
         tag("txt")
         if let az = Tank.azimuth(v) { o += Self.northArrow(at: Pt(W - 24, 36), azimuth: az) }
@@ -140,17 +176,64 @@ public struct TankPlan: Sendable {
         o.append(.line(Pt(ox, capY + 8), Pt(ox + Double(caption.count) * 5.6, capY + 8), width: 0.9, color: RGBA(hex: 0x16325C)))
         o.append(.text("หน่วย: เมตร", at: Pt(W - 16, capY), size: 8, color: .ink2, align: .right))
 
+        var bottom = capY + 14
+        if details {
+            if let sum = Tank.summary(v) {
+                o.append(.text(sum.text, at: Pt(ox, capY + 20), size: 8.5, color: ink)); bottom = capY + 28
+            }
+            o.append(.text(TankDrawings.note, at: Pt(ox, bottom + 4), size: 7.5, color: .ink2)); bottom += 12
+        }
         tag("txt")
 
-        sketch = Sketch(width: W, height: max(H, capY + 14), ops: o)
+        sketch = Sketch(width: W, height: max(H, bottom), ops: o)
         self.chips = chipList
         self.tags = tags
         frame = (ox, oy, k)
+        dimensions = dims
+    }
+
+    /// The beams' width on the plan (m), assumed.
+    public static let beam = 0.30
+
+    /// Section marks: 1–1 cuts at half of the width (seen towards the left), 2–2 at half of the length (seen up).
+    static func sectionMarks(ox: Double, oy: Double, w: Double, h: Double) -> [DrawOp] {
+        var o: [DrawOp] = []
+        let mark = RGBA(hex: 0x16325C), cxm = ox + w / 2, cym = oy + h / 2
+        o.append(.line(Pt(cxm, oy - 6), Pt(cxm, oy + h + 6), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
+        o.append(.line(Pt(ox - 6, cym), Pt(ox + w + 6, cym), width: 0.7, color: mark, dash: [10, 3, 2, 3]))
+        for (c, dir, n) in [(Pt(cxm, oy + 13), Pt(-1, 0), "1"), (Pt(cxm, oy + h - 13), Pt(-1, 0), "1"),
+                            (Pt(ox + 13, cym), Pt(0, -1), "2"), (Pt(ox + w - 13, cym), Pt(0, -1), "2")] {
+            // the arrow head on the side the section is seen from, then the numbered bubble
+            let tip = Pt(c.x + dir.x * 13, c.y + dir.y * 13), nrm = Pt(-dir.y * 4, dir.x * 4)
+            o.append(.polygon([tip, Pt(c.x + dir.x * 7 + nrm.x, c.y + dir.y * 7 + nrm.y), Pt(c.x + dir.x * 7 - nrm.x, c.y + dir.y * 7 - nrm.y)],
+                              stroke: nil, fill: mark))
+            o.append(.circle(c, r: 6, stroke: mark, fill: .white, width: 0.9))
+            o.append(.text(n, at: c, size: 7.5, bold: true, color: mark, align: .center))
+        }
+        return o
+    }
+
+    /// A `cross` design's vent (แบบเห็ด on a column head, the 40 × 40 sheet): a plus as wide as the vent, flange ticks
+    /// at the arms' ends and a circle in the middle.
+    static func crossVent(_ b: Box) -> [DrawOp] {
+        let c = Pt(b.x + b.w / 2, b.y + b.h / 2), a = min(b.w, b.h) / 2, t = max(1.2, a * 0.28)
+        var o: [DrawOp] = [
+            .polygon([Pt(c.x - t, c.y - a), Pt(c.x + t, c.y - a), Pt(c.x + t, c.y - t), Pt(c.x + a, c.y - t), Pt(c.x + a, c.y + t), Pt(c.x + t, c.y + t),
+                      Pt(c.x + t, c.y + a), Pt(c.x - t, c.y + a), Pt(c.x - t, c.y + t), Pt(c.x - a, c.y + t), Pt(c.x - a, c.y - t), Pt(c.x - t, c.y - t)],
+                     stroke: .red, fill: .white, width: 0.9),
+        ]
+        let f = t * 1.8
+        for (p, horizontal) in [(Pt(c.x, c.y - a), true), (Pt(c.x, c.y + a), true), (Pt(c.x - a, c.y), false), (Pt(c.x + a, c.y), false)] {
+            o.append(horizontal ? .line(Pt(p.x - f, p.y), Pt(p.x + f, p.y), width: 1, color: .red) : .line(Pt(p.x, p.y - f), Pt(p.x, p.y + f), width: 1, color: .red))
+        }
+        o.append(.circle(c, r: max(0.8, t * 0.8), stroke: .red, fill: .white, width: 0.8))
+        return o
     }
 
     /// The iPhone plan (docs/ui/survey-d1-size-iphone, 330 × 300): the outline, the grid lines named 1… / A… and the
     /// two totals, the north arrow at the top right. Each span stays on the full plan (`init`).
     public static func compact(_ v: Values) -> Sketch? {
+        if Tank.isRound(v) { return compactRound(v) }
         let sx = parseSpans(v.text(Roof.Key.spansX)), sy = parseSpans(v.text(Roof.Key.spansY))
         guard !sx.isEmpty, !sy.isEmpty, let f = compactFrame(v) else { return nil }
         let TW = sx.reduce(0, +), TH = sy.reduce(0, +), k = f.k, w = TW * k, h = TH * k, ox = f.ox, oy = f.oy

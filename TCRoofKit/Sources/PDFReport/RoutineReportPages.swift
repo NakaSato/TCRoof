@@ -235,26 +235,31 @@ public struct RoutineReportPages {
     }
 
     /// Signature boxes side by side: role, name, and the date signed (or a blank line).
-    func signatures(_ f: inout Flow, _ boxes: [(role: String, name: String, signed: Date?, verb: String)]) {
+    /// The signature lines, each with its name and role; a drawn signature (`drawn`, by box) sits on its line, with the
+    /// date under the role, else the date stands over the line.
+    func signatures(_ f: inout Flow, _ boxes: [(role: String, name: String, signed: Date?, verb: String)], drawn: [Photo?] = []) {
         let w = Self.cw / Double(max(boxes.count, 1))
         var o: [DrawOp] = []
+        let anyDrawn = drawn.contains { $0 != nil }
         for (i, s) in boxes.enumerated() {
             let cx = Self.margin + w * (Double(i) + 0.5)
+            let image = drawn.indices.contains(i) ? drawn[i] : nil
             o.append(.line(Pt(cx - 80, 30), Pt(cx + 80, 30), width: 0.6, color: .black))
+            if let image { o.append(.photo(image, Box(cx - 60, 2, 120, 27))) }
             if let d = s.signed {
-                o.append(.text("\(s.verb) \(RoutineReport.thaiDate(d))", at: Pt(cx, 20), size: 9, bold: true, color: Self.green, align: .center))
+                o.append(.text("\(s.verb) \(RoutineReport.thaiDate(d))", at: Pt(cx, image == nil ? 20 : 69), size: 9, bold: true, color: Self.green, align: .center))
             }
             o.append(.text("(\(s.name.isEmpty ? "                              " : s.name))", at: Pt(cx, 42), size: 9, align: .center))
             o.append(.text(s.role, at: Pt(cx, 56), size: 9, color: Self.muted, align: .center))
         }
-        f.need(80)
+        f.need(anyDrawn ? 92 : 80)
         f.y += 10
-        f.place(66, o)
+        f.place(anyDrawn ? 78 : 66, o)
     }
 
     var stationLine: String {
         [station.mpNumber.map { "MP \($0)" }, station.name, station.capacityKWp > 0 ? String(format: "%.2f kWp", station.capacityKWp) : nil]
-            .compactMap { $0 }.joined(separator: " · ")
+            .compactMap { $0 }.joined(separator: " | ")
     }
 
     func projectFacts(_ f: inout Flow) {
@@ -281,16 +286,31 @@ public struct RoutineReportPages {
 
     // MARK: - R1 weekly request
 
-    public func request(_ r: RoutineReport.WeeklyRequest) -> [ReportLayout.Page] {
+    /// R1. A request with days (`PlanLine.days`, `crewOff`) prints a column per working day in the crew and work tables;
+    /// one without prints as before. `signature` is the requester's drawn signature, on the Site Engineer's line.
+    public func request(_ r: RoutineReport.WeeklyRequest, signature: Photo? = nil) -> [ReportLayout.Page] {
         let end = RoutineReport.calendar.date(byAdding: .day, value: 6, to: r.weekStart)!
         let range = "\(RoutineReport.thaiDate(r.weekStart)) – \(RoutineReport.thaiDate(end))"
-        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " · " + range)
+        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " | " + range)
         projectFacts(&f)
         facts(&f, [("สัปดาห์", range)])
 
+        let days = RoutineReport.WeeklyRequest.workingDays(station.settings)
+        let byDay = !days.isEmpty && (r.work.contains { !$0.days.isEmpty } || !r.crewOff.isEmpty)
+        func dayTitle(_ d: Int) -> String {
+            ["จ", "อ", "พ", "พฤ", "ศ", "ส"][d] + " \(RoutineReport.calendar.component(.day, from: r.date(ofDay: d)))"
+        }
         heading(&f, "1. กำลังคน")
         let crew = Self.counts(r.crew)
-        if crew.isEmpty { note(&f, "ไม่มี") } else {
+        if crew.isEmpty { note(&f, "ไม่มี") } else if byDay {
+            let rows: [[String]] = r.crew.indices.filter { r.crew[$0].count > 0 }.map { i in
+                [r.crew[i].name] + days.map { d in r.people(role: i, day: d).map { $0 == 0 ? "หยุด" : "\($0)" } ?? "–" } + ["\(r.manDays(role: i, days: days))"]
+            }
+            let total = ["รวมต่อวัน"] + days.map { r.hasWork($0) ? "\(r.people(on: $0))" : "–" } + ["\(r.manDays(days: days))"]
+            table(&f, [Column(title: "ตำแหน่ง", width: 3)] + days.map { Column(title: dayTitle($0), width: 0.7, align: .center) }
+                      + [Column(title: "คน·วัน", width: 0.9, align: .center)],
+                  rows + [total], bold: [rows.count])
+        } else {
             let total = r.crew.reduce(0) { $0 + $1.count }
             table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "จำนวน (คน)", width: 1.4, align: .center)],
                   crew + [["รวม", "\(total)"]], bold: [crew.count])
@@ -301,7 +321,14 @@ public struct RoutineReportPages {
             table(&f, [Column(title: "รายการ", width: 4), Column(title: "จำนวน", width: 1.4, align: .center)], tools)
         }
         heading(&f, "3. แผนงาน")
-        if r.work.isEmpty { note(&f, "ไม่มี") } else {
+        if r.work.isEmpty { note(&f, "ไม่มี") } else if byDay {
+            table(&f, [Column(title: "งาน MP", width: 0.8, align: .center), Column(title: "รายละเอียด", width: 3.0), Column(title: "ตำแหน่ง", width: 1.5),
+                       Column(title: "ปริมาณ", width: 0.8, align: .right)] + days.map { Column(title: dayTitle($0), width: 0.55, align: .center) },
+                  r.work.map { w in
+                      [w.task?.code ?? "อื่น", w.description, w.location, w.qty > 0 ? Self.num(w.qty) + (w.unit.isEmpty ? "" : " " + w.unit) : w.unit]
+                          + days.map { w.days.contains($0) ? "✓" : "" }
+                  })
+        } else {
             table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 3.6), Column(title: "ตำแหน่ง", width: 1.8),
                        Column(title: "ปริมาณ", width: 0.9, align: .right), Column(title: "หน่วย", width: 0.8, align: .center)],
                   r.work.map { [$0.task?.code ?? "อื่น", $0.description, $0.location, $0.qty > 0 ? Self.num($0.qty) : "", $0.unit] })
@@ -314,7 +341,8 @@ public struct RoutineReportPages {
         }
         let s = station.settings
         signatures(&f, [("Site Engineer ผู้ขออนุมัติ", s.siteEngineer, r.engineerSignedAt, "ลงนาม"),
-                        ("Inspector ผู้อนุมัติ", r.approvedBy.isEmpty ? s.inspector : r.approvedBy, r.approvedAt, "อนุมัติ")])
+                        ("Inspector ผู้อนุมัติ", r.approvedBy.isEmpty ? s.inspector : r.approvedBy, r.approvedAt, "อนุมัติ")],
+                   drawn: [signature, nil])
         return f.finish()
     }
 
@@ -332,9 +360,9 @@ public struct RoutineReportPages {
         if let schedule {
             let plan = MasterSchedule.plan(schedule.input)
             let first = plan.compactMap(\.start).min() ?? range.lowerBound
-            if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) · " }
+            if let i = MasterSchedule.weeks(from: first, to: range.lowerBound).firstIndex(of: range.lowerBound) { weekNo = "สัปดาห์ที่ \(i + 1) | " }
         }
-        var f = Flow(title: "รายงานประจำสัปดาห์ (Weekly Report)", subtitle: stationLine + " · " + weekNo + rangeText)
+        var f = Flow(title: "รายงานประจำสัปดาห์ (Weekly Report)", subtitle: stationLine + " | " + weekNo + rangeText)
         projectFacts(&f)
         facts(&f, [("สัปดาห์", weekNo + rangeText), ("รายงานประจำวัน", "\(reports.count) วัน")])
 
@@ -440,7 +468,7 @@ public struct RoutineReportPages {
         let plan = schedule.map { MasterSchedule.plan($0.input) }
         let done = schedule.flatMap { s in plan.map { MasterSchedule.status(plan: $0, actual: s.actual, through: range.upperBound).actual } } ?? 0
         let title = done >= 99.95 ? "รายงานผลการติดตั้งแล้วเสร็จ 100%" : "รายงานผลความก้าวหน้าประจำเดือน"
-        var f = Flow(title: title, subtitle: stationLine + " · ประจำเดือน " + RoutineReport.thaiMonth(range.lowerBound))
+        var f = Flow(title: title, subtitle: stationLine + " | ประจำเดือน " + RoutineReport.thaiMonth(range.lowerBound))
 
         heading(&f, "ส่วนที่ 1 รายละเอียดโครงการ")
         projectFacts(&f)
@@ -502,7 +530,7 @@ public struct RoutineReportPages {
             rows.append(["รวม"] + totals.map(String.init) + ["\(totals.reduce(0, +))"])
             table(&f, cols, rows, bold: [rows.count - 1], size: 8.5)
         }
-        note(&f, "รายงานประจำวัน \(reports.count) วัน · ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
+        note(&f, "รายงานประจำวัน \(reports.count) วัน | ฝนตกรวม \(RoutineReport.rainHours(reports)) ชั่วโมง ใน \(RoutineReport.rainDays(reports)) วัน")
         missing(&f, reports, from: max(range.lowerBound, installStart ?? range.lowerBound), to: min(range.upperBound, Date()))
         problemsBlock(&f, reports)
 

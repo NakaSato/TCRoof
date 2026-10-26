@@ -28,6 +28,8 @@ struct SingleLinePage: View {
     @State var shared: ShareItem?
     @State var error: String?
     @State var stamp = Date()
+    /// The diagram, rebuilt off the main thread after edits (`SingleLineRender`).
+    @StateObject var render = SingleLineRender()
 
     enum ListKind: String, Identifiable { case others, conditions, assumptions; var id: String { rawValue } }
     struct ShareItem: Identifiable { let id = UUID(); let url: URL }
@@ -40,8 +42,8 @@ struct SingleLinePage: View {
     var twoPane: Bool { viewport.width >= 900 }
 
     var body: some View {
-        let sl = line
-        let drawing = SingleLineLayout.draw(sl)
+        let made = render.current(job, hv: hasB4 ? nil : hvPreview)
+        let sl = made.line, drawing = made.drawing
         VStack(spacing: 0) {
             header
             GeometryReader { geo in
@@ -56,7 +58,9 @@ struct SingleLinePage: View {
         .sheet(item: $listSheet) { k in listView(k, sl) }
         .sheet(item: $shared) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($error)
-        .onAppear { stamp = Date() }
+        .onAppear { stamp = Date(); render.update(job, hv: hasB4 ? nil : hvPreview, now: true) }
+        .onChange(of: job) { _, j in render.update(j, hv: hasB4 ? nil : hvPreview) }
+        .onChange(of: hvPreview) { _, v in render.update(job, hv: hasB4 ? nil : v, now: true) }
         #if DEBUG
         // `-surveySLDPanel YES` opens the iPhone's ข้อมูลฝั่ง PV sheet for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveySLDPanel") { try? await Task.sleep(nanoseconds: 600_000_000); showPanel = true } }
@@ -66,9 +70,9 @@ struct SingleLinePage: View {
     // MARK: header
 
     var subtitle: String {
-        let code = job.jobSyncID.flatMap { model.linkedJobLabel?($0) }?.components(separatedBy: " · ").first
+        let code = job.jobSyncID.flatMap { model.linkedJobLabel?($0) }?.components(separatedBy: " | ").first
         let ref = [job.projectName.isEmpty ? nil : job.projectName, code ?? (job.docNo.isEmpty ? nil : job.docNo)].compactMap { $0 }.joined(separator: " ")
-        return "สร้างอัตโนมัติจากข้อมูลสำรวจ A1 · A3 · B1 · B2 · B4 · B5" + (ref.isEmpty ? "" : " · " + ref)
+        return "สร้างอัตโนมัติจากข้อมูลสำรวจ A1 | A3 | B1 | B2 | B4 | B5" + (ref.isEmpty ? "" : " | " + ref)
     }
 
     var header: some View {
@@ -133,11 +137,11 @@ struct SingleLinePage: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("ตำแหน่งกันย้อน (B4)").font(.sarabunFixed(16, .bold)).lineLimit(1)
                 HStack(spacing: 2) {
-                    seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
-                    seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
+                    seg("แรงต่ำ | ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
+                    seg("แรงสูง | หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
                 }
                 .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.sarabunFixed(12)).foregroundStyle(Theme.pending).lineLimit(1) }
+                if !hasB4 { Text("ยังไม่มีหัวข้อ B4 | ดูตัวอย่างเท่านั้น").font(.sarabunFixed(12)).foregroundStyle(Theme.pending).lineLimit(1) }
             }
         } else { padToggle(sl) }
     }
@@ -146,11 +150,11 @@ struct SingleLinePage: View {
         HStack(spacing: 10) {
             Text("ตำแหน่งกันย้อน (B4)").font(.sarabunFixed(17, .bold)).lineLimit(1)
             HStack(spacing: 2) {
-                seg("แรงต่ำ · ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
-                seg("แรงสูง · หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
+                seg("แรงต่ำ | ที่ \(sl.connectionBoard?.name ?? "MDP-1")", on: !sl.zeroExportHV) { setHV(false) }
+                seg("แรงสูง | หลังมิเตอร์", on: sl.zeroExportHV) { setHV(true) }
             }
             .padding(3).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 · ดูตัวอย่างเท่านั้น").font(.sarabunFixed(13)).foregroundStyle(Theme.pending).lineLimit(1) }
+            if !hasB4 { Text("ยังไม่มีหัวข้อ B4 | ดูตัวอย่างเท่านั้น").font(.sarabunFixed(13)).foregroundStyle(Theme.pending).lineLimit(1) }
         }
     }
 
@@ -179,7 +183,7 @@ struct SingleLinePage: View {
                         job.values["sldTransformer"] = tx.index == 0 ? nil : .text(String(tx.index))
                         job.values["sldBoard"] = bd.index == 0 ? nil : .text(bd.id.uuidString)
                     } label: {
-                        Label("TX\(tx.index + 1) · \(bd.name)", systemImage: tx.index == sl.connection.trafo && bd.index == sl.connection.board ? "checkmark" : "bolt")
+                        Label("TX\(tx.index + 1) | \(bd.name)", systemImage: tx.index == sl.connection.trafo && bd.index == sl.connection.board ? "checkmark" : "bolt")
                     }
                 }
             }
@@ -280,7 +284,7 @@ struct SingleLinePage: View {
     @ViewBuilder var footer: some View {
         if phone {
             VStack(alignment: .leading, spacing: 4) {
-                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 | ตัวแดง = ยังขาด").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 HStack(spacing: 10) {
                     legend("legend-existing", "อุปกรณ์เดิม"); legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)"); legend("legend-control", "สายสัญญาณควบคุม")
                 }
@@ -291,7 +295,7 @@ struct SingleLinePage: View {
 
     var padFooter: some View {
         HStack(spacing: 16) {
-            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 · ตัวแดง = ยังขาด").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            Text("แตะอุปกรณ์เพื่อไปแก้ข้อมูลในหน้า A3 | ตัวแดง = ยังขาด").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 8)
             legend("legend-existing", "อุปกรณ์เดิม")
             legend("legend-new-pv", "อุปกรณ์ใหม่ (PV)")
@@ -347,8 +351,8 @@ struct SingleLinePage: View {
 
     func notes(_ sl: SingleLine) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.danger)
-            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) · ยังขาด \(sl.missing.count) จุด").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | อัปเดตเองเมื่อแก้ข้อมูลใน A3").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.danger)
+            Text("ข้อมูลล่าสุด \(stamp.formatted(.dateTime.hour().minute())) | ยังขาด \(sl.missing.count) จุด").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
         }
     }
 

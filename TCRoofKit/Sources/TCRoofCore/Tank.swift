@@ -13,6 +13,58 @@ public enum Tank {
         public static let ventHeight = "ventHeight"
         /// The standard design the points came from (`TankDesign.id`, "@r" when turned), nil for the generic layout.
         public static let design = "tankDesign"
+        /// The design as it was when picked (JSON), so a later edit of the library never changes this job.
+        public static let designSnapshot = "tankDesignSnapshot"
+        /// Sub-step 4's designed photo groups beyond the form's three (optional).
+        public static let roofPhotos = "roofPhotos", shadePhoto = "shadePhoto", cablePhoto = "cablePhoto"
+        /// `round` for a round tank (`tankDiameter` its size, m); absent for the rectangle of spans (every older job).
+        public static let shape = "tankShape", diameter = "tankDiameter"
+    }
+
+    // MARK: shape
+
+    public enum Shape: String, Sendable { case rect, round }
+    /// The smallest diameter offered (m).
+    public static let minDiameter = 2.0
+    public static func shape(_ v: Values) -> Shape { v.text(Key.shape) == Shape.round.rawValue ? .round : .rect }
+    public static func isRound(_ v: Values) -> Bool { shape(v) == .round }
+    /// A round tank's diameter (m), nil when not set or the tank is rectangular.
+    public static func diameter(_ v: Values) -> Double? {
+        guard isRound(v), let d = v.number(Key.diameter), d > 0 else { return nil }
+        return d
+    }
+    /// Sets the diameter and writes the legacy spans (one span of D each way, the circle's bounding square) so the
+    /// schema's completion, `Progress`, the site plan and every other reader of the spans keep working.
+    public static func setDiameter(_ v: inout Values, _ d: Double?) {
+        v[Key.diameter] = d.map { num(max(minDiameter, $0)) }
+        syncRoundSpans(&v)
+    }
+    static func syncRoundSpans(_ v: inout Values) {
+        guard isRound(v) else { return }
+        if let d = v.number(Key.diameter), d > 0 {
+            Roof.setSpans(&v, .x, [r2(d)]); Roof.setSpans(&v, .y, [r2(d)])
+        } else {
+            v[Roof.Key.spansX] = nil; v[Roof.Key.spansY] = nil
+        }
+    }
+    /// Switches the shape. Going round takes the narrower side of the rectangle as the diameter the first time (and
+    /// drops a standard design, which is rectangular); going back keeps the D × D square as one bay. Points that were
+    /// only seeded (none checked, moved or added) are cleared so sub-step 2 seeds the new shape's layout; checked ones
+    /// stay, and the live check flags any left outside.
+    public static func setShape(_ v: inout Values, _ s: Shape) {
+        guard shape(v) != s else { return }
+        if s == .round {
+            if v.number(Key.diameter) == nil, let t = TankPoints.tankSize(v) { v[Key.diameter] = num(max(minDiameter, min(t.w, t.h))) }
+            v[Key.shape] = .text(Shape.round.rawValue)
+            syncRoundSpans(&v)
+            v[Key.design] = nil; v[Key.designSnapshot] = nil
+        } else {
+            v[Key.shape] = nil
+        }
+        let list = TankPoints.points(v)
+        if !list.isEmpty, list.allSatisfy({ TankPoints.isStandard($0) && $0.status.isEmpty && !TankPoints.moved($0) }) {
+            v[Roof.Key.obstacles] = nil
+        }
     }
 
     // MARK: vent height
@@ -38,25 +90,41 @@ public enum Tank {
         Preset(name: "20 × 20 ม.", sub: "สถานีขนาดเล็ก", nx: 5, ny: 5, span: 4),
     ]
 
-    /// Writes the preset's spans expanded ("4,4,4,…"): `parseSpans` has no "n@d" form.
+    /// Writes the preset's spans expanded ("4,4,4,…"): `parseSpans` has no "n@d" form. A preset is a rectangle.
     public static func apply(_ v: inout Values, _ p: Preset) {
+        v[Key.shape] = nil
         Roof.setSpans(&v, .x, p.spansX)
         Roof.setSpans(&v, .y, p.spansY)
     }
-    public static func spans(_ v: Values) -> (x: [Double], y: [Double]) { (parseSpans(v.text(Roof.Key.spansX)), parseSpans(v.text(Roof.Key.spansY))) }
-    /// The preset whose spans equal the stored ones exactly.
+    /// The spans; a round tank's are one span of its diameter each way (its bounding square), whatever is stored.
+    public static func spans(_ v: Values) -> (x: [Double], y: [Double]) {
+        if isRound(v) { return diameter(v).map { ([$0], [$0]) } ?? ([], []) }
+        return (parseSpans(v.text(Roof.Key.spansX)), parseSpans(v.text(Roof.Key.spansY)))
+    }
+    /// The preset whose spans equal the stored ones exactly; presets are rectangular.
     public static func preset(_ v: Values) -> Preset? {
+        guard !isRound(v) else { return nil }
         let s = spans(v)
         return presets.first { $0.spansX == s.x && $0.spansY == s.y }
     }
     /// The size menu's label: a preset, "<sumX> × <sumY> ม." / "กำหนดเอง", or nil (placeholder) without spans.
     public static func sizeLabel(_ v: Values) -> (name: String, sub: String)? {
+        if isRound(v) { return diameter(v).map { (diameterText($0), "ถังกลม") } }
         if let p = preset(v) { return (p.name, p.sub) }
         let s = spans(v)
         guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
         return ("\(fmt(s.x.reduce(0, +))) × \(fmt(s.y.reduce(0, +))) ม.", "กำหนดเอง")
     }
     public static func hasSize(_ v: Values) -> Bool { sizeLabel(v) != nil }
+    /// "Ø 30 ม.": a round tank's size wherever a rectangle writes "W × L ม.".
+    public static func diameterText(_ d: Double) -> String { "Ø \(fmt(d)) ม." }
+    /// The size as one line: "Ø 30 ม." or "40 × 40 ม."; nil without one.
+    public static func sizeText(_ v: Values) -> String? {
+        if isRound(v) { return diameter(v).map(diameterText) }
+        let s = spans(v)
+        guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
+        return "\(fmt(s.x.reduce(0, +))) × \(fmt(s.y.reduce(0, +))) ม."
+    }
 
     // MARK: height, position and exposed part
 
@@ -152,7 +220,7 @@ public enum Tank {
     public static func sourceLine(_ v: Values, timeZone: TimeZone = .current, device: String = "iPad",
                                   tail: String = "แปลนและลูกศร N หมุนตามค่านี้") -> String? {
         guard azimuth(v) != nil else { return nil }
-        guard source(v) == .compass else { return "ป้อนเอง · " + tail }
+        guard source(v) == .compass else { return "ป้อนเอง | " + tail }
         var parts = ["วัดด้วยเข็มทิศ " + device]
         if let a = v.number(Key.azimuthAcc) { parts.append("±\(Int(a.rounded()))°") }
         if let d = measuredAt(v) {
@@ -160,7 +228,44 @@ public enum Tank {
             let c = cal.dateComponents([.day, .month, .hour, .minute], from: d)
             parts.append(String(format: "%d/%d %02d:%02d", c.day ?? 0, c.month ?? 0, c.hour ?? 0, c.minute ?? 0))
         }
-        return (parts + [tail]).joined(separator: " · ")
+        return (parts + [tail]).joined(separator: " | ")
+    }
+
+    // MARK: size and volume summary
+
+    /// docs/specs/auto-drawing.md §5.5: the tank's size from the spans, its roof area `L·W` and gross volume `L·W·H`
+    /// (outside the walls' centre lines, nothing taken off for walls or columns). nil without spans; no volume without
+    /// a height.
+    public struct Summary: Equatable, Sendable {
+        public let width: Double, length: Double, height: Double?
+        /// A round tank's diameter (`width` and `length` are then both D); nil for a rectangle.
+        public var diameter: Double? = nil
+        /// `L·W`, or `πD²/4` for a round tank.
+        public var roofArea: Double { diameter.map { Double.pi * $0 * $0 / 4 } ?? width * length }
+        public var grossVolume: Double? { height.map { roofArea * $0 } }
+        /// "12.00 × 8.00 × 4.50 ม. | หลังคา 96 ม² | ปริมาตรภายนอกโดยประมาณ 432 ม³";
+        /// round: "Ø 10.00 × 5.00 ม. | หลังคา 79 ม² | ปริมาตรภายนอกโดยประมาณ 393 ม³"
+        public var text: String {
+            let size = (diameter.map { [$0] } ?? [width, length]) + (height.map { [$0] } ?? [])
+            return (diameter == nil ? "" : "Ø ") + size.map { String(format: "%.2f", $0) }.joined(separator: " × ") + " ม. | " + figures
+        }
+        /// "หลังคา 96 ม² | ปริมาตรภายนอกโดยประมาณ 432 ม³", or the area alone without a height.
+        public var figures: String {
+            "หลังคา " + Self.grouped(roofArea) + " ม²" + (grossVolume.map { " | ปริมาตรภายนอกโดยประมาณ " + Self.grouped($0) + " ม³" } ?? "")
+        }
+        /// Whole numbers with thousands separators ("1,600"), one decimal below 10.
+        static func grouped(_ x: Double) -> String {
+            if x < 10 && x != x.rounded() { return String(format: "%.1f", x) }
+            let n = Int(x.rounded()), s = String(abs(n))
+            var out = ""
+            for (i, c) in s.enumerated() { if i > 0 && (s.count - i) % 3 == 0 { out.append(",") }; out.append(c) }
+            return (n < 0 ? "-" : "") + out
+        }
+    }
+    public static func summary(_ v: Values) -> Summary? {
+        let s = spans(v)
+        guard !s.x.isEmpty, !s.y.isEmpty else { return nil }
+        return Summary(width: s.x.reduce(0, +), length: s.y.reduce(0, +), height: height(v), diameter: diameter(v))
     }
 
     // MARK: sub-steps and status

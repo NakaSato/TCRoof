@@ -65,9 +65,9 @@ public enum PWAPlan {
         public var shortName: String { PWAPlan.shortName(name) }
     }
 
-    /// `สถานีผลิตน้ำทุ่งน้อย · สาขาเมืองพล` → `ทุ่งน้อย`, for the narrow columns.
+    /// `สถานีผลิตน้ำทุ่งน้อย | สาขาเมืองพล` → `ทุ่งน้อย`, for the narrow columns.
     public static func shortName(_ name: String) -> String {
-        var s = name.components(separatedBy: " · ").first ?? name
+        var s = name.components(separatedBy: " | ").first ?? name
         for prefix in ["สถานีผลิตน้ำ", "สถานีจ่ายน้ำ", "สถานีสูบน้ำ", "การประปา", "สถานี"] where s.hasPrefix(prefix) && s.count > prefix.count {
             s.removeFirst(prefix.count)
             break
@@ -76,9 +76,9 @@ public enum PWAPlan {
         return s.isEmpty ? name : s
     }
 
-    /// `ทุ่งน้อย · ผู้รับเหมา A · TCR01`, leaving out what the station has none of.
+    /// `ทุ่งน้อย | ผู้รับเหมา A | TCR01`, leaving out what the station has none of.
     static func who(_ s: Station) -> String {
-        [s.shortName, s.contractor.isEmpty ? "" : contractorTitle(s.contractor), s.team].filter { !$0.isEmpty }.joined(separator: " · ")
+        [s.shortName, s.contractor.isEmpty ? "" : contractorTitle(s.contractor), s.team].filter { !$0.isEmpty }.joined(separator: " | ")
     }
 
     public static func contractorTitle(_ contractor: String) -> String { "ผู้รับเหมา " + contractor }
@@ -193,7 +193,7 @@ public enum PWAPlan {
                 if let at = s.surveyAt, cal.isDate(at, inSameDayAs: d) {
                     let c = cal.dateComponents([.hour, .minute], from: at)
                     out.append(AgendaItem(id: "srv-\(s.id)-\(key)", day: d, start: (c.hour ?? 0) * 60 + (c.minute ?? 0), type: .survey,
-                                          ref: s.ref, title: "นัดสำรวจ " + s.name, subtitle: [s.shortName, s.team].filter { !$0.isEmpty }.joined(separator: " · "),
+                                          ref: s.ref, title: "นัดสำรวจ " + s.name, subtitle: [s.shortName, s.team].filter { !$0.isEmpty }.joined(separator: " | "),
                                           status: .booked, contractor: s.contractor, team: s.team, station: s.id, opens: .survey))
                 }
                 for i in s.inspections where cal.isDate(i.at, inSameDayAs: d) {
@@ -212,7 +212,7 @@ public enum PWAPlan {
                 if let task = building.first(where: { (status.actualByTask[$0.task] ?? 0) < 99.95 }) ?? building.first {
                     let late = -status.variance >= threshold ? "ช้ากว่าแผน \(Int((-status.variance).rounded()))%" : ""
                     out.append(AgendaItem(id: "ins-\(s.id)-\(key)", day: d, start: s.workStart, end: s.workEnd, type: .install, ref: s.ref,
-                                          title: "\(task.task.code) \(task.task.title)", subtitle: [who(s), late].filter { !$0.isEmpty }.joined(separator: " · "),
+                                          title: "\(task.task.code) \(task.task.title)", subtitle: [who(s), late].filter { !$0.isEmpty }.joined(separator: " | "),
                                           status: isToday ? .doing : .onPlan, contractor: s.contractor, team: s.team, station: s.id, opens: .station))
                 }
                 if on.contains(where: { $0.task == .preCommissioning }) {
@@ -224,7 +224,7 @@ public enum PWAPlan {
             for due in deadlines where due.kind == .document && cal.isDate(due.date, inSameDayAs: d) {
                 let s = stations.first { $0.id == due.station }
                 out.append(AgendaItem(id: "doc-\(due.id)", day: d, type: .document, ref: s?.ref ?? "", title: due.title,
-                                      subtitle: [s?.shortName ?? "", isToday ? "ครบกำหนดวันนี้" : due.chip].filter { !$0.isEmpty }.joined(separator: " · "),
+                                      subtitle: [s?.shortName ?? "", isToday ? "ครบกำหนดวันนี้" : due.chip].filter { !$0.isEmpty }.joined(separator: " | "),
                                       status: .mustSubmit, contractor: s?.contractor ?? "", team: s?.team ?? "", station: due.station, opens: .docs))
             }
             if isToday {
@@ -235,7 +235,7 @@ public enum PWAPlan {
                 if let first = missing.first {
                     out.append(AgendaItem(id: "ntf-\(key)", day: d, start: reportReminder, type: .notice, ref: "รายงาน",
                                           title: "ส่งรายงานประจำวันก่อน 18:00",
-                                          subtitle: "ยังไม่ส่ง \(missing.count) สถานี · " + missing.map(\.shortName).joined(separator: " "),
+                                          subtitle: "ยังไม่ส่ง \(missing.count) สถานี | " + missing.map(\.shortName).joined(separator: " "),
                                           status: .alert, station: first.id, opens: .dailies))
                 }
             }
@@ -497,7 +497,7 @@ public enum PWAPlan {
     ///   planned start of MP 1.4, 1.5 and 1.7, until the task is booked as done or every paper of the package is
     ///   submitted;
     /// - the O&M training on the planned start of MP 3.2, until it is booked as done;
-    /// - for a station of 200 kVA and over, each step of the ERC flow that the utility or DEDE has, on the last day
+    /// - each step of the station's ERC flow (under 200 kVA or 200 and over) that the utility or DEDE has, on the last day
     ///   of its time limit (`ERCFlow.waits`).
     public static func deadlines(_ stations: [Station], library: StationDocs.Library = .init(), today: Date,
                                  threshold: Double = InstallOverview.defaultThreshold) -> [Deadline] {
@@ -519,7 +519,7 @@ public enum PWAPlan {
                 : st.variance < 0 ? ("เสี่ยงช้า", .risk) : ("ตามแผน", .ok)
             let party = [s.contractor.isEmpty ? "" : contractorTitle(s.contractor), s.team].first { !$0.isEmpty } ?? ""
             out.append(Deadline(id: "hand-\(s.id)", date: due, kind: .handover, title: "ส่งมอบงาน",
-                                subtitle: [label, tone == .ok ? party : figures].filter { !$0.isEmpty }.joined(separator: " · "),
+                                subtitle: [label, tone == .ok ? party : figures].filter { !$0.isEmpty }.joined(separator: " | "),
                                 chip: chip, tone: tone, station: s.id, opens: .station))
 
             for sub in submissions where sub.package != .pk2 || s.docsContext.over200kVA {
@@ -535,15 +535,16 @@ public enum PWAPlan {
                     : date == today ? ("วันนี้", .risk) : ("เอกสาร \(ready)/\(states.count)", .risk)
                 out.append(Deadline(id: "doc-\(sub.package.rawValue)-\(s.id)", date: date, kind: .document,
                                     title: submissionTitle(sub.package, s.docsContext),
-                                    subtitle: "\(label) · ชุด\(sub.package.title) \(ready)/\(states.count)",
+                                    subtitle: "\(label) | ชุด\(sub.package.title) \(ready)/\(states.count)",
                                     chip: chip, tone: tone, station: s.id, opens: .docs))
             }
 
-            if s.docsContext.over200kVA, let record = s.docs.erc {
-                for wait in ERCFlow.waits(record, ERCFlow.Context(holidays: s.holidays), today: today) {
+            if let record = s.docs.erc {
+                let ctx = ERCFlow.Context(holidays: s.holidays, variant: .init(over200kVA: s.docsContext.over200kVA))
+                for wait in ERCFlow.waits(record, ctx, today: today) {
                     guard let date = ERCFlow.date(wait.due) else { continue }
                     out.append(Deadline(id: "erc-\(wait.step.rawValue)-\(s.id)", date: date, kind: .document, title: wait.title,
-                                        subtitle: "\(label) · \(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0)",
+                                        subtitle: "\(label) | \(wait.step.party.title) | ลำดับ กกพ. ข้อ \(wait.number ?? 0)",
                                         chip: wait.text, tone: wait.left < 0 ? .late : wait.left <= 3 ? .risk : .ok,
                                         station: s.id, opens: .docs))
                 }

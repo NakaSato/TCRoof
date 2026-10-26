@@ -15,7 +15,7 @@ struct GalleryNumberPad: View {
         let columns = compact ? 1 : 3
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: 24, alignment: .topLeading), count: columns),
                   alignment: .leading, spacing: 24) {
-            GalleryItem("ปกติ · ใช้งานได้จริง") { InlinePad(text: $normal) }
+            GalleryItem("ปกติ | ใช้งานได้จริง") { InlinePad(text: $normal) }
             GalleryItem("ค่าเกินช่วง") { InlinePad(text: $over) }
             GalleryItem("การใช้งาน") {
                 VStack(alignment: .leading, spacing: Space.s) {
@@ -23,7 +23,7 @@ struct GalleryNumberPad: View {
                         Text("• " + r).font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.navy)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("ใช้กับ: ระยะ (ม.) · กระแส (A) · โหลด (kW) · ความสูง (ซม.) · จำนวน")
+                    Text("ใช้กับ: ระยะ (ม.) | กระแส (A) | โหลด (kW) | ความสูง (ซม.) | จำนวน")
                         .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                     Divider().padding(.vertical, Space.xs)
                     Text("ลองเปิดแป้นจริง").font(.sarabun(13, .bold, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
@@ -38,11 +38,11 @@ struct GalleryNumberPad: View {
 
     static let rules = [
         "แตะช่องตัวเลข → popover เปิดใต้ช่อง (ลูกศรชี้ช่อง) ช่องที่กำลังแก้ขอบน้ำเงิน 2 pt",
-        "หัว: ชื่อช่อง + ช่วงที่รับได้ · จอแสดงค่า 30 pt ชิดขวา พร้อมหน่วย",
+        "หัว: ชื่อช่อง + ช่วงที่รับได้ | จอแสดงค่า 30 pt ชิดขวา พร้อมหน่วย",
         "ปุ่ม − / + ปรับทีละขั้น (ขั้นตามชนิดค่า เช่น 0.1 ม., 1 A, 5 kW)",
-        "แป้น 3 × 4 ปุ่มละ ≥ 52 pt · จุดทศนิยม (ซ่อนเมื่อเป็นจำนวนเต็ม) · ⌫ ลบทีละตัว · \"ล้าง\" ลบทั้งหมด",
-        "ค่านอกช่วง: จอแดง + ข้อความบอกขีดจำกัด · ปุ่มตกลงกดไม่ได้",
-        "ตกลง = บันทึกและปิด · ยกเลิก หรือแตะนอก popover = คืนค่าเดิม",
+        "แป้น 3 × 4 ปุ่มละ ≥ 52 pt | จุดทศนิยม (ซ่อนเมื่อเป็นจำนวนเต็ม) | ⌫ ลบทีละตัว | \"ล้าง\" ลบทั้งหมด",
+        "ค่านอกช่วง: จอแดง + ข้อความบอกขีดจำกัด | ปุ่มตกลงกดไม่ได้",
+        "ตกลง = บันทึกและปิด | ยกเลิก หรือแตะนอก popover = คืนค่าเดิม",
         "ไม่ใช้คีย์บอร์ดระบบ จึงไม่บังหน้าจอครึ่งล่าง",
     ]
 }
@@ -96,11 +96,11 @@ private struct Arrow: Shape {
     }
 }
 
-#Preview("Number pad · iPad", traits: .landscapeLeft) {
+#Preview("Number pad | iPad", traits: .landscapeLeft) {
     ScrollView { GallerySection(number: 9, title: "ป้อนตัวเลข", subtitle: "Number input popup") { GalleryNumberPad() }.padding() }
 }
 
-#Preview("Number pad · iPhone") {
+#Preview("Number pad | iPhone") {
     ScrollView { GallerySection(number: 9, title: "ป้อนตัวเลข", subtitle: "Number input popup") { GalleryNumberPad() }.padding() }
         .environment(\.horizontalSizeClass, .compact)
 }

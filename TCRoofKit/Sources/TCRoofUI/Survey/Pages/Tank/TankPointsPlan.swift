@@ -11,6 +11,9 @@ struct TankPointsPlan: View {
     @Binding var selected: UUID?
     /// Drops a dragged point at its new top-left corner (m).
     let move: (UUID, Double, Double) -> Void
+    /// `เทียบกับแบบ` (docs/specs/standard-designs.md §3.3): a moved point's design position dashed orange with an arrow
+    /// to where it is, missing points crossed out, points added on site purple.
+    var compare = false
 
     @State var drag: (id: UUID, drop: TankPoints.Drop)?
     @State var dragStart: TankPoints.Rect?
@@ -43,19 +46,15 @@ struct TankPointsPlan: View {
     }
 
     var marks: [Mark] {
-        let t = TankPoints.tankSize(values)
-        return TankPoints.points(values).compactMap { o in
+        TankPoints.points(values).compactMap { o in
             guard var r = TankPoints.rect(o) else { return nil }
             if let d = drag, d.id == o.id { r.x = d.drop.x; r.y = d.drop.y }
             let s: Look = o.id == selected ? .selected : o.isAbsent ? .absent : o.status.isEmpty ? .unconfirmed : .confirmed
             var m = Mark(id: o.id, point: o, rect: r, state: s)
-            if TankPoints.onWall(o.kind), let t {
-                switch TankPoints.wall(r, w: t.w, h: t.h) {
-                case .top: m.shift = CGSize(width: 0, height: -10)
-                case .bottom: m.shift = CGSize(width: 0, height: 10)
-                case .left: m.shift = CGSize(width: -10, height: 0)
-                case .right: m.shift = CGSize(width: 10, height: 0)
-                }
+            // out past the nearest wall, or past the rim of a round tank
+            if TankPoints.onWall(o.kind) {
+                let u = TankPoints.outward(r, in: values)
+                m.shift = CGSize(width: u.x * 10, height: u.y * 10)
             }
             return m
         }
@@ -98,7 +97,9 @@ struct TankPointsPlan: View {
                 ctx.stroke(p, with: .color(Theme.teal), lineWidth: 1)
             }
         }
+        if compare { for m in all { designTrace(&ctx, m, f) } }
         for m in all where m.state != .selected { symbol(&ctx, m, f) }
+        if compare { for m in all where m.point.isAbsent { cross(&ctx, m, f) } }
         if let s = sel {
             symbol(&ctx, s, f)
             // distance from the left wall, under the symbol
@@ -108,6 +109,36 @@ struct TankPointsPlan: View {
             ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.pending),
                      at: CGPoint(x: box.midX, y: box.midY))
         }
+    }
+
+    /// A moved point: its design position as a dashed orange square and an arrow from it to the site position.
+    func designTrace(_ ctx: inout GraphicsContext, _ m: Mark, _ f: (ox: Double, oy: Double, k: Double)) {
+        guard TankPoints.moved(m.point), let sx = NumberInput.value(m.point.stdX), let sy = NumberInput.value(m.point.stdY) else { return }
+        let w = m.rect.w, h = m.rect.h
+        let from = CGPoint(x: f.ox + (sx + w / 2) * f.k + m.shift.width, y: f.oy + (sy + h / 2) * f.k + m.shift.height), to = centre(m, f)
+        let box = CGRect(x: from.x - 6, y: from.y - 6, width: 12, height: 12)
+        ctx.stroke(Path(box), with: .color(Theme.warning), style: StrokeStyle(lineWidth: 1.2, dash: [3, 2]))
+        let d = hypot(to.x - from.x, to.y - from.y)
+        guard d > 14 else { return }
+        let ux = (to.x - from.x) / d, uy = (to.y - from.y) / d
+        let a = CGPoint(x: from.x + ux * 7, y: from.y + uy * 7), b = CGPoint(x: to.x - ux * 9, y: to.y - uy * 9)
+        var line = Path(); line.move(to: a); line.addLine(to: b)
+        ctx.stroke(line, with: .color(Theme.warning), lineWidth: 1.2)
+        var head = Path()
+        head.move(to: b)
+        head.addLine(to: CGPoint(x: b.x - ux * 5 - uy * 3, y: b.y - uy * 5 + ux * 3))
+        head.addLine(to: CGPoint(x: b.x - ux * 5 + uy * 3, y: b.y - uy * 5 - ux * 3))
+        head.closeSubpath()
+        ctx.fill(head, with: .color(Theme.warning))
+    }
+
+    /// A missing point crossed out.
+    func cross(_ ctx: inout GraphicsContext, _ m: Mark, _ f: (ox: Double, oy: Double, k: Double)) {
+        let c = centre(m, f)
+        var p = Path()
+        p.move(to: CGPoint(x: c.x - 8, y: c.y - 8)); p.addLine(to: CGPoint(x: c.x + 8, y: c.y + 8))
+        p.move(to: CGPoint(x: c.x + 8, y: c.y - 8)); p.addLine(to: CGPoint(x: c.x - 8, y: c.y + 8))
+        ctx.stroke(p, with: .color(Theme.danger), lineWidth: 1.8)
     }
 
     /// The selected point's guides: the drag's snapped lines, or the rows / columns it shares with other points.
@@ -121,7 +152,10 @@ struct TankPointsPlan: View {
 
     /// A 12-pt symbol (vent: square + ring; hatch: hatched square) and its label pill, coloured by state.
     func symbol(_ ctx: inout GraphicsContext, _ m: Mark, _ f: (ox: Double, oy: Double, k: Double)) {
-        let c = centre(m, f), col = Self.color(m.state), sq = CGRect(x: c.x - 6, y: c.y - 6, width: 12, height: 12)
+        let added = compare && !TankPoints.isStandard(m.point) && m.state != .selected
+        let moved = compare && TankPoints.moved(m.point) && m.state != .selected
+        let col = added ? Theme.teamPurple : moved ? Theme.warning : Self.color(m.state)
+        let c = centre(m, f), sq = CGRect(x: c.x - 6, y: c.y - 6, width: 12, height: 12)
         let dash: [CGFloat] = m.state == .absent ? [3, 2] : []
         if m.state == .selected {
             let halo = CGRect(x: c.x - 11, y: c.y - 11, width: 22, height: 22)

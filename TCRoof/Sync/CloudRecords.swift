@@ -77,6 +77,11 @@ extension Job: CloudSynced {
         /// team wrote them, since a team device writes the whole document without it.
         var weeklyRequestsBy: String?
         var stationDocs: String?
+        /// The plan file's WBS rows (`Job.scheduleWBS`, `[]` for none) and the ticked rows (`Job.wbsTicks`, `{}` for
+        /// none), always written so a cleared list reaches the other devices; nil from app versions without them.
+        var scheduleWBS, wbsTicks: String?
+        /// The external member who last wrote `wbsTicks` (the rules check it is their own email); nil when the team did.
+        var wbsTicksBy: String?
         var kind: String?
         var iecReport: String?
         /// The IEC test's hand-over state (`IECReport.LockState`), derived from `iecReport` and checked by the rules;
@@ -110,9 +115,34 @@ extension Job: CloudSynced {
                installDays: installDays, driveFolderURL: driveFolderURL, mpNumber: mpNumber, inverterKW: inverterKW,
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
                scheduleWorkbookDriveID: scheduleWorkbookDriveID, scheduleWorkbookName: scheduleWorkbookDriveID == nil ? nil : scheduleWorkbookName,
-               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, kind: kind.rawValue,
+               routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON,
+               scheduleWBS: scheduleWBSJSON ?? "[]", wbsTicks: wbsTicksJSON ?? "{}", kind: kind.rawValue,
                iecReport: iecReportJSON, iecState: iecReport?.lockState.rawValue, externals: externals,
                supervisor: supervisorEmail ?? "", teamMembers: teamMembers, latitude: latitude, longitude: longitude)
+    }
+
+    /// The WBS rows and ticks of a record (docs/specs/project-plan-wbs.md). A contractor's ticks are taken in only where
+    /// theirs to change (`WBSTick.trusting`); either setter books the ticks into the plan's progress, which a contractor
+    /// can't send. Compared as values: the same ticks may arrive as differently ordered text.
+    private func applyWBS(_ r: Record) {
+        if let v = r.scheduleWBS {
+            let rows = (try? JSONDecoder().decode([MasterSchedule.WorkItem].self, from: Data(v.utf8))) ?? []
+            if rows != scheduleWBS { scheduleWBS = rows }
+        }
+        guard let v = r.wbsTicks else { return }
+        let incoming = (try? JSONDecoder().decode([String: MasterSchedule.WBSTick].self, from: Data(v.utf8))) ?? [:]
+        if wbsTicksUnsent {
+            // this contractor's own ticks, until Firestore has them
+            if incoming == wbsTicks { wbsTicksUnsent = false }
+            return
+        }
+        guard incoming != wbsTicks else { return }
+        let all = (r.externals ?? externals).map(Permissions.normalized)
+        if let by = r.wbsTicksBy, all.contains(Permissions.normalized(by)) {
+            wbsTicks = MasterSchedule.WBSTick.trusting(incoming, local: wbsTicks, contractors: Set(all))
+        } else {
+            wbsTicks = incoming
+        }
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -153,6 +183,7 @@ extension Job: CloudSynced {
             }
         }
         if let v = r.stationDocs { stationDocsJSON = v }
+        applyWBS(r)
         if let v = r.iecReport {
             iecReportJSON = v
             // only the team can close a test: a result the document's state doesn't confirm is a contractor's
@@ -192,6 +223,8 @@ extension SurveyForm: CloudSynced {
         var utility, caNumber, meterSize, tariff, grounding: String?
         var monthlyKWh, latitude, longitude: Double?
         var externals: [String]?
+        /// The installation checks (JSON), when answered.
+        var installCheck: String?
     }
 
     static let collection = "surveyForms"
@@ -203,7 +236,7 @@ extension SurveyForm: CloudSynced {
                mainBreakerAmp: mainBreakerAmp, structureOK: structureOK, jobID: job?.syncID,
                isDraft: isDraft, utility: utility, caNumber: caNumber, meterSize: meterSize, tariff: tariff,
                grounding: grounding, monthlyKWh: monthlyKWh, latitude: latitude, longitude: longitude,
-               externals: externals(of: job))
+               externals: externals(of: job), installCheck: installCheckJSON.isEmpty ? nil : installCheckJSON)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
@@ -216,6 +249,8 @@ extension SurveyForm: CloudSynced {
         utility = r.utility ?? ""; caNumber = r.caNumber ?? ""; meterSize = r.meterSize ?? ""
         tariff = r.tariff ?? ""; grounding = r.grounding ?? ""; monthlyKWh = r.monthlyKWh ?? 0
         latitude = r.latitude; longitude = r.longitude
+        // a copy without the checks (written by an older build) keeps ours, and our next push puts them back
+        if let c = r.installCheck { installCheckJSON = c }
         if job !== owner { job = owner }
         return true
     }

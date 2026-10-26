@@ -11,13 +11,13 @@ public enum SiteSync {
     public static let marksKey = ModuleMarks.key
     public static let trafosKey = "trafos"
     /// The panel's footnote: symbols that don't reach A3.
-    public static let notSent = "ไม่ส่งมาหน้านี้: INV · Weather · Site Office · อาคาร"
+    public static let notSent = "ไม่ส่งมาหน้านี้: INV | Weather | Site Office | อาคาร"
 
     public enum Status: Equatable, Sendable {
         case filled, same
         case conflict(a3: String, a2: String)
         case skipped(String)
-        /// Filled or already the same: counted in `ดึงจากภาพ A2 · N รายการ`.
+        /// Filled or already the same: counted in `ดึงจากภาพ A2 | N รายการ`.
         public var isLinked: Bool { self == .filled || self == .same }
         public var isConflict: Bool { if case .conflict = self { return true } else { return false } }
     }
@@ -29,9 +29,9 @@ public enum SiteSync {
         public var kind: MarkKind
         /// Text in the row's symbol pill: "PEA METER", "TX 1", "MDB", "กันย้อน".
         public var symbol: String
-        /// "หม้อแปลง TX 1 · 630 kVA"
+        /// "หม้อแปลง TX 1 | 630 kVA"
         public var title: String
-        /// "หม้อแปลง TX 1 · ชื่อ + ขนาด"
+        /// "หม้อแปลง TX 1 | ชื่อ + ขนาด"
         public var target: String
         public var status: Status
         /// Unit after the A2 value in a conflict line ("kVA", "AT"); nil for none.
@@ -328,7 +328,7 @@ public enum SiteSync {
         }
 
         for m in marks where m.kind == .meter {
-            items[m.id] = Item(id: m.id, kind: .meter, symbol: "PEA METER", title: "มิเตอร์ กฟภ. · มีบนภาพ", target: "การ์ดมิเตอร์ กฟภ.",
+            items[m.id] = Item(id: m.id, kind: .meter, symbol: "PEA METER", title: "มิเตอร์ กฟภ. | มีบนภาพ", target: "การ์ดมิเตอร์ กฟภ.",
                                status: .same, unit: nil)
             out.badges.insert(.meter)
         }
@@ -346,8 +346,8 @@ public enum SiteSync {
     static func trafoItem(_ m: MapMark, marks: [MapMark], index: Int?, status: Status) -> Item {
         let name = m.label.trimmingCharacters(in: .whitespaces).isEmpty ? SiteMarks.defaultLabel(m, in: marks) : m.label
         let target: String
-        if case .skipped(let why) = status { target = why } else { target = "หม้อแปลง TX \((index ?? 0) + 1) · ชื่อ + ขนาด" }
-        return Item(id: m.id, kind: .trafo, symbol: name, title: "หม้อแปลง \(name)" + (m.rating.isEmpty ? "" : " · \(m.rating)"),
+        if case .skipped(let why) = status { target = why } else { target = "หม้อแปลง TX \((index ?? 0) + 1) | ชื่อ + ขนาด" }
+        return Item(id: m.id, kind: .trafo, symbol: name, title: "หม้อแปลง \(name)" + (m.rating.isEmpty ? "" : " | \(m.rating)"),
                     target: target, status: status, unit: "kVA")
     }
 
@@ -355,16 +355,16 @@ public enum SiteSync {
         let name = isDefaultBoardName(m.label) ? SiteMarks.defaultLabel(m, in: marks) : m.label
         let target: String
         if case .skipped(let why) = status { target = why }
-        else if let (t, k) = place { target = (k == 0 ? "ตู้หลัก TX \(t + 1)" : "ตู้ย่อย TX \(t + 1)") + " · ชื่อตู้ + AT เมนเบรกเกอร์" }
+        else if let (t, k) = place { target = (k == 0 ? "ตู้หลัก TX \(t + 1)" : "ตู้ย่อย TX \(t + 1)") + " | ชื่อตู้ + AT เมนเบรกเกอร์" }
         else { target = "" }
-        return Item(id: m.id, kind: .mdb, symbol: "MDB", title: name + (m.rating.isEmpty ? "" : " · \(m.rating)"),
+        return Item(id: m.id, kind: .mdb, symbol: "MDB", title: name + (m.rating.isEmpty ? "" : " | \(m.rating)"),
                     target: target, status: status, unit: "AT")
     }
 
     static func levelItem(_ m: MapMark, level: String, status: Status) -> Item {
         let target: String
         if case .skipped(let why) = status { target = why }
-        else { target = "B4 กันย้อน · ระดับ" + (level == "MV" ? ": " + ZeroExport.hv : level == "LV" ? ": " + ZeroExport.lv : "") }
+        else { target = "B4 กันย้อน | ระดับ" + (level == "MV" ? ": " + ZeroExport.hv : level == "LV" ? ": " + ZeroExport.lv : "") }
         let line = m.value.isEmpty ? "ZERO EXPORT" : "ZERO EXPORT \(SiteMarks.zeroExportLine(m))"
         return Item(id: m.id, kind: .zeroExport, symbol: "กันย้อน", title: line, target: target, status: status, unit: nil)
     }

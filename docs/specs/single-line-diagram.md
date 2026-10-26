@@ -1,6 +1,7 @@
 # Auto Single Line Diagram (SLD)
 
-**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Not built: level 2 (feeder detail), the SLD in Excel, a separate VCB / DO fuse symbol, and a debounced off-main rebuild.
+**Status:** Level 1 is built (checked against the code 2026-10-17). Model and rules: `TCRoofKit/Sources/TCRoofCore/SingleLine.swift`, `SingleLine+Build.swift`; drawing: `SingleLineLayout.swift`, `SLSymbols.swift`; DXF: `SingleLineDXF.swift`; page: `TCRoofUI/Survey/Pages/Electrical/SingleLinePage.swift`, `SingleLinePage+Panel.swift`; PDF: `PDFReport/SingleLinePage.swift`. Built 2026-10-19: VCB and DO fuse symbols (`SLSymbols.vcb`, `dropOutFuse`, `hvDevice`: each transformer's tap draws its A3 `hvProtection`, the PEA tap the one they share; DS keeps the open switch), the FTS cut and emergency button only with a B5 section, and a debounced off-main rebuild (`SingleLineRender`, 250 ms, on the SLD page and the B4 / B5 crops). The 1.25 × breaker factor is the team's rule (no longer a ค่าสมมติ). Level 2 (detailed MDP) built 2026-10-20: the optional `Breaker` / `Board` fields, their drawing on the connection board, the notes under the diagram, the feeder wrap and boards side by side, and their entry on A3 (`ElectricalPageWide+SLD.swift`); details under Level 2 below.
+**Not built:** the SLD in Excel.
 **Page design and task:** `docs/ui/survey-sld/CLAUDE_CODE_TASK.md`, `preview.png`, `preview-hv.png`, `diagram-lv.svg`, `diagram-hv.svg`
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (same `Sketch` pipeline and drawing rules). DXF export: `docs/specs/cad-export-dxf/` (phase 2).
 **Targets:** `TCRoofKit` (iOS 17+, macOS 14 for tests) inside the TCRoof app. **New dependencies:** none. Layout is written by hand, because the SLD topology is fixed.
@@ -10,7 +11,7 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
 | Level | Source | Reference |
 |---|---|---|
 | **1. From the survey as it is (v1)** | A1, A3 (meter, transformers, boards, breakers), A4, B1, B2, B4 | `docs/ui/survey-sld/diagram-lv.svg`, `diagram-hv.svg` (the older prototype `img/sld_form.py` is superseded) |
-| 2. Detailed MDP (later) | level 1 plus feeder cables, conduits and loads per breaker | `img/sld.py` |
+| 2. Detailed MDP (built 2026-10-20) | level 1 plus feeder cables, conduits and loads per breaker | `img/sld.py` |
 
 ## Goals and non-goals
 
@@ -24,7 +25,6 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
 **Non-goals (v1)**
 - Editing the drawing by hand. Editing stays on the A3 wide page; the SLD page is read-only with links back.
 - Cable sizing or voltage drop from real lengths
-- Level 2 feeder detail
 - An Excel image
 - Required fields: nothing new blocks completion. A3 completion counts as before, and blanks show as red `?` plus the missing list.
 
@@ -34,7 +34,7 @@ The SLD is generated from the survey. The surveyor never draws; every edit in A1
   - HV line with `))` breaks and poles, labelled `ระบบจำหน่าย กฟภ. {meterKV} kV, 3Ø 3W, 50 Hz`
   - HV protection, then the PEA meter `kWh`, then the customer HV bus with one drop per transformer
   - Each drop: switch, LA branch, three cable terminations, Δ/Y transformer with grounded neutral
-- **HV protection follows A3 `hvProtection`** (DO fuse / DS / VCB). It is drawn with one switch symbol. The label is the answer when every transformer has the same one, otherwise `Drop Out Fuse / Disconnecting Switch`. The older rule "no VCB/52" is dropped because A3 asks for it.
+- **HV protection follows A3 `hvProtection`** (DO fuse / DS / VCB). Each device has its own symbol (DO fuse, DS as the open switch, VCB). Each transformer's tap shows its own A3 `hvProtection`, and the PEA tap the kind they share (`SLSymbols.hvDevice`). The label is the answer when every transformer has the same one, otherwise `Drop Out Fuse / Disconnecting Switch`. The older rule "no VCB/52" is dropped because A3 asks for it.
 - **LA:** drawn with `LA` when `hasLA == true`, left out when `false`. When it is not answered, the drawing shows red `LA ?`.
 - **Downstream (Thai MDP style):**
   - Boards: dashed boxes titled with the on-site name
@@ -99,7 +99,7 @@ Board k = 0 is the main board. Its name, location and front photo stay in `tr{i}
 | Zero export position | first B4 `.backfeed` module: `level` (`กันย้อนที่แรงต่ำ` / `กันย้อนที่แรงสูง`), `pole` (`เสาเดิม` / `เสาใหม่`, default `เสาใหม่`); `hasB4` = such a module exists |
 | Flood at the connection point | A4 `job.floodCheck`: `state`, `level`, `minCm`, plus `floodYear` |
 
-The FTS DC cut-out and the emergency button are always drawn on the PV side; the diagram does not check that a B5 section exists. Old jobs with only `kva` + `mdb[6]` build without crashing.
+The FTS DC cut-out and the emergency button are drawn on the PV side only when the job has a B5 section (`hasB5`). Old jobs with only `kva` + `mdb[6]` build without crashing.
 
 **New optional answers (written only by the SLD page):**
 - `sldAttach` = "1": add the SLD page to the survey PDF
@@ -115,10 +115,10 @@ The FTS DC cut-out and the emergency button are always drawn on the PV side; the
 | transformer with more than half its nameplate missing | collapsed to `{kva} kVA` + red `ป้ายพิกัดยังไม่ครบ` |
 | boards of a transformer | the main board plus sub-boards as branches (dashed boxes 180 × 200), each ending in `ปลายสาย TX{n} · {location}` |
 | connection board (`sldTransformer` / `sldBoard`) | drawn large and full width: draw-out main breaker, `MAIN BUS {at} A, 3Ø 4W, 400/230 V`, numbered outgoing breakers with load blocks `ตู้ไฟฟ้า / {target} / โหลด {loadKW} kW @{loadTime}` |
-| PV (A1 + B2) | blue PV breaker at the bus end → `SMDB-PV (ใหม่)` → one breaker per inverter (at most 3 columns drawn, then `… × {n}`) → inverter (=/~) `อินเวอร์เตอร์ {n} × {kW} kW (B2)` (or `60 + 60 + 80 kW` for mixed B2 sizes) → `ตู้ FTS ตัดวงจร DC (B5)` → `แผง PV รวม {kWp} kWp (A1)` |
+| PV (A1 + B2) | blue PV breaker at the bus end → `SMDB-PV (ใหม่)` → one breaker per inverter (at most 3 columns drawn, then `… × {n}`) → inverter (=/~) `อินเวอร์เตอร์ {n} × {kW} kW (B2)` (or `60 + 60 + 80 kW` for mixed B2 sizes) → `ตู้ FTS ตัดวงจร DC (B5)` (only with a B5 section) → `แผง PV รวม {kWp} kWp (A1)` |
 | B4 แรงต่ำ | `CT กันย้อน (ใหม่)` on the connection board incomer, box `รีเลย์กันย้อน แรงต่ำ / Zero export (B4)` |
 | B4 แรงสูง | `CT/VT แรงสูง (ใหม่)` under the PEA meter, box `รีเลย์กันย้อน แรงสูง / {pole} (B4)` |
-| emergency | `ปุ่ม Emergency`, dashed to the inverters |
+| emergency (only with a B5 section) | `ปุ่ม Emergency`, dashed to the inverters |
 
 **Zero export control:** in both modes the relay's dashed control line goes to the inverters (`สั่งควบคุมกำลังผลิต`), never to a breaker. The toggle on the SLD page writes B4 `level`. If the job has no B4 section, the toggle is a preview only (`hvOverride`).
 
@@ -171,7 +171,7 @@ The FTS DC cut-out and the emergency button are always drawn on the PV side; the
 - **DXF:** the same drawing as DXF R12 at A3 paper scale (`ส่งออก DXF`).
 - **Excel:** not changed in v1 (open question 5).
 
-## Level 2 — detailed MDP (later, optional inputs)
+## Level 2 — detailed MDP (built 2026-10-20, optional inputs)
 
 | Mode | When | Image |
 |---|---|---|
@@ -207,6 +207,16 @@ Level 2 adds cable, conduit and load detail to each outgoing breaker of a board.
 - More than 10 feeders: wrap into a continuation row (`…ต่อ`), or reduce column spacing down to 60 pt.
 - Several boards on one transformer: side by side, fed from a common LV line.
 
+**As built (2026-10-20):**
+- **Data:** `Breaker.cable`, `conduit`, `load`, `floor` (text) and `spare` (Bool), `Board.busbar` and `ground` (text). All default to empty / false and decode with `decodeIfPresent`, so old jobs load unchanged. No schema field, Excel cell or `Progress` count changes; nothing new is a missing item.
+- **Model:** `SLBreaker.feeder` (`cable, conduit`), `SLBreaker.spare`, `SLBoard.busbar` / `ground`, `SingleLine.notes: [SLNote]` (`text`, `flagged`, `target`). A spare breaker gets no cable and no load block, its check name is `SPARE`, and it asks for no B1 load. A `load` name replaces the `ตู้ไฟฟ้า / {name}` lines (bold), `floor` follows as `({floor})`, then the B1 kW line as before.
+- **Drawing** (connection board only, the board drawn in detail): the cable text rotated −90° left of the feeder (`{cable}, {conduit}` on one line, as `img/sld.py`), `SPARE` under a spare breaker, the busbar label above the bus (the bus moves down one line for it), and with `ground` the N/G bar, the ground conductor with its size rotated beside it and the ground rod (`GROUND ROD`) at the frame's left.
+- **Notes** (`ค่าที่คำนวณจากข้อมูลสำรวจ · หมายเหตุ ไม่ใช่ข้อผิดพลาด`, under the diagram; amber when `flagged`, each taps to its A3 item): full-load current of the connection transformer; its main AT as a multiple of it (flagged outside 0.8–1.25 ×); AT over AF on any breaker of any board (flagged; only the ones that are); feeder count (in use / spare, `count` included); the sum of in-use AT without diversity (and how many have no AT); PV share of the transformer, PV kW from B2 sizes, else A1 ÷ B2, else A1 kWp (flagged above 100 %); the PV breaker against the main AT, always with `(ตรวจพิกัดบัสบาร์กับวิศวกร)`. Level 1 had none of them.
+- **Feeders** (`FeederGrid`): one row while there are at most 10 and the columns stay at least 60 apart (from 160), the last column clear of the PV breaker's labels; otherwise continuation rows of up to 10, the bus carried down the incomer's column and labelled `{board} …ต่อ`, the PV side moving down with them. Under 110 apart the breaker labels shrink to AT / AF / IC and the load lines to 8 characters. When the bus is full, `MAIN BUS …` moves up a line, right-aligned before the PV breaker.
+- **Boards side by side:** a transformer's other boards sit in a row on a common LV line, 200 apart, when they fit before the next transformer (or the right edge), wrapping into more rows; otherwise they stack as in level 1 (so 4–5 transformers look as before).
+- **Entry (A3):** the breaker sheet has a collapsed `รายละเอียดสาย / โหลด (SLD)` group (`ใช้งาน` / `สำรอง (SPARE)`, then cable, conduit, load name, floor), open when anything is filled; the breaker row shows a `SPARE` chip. The main and sub-board cards have a `บัสบาร์ · สายดิน (SLD)` row that opens a small sheet. Sub-board breakers (the `100 A × 2` size rows) have no level 2 entry.
+- **Outputs:** the PDF page and the DXF draw the same layout, so they carry all of it (the N/G bars are stroked so the DXF keeps them).
+
 ## Implementation (Swift)
 
 ### Where the code is
@@ -224,6 +234,8 @@ TCRoofKit/Sources/
     Pages/Electrical/SingleLinePage.swift        page: header, toolbar (B4 toggle, PV board menu, zoom), drawing card, bottom bar
     Pages/Electrical/SingleLinePage+Panel.swift  side panel: PV data, IC check, blocking list, flood card, sheets
     Pages/Electrical/ElectricalPageWide.swift    A3 button "สร้าง Single Line Diagram →"
+    Pages/Electrical/ElectricalPageWide+SLD.swift  level 2 entry: breaker sheet group, board busbar / ground sheet
+    Pages/Electrical/SingleLineRender.swift      debounced off-main rebuild (250 ms) for the page and the B4 / B5 crops
     Editor/JobEditor.swift, JobEditor+Actions.swift  full-screen cover and openFromDiagram(SLTarget)
     Model/SurveyModel+Export.swift               exportSingleLinePDF / exportSingleLineDXF
   PDFReport/
@@ -243,10 +255,11 @@ public enum SLCondition: String { case good, fair, bad }        // init from ด
 public struct SLTarget { enum Page { case info, electrical, flood, module(ModuleType) }; var page; var trafo, board: Int?; var breaker: UUID?; var linkLabel }
 public struct SLText { var text: String; var status: SLStatus; var bold: Bool }
 
-public struct SLBreaker   { id, trafo, board, number, isMain, isNew, type, at, af, ic, brand, condition?, note?, atAmps?, icKA?, name, destination }
-public struct SLBoard     { id, trafo, index, name, location, isMain, main: SLBreaker, breakers: [SLBreaker] }
-public struct SLTransformer { id, index, lines: [SLText], collapsed, hasLA: Bool?, cable, boards, kva?, zPercent? }
+public struct SLBreaker   { id, trafo, board, number, isMain, isNew, type, at, af, ic, brand, condition?, note?, atAmps?, icKA?, name, destination, feeder, spare }
+public struct SLBoard     { id, trafo, index, name, location, isMain, main: SLBreaker, breakers: [SLBreaker], busbar, ground }
+public struct SLTransformer { id, index, lines: [SLText], collapsed, hasLA: Bool?, cable, boards, kva?, zPercent?, protection }
 public struct SLMissing   { id, label, blocking: Bool, target: SLTarget }
+public struct SLNote      { id, text, flagged: Bool, target: SLTarget }   // level 2 checks printed under the diagram
 public struct SLAssumption{ id, text }
 public enum   SLCheckState{ case ok, marginal, insufficient, unknown }
 public struct SLCheck     { id, name, icKA?, state, target, value }
@@ -254,12 +267,12 @@ public struct SLFlood     { text, minCm, levelCm }
 public struct SLPV        { capacityKWp?, inverterCount?, inverterKW?, inverterSizes?, inverterAT?, totalAT?, requiredIC?, busbar?, inverterCable?, mainCable?, cableRuns, totalCableM, rows, inverterSummary }
 
 public struct SingleLine: Sendable {
-    sourceLabel, meter: [SLText], protection: SLText
-    zeroExportHV: Bool, hasB4: Bool, pole: String
+    sourceLabel, meter: [SLText], protection: SLText, protectionKind: String
+    zeroExportHV: Bool, hasB4: Bool, hasB5: Bool, pole: String
     transformers: [SLTransformer]
     connection: (trafo: Int, board: Int)
     pv: SLPV, isc: Double?, iscAssumedZ: Bool, checks: [SLCheck]
-    missing: [SLMissing], assumptions: [SLAssumption], flood: SLFlood?
+    missing: [SLMissing], assumptions: [SLAssumption], notes: [SLNote], flood: SLFlood?
     conditionCounts: (bad: Int, fair: Int), projectLine: String
     static func build(_ job: Job, hvOverride: Bool? = nil) -> SingleLine
 }
@@ -282,7 +295,7 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
   - Other boards stack under their transformer, 230 apart.
 - **Readability:** must hold with 1–5 transformers and up to 6 boards each.
 - **Symbols** (`SLSymbols`, `DrawOp` paths). Lines stop at a symbol and never pass through it.
-  - HV: pole, open switch, HV switch, LA with ground, three cable terminations, Δ/Y transformer
+  - HV: pole, open switch (DS), DO fuse (`dropOutFuse`), VCB (`vcb`), picked by `hvDevice`; LA with ground, three cable terminations, Δ/Y transformer
   - Meter: `kWh` meter
   - Breakers: fixed arc, draw-out arc with chevrons
   - Zero export: CT (also CT/VT on HV), relay box
@@ -310,7 +323,7 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
   - sheets for `ข้อมูลที่ขาดอื่นๆ`, `สภาพอุปกรณ์`, `ค่าสมมติ`
 - **Bottom bar (iPad):** notes `สร้างจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · อัปเดตเองเมื่อแก้ข้อมูลใน A3` and `ข้อมูลล่าสุด {time} · ยังขาด {n} จุด`, then `‹ แก้ข้อมูลใน A3` · `ส่งออก DXF` · `ส่งออก PDF (A3)` · `แนบในรายงาน` (toggles `sldAttach`).
 - **Narrow iPad / iPhone:** the diagram takes the full width, the side panel becomes a sheet opened from the header's `ข้อมูล PV` button, and the zoom sits on the diagram. iPhone bottom bar: the notes, `ส่งออก DXF` and `แนบในรายงาน`, then `แก้ข้อมูลใน A3` / `ส่งออก PDF (A3)`.
-- **Rebuild:** the page builds and draws the diagram again on every change of `job`, on the main actor. Core types are `Sendable`, so a debounced background rebuild can be added if it gets slow.
+- **Rebuild:** the diagram is rebuilt off the main actor 250 ms after the last edit (`SingleLineRender`), and so are the B4 / B5 crops.
 - **Accessibility:**
   - The drawing has an accessibility summary (`แผนภาพเส้นเดียว หม้อแปลง {n} ลูก ยังขาด {n} จุด`).
   - Buttons are at least 44 pt.
@@ -338,9 +351,15 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
 | `testHVOverrideAndSelection` | `hvOverride`, `sldTransformer` / `sldBoard` pick the connection |
 | `testOldJobBuilds` | job with only `kva` + `mdb` builds |
 | `testLayoutHitsAndHeight` | every transformer / board / breaker has a hit box; height grows with content |
-| `testWriteSVG` | with `SLD_SVG=<folder>`, writes the sample SVG for visual comparison with `diagram-*.svg` |
+| `testWriteSVG` | with `SLD_SVG=<folder>`, writes the sample SVG for visual comparison with `diagram-*.svg`, plus `level2-lv/hv.svg` and `level2-wrap.svg` (14 feeders, four sub-boards side by side) |
+| `testLevel2FieldsDecodeFromOldJSON` | old breaker / board JSON decodes with empty level 2 fields; they round-trip |
+| `testLevel2FieldsLeaveCompletionAndMissingAlone` | completion unchanged; a spare only drops its B1 load item |
+| `testLevel2Model`, `testLevel2Drawing` | feeder text, load / floor lines, spare, busbar, N/G bar and ground rod |
+| `testLevel2Notes` | the seven checks, flagged ones, and no missing items added |
+| `testFeedersWrapOrNarrow` | 10 feeders in one row ≥ 60 apart; 14 wrap into `…ต่อ` |
+| `testBoardsSideBySideOnOneTransformer` | four sub-boards in one row; with five transformers they stack |
 
-`SingleLineDXFTests.swift` checks the layers, paper scale, the missing-value layer and that HV and LV differ. `SingleLineReportTests.swift` checks that `แนบในรายงาน` adds one A3 page and leaves the other pages alone, and that the page builds on its own.
+`SingleLineDXFTests.swift` checks the layers, paper scale, the missing-value layer, that HV and LV differ, and that the level 2 detail reaches the DXF (`testLevel2Detail`). `SingleLineReportTests.swift` checks that `แนบในรายงาน` adds one A3 page and leaves the other pages alone, that the page builds on its own, and that the level 2 detail and notes are on it (`testLevel2OnThePage`).
 
 ## Done when
 
@@ -357,11 +376,11 @@ public enum SingleLineLayout { static let width = 1560.0; static func draw(_ m: 
 None of them block v1.
 
 1. ~~Do PV and B1 panels always connect at TR1's main board?~~ Answered: the SLD page has `เชื่อมต่อ PV ที่ตู้นี้` (`sldTransformer` / `sldBoard`); the default is TR1's main board.
-2. Is 1.25 × rated current the team's breaker rule for inverters and the PV incomer? (used now, marked in code)
+2. ~~Is 1.25 × rated current the team's breaker rule?~~ Yes (2026-10-19).
 3. Cable size table and 20 m run length are assumptions. Does the team have a standard table to replace them?
 4. For กันย้อนแรงสูง, which equipment and ratings does กฟภ. expect on the SLD (recloser / LBS, relay 32R, CT/VT ratios)?
 5. Should the SLD image also go on the Excel electrical sheet? (not in v1)
 6. Large stations: v1 fits one A3 page with zoom in the app. Split the PDF per transformer when the scale gets too small?
 7. Should DOF / DS / VCB, LA and grounding also get a condition field?
 8. Keep the Thai breaker symbol (arc) everywhere, or allow the IEC symbol as a setting?
-9. Should VCB and DO fuse / DS get their own symbols, and should the FTS and emergency button be left out when the job has no B5 section?
+9. ~~VCB / DO fuse symbols; FTS without B5?~~ Own symbols; FTS and the emergency button left out without B5 (2026-10-19).

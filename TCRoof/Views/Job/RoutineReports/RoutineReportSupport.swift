@@ -50,6 +50,19 @@ extension Job {
         if a != scheduleActual { scheduleActual = a }
     }
 
+    /// Records the inspector's acknowledgement of a signed report, then files its PDF and Excel again with it. The
+    /// report screen and the daily list both call it; the caller checks `daily.sign`.
+    @MainActor func recordInspectorAck(_ log: InstallLog, name: String, at when: Date, signature: Data?, context: ModelContext) {
+        if routineSettings.inspector != name {
+            var s = routineSettings; s.inspector = name; routineSettings = s
+        }
+        log.inspectorAckAt = when
+        log.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
+        if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }
+        if let excel = RoutineReportFiles.dailyExcel(self, log: log) { RoutineReportFiles.file(excel, job: self, context: context) }
+        try? context.save()
+    }
+
     /// Today's chip on the job card: ส่งแล้ว / ร่าง / ยังไม่ทำ.
     enum DailyState { case signed, draft, none }
     func dailyState(on date: Date) -> DailyState {
@@ -72,7 +85,7 @@ extension InstallLog {
             let p = Photo(fileName: "log.jpg", width: 0, height: 0, takenAt: asset.createdAt)
             images[p.id] = asset.data
             let line = r.progress.first { $0.id.uuidString == asset.tag }
-            out.append(.init(photo: p, date: r.date, caption: line?.title ?? ""))
+            out.append(.init(photo: p, date: r.date, caption: line?.title ?? ModuleEvidence.kind(asset.tag)?.caption ?? ""))
         }
         return (out, images)
     }
@@ -178,8 +191,13 @@ enum RoutineReportFiles {
     }
 
     static func request(_ job: Job, _ r: RoutineReport.WeeklyRequest) -> Built {
-        let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure()).request(r)
-        return Built(pages: pages, images: [:], name: RoutineReport.fileName(.request, date: r.weekStart, station: job.stationName),
+        // the requester's drawn signature on the Site Engineer's line, when there is one
+        let drawn = job.requestSignature(r).flatMap { p -> (Photo, Data)? in
+            guard let img = UIImage(data: p.data) else { return nil }
+            return (Photo(fileName: "request-signature.png", width: Int(img.size.width), height: Int(img.size.height)), p.data)
+        }
+        let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure()).request(r, signature: drawn?.0)
+        return Built(pages: pages, images: drawn.map { [$0.0.id: $0.1] } ?? [:], name: RoutineReport.fileName(.request, date: r.weekStart, station: job.stationName),
                      folder: RoutineReport.folder(.request, date: r.weekStart), title: RoutineReport.Kind.request.title)
     }
 

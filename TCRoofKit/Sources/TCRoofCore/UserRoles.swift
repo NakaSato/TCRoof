@@ -67,6 +67,7 @@ public enum Capability: String, CaseIterable, Sendable {
     case assignTeam = "job.assign_team"
     case mpSetup = "mp.setup"
     case mpProgress = "mp.progress"
+    case mpWBSTick = "mp.wbs_tick"
     case moveToInstall = "survey.move_to_install"
     case installTracking = "install.tracking"
     case overviewReports = "overview.reports"
@@ -75,6 +76,9 @@ public enum Capability: String, CaseIterable, Sendable {
     // สำรวจ ออกแบบ และราคา
     case surveyEdit = "survey.edit"
     case surveySignRev = "survey.sign_rev"
+    case designLibrary = "design.library"
+    /// The team's tank structure standard (`TankStandard`, `config/tankStandard`): managers change it, everyone reads it.
+    case tankStandard = "tank.standard"
     case boqDraft = "boq.draft"
     case boqApprove = "boq.approve"
     case companyDocs = "library.company_docs"
@@ -135,17 +139,20 @@ public enum Capability: String, CaseIterable, Sendable {
     private static let table: [Capability: Row] = [
         .jobList: (.allow, .allow, .conditional),
         .jobEdit: (.allow, .allow, .deny),
-        .jobDelete: (.allow, .deny, .deny),
+        .jobDelete: (.allow, .allow, .deny),
         .assignExternal: (.allow, .allow, .deny),
         .assignTeam: (.allow, .allow, .deny),
         .mpSetup: (.allow, .allow, .deny),
         .mpProgress: (.allow, .allow, .deny),
+        .mpWBSTick: (.allow, .allow, .conditional),
         .moveToInstall: (.allow, .allow, .deny),
         .installTracking: (.allow, .allow, .conditional),
         .overviewReports: (.allow, .allow, .deny),
         .assistantUse: (.allow, .allow, .deny),
         .surveyEdit: (.allow, .allow, .conditional),
         .surveySignRev: (.allow, .allow, .conditional),
+        .designLibrary: (.allow, .allow, .deny),
+        .tankStandard: (.allow, .view, .view),
         .boqDraft: (.disabled, .disabled, .disabled),
         .boqApprove: (.disabled, .disabled, .disabled),
         .companyDocs: (.allow, .view, .deny),

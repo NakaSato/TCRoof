@@ -17,6 +17,13 @@ struct StationDocsScreen: View {
     @State private var showStation = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
+    /// Opened on a package, and with one paper's sheet open (the iPhone install tracking page's `เอกสาร`).
+    init(job: Job, package: StationDocs.Package? = nil, paper: StationDocs.Kind? = nil) {
+        self.job = job
+        _tab = State(initialValue: .package(package ?? .gridConnection))
+        _editing = State(initialValue: paper)
+    }
+
     private var ctx: StationDocs.Context { job.stationContext }
 
     /// The station's papers and the ERC flow are the team's (`stationdocs.drafts`, `erc.flow_record`).
@@ -82,11 +89,17 @@ struct StationDocsScreen: View {
     }
 
     /// `-stationDocsERC wait|failed|ready|parallel|done` sets the station to 200 kVA and over, writes that state of the
-    /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good.
+    /// ERC flow dated back from today, and opens ลำดับ กกพ. It changes the job for good. `-stationDocsERCSize <kVA>`
+    /// sets the station's size instead (`150`: under 200 kVA, the `utility_lt200` flow, where `parallel` is the
+    /// inspection waiting and `done` leaves out the พค.2 steps); `-stationDocsERC small` is `wait` at 150 kVA.
     private func debugERC() {
-        guard let name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
+        guard var name = UserDefaults.standard.string(forKey: "stationDocsERC") else { return }
+        var kVA = UserDefaults.standard.object(forKey: "stationDocsERCSize") != nil
+            ? UserDefaults.standard.double(forKey: "stationDocsERCSize") : ERCFlow.pk2ThresholdKVA
+        if name == "small" { name = "wait"; kVA = 150 }
+        let variant = ERCFlow.Variant(kVA: kVA), big = variant == .from200
         func ago(_ days: Int) -> String { ERCFlow.day(Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .now) }
-        var r = ERCFlow.Record()
+        var r = ERCFlow.Record(variant: variant)
         switch name {
         case "wait":
             r.add(.designRequest, day: ago(30))
@@ -96,17 +109,18 @@ struct StationDocsScreen: View {
             r.add(.designRequest, day: ago(60)); r.add(.designResult, day: ago(48)); r.add(.install, day: ago(2))
         case "parallel":
             r.add(.designRequest, day: ago(90)); r.add(.designResult, day: ago(78)); r.add(.install, day: ago(20))
-            r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.add(.inspectionRequest, day: ago(12))
-            r.utilityWantsPK2 = true
+            if big { r.add(.pk2Request, day: ago(15)); r.add(.ercToDede, day: ago(10)); r.utilityWantsPK2 = true }
+            r.add(.inspectionRequest, day: ago(12))
         case "done":
             r.add(.designRequest, day: ago(120)); r.add(.designResult, day: ago(108)); r.add(.install, day: ago(60))
-            r.add(.pk2Request, day: ago(55)); r.add(.pk2Signed, day: ago(25)); r.add(.inspectionRequest, day: ago(50))
-            r.add(.inspectionResult, day: ago(30)); r.add(.cod, day: ago(15)); r.add(.exemptionResult, day: ago(5))
-            r.utilityWantsPK2 = false
+            if big { r.add(.pk2Request, day: ago(55)); r.add(.pk2Signed, day: ago(25)); r.utilityWantsPK2 = false }
+            r.add(.inspectionRequest, day: ago(50)); r.add(.inspectionResult, day: ago(30))
+            if !big { r.add(.utilityToERC, day: ago(20)) }
+            r.add(.cod, day: ago(15)); r.add(.exemptionResult, day: ago(5))
         default: return
         }
         var station = job.stationDocs
-        station.over200kVA = true
+        station.over200kVA = big
         station.erc = r
         job.stationDocs = station
         tab = .erc
@@ -119,9 +133,9 @@ struct StationDocsScreen: View {
         let s = job.stationDocs
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(ctx.over200kVA ? "อินเวอร์เตอร์ 200 kVA ขึ้นไป · ต้องยื่น พค.2" : "อินเวอร์เตอร์ต่ำกว่า 200 kVA · ไม่ต้องยื่น พค.2")
+                Text(ctx.over200kVA ? "อินเวอร์เตอร์ 200 kVA ขึ้นไป | ต้องยื่น พค.2" : "อินเวอร์เตอร์ต่ำกว่า 200 kVA | ไม่ต้องยื่น พค.2")
                     .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
-                Text("อาคาร: \(s.buildingRoute.title) · คำขอ พค.2: \(s.requestType.title)")
+                Text("อาคาร: \(s.buildingRoute.title) | คำขอ พค.2: \(s.requestType.title)")
                     .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
@@ -130,13 +144,15 @@ struct StationDocsScreen: View {
         }
     }
 
-    /// The packages with their ready counts, then the พค.2 check list and the ERC flow of a station of 200 kVA and over.
+    /// The packages with their ready counts, the พค.2 check list of a station of 200 kVA and over, and the ERC flow of
+    /// every station (its size picks the flow: `Job.ercContext`).
     private var tabs: [(tab: Pane, title: String, count: String?)] {
         var out: [(Pane, String, String?)] = StationDocs.packages(ctx).map { p in
             let pr = StationDocs.progress(p, station: job.stationDocs, library: library, ctx)
             return (.package(p), p.title, "\(pr.ready)/\(pr.total)")
         }
-        if ctx.over200kVA { out += [(.checklist, "Check list พค.2", nil), (.erc, "ลำดับ กกพ.", nil)] }
+        if ctx.over200kVA { out.append((.checklist, "Check list พค.2", nil)) }
+        out.append((.erc, "ลำดับ กกพ.", nil))
         return out
     }
 
@@ -157,7 +173,7 @@ struct StationDocsScreen: View {
             }
         }
         .onChange(of: ctx.over200kVA) { _, over in
-            if !over, tab == .checklist || tab == .erc || tab == .package(.pk2) { tab = .package(.gridConnection) }
+            if !over, tab == .checklist || tab == .package(.pk2) { tab = .package(.gridConnection) }
         }
     }
 
@@ -182,7 +198,7 @@ struct StationDocsScreen: View {
                     DatePicker("วันครบกำหนด", selection: Binding(get: { due }, set: { setDue($0, p) }), displayedComponents: .date)
                     Button("ใช้วันตามแผน MP") { setDue(nil, p) }
                 } else {
-                    LabeledContent("วันครบกำหนด", value: planned.map { "ตามแผน MP · " + RoutineReport.thaiDate($0) } ?? "ยังไม่มีแผน MP")
+                    LabeledContent("วันครบกำหนด", value: planned.map { "ตามแผน MP | " + RoutineReport.thaiDate($0) } ?? "ยังไม่มีแผน MP")
                     Button("กำหนดวันเอง") { setDue(planned ?? .now, p) }
                 }
             } footer: {
@@ -222,7 +238,7 @@ struct StationDocsScreen: View {
                 checkRow(item, StationDocs.check(item, station: job.stationDocs, library: library, ctx))
             }
         } footer: {
-            Text("ติ๊กให้เมื่อเอกสารทุกฉบับของข้อนั้นลงนาม ยื่น หรืออนุมัติแล้ว · ข้อที่ไม่มีเอกสารในแอป ให้ทีมติ๊กบนแบบฟอร์มเอง")
+            Text("ติ๊กให้เมื่อเอกสารทุกฉบับของข้อนั้นลงนาม ยื่น หรืออนุมัติแล้ว | ข้อที่ไม่มีเอกสารในแอป ให้ทีมติ๊กบนแบบฟอร์มเอง")
         }
     }
 
@@ -233,7 +249,7 @@ struct StationDocsScreen: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.text).font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(state == .notApplicable ? Theme.inkMuted : Theme.navy)
                 if case .missing(let names) = state {
-                    Text("ยังขาด: " + names.joined(separator: " · ")).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
+                    Text("ยังขาด: " + names.joined(separator: " | ")).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.dangerText)
                 }
             }
             Spacer()
@@ -281,7 +297,7 @@ struct StationDocRow: View {
         if kind.scope.isShared { parts.append(kind.scope.title + " (คลังกลาง)") }
         if let s = kind.signBy { parts.append("ลงนาม: " + s) }
         if let o = kind.obtainFrom { parts.append("ขอจาก: " + o) }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     @ViewBuilder private var statusChip: some View {
@@ -322,7 +338,7 @@ struct StationDocSheet: View {
                     LabeledContent("ใช้ซ้ำ", value: kind.scope.title)
                     if let s = kind.signBy { LabeledContent("ผู้ลงนาม", value: s) }
                     if let o = kind.obtainFrom { LabeledContent("ขอจาก", value: o) }
-                    LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " · "))
+                    LabeledContent("ใช้ในชุด", value: kind.packages.map(\.title).joined(separator: " | "))
                 }
                 statusSection
                 filesSection
@@ -394,7 +410,7 @@ struct StationDocSheet: View {
                     .frame(minHeight: touchMin)
             }
         } footer: {
-            Text(readOnly ? "ดูอย่างเดียว · ทีมภายในเป็นผู้แก้และอัปโหลดเอกสาร"
+            Text(readOnly ? "ดูอย่างเดียว | ทีมภายในเป็นผู้แก้และอัปโหลดเอกสาร"
                  : kind.scope.isShared
                  ? "เก็บไว้ในเครื่องครั้งเดียว ใช้กับทุกสถานี ไม่อัปโหลดขึ้น Drive"
                  : "เก็บในแฟ้มเอกสารของงาน และอัปโหลดขึ้น Drive พร้อมเอกสารอื่น")

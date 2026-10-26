@@ -102,16 +102,16 @@ struct InstallDailyData {
                 state = d == day ? .today : .missing
             }
             let weather = r.flatMap { r in Dictionary(grouping: r.weather.compactMap { $0 }, by: { $0 }).max { $0.value.count < $1.value.count }?.key }
-            var problem = r?.problems.filter { !$0.closed && !$0.description.isEmpty }.map(\.description).joined(separator: " · ") ?? ""
+            var problem = r?.problems.filter { !$0.closed && !$0.description.isEmpty }.map(\.description).joined(separator: " | ") ?? ""
             if state == .draft {
                 let w = RoutineReport.warnings(r!, previous: all.filter { $0.date < d })
-                problem = (["ร่างยังไม่ลงนาม"] + w.prefix(1).map(\.text) + (problem.isEmpty ? [] : [problem])).joined(separator: " · ")
+                problem = (["ร่างยังไม่ลงนาม"] + w.prefix(1).map(\.text) + (problem.isEmpty ? [] : [problem])).joined(separator: " | ")
             }
             let work: String = switch state {
             case .today: "ยังไม่ได้ทำรายงานวันนี้"
             case .missing: "ไม่มีรายงาน"
             case .stopped: "หยุดงาน: " + (r?.stopReason ?? "")
-            default: r.map { $0.progress.isEmpty ? "ไม่มีงานที่บันทึก" : $0.progress.map(\.title).joined(separator: " · ") } ?? ""
+            default: r.map { $0.progress.isEmpty ? "ไม่มีงานที่บันทึก" : $0.progress.map(\.title).joined(separator: " | ") } ?? ""
             }
             return Row(date: d, state: state, weather: weather, rainHours: r?.rainHours ?? 0, crew: r.flatMap { $0.crewTotal > 0 ? $0.crewTotal : nil },
                        work: work, actual: status?.actual, planned: status?.planned, photos: log?.sortedPhotos.count ?? 0,
@@ -170,11 +170,11 @@ extension InstallDailyData {
             Row(date: d(6), state: .today, weather: .fine, rainHours: 0, crew: nil, work: "ยังไม่ได้ทำรายงานวันนี้", actual: nil, planned: 52,
                 photos: 0, signedAt: nil, ackAt: nil, problem: ""),
             Row(date: d(5), state: .draft, weather: .cloudy, rainHours: 0, crew: 7, work: "เดินสายสตริง 1–6 (โซน A) (หลังคา → ตู้ DC)", actual: 47, planned: 44,
-                photos: 2, signedAt: nil, ackAt: nil, problem: "ร่างยังไม่ลงนาม · ขาดรูป 2 รูป"),
+                photos: 2, signedAt: nil, ackAt: nil, problem: "ร่างยังไม่ลงนาม | ขาดรูป 2 รูป"),
             Row(date: d(4), state: .signed, weather: .fine, rainHours: 0, crew: 9, work: "ติดตั้งแผงเซลล์แสงอาทิตย์ 164 แผง (หลังคา 1–3)", actual: 40, planned: 36,
                 photos: 4, signedAt: d(4), ackAt: nil, problem: ""),
             Row(date: d(3), state: .stopped, weather: .rain, rainHours: 8, crew: nil, work: "หยุดงาน: ฝนตกทั้งช่วงทำงาน", actual: 20, planned: 26,
-                photos: 0, signedAt: d(3), ackAt: d(4), problem: "ฝนตกทั้งช่วงทำงาน · แนวทางเร่งงานวันจันทร์"),
+                photos: 0, signedAt: d(3), ackAt: d(4), problem: "ฝนตกทั้งช่วงทำงาน | แนวทางเร่งงานวันจันทร์"),
             Row(date: d(2), state: .signed, weather: .fine, rainHours: 0, crew: 8, work: "ติดตั้งรางยึดแผง ซีลกันรั่วจุดยึด (หลังคา แถว 7–12)", actual: 20, planned: 18,
                 photos: 4, signedAt: d(2), ackAt: nil, problem: ""),
             Row(date: d(1), state: .signed, weather: .cloudy, rainHours: 0, crew: 8, work: "ติดตั้งรางยึดแผง (หลังคา แถว 1–6)", actual: 12, planned: 10,

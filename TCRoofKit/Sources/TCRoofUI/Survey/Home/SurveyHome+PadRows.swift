@@ -13,7 +13,7 @@ extension SurveyHomeView {
         let ring = pace == .behind ? Theme.danger : pace == .ahead ? Theme.success : Theme.primary
         return VStack(alignment: .leading, spacing: 8) {
             padRowTop(mp: s.mpNumber, chip: paceChip(s).map { TCToneChip($0.0, tone: $0.1) }, name: s.name,
-                      detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " · "),
+                      detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", s.contractor].filter { !$0.isEmpty }.joined(separator: " | "),
                       ring: TCPlanRing(actual: s.actual / 100, plan: s.plan.map { $0 / 100 }, tint: ring, small: true))
             TCPlanBar(actual: s.actual / 100, plan: s.plan.map { $0 / 100 }, tint: pace == .behind ? Theme.danger : Theme.primary)
                 .padding(.vertical, -3)
@@ -104,7 +104,7 @@ extension SurveyHomeView {
         let pr = "PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%"
         return VStack(alignment: .leading, spacing: 8) {
             padRowTop(mp: s.mpNumber, chip: TCToneChip(status.0, tone: status.1), name: s.name,
-                      detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", pr].filter { !$0.isEmpty }.joined(separator: " · "),
+                      detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", pr].filter { !$0.isEmpty }.joined(separator: " | "),
                       ring: TCPlanRing(actual: s.yield, tint: status.2, small: true))
             // no plan tick here: the bar gives back the 3 pt it keeps for one on each side
             TCPlanBar(actual: s.yield, tint: status.2).padding(.vertical, -3)

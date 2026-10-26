@@ -1,0 +1,181 @@
+[
+ {
+  "case": "A",
+  "label": "ทั้งหมดหันใต้ 10° ไม่มีเงา",
+  "E_grid": 245929,
+  "sy": 1634.3,
+  "PR": 0.8116,
+  "vsA": 0.0,
+  "shading": 0.0,
+  "P90": 226953,
+  "faces": null
+ },
+ {
+  "case": "B",
+  "label": "จั่ว ตะวันออก/ตะวันตก 132+132 แผง ไม่มีเงา",
+  "E_grid": 235632,
+  "sy": 1565.9,
+  "PR": 0.8124,
+  "vsA": -4.2,
+  "shading": 0.0,
+  "P90": 217450,
+  "faces": [
+   {
+    "name": "East",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 90,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1937.7,
+    "H_shade": 1880.1,
+    "E_dc_in": 121879,
+    "dc_yield_kWh_per_kWp": 1619.9
+   },
+   {
+    "name": "West",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 270,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1917.3,
+    "H_shade": 1857.6,
+    "E_dc_in": 120331,
+    "dc_yield_kWh_per_kWp": 1599.3
+   }
+  ]
+ },
+ {
+  "case": "C",
+  "label": "จั่ว E/W + เงาจากการสำรวจ 8% ที่หน้าตะวันตก",
+  "E_grid": 226300,
+  "sy": 1503.9,
+  "PR": 0.7802,
+  "vsA": -8.0,
+  "shading": -3.98,
+  "P90": 208838,
+  "faces": [
+   {
+    "name": "East",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 90,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1937.7,
+    "H_shade": 1880.1,
+    "E_dc_in": 121879,
+    "dc_yield_kWh_per_kWp": 1619.9
+   },
+   {
+    "name": "West",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 270,
+    "near_shading": 0.08,
+    "horizon": false,
+    "H_inc": 1917.3,
+    "H_shade": 1709.0,
+    "E_dc_in": 110683,
+    "dc_yield_kWh_per_kWp": 1471.1
+   }
+  ]
+ },
+ {
+  "case": "D",
+  "label": "จั่ว E/W + ต้นไม้ทิศตะวันตก (สูง 25° ช่วงทิศ 240–300°)",
+  "E_grid": 230909,
+  "sy": 1534.5,
+  "PR": 0.7961,
+  "vsA": -6.1,
+  "shading": -1.91,
+  "P90": 213091,
+  "faces": [
+   {
+    "name": "East",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 90,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1937.7,
+    "H_shade": 1880.1,
+    "E_dc_in": 121879,
+    "dc_yield_kWh_per_kWp": 1619.9
+   },
+   {
+    "name": "West",
+    "modules": 132,
+    "tilt": 10,
+    "azimuth": 270,
+    "near_shading": 0.0,
+    "horizon": true,
+    "H_inc": 1917.3,
+    "H_shade": 1786.2,
+    "E_dc_in": 115511,
+    "dc_yield_kWh_per_kWp": 1535.2
+   }
+  ]
+ },
+ {
+  "case": "E",
+  "label": "4 ด้าน: ใต้ 100, ตะวันออก 60, ตะวันตก 60, เหนือ 44 แผง",
+  "E_grid": 237722,
+  "sy": 1579.8,
+  "PR": 0.8121,
+  "vsA": -3.3,
+  "shading": 0.0,
+  "P90": 219379,
+  "faces": [
+   {
+    "name": "South",
+    "modules": 100,
+    "tilt": 10,
+    "azimuth": 180,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 2013.7,
+    "H_shade": 1957.1,
+    "E_dc_in": 95791,
+    "dc_yield_kWh_per_kWp": 1680.5
+   },
+   {
+    "name": "East",
+    "modules": 60,
+    "tilt": 10,
+    "azimuth": 90,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1937.7,
+    "H_shade": 1880.1,
+    "E_dc_in": 55400,
+    "dc_yield_kWh_per_kWp": 1619.9
+   },
+   {
+    "name": "West",
+    "modules": 60,
+    "tilt": 10,
+    "azimuth": 270,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1917.3,
+    "H_shade": 1857.6,
+    "E_dc_in": 54696,
+    "dc_yield_kWh_per_kWp": 1599.3
+   },
+   {
+    "name": "North",
+    "modules": 44,
+    "tilt": 10,
+    "azimuth": 0,
+    "near_shading": 0.0,
+    "horizon": false,
+    "H_inc": 1838.7,
+    "H_shade": 1775.8,
+    "E_dc_in": 38489,
+    "dc_yield_kWh_per_kWp": 1534.7
+   }
+  ]
+ }
+]

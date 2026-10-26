@@ -59,12 +59,12 @@ final class TankDesignTests: XCTestCase {
         XCTAssertEqual(m.first?.design.id, "pwa-64x40")
         XCTAssertEqual(m.first?.turned, true)
         XCTAssertTrue(m.first?.matches == true)
-        // within 0.50 m in all
+        // within 1.00 m in all (decided 2026-10-19)
         var v = Values()
         Roof.setSpans(&v, .x, Array(repeating: 4, count: 9) + [4.3])
-        Roof.setSpans(&v, .y, Array(repeating: 4, count: 9) + [3.9])
+        Roof.setSpans(&v, .y, Array(repeating: 4, count: 9) + [3.4])
         XCTAssertTrue(TankDesign.ranked(v).first!.matches)
-        Roof.setSpans(&v, .y, Array(repeating: 4, count: 9) + [3.7])
+        Roof.setSpans(&v, .y, Array(repeating: 4, count: 9) + [3.2])
         XCTAssertFalse(TankDesign.ranked(v).first!.matches)
         // no size: listed, no line
         XCTAssertNil(TankDesign.ranked(Values()).first?.line)
@@ -108,15 +108,15 @@ final class TankDesignTests: XCTestCase {
         var list = TankPoints.points(v)
         TankPoints.setStatus(&v, list[0].id, TankPoints.ok)
         TankPoints.setStatus(&v, list[5].id, TankPoints.absent)
-        TankPoints.move(&v, list[2].id, x: 17.7, y: nil)
+        TankPoints.move(&v, list[2].id, x: 17.275, y: nil)
         TankPoints.setStatus(&v, list[2].id, TankPoints.ok)
         let id = TankPoints.add(&v, kind: TankPoints.ladder)!
         list = TankPoints.points(v)
         let s = TankDesign.summary(v)!
         XCTAssertEqual(s.design, "ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด)")
         XCTAssertEqual([s.matches, s.moved, s.absent, s.added, s.open], [1, 1, 1, 1, 18])
-        XCTAssertEqual(s.counts, "ตรงแบบ 1 · ย้าย 1 · ไม่มีจริง 1 · เพิ่มหน้างาน 1 · ยังไม่ตรวจ 18")
-        XCTAssertEqual(s.differences[0], "V3 ย้าย 4.00 ม. (21.70, 1.70 → 17.70, 1.70)")
+        XCTAssertEqual(s.counts, "ตรงแบบ 1 | ย้าย 1 | ไม่มีจริง 1 | เพิ่มหน้างาน 1 | ยังไม่ตรวจ 18")
+        XCTAssertEqual(s.differences[0], "V3 ย้าย 4.00 ม. (21.27, 1.27 → 17.27, 1.27)")
         XCTAssertEqual(s.differences[1], "V6 ไม่มีจริง")
         XCTAssertTrue(s.differences[2].hasPrefix("L4 เพิ่มหน้างาน"), s.differences[2])
         XCTAssertEqual(list.last?.id, id)
@@ -137,10 +137,14 @@ final class TankDesignTests: XCTestCase {
         TankPoints.setStatus(&v, list[0].id, TankPoints.ok)
         TankPoints.setStatus(&v, list[1].id, TankPoints.absent)
         XCTAssertEqual(TankPoints.confirmRest(&v), 19)
+        // the missing point needs its photo first
+        XCTAssertFalse(TankPoints.done(v))
+        XCTAssertEqual(TankPoints.missingPhotos(v).map(\.id), [list[1].id])
+        TankPoints.setPhoto(&v, list[1].id, Photo(fileName: "p.jpg", width: 4, height: 3))
         XCTAssertTrue(TankPoints.done(v))
         var s = TankDesign.summary(v)!
         XCTAssertEqual([s.matches, s.absent, s.bulk, s.open], [1, 1, 19, 0])
-        XCTAssertEqual(s.counts, "ตรงแบบ 1 · ย้าย 0 · ไม่มีจริง 1 · เพิ่มหน้างาน 0 · ยืนยันแบบรวม 19")
+        XCTAssertEqual(s.counts, "ตรงแบบ 1 | ย้าย 0 | ไม่มีจริง 1 | เพิ่มหน้างาน 0 | ยืนยันแบบรวม 19")
         list = TankPoints.points(v)
         XCTAssertFalse(list[0].bulk)
         TankPoints.setStatus(&v, list[2].id, TankPoints.ok)
@@ -148,5 +152,44 @@ final class TankDesignTests: XCTestCase {
         s = TankDesign.summary(v)!
         XCTAssertEqual([s.matches, s.moved, s.bulk], [2, 1, 17])
         XCTAssertEqual(TankPoints.confirmRest(&v), 0)
+    }
+
+    // MARK: photos and tolerance (decided 2026-10-19)
+
+    func testPointsThatDifferNeedAPhotoOnADesignOnly() throws {
+        var v = Values()
+        TankDesign.apply(&v, .pwa40x40)
+        let list = TankPoints.points(v)
+        // a move inside 0.20 m still matches the design
+        let p = list[0], r = try XCTUnwrap(TankPoints.rect(p))
+        TankPoints.move(&v, p.id, x: r.x + 0.15, y: nil)
+        XCTAssertFalse(TankPoints.moved(TankPoints.points(v)[0]))
+        XCTAssertFalse(TankPoints.needsPhoto(TankPoints.points(v)[0], in: v))
+        TankPoints.move(&v, p.id, x: r.x + 4, y: nil)
+        let moved = TankPoints.points(v)[0]
+        XCTAssertTrue(TankPoints.moved(moved))
+        XCTAssertTrue(TankPoints.needsPhoto(moved, in: v))
+        // a point added on site too
+        let added = try XCTUnwrap(TankPoints.add(&v, kind: TankPoints.vent))
+        XCTAssertEqual(Set(TankPoints.missingPhotos(v).map(\.id)), [p.id, added])
+        // the photo is kept on the point, is one of the job's photos, and goes with the difference to the report
+        let photo = Photo(fileName: "m.jpg", width: 4, height: 3)
+        TankPoints.setPhoto(&v, p.id, photo)
+        TankPoints.setStatus(&v, p.id, TankPoints.ok)
+        XCTAssertTrue(v.allPhotos.contains(photo))
+        let s = try XCTUnwrap(TankDesign.summary(v))
+        let i = try XCTUnwrap(s.differences.firstIndex { $0.hasPrefix(p.label + " ย้าย") })
+        XCTAssertEqual(s.photos[i], photo)
+        XCTAssertEqual(s.photos.count, s.differences.count)
+        // the generic layout asks for no photos
+        var g = Values()
+        Tank.apply(&g, Tank.presets[0])
+        TankPoints.seed(&g)
+        let first = TankPoints.points(g)[0]
+        TankPoints.setStatus(&g, first.id, TankPoints.absent)
+        XCTAssertFalse(TankPoints.needsPhoto(TankPoints.points(g)[0], in: g))
+        // the photo field decodes on old JSON (absent) and round-trips
+        let back = try JSONDecoder().decode(Obstacle.self, from: JSONEncoder().encode(TankPoints.points(v)[0]))
+        XCTAssertEqual(back.photo, photo)
     }
 }

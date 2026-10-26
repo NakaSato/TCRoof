@@ -1,0 +1,713 @@
+{
+ "lat": 7.01,
+ "lon": 100.47,
+ "mount": "roof",
+ "tilt": 10,
+ "azimuth": 180,
+ "gsa": {
+  "ghi": 1795.765625,
+  "opta": 8.0,
+  "pvout": 1429.9696044921875,
+  "temp": 26.6875
+ },
+ "results": [
+  {
+   "scenario": "hatyai-roof-80-ERA5",
+   "config": {
+    "name": "hatyai-roof-80-ERA5",
+    "lat": 7.01,
+    "lon": 100.47,
+    "tilt": 10,
+    "azimuth": 180,
+    "module_json": "Examples/znshine-zxm7-uhldd144-570.json",
+    "inverter_json": "Examples/growatt-max-80ktl3-lv.json",
+    "design": {
+     "modules_per_string": 13,
+     "strings": 14
+    },
+    "meteo_csv": "Reference/data/pvgis-tmy-era5-7.0100-100.4700.csv",
+    "ghi_target_kwh_m2": null,
+    "losses": {
+     "albedo": 0.2,
+     "iam_b0": 0.05,
+     "soiling": 0.03,
+     "module_quality": 0.0,
+     "lid": 0.01,
+     "mismatch": 0.01,
+     "dc_ohmic_at_stc": 0.015,
+     "ac_ohmic_at_nominal": 0.005,
+     "unavailability": 0.01,
+     "near_shading": 0.0
+    },
+    "thermal": {
+     "u_c": 20.0,
+     "u_v": 0.0,
+     "alpha": 0.9
+    },
+    "uncertainty": {
+     "climate_iav": 0.02,
+     "meteo_data": 0.08,
+     "pv_module_model": 0.01,
+     "module_quality": 0.01,
+     "soiling_mismatch": 0.01,
+     "inverter": 0.005,
+     "unmodelled_shading": 0.02
+    },
+    "ageing_per_year": 0.004,
+    "years": 25,
+    "ac_limit": "nominal",
+    "bifacial": {
+     "enabled": false,
+     "bifaciality": 0.8,
+     "albedo": 0.3,
+     "height_m": 0.12,
+     "pitch_m": 2.3,
+     "module_slant_m": 2.278,
+     "tilt_rel_deg": 0.0,
+     "frame": "roof",
+     "structure_shading": 0.05,
+     "rear_mismatch": 0.1,
+     "transmission": 0.0
+    },
+    "rows": null
+   },
+   "p_nom_dc_kWp": 103.74,
+   "rows": null,
+   "dc_ac_ratio": 1.297,
+   "modules": 182,
+   "energies_kWh": {
+    "H_hor": 1900.86,
+    "H_inc": 1921.2,
+    "H_iam": 1862.06,
+    "H_shade": 1862.06,
+    "H_front_eff": 1806.2,
+    "H_rear_raw": 0.0,
+    "H_rear_eff": 0.0,
+    "H_eff": 1806.2,
+    "E_nominal": 187374.71,
+    "E_after_irr_level": 186848.68,
+    "E_after_temp": 172646.74,
+    "E_after_quality_lid_mm": 169211.07,
+    "E_arr_mpp": 167580.64,
+    "E_after_current_limit": 167578.55,
+    "E_after_inv_eff": 165242.98,
+    "E_after_clipping": 165150.79,
+    "E_after_ac_ohmic": 164604.86,
+    "E_grid": 162954.34
+   },
+   "specific_yield": 1570.8,
+   "PR": 0.8176,
+   "loss_diagram": [
+    [
+     "Transposition gain (Perez)",
+     1.07
+    ],
+    [
+     "IAM (ASHRAE b0=0.05)",
+     -3.08
+    ],
+    [
+     "Near shading / row-to-row",
+     0.0
+    ],
+    [
+     "Soiling",
+     -3.0
+    ],
+    [
+     "Bifacial rear gain (after \u03c6, structure shading, rear mismatch)",
+     0.0
+    ],
+    [
+     "PV loss due to irradiance level",
+     -0.28
+    ],
+    [
+     "PV loss due to temperature",
+     -7.6
+    ],
+    [
+     "Module quality + LID + mismatch",
+     -1.99
+    ],
+    [
+     "DC ohmic wiring",
+     -0.96
+    ],
+    [
+     "MPPT current limit",
+     -0.0
+    ],
+    [
+     "Inverter efficiency",
+     -1.39
+    ],
+    [
+     "Clipping (AC nominal)",
+     -0.06
+    ],
+    [
+     "AC ohmic",
+     -0.33
+    ],
+    [
+     "Unavailability + night consumption",
+     -1.0
+    ]
+   ],
+   "monthly": [
+    {
+     "month": 1,
+     "GHI": 159.3,
+     "POA": 175.1,
+     "E_grid": 14849.0,
+     "PR": 0.8177
+    },
+    {
+     "month": 2,
+     "GHI": 173.8,
+     "POA": 185.6,
+     "E_grid": 15490.0,
+     "PR": 0.8043
+    },
+    {
+     "month": 3,
+     "GHI": 180.7,
+     "POA": 184.2,
+     "E_grid": 15558.0,
+     "PR": 0.8144
+    },
+    {
+     "month": 4,
+     "GHI": 161.6,
+     "POA": 158.1,
+     "E_grid": 13363.0,
+     "PR": 0.8145
+    },
+    {
+     "month": 5,
+     "GHI": 163.4,
+     "POA": 154.8,
+     "E_grid": 13120.0,
+     "PR": 0.8172
+    },
+    {
+     "month": 6,
+     "GHI": 165.0,
+     "POA": 153.6,
+     "E_grid": 13046.0,
+     "PR": 0.8189
+    },
+    {
+     "month": 7,
+     "GHI": 166.3,
+     "POA": 156.0,
+     "E_grid": 13260.0,
+     "PR": 0.8196
+    },
+    {
+     "month": 8,
+     "GHI": 167.3,
+     "POA": 161.7,
+     "E_grid": 13706.0,
+     "PR": 0.8171
+    },
+    {
+     "month": 9,
+     "GHI": 151.1,
+     "POA": 151.5,
+     "E_grid": 12892.0,
+     "PR": 0.8201
+    },
+    {
+     "month": 10,
+     "GHI": 158.1,
+     "POA": 164.8,
+     "E_grid": 14029.0,
+     "PR": 0.8206
+    },
+    {
+     "month": 11,
+     "GHI": 131.6,
+     "POA": 141.7,
+     "E_grid": 12116.0,
+     "PR": 0.8241
+    },
+    {
+     "month": 12,
+     "GHI": 122.6,
+     "POA": 134.2,
+     "E_grid": 11527.0,
+     "PR": 0.8281
+    }
+   ],
+   "ageing": [
+    {
+     "year": 1,
+     "E_grid": 162628.0
+    },
+    {
+     "year": 2,
+     "E_grid": 161977.0
+    },
+    {
+     "year": 3,
+     "E_grid": 161325.0
+    },
+    {
+     "year": 4,
+     "E_grid": 160673.0
+    },
+    {
+     "year": 5,
+     "E_grid": 160021.0
+    },
+    {
+     "year": 6,
+     "E_grid": 159369.0
+    },
+    {
+     "year": 7,
+     "E_grid": 158718.0
+    },
+    {
+     "year": 8,
+     "E_grid": 158066.0
+    },
+    {
+     "year": 9,
+     "E_grid": 157414.0
+    },
+    {
+     "year": 10,
+     "E_grid": 156762.0
+    },
+    {
+     "year": 11,
+     "E_grid": 156110.0
+    },
+    {
+     "year": 12,
+     "E_grid": 155458.0
+    },
+    {
+     "year": 13,
+     "E_grid": 154807.0
+    },
+    {
+     "year": 14,
+     "E_grid": 154155.0
+    },
+    {
+     "year": 15,
+     "E_grid": 153503.0
+    },
+    {
+     "year": 16,
+     "E_grid": 152851.0
+    },
+    {
+     "year": 17,
+     "E_grid": 152199.0
+    },
+    {
+     "year": 18,
+     "E_grid": 151548.0
+    },
+    {
+     "year": 19,
+     "E_grid": 150896.0
+    },
+    {
+     "year": 20,
+     "E_grid": 150244.0
+    },
+    {
+     "year": 21,
+     "E_grid": 149592.0
+    },
+    {
+     "year": 22,
+     "E_grid": 148940.0
+    },
+    {
+     "year": 23,
+     "E_grid": 148288.0
+    },
+    {
+     "year": 24,
+     "E_grid": 147637.0
+    },
+    {
+     "year": 25,
+     "E_grid": 146985.0
+    }
+   ],
+   "lifetime_kWh": 3870166,
+   "probability": {
+    "sigma_1yr": 0.0867,
+    "sigma_10yr": 0.0846,
+    "P50": 162954,
+    "P90_1yr": 144838,
+    "P90_10yr": 145277,
+    "P99_1yr": 130070
+   },
+   "hours": {
+    "current_limited": 10,
+    "clipped": 43,
+    "max_dc_kW": 86.77,
+    "t_cell_mean_daylight": 45.5,
+    "t_cell_max": 66.5
+   }
+  },
+  {
+   "scenario": "hatyai-roof-80-GSA",
+   "config": {
+    "name": "hatyai-roof-80-GSA",
+    "lat": 7.01,
+    "lon": 100.47,
+    "tilt": 10,
+    "azimuth": 180,
+    "module_json": "Examples/znshine-zxm7-uhldd144-570.json",
+    "inverter_json": "Examples/growatt-max-80ktl3-lv.json",
+    "design": {
+     "modules_per_string": 13,
+     "strings": 14
+    },
+    "meteo_csv": "Reference/data/pvgis-tmy-era5-7.0100-100.4700.csv",
+    "ghi_target_kwh_m2": 1795.765625,
+    "losses": {
+     "albedo": 0.2,
+     "iam_b0": 0.05,
+     "soiling": 0.03,
+     "module_quality": 0.0,
+     "lid": 0.01,
+     "mismatch": 0.01,
+     "dc_ohmic_at_stc": 0.015,
+     "ac_ohmic_at_nominal": 0.005,
+     "unavailability": 0.01,
+     "near_shading": 0.0
+    },
+    "thermal": {
+     "u_c": 20.0,
+     "u_v": 0.0,
+     "alpha": 0.9
+    },
+    "uncertainty": {
+     "climate_iav": 0.02,
+     "meteo_data": 0.05,
+     "pv_module_model": 0.01,
+     "module_quality": 0.01,
+     "soiling_mismatch": 0.01,
+     "inverter": 0.005,
+     "unmodelled_shading": 0.02
+    },
+    "ageing_per_year": 0.004,
+    "years": 25,
+    "ac_limit": "nominal",
+    "bifacial": {
+     "enabled": false,
+     "bifaciality": 0.8,
+     "albedo": 0.3,
+     "height_m": 0.12,
+     "pitch_m": 2.3,
+     "module_slant_m": 2.278,
+     "tilt_rel_deg": 0.0,
+     "frame": "roof",
+     "structure_shading": 0.05,
+     "rear_mismatch": 0.1,
+     "transmission": 0.0
+    },
+    "rows": null
+   },
+   "p_nom_dc_kWp": 103.74,
+   "rows": null,
+   "dc_ac_ratio": 1.297,
+   "modules": 182,
+   "energies_kWh": {
+    "H_hor": 1795.77,
+    "H_inc": 1815.62,
+    "H_iam": 1759.72,
+    "H_shade": 1759.72,
+    "H_front_eff": 1706.93,
+    "H_rear_raw": 0.0,
+    "H_rear_eff": 0.0,
+    "H_eff": 1706.93,
+    "E_nominal": 177077.16,
+    "E_after_irr_level": 176465.66,
+    "E_after_temp": 163682.57,
+    "E_after_quality_lid_mm": 160425.29,
+    "E_arr_mpp": 158970.7,
+    "E_after_current_limit": 158970.7,
+    "E_after_inv_eff": 156806.35,
+    "E_after_clipping": 156801.44,
+    "E_after_ac_ohmic": 156307.96,
+    "E_grid": 154740.41
+   },
+   "specific_yield": 1491.6,
+   "PR": 0.8215,
+   "loss_diagram": [
+    [
+     "Transposition gain (Perez)",
+     1.11
+    ],
+    [
+     "IAM (ASHRAE b0=0.05)",
+     -3.08
+    ],
+    [
+     "Near shading / row-to-row",
+     0.0
+    ],
+    [
+     "Soiling",
+     -3.0
+    ],
+    [
+     "Bifacial rear gain (after \u03c6, structure shading, rear mismatch)",
+     0.0
+    ],
+    [
+     "PV loss due to irradiance level",
+     -0.35
+    ],
+    [
+     "PV loss due to temperature",
+     -7.24
+    ],
+    [
+     "Module quality + LID + mismatch",
+     -1.99
+    ],
+    [
+     "DC ohmic wiring",
+     -0.91
+    ],
+    [
+     "MPPT current limit",
+     0.0
+    ],
+    [
+     "Inverter efficiency",
+     -1.36
+    ],
+    [
+     "Clipping (AC nominal)",
+     -0.0
+    ],
+    [
+     "AC ohmic",
+     -0.31
+    ],
+    [
+     "Unavailability + night consumption",
+     -1.0
+    ]
+   ],
+   "monthly": [
+    {
+     "month": 1,
+     "GHI": 150.5,
+     "POA": 165.5,
+     "E_grid": 14107.0,
+     "PR": 0.8218
+    },
+    {
+     "month": 2,
+     "GHI": 164.2,
+     "POA": 175.5,
+     "E_grid": 14788.0,
+     "PR": 0.8124
+    },
+    {
+     "month": 3,
+     "GHI": 170.7,
+     "POA": 174.0,
+     "E_grid": 14790.0,
+     "PR": 0.8192
+    },
+    {
+     "month": 4,
+     "GHI": 152.6,
+     "POA": 149.4,
+     "E_grid": 12683.0,
+     "PR": 0.8181
+    },
+    {
+     "month": 5,
+     "GHI": 154.4,
+     "POA": 146.2,
+     "E_grid": 12445.0,
+     "PR": 0.8203
+    },
+    {
+     "month": 6,
+     "GHI": 155.8,
+     "POA": 145.1,
+     "E_grid": 12373.0,
+     "PR": 0.8219
+    },
+    {
+     "month": 7,
+     "GHI": 157.1,
+     "POA": 147.4,
+     "E_grid": 12575.0,
+     "PR": 0.8226
+    },
+    {
+     "month": 8,
+     "GHI": 158.1,
+     "POA": 152.8,
+     "E_grid": 13004.0,
+     "PR": 0.8204
+    },
+    {
+     "month": 9,
+     "GHI": 142.8,
+     "POA": 143.2,
+     "E_grid": 12232.0,
+     "PR": 0.8234
+    },
+    {
+     "month": 10,
+     "GHI": 149.4,
+     "POA": 155.8,
+     "E_grid": 13320.0,
+     "PR": 0.8244
+    },
+    {
+     "month": 11,
+     "GHI": 124.4,
+     "POA": 133.9,
+     "E_grid": 11496.0,
+     "PR": 0.8274
+    },
+    {
+     "month": 12,
+     "GHI": 115.9,
+     "POA": 126.8,
+     "E_grid": 10928.0,
+     "PR": 0.8307
+    }
+   ],
+   "ageing": [
+    {
+     "year": 1,
+     "E_grid": 154431.0
+    },
+    {
+     "year": 2,
+     "E_grid": 153812.0
+    },
+    {
+     "year": 3,
+     "E_grid": 153193.0
+    },
+    {
+     "year": 4,
+     "E_grid": 152574.0
+    },
+    {
+     "year": 5,
+     "E_grid": 151955.0
+    },
+    {
+     "year": 6,
+     "E_grid": 151336.0
+    },
+    {
+     "year": 7,
+     "E_grid": 150717.0
+    },
+    {
+     "year": 8,
+     "E_grid": 150098.0
+    },
+    {
+     "year": 9,
+     "E_grid": 149479.0
+    },
+    {
+     "year": 10,
+     "E_grid": 148860.0
+    },
+    {
+     "year": 11,
+     "E_grid": 148241.0
+    },
+    {
+     "year": 12,
+     "E_grid": 147622.0
+    },
+    {
+     "year": 13,
+     "E_grid": 147003.0
+    },
+    {
+     "year": 14,
+     "E_grid": 146384.0
+    },
+    {
+     "year": 15,
+     "E_grid": 145765.0
+    },
+    {
+     "year": 16,
+     "E_grid": 145147.0
+    },
+    {
+     "year": 17,
+     "E_grid": 144528.0
+    },
+    {
+     "year": 18,
+     "E_grid": 143909.0
+    },
+    {
+     "year": 19,
+     "E_grid": 143290.0
+    },
+    {
+     "year": 20,
+     "E_grid": 142671.0
+    },
+    {
+     "year": 21,
+     "E_grid": 142052.0
+    },
+    {
+     "year": 22,
+     "E_grid": 141433.0
+    },
+    {
+     "year": 23,
+     "E_grid": 140814.0
+    },
+    {
+     "year": 24,
+     "E_grid": 140195.0
+    },
+    {
+     "year": 25,
+     "E_grid": 139576.0
+    }
+   ],
+   "lifetime_kWh": 3675085,
+   "probability": {
+    "sigma_1yr": 0.0602,
+    "sigma_10yr": 0.0571,
+    "P50": 154740,
+    "P90_1yr": 142800,
+    "P90_10yr": 143409,
+    "P99_1yr": 133067
+   },
+   "hours": {
+    "current_limited": 0,
+    "clipped": 5,
+    "max_dc_kW": 83.33,
+    "t_cell_mean_daylight": 44.6,
+    "t_cell_max": 64.5
+   }
+  }
+ ]
+}

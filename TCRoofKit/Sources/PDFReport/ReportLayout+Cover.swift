@@ -122,7 +122,7 @@ extension ReportLayout {
         let fy = Self.pageH - Self.margin - 6
         return Page(ops: [.rect(Box(0, 0, Self.pageW, Self.pageH), stroke: nil, fill: .white)] + translate(u.ops, dx: Self.margin, dy: Self.margin) + [
             .line(Pt(Self.margin, fy - 10), Pt(Self.pageW - Self.margin, fy - 10), width: 0.5, color: .faint),
-            .text("สรุปผลการสำรวจ · เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) · \(job.projectName)", at: Pt(Self.margin, fy), size: 7.5, color: .ink2),
+            .text("สรุปผลการสำรวจ | เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) | \(job.projectName)", at: Pt(Self.margin, fy), size: 7.5, color: .ink2),
             .text("หน้าสรุป", at: Pt(Self.pageW - Self.margin, fy), size: 7.5, color: .ink2, align: .right)])
     }
 
@@ -132,9 +132,9 @@ extension ReportLayout {
         var o: [DrawOp] = [], y = 0.0
         let c = job.completion, verdict = j.choice("verdict")
         // header
-        o.append(.text("สรุปผลการสำรวจ 1 หน้า · PWA Solar Survey", at: Pt(0, 5), size: 7.5, color: .ink2))
+        o.append(.text("สรุปผลการสำรวจ 1 หน้า | PWA Solar Survey", at: Pt(0, 5), size: 7.5, color: .ink2))
         o.append(.textBox(job.projectName.isEmpty ? "(ยังไม่ตั้งชื่อโครงการ)" : job.projectName, Box(0, 11, W - 170, 20), size: 14, bold: true))
-        o.append(.text("เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) · วันที่ \(ISODate.thai(j.text("date"))) · วิศวกร \(j.text("engineer").isEmpty ? "-" : j.text("engineer"))", at: Pt(0, 38), size: 8.5))
+        o.append(.text("เลขที่ \(job.docNo.isEmpty ? "-" : job.docNo) | วันที่ \(ISODate.thai(j.text("date"))) | วิศวกร \(j.text("engineer").isEmpty ? "-" : j.text("engineer"))", at: Pt(0, 38), size: 8.5))
         if let v = verdict {
             let col: RGBA = v == "ติดตั้งได้" ? RGBA(hex: 0x2E7D32) : v.contains("เงื่อนไข") ? RGBA(hex: 0xB26A00) : .tag
             let tw = m.width(v, size: 10, bold: true) + 18
@@ -155,13 +155,13 @@ extension ReportLayout {
         } else { o.append(.text("ยังไม่มีภาพสถานที่ติดตั้ง", at: Pt(picW / 2, y + picH / 2), size: 8, color: .faint, align: .center)) }
         let flood: String = {
             guard let f = j.choice("floodHistory") else { return "" }
-            if f == "ไม่ทราบ" { return ["ไม่ทราบ", j.gistda?.summary].compactMap { $0 }.joined(separator: " · ") }
+            if f == "ไม่ทราบ" { return ["ไม่ทราบ", j.gistda?.summary].compactMap { $0 }.joined(separator: " | ") }
             guard f == "เคย" else { return f }
             return ["เคย", j.text("floodYear").isEmpty ? nil : "ปี " + j.text("floodYear"), j.text("floodDepth").isEmpty ? nil : "สูง \(j.text("floodDepth")) ซม.",
-                    j.text("equipHeight").isEmpty ? nil : "ติดตั้งอุปกรณ์ ≥ \(j.text("equipHeight")) ซม."].compactMap { $0 }.joined(separator: " · ")
+                    j.text("equipHeight").isEmpty ? nil : "ติดตั้งอุปกรณ์ ≥ \(j.text("equipHeight")) ซม."].compactMap { $0 }.joined(separator: " | ")
         }()
         let kv: [(String, String)] = [("กำลังการผลิตติดตั้ง", j.text("capacity").isEmpty ? "" : j.text("capacity") + " kWp"), ("ที่อยู่", j.text("address")), ("พิกัด GPS", j.text("gps")),
-                                      ("ผู้ประสานงาน", [j.text("coordinator"), j.text("phone")].filter { !$0.isEmpty }.joined(separator: " · ")),
+                                      ("ผู้ประสานงาน", [j.text("coordinator"), j.text("phone")].filter { !$0.isEmpty }.joined(separator: " | ")),
                                       ("อินเตอร์เน็ต", j.choice("internet") ?? ""), ("หมายเลขมิเตอร์", j.text("meterNo")), ("ประวัติน้ำท่วม", flood)]
         let kx = picW + 8, kw = W - kx, lw = 88.0, rowH = picH / Double(kv.count)
         for (i, (k, v)) in kv.enumerated() {
@@ -196,14 +196,14 @@ extension ReportLayout {
         let trs = j.transformers("trafos")
         // Vector group / %Z / condition come from the A3 wide page; the column shows only when some transformer has them
         func spec(_ t: Transformer) -> String {
-            [t.vectorGroup, t.impedance.isEmpty ? "" : "\(t.impedance)%Z", t.condition].filter { !$0.isEmpty }.joined(separator: " · ")
+            [t.vectorGroup, t.impedance.isEmpty ? "" : "\(t.impedance)%Z", t.condition].filter { !$0.isEmpty }.joined(separator: " | ")
         }
         let showSpec = trs.contains { !spec($0).isEmpty }
         let trRows: [[(String, RGBA)]] = trs.isEmpty ? [[("ยังไม่ระบุหม้อแปลง", .tag), ("", .black), ("", .black), ("", .black), ("", .black)]] :
             trs.enumerated().map { i, t in
                 let n = Schema.transformerAngles.filter { j.photo("tr\(i)_\($0.key)") != nil }.count
                 let mdb = t.mdb.enumerated().filter { !$0.element.isEmpty }.map { "MDB\($0.offset + 1) \($0.element) A" }.joined(separator: ", ")
-                let feed = [j.text("tr\(i)_feed"), j.text("tr\(i)_feedLoc")].filter { !$0.isEmpty }.joined(separator: " · ")
+                let feed = [j.text("tr\(i)_feed"), j.text("tr\(i)_feedLoc")].filter { !$0.isEmpty }.joined(separator: " | ")
                 let row: [(String, RGBA)] = [("TR\(i + 1)", .black), ("\(t.kva.isEmpty ? "-" : t.kva) kVA", .black), (mdb.isEmpty ? "-" : mdb, .black),
                         (feed.isEmpty ? "ยังไม่ระบุ" : feed, feed.isEmpty ? .tag : .black), ("\(n)/6", n < 6 ? .tag : .black)]
                 return showSpec ? row + [(spec(t).isEmpty ? "-" : spec(t), .black)] : row

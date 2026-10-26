@@ -54,7 +54,7 @@ struct MPScheduleCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? "")).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+                Text("แผนงาน MP" + (job.mpNumber.map { " | MP \($0)" } ?? "")).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 Spacer()
                 if job.scheduleInput != nil, permissions.can(.mpSetup) {
                     Button("แก้ไข") { showSetup = true }.font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: touchMin)
@@ -107,7 +107,7 @@ struct MPScheduleCard: View {
                 MPRing(actual: st.actual, planned: st.planned)
                 VStack(alignment: .leading, spacing: 6) {
                     MPVarianceChip(variance: st.variance)
-                    Text("แผน \(MPFormat.percent(st.planned)) · ทำได้ \(MPFormat.percent(st.actual))")
+                    Text("แผน \(MPFormat.percent(st.planned)) | ทำได้ \(MPFormat.percent(st.actual))")
                         .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                     Text("ถึงสัปดาห์ \(MasterSchedule.weekStart(.now).thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                 }
@@ -231,6 +231,7 @@ struct MPSetupSheet: View {
     @State private var inverterKW: Double?
     /// The imported task being edited.
     @State private var editing: MasterSchedule.Task?
+    @State private var choosingTemplate = false
 
     init(job: Job) {
         self.job = job
@@ -270,6 +271,14 @@ struct MPSetupSheet: View {
                         }
                     }
                     .onChange(of: inverterKW) { _, kw in if let kw { input.over200kVA = MasterSchedule.Input.isOver200kVA(inverterKW: kw) } }
+                }
+                PadSection("แม่แบบโครงการ") {
+                    Button { choosingTemplate = true } label: {
+                        Label("เริ่มจากแม่แบบ (20 กรณีติดตั้ง)", systemImage: "doc.on.doc")
+                    }
+                    .accessibilityIdentifier("mpSetup.template")
+                } footer: {
+                    Text("แผนตามประเภทหน้างาน กันย้อน และขนาด inverter เลื่อนตามวัน Kick off")
                 }
                 if input.fixed != nil {
                     PadSection("แผนจากไฟล์ Excel") {
@@ -315,7 +324,7 @@ struct MPSetupSheet: View {
                 } footer: {
                     if input.fixed != nil {
                         let total = plan.reduce(0) { $0 + $1.weight }
-                        Text("แตะงานเพื่อแก้วันหรือน้ำหนัก ส่งออกไฟล์แผนจะลงเฉพาะงานที่แก้ · รวมน้ำหนัก \(MPFormat.percent(total))"
+                        Text("แตะงานเพื่อแก้วันหรือน้ำหนัก ส่งออกไฟล์แผนจะลงเฉพาะงานที่แก้ | รวมน้ำหนัก \(MPFormat.percent(total))"
                              + (abs(total - 100) > 0.01 ? " (ควรเป็น 100%)" : ""))
                     }
                 }
@@ -325,6 +334,9 @@ struct MPSetupSheet: View {
                 MPTaskEditSheet(task: task, value: input.fixed?[task.rawValue] ?? .init(start: nil, end: nil, weight: 0)) {
                     input.fixed?[task.rawValue] = $0
                 }
+            }
+            .sheet(isPresented: $choosingTemplate) {
+                MPTemplateSheet(job: job, input: input) { input = $0 }
             }
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)
@@ -341,6 +353,8 @@ struct MPSetupSheet: View {
         var input = input
         input.fitInstallWindow()
         job.scheduleInput = input
+        // papers approved before the plan (or a permit task that gains weight, พค.2 over 200 kVA) are booked now
+        job.bookPermitsFromDocs()
         try? context.save()
         dismiss()
     }
@@ -384,7 +398,7 @@ struct MPTaskEditSheet: View {
                             .accessibilityIdentifier("mpTask.weight")
                     }
                 } footer: {
-                    Text(dated ? "\(days) วัน · ส่งออกไฟล์แผนจะลงวันและน้ำหนักนี้ในแถวของงาน" : "งานที่ไม่มีกำหนดวันไม่อยู่ในแกนต์")
+                    Text(dated ? "\(days) วัน | ส่งออกไฟล์แผนจะลงวันและน้ำหนักนี้ในแถวของงาน" : "งานที่ไม่มีกำหนดวันไม่อยู่ในแกนต์")
                 }
             }
             .environment(\.locale, ThaiFormat.locale)
@@ -417,7 +431,7 @@ struct MPPlanRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.task.title).font(.sarabun(15, relativeTo: .subheadline))
                 if let s = task.start, let e = task.end {
-                    Text(s == e ? s.thaiShort : "\(s.thaiShort) – \(e.thaiShort) · \(task.days() ?? 0) วัน")
+                    Text(s == e ? s.thaiShort : "\(s.thaiShort) – \(e.thaiShort) | \(task.days() ?? 0) วัน")
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
             }
@@ -428,7 +442,7 @@ struct MPPlanRow: View {
     }
 }
 
-/// `ผ่านผู้ช่วย · 60% · สมชาย · 19/10/69`: the latest change to a task confirmed on the project assistant's card, and who
+/// `ผ่านผู้ช่วย | 60% | สมชาย | 19/10/69`: the latest change to a task confirmed on the project assistant's card, and who
 /// confirmed it (`MasterSchedule.Actual.confirmations`), named from the team directory when listed there.
 struct MPAssistantMark: View {
     let confirmation: MasterSchedule.Actual.Confirmation
@@ -437,7 +451,7 @@ struct MPAssistantMark: View {
         let who = TeamDirectory.shared.person(confirmation.by)?.label ?? confirmation.by
         let what = confirmation.replan ? "ปรับแผน" : confirmation.after
         Label {
-            Text(["ผ่านผู้ช่วย", what, who, ThaiFormat.numericDate.string(from: confirmation.at)].filter { !$0.isEmpty }.joined(separator: " · "))
+            Text(["ผ่านผู้ช่วย", what, who, ThaiFormat.numericDate.string(from: confirmation.at)].filter { !$0.isEmpty }.joined(separator: " | "))
                 .lineLimit(2)
         } icon: {
             Image(systemName: "sparkles")

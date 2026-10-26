@@ -58,8 +58,8 @@ final class AssistantUITests: XCTestCase {
         shot("05-saved")
     }
 
-    /// The strategy chips: priorities, a recovery what-if, the look-ahead, and a re-plan card, dismissed so the demo
-    /// station keeps its plan.
+    /// The strategy chips: priorities, a recovery what-if, the look-ahead, the papers and IEC test (`get_project`), and
+    /// a re-plan card, dismissed so the demo station keeps its plan.
     func testStrategyChips() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
@@ -77,6 +77,8 @@ final class AssistantUITests: XCTestCase {
         ask("จัดลำดับความสำคัญทุกสถานี", expect: "ลำดับความเสี่ยง", shot: "06-priorities")
         ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "07-whatif")
         ask("แผนล่วงหน้า 3 สัปดาห์", expect: "แผนล่วงหน้า", shot: "08-lookahead")
+        // get_project: the station's papers and IEC test, beyond the MP plan
+        ask("เอกสารและการทดสอบที่ค้าง", expect: "เอกสารและการทดสอบ", shot: "10-project")
 
         let replan = app.buttons["เสนอแผนใหม่ที่ทำได้จริง"]
         XCTAssertTrue(replan.waitForExistence(timeout: 5))
@@ -132,7 +134,7 @@ final class AssistantUITests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
-    /// From a station's install tracking page (iPad): the header's ผู้ช่วย opens the chat on that station, and the
+    /// From a station's install tracking page (iPad): the header's ผู้ช่วย AI opens the chat on that station, and the
     /// what-if and priorities chips answer.
     func testFromTheInstallPage() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("the install tracking page is the iPad's") }
@@ -141,8 +143,8 @@ final class AssistantUITests: XCTestCase {
                                "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
         app.launch()
 
-        let open = app.buttons["ผู้ช่วย"].firstMatch
-        XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย")
+        let open = app.buttons["ผู้ช่วย AI"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย AI")
         shot("13-install-page")
         open.tap()
         let intro = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ผู้ช่วยดูแผนของ'")).firstMatch

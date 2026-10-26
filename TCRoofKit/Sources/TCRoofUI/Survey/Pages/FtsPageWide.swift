@@ -15,6 +15,7 @@ struct FtsPageWide: View {
     let width: CGFloat
     var openSite: () -> Void = {}
     var openDiagram: () -> Void = {}
+    @StateObject var sldRender = SingleLineRender()
     /// Portrait and iPhone: the button card, the A2 picture and the SLD crop one under another, the page scrolling.
     var stacked = false
     @Environment(SurveyModel.self) var model
@@ -38,6 +39,8 @@ struct FtsPageWide: View {
             if stacked { stackedColumn } else { sideBySide }
         }
         .foregroundStyle(Theme.navy)
+        .onAppear { sldRender.update(job, now: true) }
+        .onChange(of: job) { _, j in sldRender.update(j) }
         .alert("ตำแหน่งปุ่ม Emergency", isPresented: $editingPlace) {
             TextField("เช่น ผนังข้างประตู Site Office", text: $placeText)
             Button("ตกลง") {
@@ -123,7 +126,7 @@ struct FtsPageWide: View {
                          onClear: { set(EmergencyButton.photoKey, nil) })
             .overlay(alignment: .bottomLeading) {
                 if p != nil {
-                    Text("วงจุดติดตั้งปุ่ม · ระบุความสูง").font(.sarabunFixed(12, .semibold)).lineLimit(1)
+                    Text("วงจุดติดตั้งปุ่ม | ระบุความสูง").font(.sarabunFixed(12, .semibold)).lineLimit(1)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 6))
                         .padding(8).allowsHitTesting(false)
@@ -203,7 +206,7 @@ struct FtsPageWide: View {
     var sldCard: some View {
         card {
             HStack(alignment: .firstTextBaseline) {
-                title("ใน SLD", sub: "FTS ตัดวงจร DC · ปุ่ม Emergency สั่งตัด")
+                title("ใน SLD", sub: "FTS ตัดวงจร DC | ปุ่ม Emergency สั่งตัด")
                 Spacer(minLength: 8)
                 Button(action: openDiagram) {
                     Text("ดู SLD ทั้งหมด →").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
@@ -211,12 +214,13 @@ struct FtsPageWide: View {
                 .buttonStyle(.plain)
             }
             .padding(.vertical, -10)
-            let drawing = SingleLineLayout.draw(SingleLine.build(job))
+            // drawn off the main thread after typing stops (SingleLineRender)
+            let drawing = sldRender.current(job).drawing
             Group {
                 if drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
                 } else {
-                    Text("ยังไม่มีแผนภาพ · กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()
                 }
             }

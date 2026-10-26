@@ -123,8 +123,8 @@ final class RoofTests: XCTestCase {
         Roof.setPhoto(&v, .side, nil)
         XCTAssertEqual(Roof.photo(v, .front), photo(2), "deleting one doesn't move the others")
         XCTAssertNil(Roof.photo(v, .side))
-        XCTAssertTrue(Roof.statusLine(v).hasPrefix("ยังขาด: จำนวนแผง · ระยะช่วงเสา · "))
-        XCTAssertTrue(Roof.statusLine(v).hasSuffix("ภาพมุมสูง ภาพรวม · ภาพด้านข้าง · ภาพใต้หลังคา โครง · ภาพแผ่นมุง ระยะใกล้"))
+        XCTAssertTrue(Roof.statusLine(v).hasPrefix("ยังขาด: จำนวนแผง | ระยะช่วงเสา | "))
+        XCTAssertTrue(Roof.statusLine(v).hasSuffix("ภาพมุมสูง ภาพรวม | ภาพด้านข้าง | ภาพใต้หลังคา โครง | ภาพแผ่นมุง ระยะใกล้"))
         // old photos without angles fill the slots in order; extra structure photos are kept
         var old = Values()
         old["structPhotos"] = .photos([photo(1), photo(2), photo(3)])
@@ -154,46 +154,152 @@ final class RoofTests: XCTestCase {
         XCTAssertEqual(Roof.posts(v).count, 5 * 4)
     }
 
-    /// The design's default roof: 19 × 16 m, Pratt, ridge along x, portrait 2278 × 1134 modules and one no-cover
-    /// skylight (the design's first, 0.8 m wide at 36 % along the ridge) → 84 modules.
-    func testPVCountMatchesDesign() {
-        var v = Values()
-        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
-        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
-        Roof.setPV(&v, perTable: 0)
-        let module = RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57)
-        XCTAssertEqual(RoofPlan.pvCount(v, module: module), 90)
-        let a = 19 * 0.36
-        v["obst"] = .obstacles([Obstacle(x: fmt(a - 0.4), y: "1", w: "0.8", h: "6.6", kind: "sky"),
-                                Obstacle(x: fmt(19 * 0.64 - 0.4), y: "8.4", w: "0.8", h: "6.6", kind: "sky", canCover: true)])
-        XCTAssertEqual(RoofPlan.pvCount(v, module: module), 84)
-        XCTAssertEqual(RoofPlan(v, mode: .pv, module: module).pv.kWp, 84 * 0.57, accuracy: 0.001)
-        // a keep-out zone blocks more; landscape packs differently
-        Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)
-        XCTAssertLessThan(RoofPlan.pvCount(v, module: module), 84)
-        XCTAssertNotEqual(RoofPlan.pvCount(v, portrait: false, module: module), RoofPlan.pvCount(v, module: module))
-        // keep-out zones only show in the PV mode
-        XCTAssertFalse(RoofPlan(v).layout.areas.contains { $0.area.kind == Roof.keepOutKind })
-    }
-
-    /// preview-panels.png: tables of 2 portrait modules along the ridge, 0.40 m apart → 66 modules, 37.6 kWp, 36 tables.
-    func testPVTablesMatchDesign() {
+    /// The design's default roof: 19 × 16 m, Pratt, ridge along x, one no-cover skylight and one panels may cover.
+    static func designRoof() -> Values {
         var v = Values()
         v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
         Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
         v["obst"] = .obstacles([Obstacle(x: fmt(19 * 0.36 - 0.4), y: "1", w: "0.8", h: "6.6", kind: "sky"),
                                 Obstacle(x: fmt(19 * 0.64 - 0.4), y: "8.4", w: "0.8", h: "6.6", kind: "sky", canCover: true)])
-        let module = RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57)
-        let pv = RoofPlan(v, mode: .pv, module: module).pv
-        XCTAssertEqual(pv.count, 66)
-        XCTAssertEqual(String(format: "%.1f", pv.kWp), "37.6")
-        XCTAssertEqual(pv.tables, 36)
-        // rows per table down the slope and a wider gap leave fewer modules
-        Roof.setPV(&v, rows: 2, gap: 0.8)
-        let two = RoofPlan(v, mode: .pv, module: module).pv
-        XCTAssertLessThanOrEqual(two.count, 66)
-        XCTAssertGreaterThan(two.tables, 0)
-        XCTAssertTrue(RoofPlan(v, mode: .pv, module: module).tags.contains("tbl"))
+        return v
+    }
+
+    func testC1AnswersBecomeTheLayoutInput() {
+        var v = Self.designRoof()
+        Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)
+        var list = v.obstacles(Roof.Key.obstacles)
+        list.append(Obstacle(label: "", x: "3", y: "3", w: "0.5", h: "0.5", kind: "stack"))
+        list[list.count - 1].height = "2.4"
+        v["obst"] = .obstacles(list)
+        RoofMount.setBearing(&v, -20)
+        let i = RoofMount.input(v, latitude: 16.4)
+        XCTAssertEqual(i.shape, .gable)
+        XCTAssertTrue(i.ridgeAlongX)
+        XCTAssertEqual(i.ridgeHeight - i.eaveHeight, tan(15 * .pi / 180) * 8, accuracy: 1e-9)   // Pratt's 15° over half of 16 m
+        XCTAssertEqual(i.purlinSpacing, 1.0)
+        XCTAssertEqual(i.bearing, 340)
+        XCTAssertEqual(i.latitude, 16.4)
+        XCTAssertEqual(i.obstacles.map(\.kind), [.skylight, .skylight, .keepOut, .stack])
+        XCTAssertEqual(i.obstacles.map(\.coverable), [false, true, false, false])
+        XCTAssertEqual(i.obstacles[3].heightOrDefault, 2.4)
+        XCTAssertEqual(RoofFaces(i).tilt * 180 / .pi, 15, accuracy: 1e-9)
+
+        v[Roof.Key.shape] = .choice("หลังคาทรงปั้นหยา", other: "")
+        XCTAssertEqual(RoofMount.shape(v), .hip)
+        v[Roof.Key.shape] = .choice("หลังคาคอนกรีต (ดาดฟ้า)", other: "")
+        XCTAssertNil(RoofMount.shape(v))
+        XCTAssertTrue(RoofMount.assumptions(v, latitude: nil).contains("หลังคานี้คิดเป็นทรงจั่ว"))
+    }
+
+    func testTheLayoutKeepsItsPlacementsUntilTheRoofChanges() {
+        var v = Self.designRoof()
+        let first = RoofMount.layout(v, latitude: 15)
+        XCTAssertTrue(first.fresh)
+        XCTAssertGreaterThan(first.layout.quantities.modules, 0)
+        var c = RoofMount.choice(v)
+        c.removed = [.init(face: "S", row: 0, column: 0)]
+        RoofMount.setChoice(&v, c)
+        XCTAssertTrue(RoofMount.remember(first.layout, in: &v, latitude: 15))   // removed slots are cleared on a new search
+        let kept = RoofMount.layout(v, latitude: 15)
+        XCTAssertFalse(kept.fresh)
+        XCTAssertEqual(kept.layout.quantities.modules, first.layout.quantities.modules)
+        XCTAssertEqual(kept.layout.placements, first.layout.placements)
+        // a removed slot is kept with the same placements; the faces in use don't trigger a search
+        c = RoofMount.choice(v)
+        c.removed = [.init(face: "S", row: 0, column: 3)]; c.faceUse = ["N": false]
+        RoofMount.setChoice(&v, c)
+        XCTAssertFalse(RoofMount.layout(v, latitude: 15).fresh)
+        // the roof changes: the search runs again
+        Roof.setPurlinSpacing(&v, 1.2)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 15).fresh)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 17).fresh)
+        // the choices survive JSON, and an empty field is the default
+        XCTAssertEqual(RoofMount.choice(v).faceUse, ["N": false])
+        XCTAssertEqual(RoofMount.choice(Values()), RoofMount.Choice())
+    }
+
+    func testAPlanDrawnAgainComparesEqual() {
+        // the page draws its plan again only when the ops differ (SketchCanvas)
+        let v = Self.designRoof()
+        XCTAssertEqual(RoofPlan(v, chips: true).sketch.ops, RoofPlan(v, chips: true).sketch.ops)
+        XCTAssertNotEqual(RoofPlan(v).sketch.ops, RoofPlan(v, dragging: (2, 2, 5, 4)).sketch.ops)
+        XCTAssertNotEqual(RoofPlan(v).sketch.ops, RoofPlan(v, highlight: 2).sketch.ops)
+    }
+
+    func testAShedRoofDrawsItsRidgeOnTheHighEdge() {
+        var v = Self.designRoof()
+        func ridgeY(_ v: Values) -> [Double] {
+            let p = RoofPlan(v)
+            return zip(p.sketch.ops, p.tags).compactMap { op, t in
+                guard t == "ridge", case let .line(a, b, _, _, _) = op else { return nil }
+                return (a.y + b.y) / 2
+            }
+        }
+        let gable = ridgeY(v)
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let top = ridgeY(v)
+        RoofMount.setShedLowAtStart(&v, true)
+        let bottom = ridgeY(v)
+        XCTAssertEqual(gable.count, 1); XCTAssertEqual(top.count, 1); XCTAssertEqual(bottom.count, 1)
+        XCTAssertLessThan(top[0], gable[0])      // low eave at the bottom: the ridge on the top edge
+        XCTAssertGreaterThan(bottom[0], gable[0])
+    }
+
+    func testTileShedAndWalkwayReachTheLayout() {
+        var v = Self.designRoof()
+        let before = RoofMount.layout(v, latitude: 15).layout
+        RoofMount.remember(before, in: &v, latitude: 15)
+        // an older job's choices (no walkway) keep their digest
+        XCTAssertFalse(RoofMount.layout(v, latitude: 15).fresh)
+        XCTAssertFalse(v.text(RoofMount.Key.choice).contains("walkwayEvery"))
+        var c = RoofMount.choice(v)
+        c.walkwayEvery = 8
+        RoofMount.setChoice(&v, c)
+        XCTAssertEqual(RoofMount.choice(v).walkwayEvery, 8)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 15).fresh)
+        XCTAssertEqual(RoofMount.layout(v, latitude: 15).layout.options.walkwayEvery, 8)
+
+        v[Roof.Key.material] = .choice("กระเบื้องซีแพค", other: "")
+        XCTAssertTrue(RoofMount.input(v, latitude: 15).tileRoof)
+        XCTAssertTrue(RoofMount.layout(v, latitude: 15).layout.options.tileHooks)
+        v[Roof.Key.material] = .choice("กระเบื้องลอนคู่/เดี่ยว", other: "")
+        XCTAssertFalse(RoofMount.input(v, latitude: 15).tileRoof)
+
+        // the low side only turns a shed roof
+        RoofMount.setShedLowAtStart(&v, true)
+        XCTAssertFalse(RoofMount.input(v, latitude: 15).shedLowAtStart)
+        v[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        XCTAssertEqual(RoofMount.shape(v), .shed)
+        XCTAssertTrue(RoofMount.input(v, latitude: 15).shedLowAtStart)
+        XCTAssertEqual(RoofMount.layout(v, latitude: 15).layout.faces.map(\.face.id), ["N"])
+        RoofMount.setShedLowAtStart(&v, false)
+        XCTAssertNil(v[RoofMount.Key.shedLow])
+    }
+
+    func testThePVModeDrawsTheLayout() {
+        var v = Self.designRoof()
+        Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)
+        let mount = RoofMount.layout(v, latitude: 15).layout
+        let p = RoofPlan(v, mode: .pv, mount: mount)
+        XCTAssertEqual(p.pv.count, mount.quantities.modules)
+        XCTAssertEqual(p.layout.slots.filter(\.module).count, mount.faces.filter(\.used).map(\.modules).reduce(0, +))
+        for tag in ["pv", "rail", "foot", "usable"] { XCTAssertTrue(p.tags.contains(tag), tag) }
+        // the skylight panels may cover holds modules; the other doesn't
+        let s = mount.standard
+        // whether a module's plan rectangle overlaps a skylight's
+        func covers(_ sky: Roof.Area) -> Bool {
+            mount.faces.contains { f in f.rows.contains { r in r.slots.contains { slot in
+                guard slot.isModule else { return false }
+                let a = f.face.plan(slot.u, r.v), b = f.face.plan(slot.u + s.moduleWidth, r.v + s.moduleLength)
+                return min(a.x, b.x) < sky.x + sky.w && sky.x < max(a.x, b.x) && min(a.y, b.y) < sky.y + sky.h && sky.y < max(a.y, b.y)
+            } } }
+        }
+        let skies = Roof.areas(v).filter { $0.kind == Roof.skylightKind }
+        XCTAssertFalse(covers(skies[0]))
+        XCTAssertTrue(covers(skies[1]))
+        // keep-out zones only show in the PV mode; no layout yet draws none
+        XCTAssertFalse(RoofPlan(v).layout.areas.contains { $0.area.kind == Roof.keepOutKind })
+        XCTAssertEqual(RoofPlan(v, mode: .pv).pv.count, 0)
     }
 
     func testPlanTagsAndHighlight() {
@@ -279,7 +385,7 @@ final class RoofTests: XCTestCase {
 
     func testEaveCeilingFrame() {
         let k = RoofFrame.eaveCeiling
-        XCTAssertEqual(RoofFrame.ordered.map(\.label), ["ปกติ", "ถัก Pratt", "ถัก Warren", "ขื่อรัด", "จันทันถัก", "ชายคาฝ้า"])
+        XCTAssertEqual(RoofFrame.ordered.map(\.label), ["ปกติ", "ถัก Pratt", "ถัก Howe", "ถัก Warren", "ขื่อรัด", "จันทันถัก", "ชายคาฝ้า"])
         XCTAssertEqual(k.members.map(\.name), ["แป", "จันทัน", "ขื่อรัด", "คานหัวเสา", "โครงฝ้า", "เชิงชาย", "เสา"])
         XCTAssertTrue(k.isRafter); XCTAssertFalse(k.isTruss)
         XCTAssertEqual(k.slope, 15); XCTAssertEqual(k.heel, 0)
@@ -294,7 +400,7 @@ final class RoofTests: XCTestCase {
         var v = Values()
         XCTAssertEqual(Roof.standards.map { $0.title() }, ["โรงกรอง 19 × 16 ม.", "อาคารสูบน้ำ 12 × 8 ม.", "อาคารสำนักงาน 16 × 10 ม.",
                                                             "อาคารเก็บสารเคมี 24 × 12 ม.", "โรงจอดรถ 30 × 20 ม."])
-        XCTAssertEqual(Roof.standards[0].subtitle, "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด")
+        XCTAssertEqual(Roof.standards[0].subtitle, "ถัก Pratt | ช่วงเสา 4 ม. | 7 × 6 กริด")
         Roof.togglePost(&v, i: 0, j: 0)
         Roof.setFrame(&v, .rafterTie); Roof.togglePost(&v, i: 0, j: 0)
         Roof.applyStandard(&v, Roof.standards[1])
@@ -310,7 +416,7 @@ final class RoofTests: XCTestCase {
         Roof.setPurlinSpacing(&v, 0.9)
         let mine = Roof.standard(from: v, id: "t-1", name: "โรงสูบน้ำ (พิจิตร)", by: "วิชัย", scope: "ทั้งทีม", date: "28 ก.ย.")
         XCTAssertEqual(mine.title(), "โรงสูบน้ำ 12 × 8 ม. (พิจิตร)")
-        XCTAssertEqual(mine.subtitle, "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม")
+        XCTAssertEqual(mine.subtitle, "ขื่อรัด | แป @0.90 | โดย วิชัย | 28 ก.ย. | ทั้งทีม")
         XCTAssertEqual(Roof.matchingStandard(v, in: [mine])?.id, "t-1")
         Roof.setPurlinSpacing(&v, 1.0)
         XCTAssertNil(Roof.matchingStandard(v, in: [mine]))
@@ -344,7 +450,8 @@ final class RoofTests: XCTestCase {
         let plain = RoofSection(v)
         XCTAssertEqual(RoofSection(v, highlight: 3).sketch.ops.count, plain.sketch.ops.count + 2)
         XCTAssertEqual(plain.tags.count, plain.sketch.ops.count)
-        XCTAssertEqual(plain.scale, min(540 / 16, 118 / (8 * tan(15 * .pi / 180) + 0.5)), accuracy: 1e-9)
+        // fitted across the page's frame area: 16 m plus the overhangs in 560 pt
+        XCTAssertEqual(plain.scale, 560 / (plain.model.extent.maxX - plain.model.extent.minX + 0.2), accuracy: 1e-9)
         // wider purlin spacing, fewer purlin marks
         Roof.setPurlinSpacing(&v, 1.5)
         XCTAssertLessThan(RoofSection(v).sketch.ops.count, plain.sketch.ops.count)
@@ -353,6 +460,38 @@ final class RoofTests: XCTestCase {
         Roof.setFrame(&v, .eaveCeiling)
         XCTAssertEqual(Set(RoofSection(v).callouts.keys), Set(1...7))
         XCTAssertTrue(RoofSection(v).sketch.ops.contains { if case .polygon = $0 { return true }; return false }, "hatched beam ends")
+    }
+
+    /// A deep boxed eave (ชายคาฝ้า) as the team's section draws it: the soffit 0.40 under the rafter's tip, the beam
+    /// dropped to it and the post going on up to the head.
+    func testBoxedEaveHangsUnderTheRafterTip() throws {
+        var v = Values()
+        Roof.setSpans(&v, .x, [4, 4, 4]); Roof.setSpans(&v, .y, [7]); Roof.setRidge(&v, .h); Roof.setFrame(&v, .eaveCeiling)
+        Roof.setLength(&v, Roof.Key.clearHeight, 5.25); Roof.setLength(&v, Roof.Key.overhang, 2.25)
+        let m = RoofSection.structure(v), tip = 5.25 - 2.25 * tan(15 * Double.pi / 180)
+        let soffit = try XCTUnwrap(m.levels.first { $0.label.hasPrefix("ระดับใต้คาน") })
+        XCTAssertEqual(soffit.y, tip - 0.4, accuracy: 1e-9)
+        XCTAssertEqual(m.levels.map(\.label), ["ระดับใต้คาน ค.ส.ล.", "ระดับหัวเสา", "ระดับหลังจันทัน"])
+        XCTAssertTrue(m.posts.allSatisfy { abs($0.top - 5.25) < 1e-9 }, "the posts reach the head")
+        XCTAssertTrue(m.cuts.filter { $0.row == 4 }.allSatisfy { abs($0.at.y - soffit.y) < 1e-9 }, "the beam sits on the soffit line")
+        // without a boxed eave (0.25 m or less) the beam sits right under the head
+        Roof.setLength(&v, Roof.Key.overhang, 0.2)
+        XCTAssertEqual(RoofSection.structure(v).levels.first?.y ?? 0, 5.25 - 0.4, accuracy: 1e-9)
+    }
+
+    /// A post the plan has between the supports on the frame line A-A looks at stands under the truss's beam.
+    func testInnerPostsFromThePlan() {
+        var v = Values()
+        v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
+        Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
+        XCTAssertTrue(RoofSection.innerPosts(v).isEmpty, "the default posts are the supports'")
+        let before = RoofSection.structure(v).posts.count
+        // A-A at 0.42 of 19 m = 7.98 → grid line 3 (x 9.5 is farther than 5.5); grid C is 6.00 m across
+        Roof.togglePost(&v, i: 3, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0])
+        XCTAssertEqual(RoofSection.structure(v).posts.count, before + 1)
+        Roof.togglePost(&v, i: 2, j: 2)
+        XCTAssertEqual(RoofSection.innerPosts(v), [6.0], "a post on another line isn't in view")
     }
 
     func testPathParser() {
@@ -375,7 +514,7 @@ final class RoofTests: XCTestCase {
         Roof.choose(&m.values, Roof.Key.material, Roof.materials[0])
         m.values[Roof.Key.structure] = .choice("โครงเหล็ก", other: "")
         XCTAssertTrue(fieldGaps().isEmpty)
-        XCTAssertEqual(Roof.statusLine(m.values), "ยังขาดภาพหลังคา: " + Roof.Shot.allCases.map(\.name).joined(separator: " · "))
+        XCTAssertEqual(Roof.statusLine(m.values), "ยังขาดภาพหลังคา: " + Roof.Shot.allCases.map(\.name).joined(separator: " | "))
         XCTAssertFalse(m.completion.isComplete, "the aerial and structure photos are still required")
         for s in Roof.Shot.allCases { Roof.setPhoto(&m.values, s, Self.photos[s.rawValue % 4]) }
         XCTAssertTrue(Roof.gaps(m.values).isEmpty)

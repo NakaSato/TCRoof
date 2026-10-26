@@ -34,8 +34,10 @@ public struct IECReport: Codable, Equatable, Sendable {
         public var irradianceWm2: Double?
         /// `HH:mm`.
         public var time: String?
-        public init(ambientC: Double? = nil, irradianceWm2: Double? = nil, time: String? = nil) {
-            self.ambientC = ambientC; self.irradianceWm2 = irradianceWm2; self.time = time
+        /// Measured on a module's back (no Excel cell): the string test's expected Voc uses it, else NMOT's estimate.
+        public var moduleTempC: Double?
+        public init(ambientC: Double? = nil, irradianceWm2: Double? = nil, time: String? = nil, moduleTempC: Double? = nil) {
+            self.ambientC = ambientC; self.irradianceWm2 = irradianceWm2; self.time = time; self.moduleTempC = moduleTempC
         }
         public var isComplete: Bool { ambientC != nil && irradianceWm2 != nil && !(time ?? "").isEmpty }
     }
@@ -405,7 +407,7 @@ public extension IECReport {
             case .energy(let n): "พลังงาน 7 วัน \(n) inverter"
             case .conditions: "สภาพการทดสอบ (อุณหภูมิ แสง เวลา Yr)"
             case .moduleArea: "พื้นที่แผงต่อแผ่น (จาก datasheet)"
-            case .testRecord(let n): "วันที่ทดสอบ ผู้ทดสอบ serial เครื่องมือ · \(n) ช่อง"
+            case .testRecord(let n): "วันที่ทดสอบ ผู้ทดสอบ serial เครื่องมือ | \(n) ช่อง"
             }
         }
     }

@@ -22,6 +22,7 @@ struct PhoneSettingsList: View {
     /// จัดการผู้ใช้และสิทธิ์, full screen on iPad as on its board (docs/ui/user-admin-ipad).
     @State private var showUserAdmin = false
     @State private var calendar = CalendarService.shared
+    @State private var mySignature = MySignature.shared
     #if DEBUG
     @State private var showGallery = false
     #endif
@@ -51,6 +52,13 @@ struct PhoneSettingsList: View {
                         .labelsHidden().tint(Theme.navy)
                     }
                     .rowFrame()
+                    divider
+                    // kept on this device only, for this account (`MySignature`)
+                    NavigationLink { MySignatureSettingsPage() } label: {
+                        row("ลายเซ็นของฉัน", (mySignature.hasSignature ? "บันทึกแล้ว" : "ยังไม่ได้เซ็น") + " ›")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("settings.mySignature")
                 }
                 if pwa {
                     // the PWA module's own dock had this as a tab; here until the owner decides where it lives
@@ -63,15 +71,15 @@ struct PhoneSettingsList: View {
                 if permissions.can(.usersManage) {
                     // only these accounts sign in (firestore.rules members/)
                     section("ทีม") {
-                        NavigationLink { MembersView() } label: { row("สมาชิกทีม", "เชิญ · บทบาท ›") }
+                        NavigationLink { MembersView() } label: { row("สมาชิกทีม", "เชิญ | บทบาท ›") }
                             .buttonStyle(.plain)
                     }
                 }
                 if permissions.can(.assistantUse) {
-                    // the Qwen key lives in this device's Keychain (docs/specs/project-assistant-qwen.md §7)
+                    // the AI keys live in this device's Keychain, one per provider (docs/specs/project-assistant-qwen.md §7)
                     section("ผู้ช่วยโครงการ (AI)") {
                         NavigationLink { AssistantSettingsPage() } label: {
-                            row("คีย์ Qwen", AssistantKey.hasKey ? "ตั้งค่าแล้ว ›" : "ยังไม่ได้ใส่ ›")
+                            row("คีย์ AI | " + AssistantKey.provider.title, AssistantKey.hasActiveKey ? "ตั้งค่าแล้ว ›" : "ยังไม่ได้ใส่ ›")
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("assistantSettingsRow")
@@ -83,7 +91,7 @@ struct PhoneSettingsList: View {
                 section("เครื่องมือ") {
                     // the tools tab's screens, kept reachable until the owner decides where they live
                     // (docs/ui/tcroof-home-iphone-v4, open question 1)
-                    NavigationLink { ToolsView(modules: [.plan, .scan, .install]) } label: {
+                    NavigationLink { ToolsView(modules: [.plan, .scan, .install, .travel]) } label: {
                         row("เครื่องมือวัด", toolsValue)
                     }
                     .buttonStyle(.plain)
@@ -175,7 +183,7 @@ struct PhoneSettingsList: View {
             })) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("ซิงก์นัดสำรวจลงปฏิทิน").foregroundStyle(Theme.navy)
-                    Text("ย้ายหรือลบนัดให้เองเมื่องานเปลี่ยน · ต้องให้สิทธิ์ปฏิทินแบบเต็ม")
+                    Text("ย้ายหรือลบนัดให้เองเมื่องานเปลี่ยน | ต้องให้สิทธิ์ปฏิทินแบบเต็ม")
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
                 }
             }
@@ -187,7 +195,7 @@ struct PhoneSettingsList: View {
                 Button {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 } label: {
-                    Text("ไม่ได้รับสิทธิ์ปฏิทินแบบเต็ม · เปิดในการตั้งค่าของเครื่อง ›").font(.sarabun(14, .semibold))
+                    Text("ไม่ได้รับสิทธิ์ปฏิทินแบบเต็ม | เปิดในการตั้งค่าของเครื่อง ›").font(.sarabun(14, .semibold))
                         .foregroundStyle(Theme.danger).frame(maxWidth: .infinity, alignment: .leading).rowFrame()
                 }
                 .buttonStyle(.plain)
@@ -314,7 +322,7 @@ struct PhoneSettingsList: View {
                 .frame(width: 48, height: 48).background(Theme.primary, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
                 Text(userName.isEmpty ? (session.email ?? "—") : userName).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text("วิศวกรสำรวจ").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
+                Text(permissions.role.label).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted).lineLimit(1)
             }
             Spacer(minLength: 8)
             if sync.state == .synced {

@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// Step 2/7 `ก่อนออน · แรงดัน / กระแส` on iPad (docs/ui/iec62446-step2-before-vi-ipad): the inverters, the DC input
+/// Step 2/7 `ก่อนออน | แรงดัน / กระแส` on iPad (docs/ui/iec62446-step2-before-vi-ipad): the inverters, the DC input
 /// map of one inverter, the selected string's two photos and values, and its table. Values are typed in the entry
 /// dialog (`IECVIEntry`), photo first; continuous mode walks the unfinished strings. iPhone and the after phase
 /// keep `IECStringGrid` / `IECStringEntry`.
@@ -44,7 +44,7 @@ struct IECVIPage: View {
         let r = report
         let i = min(inverter, max(r.inverters.count - 1, 0))
         VStack(spacing: 0) {
-            IECHeader(title: "IEC 62446 · \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ") · แรงดัน / กระแส", subtitle: stationLine(r)) { EmptyView() }
+            IECHeader(title: "IEC 62446 | \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ") | แรงดัน / กระแส", subtitle: stationLine(r)) { EmptyView() }
             if r.inverters.indices.contains(i) {
                 IECStepProgress(current: stage, report: r, open: go)
                     .padding(.horizontal, 24).padding(.top, 14)
@@ -96,6 +96,7 @@ struct IECVIPage: View {
             if let s = inv.slots[slot - 1] {
                 flowLine(r, inv, s, i)
                 failAlert(r, inv)
+                manualCard(r, inv, s)
                 photoCards(r, inv, s, i)
             } else {
                 emptyNote(inv)
@@ -130,7 +131,7 @@ struct IECVIPage: View {
                     }
                 }
                 .frame(height: 5)
-                Text("\(IECFormat.number(inv.ratedKW)) kW · \(inv.slotsInUse) ช่อง" + (inv.serial.isEmpty ? "" : " · S/N \(inv.serial)"))
+                Text("\(IECFormat.number(inv.ratedKW)) kW | \(inv.slotsInUse) ช่อง" + (inv.serial.isEmpty ? "" : " | S/N \(inv.serial)"))
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .padding(.horizontal, 14).padding(.vertical, 12).frame(width: 228, alignment: .leading)
@@ -149,7 +150,7 @@ struct IECVIPage: View {
         if phase == .after { afterBanner(i) } else { beforeBanner(i) }
     }
 
-    /// `ออนระบบแล้ว 13:20 น. · วัดขณะจ่ายไฟ`: the switch-on time, else the after conditions' time.
+    /// `ออนระบบแล้ว 13:20 น. | วัดขณะจ่ายไฟ`: the switch-on time, else the after conditions' time.
     func afterBanner(_ i: Int) -> some View {
         let r = report
         let time = r.gridOnAt.map { ThaiFormat.time.string(from: $0) } ?? r.after.time
@@ -157,8 +158,8 @@ struct IECVIPage: View {
             Image(systemName: "checkmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 30, height: 30).background(Theme.success, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ออนระบบแล้ว" + (time.map { " \($0) น." } ?? "") + " · วัดขณะจ่ายไฟ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.okText)
-                Text("แรงดัน Vmp และกระแส Imp · เติม INV \(String(format: "%02d", i + 1))-หลัง แถว 17, 19")
+                Text("ออนระบบแล้ว" + (time.map { " \($0) น." } ?? "") + " | วัดขณะจ่ายไฟ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.okText)
+                Text("แรงดัน Vmp และกระแส Imp | เติม INV \(String(format: "%02d", i + 1))-หลัง แถว 17, 19")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.okText)
             }
             Spacer(minLength: 0)
@@ -173,8 +174,8 @@ struct IECVIPage: View {
             Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 30, height: 30).background(Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ระบบยังไม่ออน · วัดให้ครบทุกอินเวอร์เตอร์ก่อนออน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningText)
-                Text("วงจรเปิด กระแสต้องเป็น 0 A · เติม INV \(String(format: "%02d", i + 1))-ก่อน แถว 12, 16, 18")
+                Text("ระบบยังไม่ออน | วัดให้ครบทุกอินเวอร์เตอร์ก่อนออน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningText)
+                Text("วงจรเปิด กระแสต้องเป็น 0 A | เติม INV \(String(format: "%02d", i + 1))-ก่อน แถว 12, 16, 18")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.warningText)
             }
             Spacer(minLength: 0)
@@ -184,11 +185,11 @@ struct IECVIPage: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// `INV1ST1  MPPT 1 · ช่อง 1 · 16 แผง · คอลัมน์ E  ‹ ›`.
+    /// `INV1ST1  MPPT 1 | ช่อง 1 | 16 แผง | คอลัมน์ E  ‹ ›`.
     func selectedBar(_ r: IECReport, _ inv: IECReport.Inverter, _ i: Int) -> some View {
         let s = inv.slots[slot - 1], seq = inv.strings.first { $0.slot == slot }?.seq
         let chip = seq.map { IECReport.label(inverter: i + 1, seq: $0) } ?? "ช่อง \(slot)"
-        let meta = "MPPT \(IECReport.mppt(slot: slot)) · ช่อง \(slot) · " + (s.map { "\($0.modules) แผง" } ?? "ว่าง") + " · คอลัมน์ \(IECReport.excelColumn(slot: slot))"
+        let meta = "MPPT \(IECReport.mppt(slot: slot)) | ช่อง \(slot) | " + (s.map { "\($0.modules) แผง" } ?? "ว่าง") + " | คอลัมน์ \(IECReport.excelColumn(slot: slot))"
         return HStack(spacing: 12) {
             Text(chip).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(height: 38).background(Theme.primary, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -226,7 +227,7 @@ struct IECVIPage: View {
             }
             Spacer(minLength: 6)
             Button { startContinuous(r, i) } label: {
-                Label(left > 0 ? "วัดต่อเนื่อง · เหลือ \(left)" : "ครบทุกสตริง", systemImage: "play.fill")
+                Label(left > 0 ? "วัดต่อเนื่อง | เหลือ \(left)" : "ครบทุกสตริง", systemImage: "play.fill")
                     .font(.sarabunFixed(15, .bold)).padding(.horizontal, 16).frame(height: 44)
                     .foregroundStyle(left > 0 ? Theme.onPrimary : Theme.okText)
                     .background(left > 0 ? AnyShapeStyle(Theme.actionGradient) : AnyShapeStyle(Theme.okSoft), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -250,7 +251,7 @@ struct IECVIPage: View {
         if !reasons.isEmpty {
             HStack(spacing: 12) {
                 Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.danger, in: Circle())
-                Text(reasons.joined(separator: " · ") + " · รูปเดิมเก็บไว้เทียบ").font(.sarabunFixed(13)).foregroundStyle(Theme.dangerText)
+                Text(reasons.joined(separator: " | ") + " | รูปเดิมเก็บไว้เทียบ").font(.sarabunFixed(13)).foregroundStyle(Theme.dangerText)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 Button("วัดซ้ำ") {
@@ -279,11 +280,11 @@ struct IECVIPage: View {
         if phase == .after, let seq = inv.strings.first(where: { $0.slot == slot })?.seq { reportLine(r, i, seq) }
     }
 
-    /// `รูปที่ถ่ายไปที่ 7 · ภาพถ่าย IEC-test After · หน้า 11 · ช่อง INV1ST1 · Vmp + Imp`.
+    /// `รูปที่ถ่ายไปที่ 7 | ภาพถ่าย IEC-test After | หน้า 11 | ช่อง INV1ST1 | Vmp + Imp`.
     func reportLine(_ r: IECReport, _ i: Int, _ seq: Int) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text("รูปที่ถ่ายไปที่ 7 · ภาพถ่าย IEC-test After").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-            Text("หน้า \(r.reportPage(inverter: i, seq: seq, .after)) · ช่อง \(IECReport.label(inverter: i + 1, seq: seq)) · Vmp + Imp")
+            Text("รูปที่ถ่ายไปที่ 7 | ภาพถ่าย IEC-test After").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+            Text("หน้า \(r.reportPage(inverter: i, seq: seq, .after)) | ช่อง \(IECReport.label(inverter: i + 1, seq: seq)) | Vmp + Imp")
                 .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
@@ -308,7 +309,7 @@ struct IECVIPage: View {
 
     func emptyNote(_ inv: IECReport.Inverter) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ช่อง String \(slot) · MPPT \(IECReport.mppt(slot: slot)) ว่าง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("ช่อง String \(slot) | MPPT \(IECReport.mppt(slot: slot)) ว่าง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
             Text("ไม่มีสตริงต่อเข้าช่องนี้ ใน Excel คอลัมน์ \(IECReport.excelColumn(slot: slot)) จะเว้นว่างทั้งคอลัมน์ และไม่นับในผลรวม")
                 .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             Button { toggleEmpty(slot) } label: { Label("มีสตริงต่อในช่องนี้", systemImage: "plus") }
@@ -331,8 +332,8 @@ struct IECVIPage: View {
     func bottomBar(_ r: IECReport) -> some View {
         let failed = r.inverters.reduce(0) { $0 + r.viTally($1, phase).failed }
         let all = r.inverters.allSatisfy { r.viTally($0, phase).isComplete }
-        let summary = r.inverters.enumerated().map { k, inv in let t = r.viTally(inv, phase); return "INV\(k + 1) \(t.done)/\(t.total)" }.joined(separator: " · ")
-        let measured = phase == .before ? "วัดก่อนออน " + summary + " · ครบทุกอินเวอร์เตอร์แล้วจึงออนระบบ" : "วัดแล้ว " + summary
+        let summary = r.inverters.enumerated().map { k, inv in let t = r.viTally(inv, phase); return "INV\(k + 1) \(t.done)/\(t.total)" }.joined(separator: " | ")
+        let measured = phase == .before ? "วัดก่อนออน " + summary + " | ครบทุกอินเวอร์เตอร์แล้วจึงออนระบบ" : "วัดแล้ว " + summary
         let text = r.lockedLine ?? (failed > 0 ? "มีค่าไม่ผ่าน \(failed) สตริง" : measured)
         let ok = !r.isLocked && failed == 0 && all
         return HStack(spacing: 14) {

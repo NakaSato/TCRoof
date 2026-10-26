@@ -166,7 +166,7 @@ struct PlanCalendarView: View {
         return HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(month.thaiMonthYear).font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.navy)
-                Text("\(inMonth.count) งานติดตั้ง · \(appointments) นัดสำรวจ · \(teams) ทีมทำงาน")
+                Text("\(inMonth.count) งานติดตั้ง | \(appointments) นัดสำรวจ | \(teams) ทีมทำงาน")
                     .font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 12)
@@ -250,9 +250,9 @@ struct PlanCalendarView: View {
         let surveyCount = daySurveys.appointments.count + daySurveys.reports.count
         return VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(selected.isToday ? "วันนี้ · \(selected.thaiLong)" : selected.thaiLong)
+                Text(selected.isToday ? "วันนี้ | \(selected.thaiLong)" : selected.thaiLong)
                     .font(.system(size: 17, weight: .bold))
-                Text("\(surveyCount) งานสำรวจ · \(dayJobs.count) งานติดตั้ง").font(.system(size: 12))
+                Text("\(surveyCount) งานสำรวจ | \(dayJobs.count) งานติดตั้ง").font(.system(size: 12))
             }
             .foregroundStyle(Theme.navy)
             .padding(.horizontal, 16).padding(.vertical, 12)
@@ -282,14 +282,14 @@ struct PlanCalendarView: View {
                                           isReport: job.syncID.map { !surveyModel.jobs(linkedTo: $0).isEmpty } ?? false)
                         }
                         .buttonStyle(.plain)
-                        // นำทาง · โทร · ปฏิทิน: the customer's phone and address are the team's
+                        // นำทาง | โทร | ปฏิทิน: the customer's phone and address are the team's
                         if permissions.can(.jobEdit), job.hasSurveyAppointment { AppointmentActions(job: job) }
                     }
                 }
                 ForEach(daySurveys.reports) { report in
                     NavigationLink { SurveyReportEditor(jobID: report.id) } label: {
                         PlanSurveyRow(title: report.projectName.isEmpty ? "แบบสำรวจ กปภ." : report.projectName,
-                                      detail: (report.jobSyncID.flatMap { surveyModel.linkedJobLabel?($0) } ?? "ยังไม่ผูกกับงาน") + " · " + surveyReportSummary(report),
+                                      detail: (report.jobSyncID.flatMap { surveyModel.linkedJobLabel?($0) } ?? "ยังไม่ผูกกับงาน") + " | " + surveyReportSummary(report),
                                       isReport: true)
                     }
                     .buttonStyle(.plain)
@@ -315,7 +315,7 @@ struct PlanCalendarView: View {
 
     private func appointmentDetail(_ job: Job) -> String {
         let time = "นัดสำรวจ \(ThaiFormat.time.string(from: job.surveyDate))"
-        return job.customerName == job.projectName ? time : "\(time) · \(job.customerName)"
+        return job.customerName == job.projectName ? time : "\(time) | \(job.customerName)"
     }
 
     private func sectionCaption(_ title: String) -> some View {

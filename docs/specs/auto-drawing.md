@@ -1,8 +1,8 @@
 # Auto 2D Drawings: Roof Structure & Tank Size
 
 **Status:** Partly built, by a different route than this spec first planned.
-- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel.
-- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `Spans`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `TankDrawings`, `DrawingSettings`), pitch derived from measured heights, the Howe truss, truss details A/B and the member schedule, sections for C2 and C3, the tank section and volume summary, the `n@d` span shorthand, `DrawOp.arc`, the `autoDrawings` flag and the SVG snapshot tests.
+- **Built:** the C1 roof plan and section A-A from a chosen frame type (`TCRoofCore/Roof.swift`, `RoofPlan.swift`, `RoofSection.swift`), C1's pitch from a measured ridge height (`Roof.pitch`, §4.4), the C2 and C3 sections from measured sizes (`RoofSectionMeasured.swift`, §4.4), the `n@d` span shorthand (`parseSpans`), the D1 tank plan, size presets, standard designs and checked points (`Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`), the tank sections 1–1 / 2–2 and the size and volume summary (`TankDrawings.swift`, `Tank.summary`, §5.5), the printed tank plan's beams, section marks and cross vents (`TankPlan(details:)`), the Howe truss as C1's seventh frame type, details A / B and the member schedule (`RoofTruss.swift`, built 2026-10-20) with its steel weights (`SteelSection.swift`, built 2026-10-21), the tank panel layout (`TankLayout.swift`), DXF export of both (`RoofDXF.swift`, `TankDXF.swift`), the PDF units (`PDFReport/ReportLayout+Sections.swift`) and the plan image in Excel, with its sections under it (`Drawings.planWithSections`, built 2026-10-26).
+- **Not built:** the `TCRoofCore/Drawing/` pipeline (`RoofInput`, `MemberSpec`, `DrawingKit`, `RoofDrawings`, `TankInput`, `TankGeometry`, `DrawingSettings`; the built parts went on top of the existing code instead), `MemberSpec` depth parsing, `uniformLabel`, `DrawOp.arc`, the `autoDrawings` flag and the SVG snapshot tests.
 
 **Owner:** TCRoof · **Module:** `TCRoofKit` (TCRoofCore / TCRoofUI / PDFReport / ExcelExport)
 **Date:** 2026-09-29, tank parts updated 2026-10-01 to the D1 design, merged with the Swift implementation spec and checked against the code 2026-10-17 · **Tank feature (iPad/iPhone):** [`tank-drawing-swift.md`](tank-drawing-swift.md) · **Standard tank designs:** [`standard-designs.md`](standard-designs.md) · **Single line diagram:** [`single-line-diagram.md`](single-line-diagram.md)
@@ -14,9 +14,9 @@ longer depends on a hand sketch:
 
 | Drawing | Survey section | Replaces / adds | Built |
 |---|---|---|---|
-| **Roof framing section** (รูปตัดโครงหลังคา) | C1 หลังคา, C2 หลังคาอาคาร, C3 บ้าน | Generic `Drawings.truss()` diagram | C1 only (`RoofSection`) |
+| **Roof framing section** (รูปตัดโครงหลังคา) | C1 หลังคา, C2 หลังคาอาคาร, C3 บ้าน | Generic `Drawings.truss()` diagram | C1 (`RoofSection`), C2 and C3 (`MeasuredRoofSection`, a rafter frame; no truss) |
 | **Roof framing plan** (แปลนโครงหลังคา) | C1, C2 | Adds rafters / purlins / ridge to the existing `Drawings.plan()` | C1 only (`RoofPlan`) |
-| **Tank drawing** (แปลน + รูปตัดถัง + ขนาด) | D1 ถังน้ำใส | Plan from a standard tank or custom size, confirmed openings, section, size/volume summary; feeds the panel layout (D1 step 3) | Plan and panel layout; no section or summary |
+| **Tank drawing** (แปลน + รูปตัดถัง + ขนาด) | D1 ถังน้ำใส | Plan from a standard tank or custom size, confirmed openings, section, size/volume summary; feeds the panel layout (D1 step 3) | Built |
 
 The drawings must show in the editor while typing, in the PDF (NO.215), and in Excel (NO.224).
 They are **indicative survey drawings, not construction drawings**. Every sheet carries that note.
@@ -102,8 +102,8 @@ The C1 wide page (`docs/ui/survey-c1`) stores its own answers as hidden optional
 | Spans | `spansX` / `spansY`, comma list in metres | The schema's placeholder `1.5,4,4,4,4,1.5` × `1.5,4.5,4,4.5,1.5`, so the plan is never empty |
 | Ridge direction | `ridgeDir` `h` (along x) or `v` (along y). Setting it writes `sheetDir` back (`h` → แนวตั้ง, `v` → แนวนอน) so the old plan, PDF and Excel agree | From `sheetDir`: แนวตั้ง → along x; แนวนอน or empty → along y |
 | Span `B` | Σ of the spans across the ridge | — |
-| Frame type | `frameType`, one of six (table below) | ถัก Pratt |
-| Slope | Fixed by the frame type: 30° for ขื่อรัด, 15° for every other | — |
+| Frame type | `frameType`, one of seven (table below) | ถัก Pratt |
+| Slope | The frame type's: 30° for ขื่อรัด, 15° for every other; from the measured `ridgeHeight` when entered (§4.4, `Roof.pitch`) | — |
 | Rise | `B/2 · tan(slope)` | — |
 | Heel depth | 0.5 m for trusses and จันทันถัก, 0 for the rafter frames | — |
 | Truss panels per half | `trussBays`, 2–20 | `max(2, round(B/2))`, about one per metre |
@@ -119,6 +119,7 @@ Frame types (`RoofFrame`):
 |---|---|---|---|
 | `n` | ปกติ | Truss: king post and two struts | แป, คอร์ดบน, คอร์ดล่าง, ตัวตั้ง, ตัวทแยง, เชิงชาย, เสากลาง |
 | `p` | ถัก Pratt | Truss: verticals at every node, diagonals sloping down toward the ridge | as `n` |
+| `h` | ถัก Howe | Truss: verticals at every node, diagonals rising from the bottom chord toward the ridge (Pratt's mirror; added 2026-10-20) | as `n` |
 | `w` | ถัก Warren | Truss: zig-zag diagonals plus a king post | as `n` |
 | `c` | ขื่อรัด | Rafter frame, 30° | แป, จันทัน, ขื่อรัด, อเส, ตัวค้ำ, เชิงชาย, เสากลาง |
 | `r` | จันทันถัก | Tube rafter truss on T2 beams, 4 posts | แป, คอร์ดบน, คอร์ดล่าง, ตัวทแยง, T2 รับจันทัน, เชิงชาย, เสา |
@@ -154,7 +155,7 @@ grid 0.6 dash-dot `[12,3,2,3]`. Colours are the design's hex values.
 - **structure:** grid lines and bubbles, dimension chains with 45° ticks and totals,
   the ridge, frame lines (trusses T1 across the ridge, T2 along it for จันทันถัก; rafters @1.00 for the rafter
   frames), purlin lines, posts, slope arrows, section mark A-A, skylights and obstacles, `แป @1.00` on one bay.
-- **pv:** the PV layout of [`roof-pv-layout.md`](roof-pv-layout.md): modules, dropped modules, tables, gaps and keep-out zones.
+- **pv:** the `RoofMount` layout of [`roof-pv-layout.md`](roof-pv-layout.md): rows on the purlins, cut slots, shade and keep-out zones.
 
 Purlin lines run parallel to the ridge: 0.15 m each side of it, then every `spacing · cos(slope)` down to the eaves
 (`Roof.purlinLines`). Each op carries the design's path key in `tags` (`grid`, `purl`, `tbd`, `post` …), which the DXF
@@ -163,10 +164,49 @@ metre ↔ point conversion. Skylights (`sky`) and keep-out zones (`keep`) are `O
 
 `Drawings.plan` draws `RoofPlan` once a frame type is chosen (`Roof.hasFrame`), and the old generic plan otherwise.
 
-### 4.4 Section from measured heights (not built)
+### 4.4 Section from measured heights (partly built)
 
-The draft derived the section from measured heights instead of a frame-type choice. It is kept here as the plan for
-C2 and C3, which have no section yet, and for C1 if the team wants a measured pitch (open question 7).
+The draft derived the section from measured heights instead of a frame-type choice. **As built:**
+- **C1:** one optional hidden field `ridgeHeight` (ความสูงสันหลังคา, m), set by tapping the rise label "R …" on section
+  A-A. The eave is the existing `clearHeight` (สูงใต้ขื่อ / สูงถึงหัวเสา), not a new `eaveHeight`. `Roof.pitch` gives
+  `atan((ridgeHeight − clearHeight − heel) / run)`, run half the span (the span for a shed); without `ridgeHeight` it is
+  the frame type's slope as before. A ridge not 0.05 m above the eave, or a pitch over 60°, keeps the frame's slope and
+  says why; under 3° or over 45° it is used with "ตรวจความสูงอีกครั้ง (มุมประมาณ x°)". Every reader of the slope
+  (section A-A, the plan's purlin lines, the PV layout's rise, the DXF title) goes through `Roof.slope`; the page shows
+  the pitch's source or check under the section, and the PDF prints it under section A-A. The frame type still picks
+  the truss pattern (open question 7 stays open for whether it should).
+- **C2 and C3:** `MeasuredRoofSection` (`RoofSectionMeasured.swift`), shown by a new non-countable
+  `FieldKind.roofSection` at the end of C3's group 13 and C2's group "โครงสร้างหลังคา", and printed after that group in
+  `formSection` (or the line "ข้อมูลไม่พอวาดรูปตัด: …"). It draws a rafter frame only (rafter, tie beam, king post and two
+  struts; no truss: the member parsing below is not built): gable and hip alike, shed, flat slab and curved, with
+  fixed-size purlin markers every spacing along the slope plus one at the ridge when the last gap is over a quarter,
+  columns and ground when the eave height is known (dashed stubs and "ไม่ทราบความสูงชายคา" otherwise), fascia, the span
+  and overhang chain, the eave height, rise, pitch arc and slope length, the members as entered, the assumed values,
+  the warnings and the note.
+  - C3: the width `buildingWidth` (ซม.) is across the ridge; `measI1` / `measI2` are ground → ridge / ground → the
+    eave's tip, so the pitch is `atan((i1 − i2) / (run + h))` with `measH` the rafter's tip to the column, and the
+    column head is at `i2 + h·tanθ`. `roofAngle` is used only without the heights, and a > 10 % difference is a warning.
+    Purlins at `measC`; the members listed are the purlin and rafter sizes (wood f×g or steel type f×g×h).
+  - C2: two new optional, visible fields in group "อาคาร", `eaveHeight` and `ridgeHeight` (ม.); purlins at `space1`;
+    the members listed are `size1…7` with their `space`.
+
+**Details and schedule, as built (`RoofTruss.swift`):** `RoofTruss.geometry` gives C1's truss in metres, the same
+members section A-A draws (verticals with the heel ends, diagonals, the king post); the §9.3 numbers hold for Howe (17
+verticals with the king post, 16 diagonals, 34 nodes, king post 2.644).
+- **Schedule** (`RoofTruss.schedule`): trusses on the plan's T1 lines (grid lines inside, along the ridge; a one-bay
+  roof counts one, with a note), rafter frames per pair @1.00. Per row: purlins `Roof.purlinLines` × the length along
+  the ridge; top chords `2 · (half + overhang) / cos θ`; bottom chord `B`; verticals and diagonals counted with their
+  total length; fascia 2 × the length; king post `d + R`; gusset plates one per node. ขื่อรัด / ชายคาฝ้า: rafters,
+  the tie at half (0.55) the rise, the eaves beams, the posts × clear height; จันทันถัก: both tube chords, a diagonal and
+  a vertical per panel, T2 on the inside grid lines across the ridge, the posts. A row set to "-" is left out; an empty
+  one reads "ไม่ระบุขนาด". Centre-line lengths, no laps or waste; no steel weights yet.
+- **Details** (`RoofTruss.details`, trusses with a bottom chord only): A at the left support (column, cap plate and
+  anchors, heel gusset with bolts, the chords, the first web members, purlins with cleats, the sheet, the fascia) and B
+  at the ridge (ridge gusset, king post, the first diagonals and verticals, the ridge purlins, ridge cap, bottom-chord
+  splice), drawn from the geometry cut to a window around each joint, not to scale, labelled ①–⑦ with the entered sizes.
+- **Where:** C1's section card `ชิ้นส่วน` opens them in a sheet; the PDF prints both after section A-A.
+
+The rest of this section is the draft's plan for deriving the frame from member sizes (`MemberSpec`), not built.
 
 **New fields (sizes and distances only):**
 
@@ -243,13 +283,25 @@ Parse depth with `#"(\d+(?:\.\d+)?)"#` over the size part only, never the spacin
   purlins, ridge cap, bottom-chord splice. Labels use the entered sizes.
 - **Member schedule** per truss: purlins `2(n+1)` (shed `n+1`), top chord `2(L+o)`, bottom chord `B`, verticals and
   diagonals (count and Σ length), fascia per metre run, king post `d+R`, gussets = node count. A rafter frame lists
-  purlin, rafter, tie beam, king post and struts. Steel weight (kg) in v2, from a section-weight table.
+  purlin, rafter, tie beam, king post and struts.
+- **Steel weight (built 2026-10-21, `SteelSection.swift`):** each steel row shows kg/m, kg per truss (per rafter pair)
+  and kg for the roof, and the table ends with a steel total for one truss and the roof, labelled ประมาณ, in the
+  `ชิ้นส่วน` sheet and the PDF. `SteelSection.parse` reads lipped C `C-h×b×lip×t`, `2C-…` (two channels), tube
+  `□-h×b×t`, pipe `Ø-D×t` and `ท่อกลม Øn" หนา t` (outside diameters of the JIS / มอก. 107 series, 1" = 34.0),
+  H / I `h×b×tw×tf` and angle `L-a×b×t`. Mass = area × 7,850 kg/m³, with the tables' method: cold-formed shapes are
+  centre line × t less each 90° bend's rounding at inside radius t ((1 − π/4)·3t² a bend); H adds four root fillets
+  (JIS radii for the listed sizes, else r = tf); I takes its tapered flanges as parallel; angles leave out the radii.
+  Against มอก. 1228 / JIS G 3350, G 3466, G 3444 and G 3192 tables (`SteelSectionTests`): C, □ and pipe within
+  0.5 %, H within 1 %, angle and I within 2 %. Wood, ค.ส.ล., the T2 truss, an empty size and anything not read
+  have no weight ("-"), never a guess; the note names those rows. Gusset plates are left out of the total (their
+  size is the engineer's), as are laps, bolts and waste.
 - **Guards:** return `nil` with a missing reason when `B ≤ 0`, `θ ∉ (0, 60]` or any number is non-finite. Cap purlins
   at 200 and rafters at 300; past the cap draw every n-th and note the real count.
 
-**Span shorthand (not built).** `parseSpans` (`Progress.swift`) reads a comma list only. The draft added `n@d` from the กปภ.
-sheets ("16@4" = sixteen 4 m bays, "1.5, 3@4, 1.5"), with `n` ≤ 500; the `@` token must be tested before the plain number,
-since `NumberInput.clean("16@4")` returns `"164"`. Until then, tank presets write the spans expanded ("4,4,4,…").
+**Span shorthand (built).** `parseSpans` (`Progress.swift`) reads `n@d` from the กปภ. sheets ("16@4" = sixteen 4 m bays,
+"1.5, 3@4, 1.5", spaces around the @ allowed), with `n` a whole number 1–500; the `@` token is tested before the plain
+number, since `NumberInput.clean("16@4")` returns `"164"`. A token that isn't a valid count is dropped. The pages still
+write spans expanded ("4,4,4,…").
 
 ## 5. Tank (D1)
 
@@ -279,7 +331,7 @@ covers its data and drawings.
   wall A stays on top.
 - **Vent height:** `ventHeight` (m above the roof), used by the panel layout; 1.00 m assumed until measured.
 - **Step 1 done** with spans, type, height, position and surface; the azimuth is optional.
-- **Round tanks** (`tankDiameter`) are not built.
+- **Round tanks** (first version, 2026-10-21): `tankShape` = `round` with `tankDiameter` (m, at least 2), both optional and hidden; the diameter writes the legacy spans as one span of D each way (the bounding square), so completion, `Progress`, the site plan and Excel's plan picture keep reading them. Presets and the standard designs stay rectangular. See [`tank-drawing-swift.md`](tank-drawing-swift.md) §1a.
 
 ### 5.2 Openings, as built (`TankPoints.swift`, `TankDesign.swift`)
 
@@ -298,7 +350,7 @@ top-left corner in metres from the tank's top-left, y down. The fields added to 
 There is no `pending` or `moved` status, no `fromTemplate`, `photoTag`, `edge`, `along` or `diameter`: moved is derived
 from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
 
-- **Sizes drawn:** vent 0.60 m, hatch 0.80 m (`TankPoints.ventSize`, `hatchSize`), not the 1.45 / 1.15 m of the first draft.
+- **Sizes drawn:** vent 1.45 m, hatch 1.15 m, as the กปภ. sheets (`TankPoints.ventSize`, `hatchSize`; decided 2026-10-20). Ladders and pipes keep a 0.60 m mark (`wallSize`). Each point keeps the size it was made with, so tanks surveyed earlier keep 0.60 / 0.80 m. Positions snap to 2.5 cm, so the corner of a 1.45 m vent can put its centre on a whole 5 cm.
 - **Generic layout** (any size, seeded the first time step 2 opens): V1–V10 and H1–H5 at fixed fractions of the width
   and height (vents in the corners, the side walls' middles, two pairs in the middle and along the bottom wall; hatches
   at the quarter lines of the top and bottom walls and one on the left wall).
@@ -309,10 +361,10 @@ from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
   | `pwa-64x40` ถังน้ำใส 64×40 (ช่องระบายแบบกล่อง) | 16 × 10 @ 4 | 20, box | 8 | 6 | 6 (ท่อเชื่อมถังน้ำใส Ø600, ท่อน้ำใส Ø700, ท่อน้ำล้น Ø500) |
   | `pwa-40x40` ถังน้ำใส 40×40 (ช่องระบายแบบเห็ด) | 10 × 10 @ 4 | 12, cross | 6 | 3, apart from the hatches | — |
 
-  Designs are ranked by |ΔW| + |ΔL| against the measured size; within 0.5 m it matches. A tank turned a quarter takes the
+  Designs are ranked by |ΔW| + |ΔL| against the measured size; within 1.00 m it matches (`TankDesign.tolerance`). A tank turned a quarter takes the
   design turned (`@r`). Applying one replaces the spans and points and stores `tankDesign`.
 - **Checking:** each point gets `ok` or `absent`; only added points can be deleted, standard ones are marked absent. A drag
-  snaps to 0.05 m, stays inside the tank and takes another point's row or column within 0.30 m; ladders and pipes slide
+  snaps to 0.025 m (`TankPoints.grid`), stays inside the tank and takes another point's row or column within 0.30 m; ladders and pipes slide
   along their wall. `add` puts a new point (`ok`, `added`) at the centre, moved down 1 m at a time while crowded.
   `ทำซ้ำเป็นแถว` adds copies to the right at the first column span (else 4 m), skipping any that would leave the tank.
 - **Live check:** alignment with other points, overlaps (ladders and pipes overlap nothing), outside the tank.
@@ -325,7 +377,7 @@ from `stdX`/`stdY`, and ladders and pipes are boxes just inside their wall.
 - Span chains along the bottom and right with the totals, 2-decimal numbers. The D1 page takes the span numbers as
   tappable chips instead.
 - Level tags "ระดับหลังถัง +1.20" in the four quadrants when `tankExposed` is set.
-- Openings as hatched red boxes labelled "V1 0.6x0.6"; ladders and pipes as small boxes outside their wall, pipes with a
+- Openings as hatched red boxes labelled "V1 1.45x1.45"; ladders and pipes as small boxes outside their wall, pipes with a
   diagonal. Absent points are left out.
 - The N arrow turned by `tankAzimuth`, a note with the wall type, and the caption "แปลนหลังคาถังน้ำใส 40 × 40 ม." ·
   "หน่วย: เมตร".
@@ -339,7 +391,12 @@ of [`tank-mounting-layout.md`](tank-mounting-layout.md): rows face the wall near
 grown by 0.50 m, footings 0.30 m clear of every opening, vents kept under the panels when the panel underside is high
 enough. That spec holds its rules.
 
-### 5.5 Tank section and summary (not built)
+### 5.5 Tank section and summary (built)
+
+As built: the sections are `TankDrawings.section` (D1's B1-C3 sheet and the PDF; the cover over a buried tank is an
+assumed 0.50 m, not `soilDepth`). `Tank.summary` gives the size, `L·W` and `L·W·H` (from the spans; a round tank `πD²/4` and `πD²/4·H`, labelled `Ø D × H ม.`): on D1 step 1 under the heights, on each section, and under the printed plan's caption. The printed plan
+(`TankPlan(details: true)`, which `Drawings.plan` gives the PDF and Excel and `TankDXF` exports on layers `BEAM` and
+`SECTION_MARK`) adds the beams, the section marks and the cross vents; D1's own plan is unchanged. The draft:
 
 - Section ("รูปตัด 1–1") showing the width, the height `H` and the ground line: at the base above ground; at the top with a
   hatched cover of `soilDepth` when buried; at `H − tankExposed` when partly buried.
@@ -347,8 +404,7 @@ enough. That spec holds its rules.
   "12.00 × 8.00 × 4.50 ม. · หลังคา 96 ม² · ปริมาตร ≈ 432 ม³".
 - Section marks 1–1 and 2–2 at the centre lines of the plan; beams as a double dashed band 0.30 m wide (assumed) on
   every grid line, as on the sheets.
-- A cross-vent symbol (plus-shaped column head with flange ticks and a centre circle) for `ventStyle` `cross`. The plan
-  draws every vent the same today.
+- A cross-vent symbol (plus-shaped column head with flange ticks and a centre circle) for `ventStyle` `cross`.
 
 ## 6. Drawing standard
 
@@ -438,6 +494,9 @@ public enum TankDrawings {
 }
 ```
 
+As built, there is no `TankInput`: the tank API is `TankDrawings.section(_ v: Values, across: Bool)` and
+`Tank.summary(v)`, both reading D1's values directly.
+
 ## 8. Integration
 
 ### 8.1 Editor
@@ -446,7 +505,7 @@ public enum TankDrawings {
 |---|---|
 | C1 | `RoofPageWide` (`TCRoofUI/Survey/Pages/Roof`) draws `RoofPlan` and `RoofSection` live, with the span chips, post buttons, member highlight and tappable overhang / clear height |
 | D1 | `TankPageWide` (`TCRoofUI/Survey/Pages/Tank`): `TankPlan`, the points plan and the layout plan per step |
-| Form page (`Fields.swift`) | `.plan` shows `Drawings.plan`; `.diagram` (C1, C2, C3) still shows the generic `Drawings.truss()` |
+| Form page (`Fields.swift`) | `.plan` shows `Drawings.plan`; `.diagram` (C1, C2, C3) still shows the generic `Drawings.truss()`; `.roofSection` (C2, C3) shows `MeasuredRoofSection` or what it needs |
 
 ### 8.2 PDF (`ReportLayout+Sections.swift`, `planSection`)
 
@@ -455,8 +514,9 @@ public enum TankDrawings {
   structure box then names the 7 rows by the frame. Without a frame type, the generic truss diagram stays beside the table.
 - D1: the obstacle table (two side by side past 16 points, absent points read ไม่มีจริง), then "เทียบกับแบบมาตรฐาน"
   (`TankDesign.summary`) when a standard design was applied.
-- Not built: a section for C2/C3 in `formSection`, the tank section, and a page break rule for drawings. The draft's rule
-  for those: a drawing taller than a page is scaled down, never split.
+- C2/C3: `MeasuredRoofSection` after the group holding `.roofSection` (`measuredSectionUnit`), scaled down to fit a page,
+  never split. D1: the tank sections 1–1 and 2–2 after the layout units, each with the size and volume summary.
+- Section A-A and the tank sections carry "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง" (`TankDrawings.note`).
 
 ### 8.3 Excel and CAD
 
@@ -505,10 +565,10 @@ All in `Tests/TCRoofCoreTests`, run with `swift test` on the Mac, no simulator.
 | 4 | Panel layout (`TankLayout`) | [`tank-mounting-layout.md`](tank-mounting-layout.md) | Built |
 | 5 | PDF section A-A and design summary; Excel plan image | Pages match the page designs | Built |
 | 6 | DXF R12 (`SketchDXF`, `RoofDXF`, `TankDXF`) | Golden files pass | Built |
-| 7 | `Spans` `n@d`, `MemberSpec`, `RoofInput`, `RoofGeometry` + tests | Numbers in §9 pass; old plans unchanged | Not built |
-| 8 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails`, schedule + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` | Not built |
-| 9 | C2/C3 section fields and `.roofSection`; PDF `formSection` | Export lists drawing gaps ("ข้อมูลไม่พอวาดรูปตัด: …") via `missingGroups` | Not built |
-| 10 | Tank section and summary; cross-vent symbol; beams and section marks on the plan | Matches `img/tank.png`, `img/tank_40x40.png` | Not built |
+| 7 | `Spans` `n@d`, `MemberSpec`, `RoofInput`, `RoofGeometry` + tests | Numbers in §9 pass; old plans unchanged | `n@d`, C1 pitch and the C2/C3 rafter geometry built (`RoofPitchTests`, `MeasuredRoofSectionTests`); `MemberSpec` not built |
+| 8 | `DrawingKit`, `RoofDrawings.section`, `TrussDetails`, schedule + snapshots | SVGs match `img/roof_section.png`, `img/truss_howe.png` | Howe, details A / B and the schedule built on C1's code (`RoofTruss`, `RoofTrussTests`); no `DrawingKit` or snapshots |
+| 9 | C2/C3 section fields and `.roofSection`; PDF `formSection` | Export lists drawing gaps ("ข้อมูลไม่พอวาดรูปตัด: …") | Built (the gap line is printed in place of the drawing; there is no `missingGroups`) |
+| 10 | Tank section and summary; cross-vent symbol; beams and section marks on the plan | Matches `img/tank.png`, `img/tank_40x40.png` | Built (`TankSummaryTests`) |
 
 Items 7–8 touch only `TCRoofCore` and its tests. Item 9 needs an iOS build (`xcodebuild`), since `TCRoofUI` is
 `#if canImport(UIKit)`.
@@ -519,11 +579,14 @@ Items 7–8 touch only `TCRoofCore` and its tests. Item 9 needs an iOS build (`x
    built page has `eaveOverhang` (0.70 by default) on top of them. And should interior grid lines under a truss get columns?
 2. **Ridge direction:** C1 now stores it (`ridgeDir`); without it, it follows `sheetDir` and defaults to along y. Is that
    default right for station roofs, or should it follow the longer side as the draft said?
-3. **Excel:** the plan image is in; is there space on the NO.224 roof/tank sheets for the section too, or is it PDF only?
+3. ~~**Excel:**~~ Built 2026-10-26: NO.224's roof and tank sheets have one drawing box each (about 1.3 : 1), and the plan's
+   canvas already has about that shape, so `Drawings.planWithSections` puts section A-A (a tank's 1–1 and 2–2, once it
+   has a height) under the plan in the height that still draws the plan at 75 % of its size alone or more; the plan
+   alone when that leaves too little. No cell or layout of the sheets changed.
 4. **Tank dimensions:** only the 64 × 40 and 40 × 40 sheets exist as designs. Confirm the 30 × 30 (6 @ 5) and 20 × 20
    presets, and each design's openings, against กปภ. drawings (`tank-drawing-swift.md` open questions 1–3).
 5. **C3 mapping:** confirm that `measA` = rafter spacing, `measC` = purlin spacing, and `measI1`/`measI2` = ground→ridge
    and ground→eave, as the labels suggest.
-6. **Opening sizes:** the plan draws vents 0.60 m and hatches 0.80 m; the กปภ. sheets give 1.45 m and 1.15 m. Which is right?
+6. ~~**Opening sizes:** the plan draws vents 0.60 m and hatches 0.80 m; the กปภ. sheets give 1.45 m and 1.15 m. Which is right?~~ The กปภ. sheets only: vents 1.45 m, hatches 1.15 m (2026-10-20).
 7. **Measured or chosen pitch:** C1 asks for a frame type and fixes the slope (15°, or 30° for ขื่อรัด), against the
    "sizes and distances only" rule. Should C1 also take `eaveHeight` / `ridgeHeight` and derive the pitch (§4.4)?

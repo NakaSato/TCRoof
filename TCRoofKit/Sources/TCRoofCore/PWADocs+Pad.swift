@@ -71,7 +71,7 @@ extension PWADocs {
 
     // MARK: Papers
 
-    /// The พค.2 check list item a paper answers, for `พค.2 ข้อ n · …`.
+    /// The พค.2 check list item a paper answers, for `พค.2 ข้อ n | …`.
     public static func checkNumber(_ kind: StationDocs.Kind) -> Int? {
         StationDocs.pk2Checklist.first { $0.docs.contains(kind.id) }?.number
     }
@@ -79,7 +79,7 @@ extension PWADocs {
     /// A to-do card's title: a พค.2 paper by its check list number.
     public static func title(_ item: Item) -> String {
         guard item.package == .pk2, let n = checkNumber(item.kind) else { return item.kind.name }
-        return "พค.2 ข้อ \(n) · " + item.kind.name
+        return "พค.2 ข้อ \(n) | " + item.kind.name
     }
 
     /// A paper's status steps as the document sheet shows them: done steps, and the one it is at (nil once through).
@@ -90,8 +90,8 @@ extension PWADocs {
         public var current: Int?
     }
 
-    /// Our papers: `ยังไม่มี · ร่าง · รอลงนาม · ยื่นแล้ว · อนุมัติ`, a signed paper past `รอลงนาม`. Outside ones:
-    /// `ยังไม่มี · ขอแล้ว · ได้รับแล้ว`, done once received.
+    /// Our papers: `ยังไม่มี | ร่าง | รอลงนาม | ยื่นแล้ว | อนุมัติ`, a signed paper past `รอลงนาม`. Outside ones:
+    /// `ยังไม่มี | ขอแล้ว | ได้รับแล้ว`, done once received.
     public static func flow(_ origin: StationDocs.Origin, _ status: StationDocs.Status) -> Flow {
         if origin == .external {
             let labels = ["ยังไม่มี", "ขอแล้ว", "ได้รับแล้ว"]

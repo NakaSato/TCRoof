@@ -37,6 +37,22 @@ final class RemarkSuggestionsTests: XCTestCase {
         XCTAssertEqual(RemarkSuggestions.make(job: j)[1].text, "ตัดแต่งต้นไม้ ถังน้ำใส 2 ก่อนติดตั้ง")
     }
 
+    /// With a stored layout and the object's height, D1's simulation decides: quoted from 1 %, left out below.
+    func testShadeQuotesTheSimulation() throws {
+        var j = Job()
+        var m = tank(dirs: ["S"])
+        Tank.apply(&m.values, Tank.presets[0])
+        TankLayout.save(&m.values, TankLayout.auto(m.values), off: [])
+        m.values[TankShade.Key.height] = .text("16"); m.values[TankShade.Key.distance] = .text("1")
+        j.modules = [m]
+        let s = try XCTUnwrap(RemarkSuggestions.make(job: j).first)
+        XCTAssertTrue(s.text.hasPrefix("ตัดแต่งต้นไม้ด้านใต้ ถังน้ำใส 1"), s.text)
+        XCTAssertTrue(s.text.contains("(เงาทำให้เสีย "), s.text)
+        // trees lower than the panels cost nothing: no line
+        j.modules[0].values[TankShade.Key.height] = .text("2")
+        XCTAssertTrue(RemarkSuggestions.make(job: j).isEmpty)
+    }
+
     func testFlood() {
         var j = Job()
         j.values["floodHistory"] = .choice("ไม่เคย", other: "")
@@ -153,7 +169,7 @@ final class FinalSummaryTests: XCTestCase {
         let others = FinalSummary.otherPages(j)
         XCTAssertFalse(others.isEmpty)
         XCTAssertEqual(FinalSummary.statusLine(j),
-                       "ยังขาดในหน้านี้: ผลการประเมิน, ลายเซ็นวิศวกรผู้สำรวจ, ชื่อผู้ประสานงาน, ลายเซ็นผู้ประสานงาน · และอีก \(others.count) หน้า")
+                       "ยังขาดในหน้านี้: ผลการประเมิน, ลายเซ็นวิศวกรผู้สำรวจ, ชื่อผู้ประสานงาน, ลายเซ็นผู้ประสานงาน | และอีก \(others.count) หน้า")
 
         // "with conditions" and no remarks: a warning, completion unchanged
         j.values["verdict"] = .choice(Options.verdict[1], other: "")
@@ -165,7 +181,7 @@ final class FinalSummaryTests: XCTestCase {
         j.values["verdict"] = .choice(Options.verdict[0], other: "")
         XCTAssertTrue(FinalSummary.pageGaps(j.values).isEmpty)
         XCTAssertEqual(FinalSummary.statusLine(j),
-                       "หน้านี้ครบแล้ว · ยังขาดอีก \(others.count) หน้า (\(others.map(FinalSummary.code).joined(separator: ", ")))")
+                       "หน้านี้ครบแล้ว | ยังขาดอีก \(others.count) หน้า (\(others.map(FinalSummary.code).joined(separator: ", ")))")
         XCTAssertFalse(FinalSummary.isComplete(j))
         XCTAssertEqual(FinalSummary.code(MissingGroup(target: .site, title: "A2 ภาพสถานที่ติดตั้ง", items: [])), "A2")
     }
@@ -177,7 +193,7 @@ final class FinalSummaryTests: XCTestCase {
         j.values["surveyorSign"] = .photo(Photo(fileName: "s.png", width: 10, height: 10))
         j.values["customerSign"] = .photo(Photo(fileName: "c.png", width: 10, height: 10))
         if FinalSummary.otherPages(j).isEmpty {
-            XCTAssertEqual(FinalSummary.statusLine(j), "ครบทุกหน้าแล้ว · พร้อมส่งออก")
+            XCTAssertEqual(FinalSummary.statusLine(j), "ครบทุกหน้าแล้ว | พร้อมส่งออก")
             XCTAssertTrue(FinalSummary.isComplete(j))
         }
     }

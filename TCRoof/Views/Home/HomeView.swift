@@ -4,7 +4,7 @@ import SwiftData
 import TCRoofCore
 
 enum AppModule: String, CaseIterable, Identifiable {
-    case survey, plan, scan, install, pwa, tools
+    case survey, plan, scan, install, pwa, tools, travel
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "บันทึกงานติดตั้ง\nและใบตรวจรับงาน"
         case .pwa: "การประปา\nส่วนภูมิภาค"
         case .tools: "เครื่องมือวัด"
+        case .travel: "เดินทางและ\nเบิกค่าใช้จ่าย"
         }
     }
 
@@ -27,14 +28,15 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "บันทึกประจำวันและใบตรวจรับ (ICL)"
         case .pwa: "Excel / PDF / Drive"
         case .tools: "โดรน กล้องถ่ายภาพความร้อน แคลมป์มิเตอร์"
+        case .travel: "เวลาถึง/ออก ระยะทาง ใบเสร็จ และใบเบิกรายเดือน"
         }
     }
 
     /// One-line subtitle of the iPhone module rows.
     var shortSubtitle: String {
         switch self {
-        case .survey: "นัดหมาย · หลังคา · ระบบไฟฟ้า"
-        case .install: "บันทึกประจำวัน · ใบตรวจรับ ICL"
+        case .survey: "นัดหมาย | หลังคา | ระบบไฟฟ้า"
+        case .install: "บันทึกประจำวัน | ใบตรวจรับ ICL"
         default: subtitle
         }
     }
@@ -56,6 +58,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: "folder.fill"
         case .pwa: "drop.fill"
         case .tools: "briefcase.fill"
+        case .travel: "car.fill"
         }
     }
 
@@ -67,6 +70,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .install: InstallRecordsView()
         case .pwa: SolarSurveyEntryView()
         case .tools: ToolsView()
+        case .travel: ClaimScreen()
         }
     }
 }
@@ -84,6 +88,7 @@ struct HomeView: View {
     /// Appointment whose job has no report yet: pick a template, then open the new report at A1.
     @State private var startReport: Job?
     @State private var showNewJob = false
+    @Environment(\.permissions) private var permissions
     @State private var openedJob: Job?
     /// The iPad bar's search field: the survey list over every date, its search field focused.
     @State private var showSearch = false
@@ -210,6 +215,7 @@ struct HomeView: View {
         case .calendar(let day): PlanCalendarView(day: day)
         case .stationDocs(let key): if let job = job(key) { StationDocsScreen(job: job) }
         case .records: InstallRecordsView()
+        case .claims(let month): ClaimScreen(month: month)
         }
     }
 
@@ -234,7 +240,7 @@ struct HomeView: View {
                        openFeed: { feedLink = $0 },
                        showSurveys: { dock?.select(.survey) },
                        openSearch: { showNotifications = false; showSearch = true },
-                       newSurvey: { showNewJob = true }) {
+                       newSurvey: permissions.can(.jobEdit) ? { showNewJob = true } : nil) {
             notificationsView(large: true) { showNotifications = false }
         }
     }
@@ -332,7 +338,7 @@ struct HomeView: View {
         showSettings = false
         if let key = Self.jobKey(link), job(key) == nil {
             waitingLink = link
-            linkNotice = "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้ · จะเปิดให้เมื่อซิงก์เสร็จ"
+            linkNotice = "งานนี้ยังไม่ซิงก์มาที่เครื่องนี้ | จะเปิดให้เมื่อซิงก์เสร็จ"
             return
         }
         switch link {
@@ -358,6 +364,7 @@ struct HomeView: View {
         case .inspection(let key): openRecord(.inspection(job: key), job: key)
         case .homework(let key): openRecord(.homework(job: key), job: key)
         case .records: feedLink = .records
+        case .claims(let month): feedLink = .claims(month: month)
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break
@@ -491,7 +498,7 @@ struct SettingsView: View {
             dismiss()
             session.signOut()
             if kind == .switchAccount, !who.isEmpty {
-                session.notice = "\(who) ออกจากระบบแล้ว · เข้าสู่ระบบด้วยบัญชี Google ของคุณ"
+                session.notice = "\(who) ออกจากระบบแล้ว | เข้าสู่ระบบด้วยบัญชี Google ของคุณ"
             }
         }
     }

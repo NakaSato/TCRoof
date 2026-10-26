@@ -12,11 +12,17 @@ public struct RoofPlan: Sendable {
     public struct Chip: Sendable { public let axis: Roof.Axis; public let index: Int; public let value: Double; public let at: Pt }
     public struct Layout: Sendable {
         public var chips: [Chip] = []
+        /// The dimension chains (the ops tagged dim / dimtxt) as dimensions, for the DXF's DIMENSIONs.
+        public var dimensions: [SketchDXF.Dimension] = []
         public var addX = Pt(0, 0), addY = Pt(0, 0)
         /// Grid intersections (i along x, j along y).
         public var nodes: [(i: Int, j: Int, at: Pt, post: Bool)] = []
         /// Skylights and obstacles / keep-out zones on the sketch, with their `obst` index.
         public var areas: [(area: Roof.Area, box: Box)] = []
+        /// The PV layout's slots on the sketch (outline, and whether a module is there), for taps.
+        public var slots: [(ref: RoofMountLayout.SlotRef, outline: [Pt], module: Bool)] = []
+        /// A shed roof's low-side arrow on the sketch, for a tap that turns it.
+        public var shedArrow: Box?
         /// Metres → sketch point, and back.
         public var origin = Pt(0, 0), k = 1.0, lx = 0.0, ly = 0.0
         public func point(x: Double, y: Double) -> Pt { Pt(origin.x + x * k, origin.y + y * k) }
@@ -28,18 +34,19 @@ public struct RoofPlan: Sendable {
     public struct PV: Sendable {
         public var count = 0
         public var kWp = 0.0
-        /// Tables (ชุด) holding at least one module; 0 when the field is continuous.
-        public var tables = 0
-        public var placed: [Box] = [], blocked: [Box] = []
     }
 
     /// Module size (m) and power (kW) for the layout: the catalogue's default module.
     public struct Module: Sendable {
         public var length, width, kW: Double
-        public init(length: Double, width: Double, kW: Double) { self.length = length; self.width = width; self.kW = kW }
+        /// Weight (kg), for the roof load.
+        public var kg: Double
+        public init(length: Double, width: Double, kW: Double, kg: Double = 31.5) {
+            self.length = length; self.width = width; self.kW = kW; self.kg = kg
+        }
         public static var catalogDefault: Module {
             let c = EquipmentCatalog.bundled, m = c.pv.first { $0.def == true } ?? c.pv.first
-            return m.map { Module(length: Double($0.l) / 1000, width: Double($0.wd) / 1000, kW: Double($0.w) / 1000) }
+            return m.map { Module(length: Double($0.l) / 1000, width: Double($0.wd) / 1000, kW: Double($0.w) / 1000, kg: $0.kg) }
                 ?? Module(length: 2.278, width: 1.134, kW: 0.57)
         }
     }
@@ -55,6 +62,8 @@ public struct RoofPlan: Sendable {
     public static let ink = RGBA(hex: 0x111111), purlC = RGBA(hex: 0x6B7280), postInk = RGBA(hex: 0x111827)
     public static let skyFill = RGBA(hex: 0xCFE8F7), skyLine = RGBA(hex: 0x2E8FDB), pvFill = RGBA(hex: 0x1F4F8F), pvLine = RGBA(hex: 0xDCE6F2)
     static let redText = RGBA(hex: 0xB42318), amber = RGBA(hex: 0xB45309)
+    /// The pair numbers: `Theme.primary`'s value (the core draws without the UI's theme).
+    static let pairInk = RGBA(hex: 0x1F6FB5)
 
     /// The plan's path keys drawn for member row n (1…7) of this frame (the design's `HLK`).
     public static func highlightKeys(_ f: RoofFrame, member n: Int) -> [String] {
@@ -75,8 +84,13 @@ public struct RoofPlan: Sendable {
     ///   - chips: false draws the span values as text (report, CAD); true leaves them to the page's buttons.
     ///   - dragging: an unfinished skylight / keep-out zone being dragged (metres, two corners).
     ///   - highlight: member row 1…7 whose lines are redrawn in red.
-    public init(_ v: Values, mode: Mode = .structure, portrait: Bool? = nil, module: Module = .catalogDefault,
-                chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil, highlight: Int? = nil) {
+    ///   - mount: the PV layout drawn in the PV mode (`RoofMount.layout`); nil draws none yet.
+    ///   - selected: slots drawn highlighted (a run of modules, or one slot).
+    ///   - pairNumbers: number landscape pairs (`Options.pairs`) above the top row, tagged `pairs`; the page only, so the
+    ///     report and the CAD file leave them out.
+    public init(_ v: Values, mode: Mode = .structure, chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil,
+                highlight: Int? = nil, mount: RoofMountLayout? = nil, selected: Set<RoofMountLayout.SlotRef> = [],
+                pairNumbers: Bool = false) {
         var d = Drawer(v, pv: mode == .pv)
         d.background()
         if !d.pvMode { d.purlins() }
@@ -89,7 +103,7 @@ public struct RoofPlan: Sendable {
         if !d.pvMode { d.purlinCallout(); d.slopeArrows() }
         d.areas()
         if d.pvMode {
-            d.pvLayout(RoofPV(v, portrait: portrait, module: module))
+            if let mount { d.pvMount(mount, selected: selected); if pairNumbers { d.pairNumbers(mount) } }
             if let r = dragging { d.dragged(r, fill: RGBA(0.851, 0.271, 0.231, 0.12), line: Self.red, width: 1.4) }
             d.keepOutLabels()
         } else if let r = dragging {
@@ -106,10 +120,6 @@ public struct RoofPlan: Sendable {
         pv = d.pv
     }
 
-    /// The PV preview count alone (tests, hints).
-    public static func pvCount(_ v: Values, portrait: Bool = true, module: Module = .catalogDefault) -> Int {
-        RoofPV(v, portrait: portrait, module: module).count
-    }
 }
 
 // MARK: - drawing
@@ -124,6 +134,8 @@ private struct Drawer {
     let hor: Bool
     /// Roof slope (°).
     let ang: Double
+    /// A shed roof: one face, its ridge on the high edge. `lowAtStart`: the low eave at the plan's top (or left).
+    let shed: Bool, lowAtStart: Bool
     let Lx: Double, Ly: Double, k: Double, W: Double, H: Double, x0: Double, y0: Double
     /// Grid lines along x and y (design units).
     let gx: [Double], gy: [Double]
@@ -136,7 +148,8 @@ private struct Drawer {
     init(_ v: Values, pv: Bool) {
         self.v = v; pvMode = pv
         xs = Roof.spans(v, .x); ys = Roof.spans(v, .y); frame = Roof.frame(v)
-        hor = Roof.ridge(v) == .h; ang = frame.slope
+        hor = Roof.ridge(v) == .h; ang = Roof.slope(v)
+        shed = RoofMount.shape(v) == .shed; lowAtStart = RoofMount.shedLowAtStart(v)
         Lx = xs.reduce(0, +); Ly = ys.reduce(0, +)
         k = min(380 / Lx, 320 / Ly); W = Lx * k; H = Ly * k; x0 = 400 - W / 2; y0 = 252 - H / 2
         var gx = [x0]; for s in xs { gx.append(gx.last! + s * k) }
@@ -231,8 +244,22 @@ private struct Drawer {
     mutating func outlineAndRidge() {
         add(.rect(rect(x0, y0, W, H), stroke: RoofPlan.ink, fill: nil, width: 1.5), "out")
         let rdash: [Double] = [18, 4, 3, 4]
+        if shed {
+            // the ridge is the high edge, opposite the low eave
+            let c = ridgeAcross
+            if hor { line(x0 - 10, c, x0 + W + 10, c, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+            else { line(c, y0 - 10, c, y0 + H + 10, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+            return
+        }
         if hor { line(x0 - 10, y0 + H / 2, x0 + W + 10, y0 + H / 2, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
         else { line(x0 + W / 2, y0 - 10, x0 + W / 2, y0 + H + 10, 1.2, RoofPlan.ink, dash: rdash, "ridge") }
+    }
+
+    /// Where the ridge runs across the plan (design units): the middle, or a shed roof's high edge.
+    var ridgeAcross: Double {
+        let start = hor ? y0 : x0, size = hor ? H : W
+        guard shed else { return start + size / 2 }
+        return lowAtStart ? start + size : start
     }
 
     /// Grid bubbles A, B, C… along x and 1, 2, 3… along y.
@@ -264,6 +291,11 @@ private struct Drawer {
             if !chips { text(fmt(s), 139, (gy[j] + gy[j + 1]) / 2, 12, angle: -90, "dimtxt") }
         }
         L.addX = P(gx.last! + 22, 21); L.addY = P(139, gy.last! + 22)
+        // the same chains as dimensions: the extension lines start at 47 (x) and 165 (y), next to the plan
+        for i in xs.indices { L.dimensions.append(.init(P(gx[i], 47), P(gx[i + 1], 47), at: P(0, 32), text: fmt(xs[i]), size: 12)) }
+        L.dimensions.append(.init(P(gx.first!, 47), P(gx.last!, 47), at: P(0, 10), text: String(format: "%.2f", Lx), size: 13))
+        for j in ys.indices { L.dimensions.append(.init(P(165, gy[j]), P(165, gy[j + 1]), at: P(150, 0), vertical: true, text: fmt(ys[j]), size: 12)) }
+        L.dimensions.append(.init(P(165, gy.first!), P(165, gy.last!), at: P(128, 0), vertical: true, text: String(format: "%.2f", Ly), size: 13))
     }
 
     /// `แป @1.00` on one bay of the lower face.
@@ -273,12 +305,12 @@ private struct Drawer {
         guard m2 < Lcr - 0.1 else { return }
         if hor {
             let xd = x0 + W * 0.72, ya = y0 + m1 * k, yb = y0 + m2 * k
-            line(xd, ya, xd, yb, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-            text(t, xd + 6, (ya + yb) / 2, 12.5, bold: true, color: RoofPlan.amber, bg: true, align: .left)
+            line(xd, ya, xd, yb, 1, RoofPlan.amber, "callout"); tick(xd, ya, 1, RoofPlan.amber, "callout"); tick(xd, yb, 1, RoofPlan.amber, "callout")
+            text(t, xd + 6, (ya + yb) / 2, 12.5, bold: true, color: RoofPlan.amber, bg: true, align: .left, "note")
         } else {
             let yd = y0 + H * 0.74, xa = x0 + m1 * k, xb = x0 + m2 * k
-            line(xa, yd, xb, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-            text(t, (xa + xb) / 2, yd - 10, 12.5, bold: true, color: RoofPlan.amber, bg: true)
+            line(xa, yd, xb, yd, 1, RoofPlan.amber, "callout"); tick(xa, yd, 1, RoofPlan.amber, "callout"); tick(xb, yd, 1, RoofPlan.amber, "callout")
+            text(t, (xa + xb) / 2, yd - 10, 12.5, bold: true, color: RoofPlan.amber, bg: true, "note")
         }
     }
 
@@ -290,6 +322,24 @@ private struct Drawer {
             return .polygon([tip, Pt(b.x + n.x, b.y + n.y), Pt(b.x - n.x, b.y - n.y)], stroke: nil, fill: RoofPlan.navy)
         }
         let slope = "ลาด \(fmt(ang))°"
+        if shed {
+            // one face: arrows from the high edge to the low eave
+            let s = lowAtStart ? -1.0 : 1.0
+            if hor {
+                let from = lowAtStart ? y0 + H - 30 : y0 + 30, to = lowAtStart ? y0 + 30 : y0 + H - 30
+                for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
+                    line(x, from, x, to, 1.2, RoofPlan.navy); add(head(P(x, to + s * 8), 0, s), nil)
+                    if n == 0 { notes.append((slope, x, y0 + H / 2)) }
+                }
+            } else {
+                let from = lowAtStart ? x0 + W - 30 : x0 + 30, to = lowAtStart ? x0 + 30 : x0 + W - 30
+                for (n, y) in [y0 + H * 0.2, y0 + H * 0.8].enumerated() {
+                    line(from, y, to, y, 1.2, RoofPlan.navy); add(head(P(to + s * 8, y), s, 0), nil)
+                    if n == 0 { notes.append((slope, x0 + W / 2, y - 12)) }
+                }
+            }
+            return
+        }
         if hor {
             for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
                 let m = y0 + H / 2
@@ -327,38 +377,182 @@ private struct Drawer {
     }
 
     /// The modules, dropped modules, table outlines and the gaps between tables.
-    mutating func pvLayout(_ lay: RoofPV) {
-        pv.placed = lay.placed.map(sketchBox); pv.blocked = lay.blocked.map(sketchBox)
-        for b in pv.placed { add(.rect(b, stroke: RoofPlan.pvLine, fill: RGBA(0.122, 0.31, 0.561, 0.85), width: 0.6), "pv") }
-        for b in pv.blocked { dashedBox(b, RoofPlan.pvFill, 0.6, [3, 2]) }
-        pv.count = pv.placed.count
-        pv.kWp = lay.kWp
-        pv.tables = lay.tables
-        for b in lay.outlines { add(.rect(sketchBox(b), stroke: RoofPlan.navy, fill: nil, width: 1.6), "tbl") }
-        // the gap between tables, dimensioned once each way
-        let gl = "ห่าง " + String(format: "%.2f", Roof.pvGap(v))
-        if let g = lay.alongGap {
-            if hor {
-                let xa = x0 + g.a1 * k, xb = x0 + g.a2 * k, yd = y0 + g.c * k
-                line(xa - 8, yd, xb + 8, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-                text(gl, (xa + xb) / 2 + 30, yd + 1, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
-            } else {
-                let ya = y0 + g.a1 * k, yb = y0 + g.a2 * k, xd = x0 + g.c * k
-                line(xd, ya - 8, xd, yb + 8, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-                text(gl, xd + 6, (ya + yb) / 2 + 26, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
+    /// The roof PV layout (docs/specs/roof-pv-layout.md §4): each face's usable area, purlins and shade, the modules
+    /// (dashed red on a face switched off), cut slots in red, removed slots dashed, rails and L-feet, and a label per face.
+    mutating func pvMount(_ m: RoofMountLayout, selected: Set<RoofMountLayout.SlotRef>) {
+        let w = m.moduleAlong, l = m.moduleUp
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        let green = RGBA(hex: 0x2EAD4B), shadeFill = RGBA(hex: 0xFBE3C8), cutRed = RGBA(hex: 0xE0433A), railInk = RGBA(hex: 0x334155)
+        for f in m.faces {
+            let face = f.face
+            add(.polygon(face.usableArea.map { P(face, $0.x, $0.y) }, stroke: green.withAlpha(0.8), fill: green.withAlpha(0.05), width: 0.8), "usable")
+            for v in m.purlins {
+                guard let (u0, u1) = face.span(atV: v) else { continue }
+                let a = P(face, u0, v), b = P(face, u1, v)
+                add(.line(a, b, width: 0.4, color: RoofPlan.purlC.withAlpha(0.45), dash: []), "purl")
+            }
+            if m.options.avoidShade {
+                for h in f.shade {
+                    let clipped = Polygon.clip(h, to: face.polygon)
+                    guard clipped.count >= 3 else { continue }
+                    add(.polygon(clipped.map { P(face, $0.x, $0.y) }, stroke: nil, fill: shadeFill.withAlpha(0.55)), "shade")
+                }
             }
         }
-        if let g = lay.acrossGap {
-            if hor {
-                let xd = x0 + g.a * k, ya = y0 + g.c2 * k, yb = y0 + g.c1 * k
-                line(xd, ya, xd, yb, 1, RoofPlan.amber); tick(xd, ya, 1, RoofPlan.amber); tick(xd, yb, 1, RoofPlan.amber)
-                text(gl, xd + 6, (ya + yb) / 2, 12, bold: true, color: RoofPlan.amber, bg: true, align: .left)
-            } else {
-                let yd = y0 + g.a * k, xa = x0 + g.c2 * k, xb = x0 + g.c1 * k
-                line(xa, yd, xb, yd, 1, RoofPlan.amber); tick(xa, yd, 1, RoofPlan.amber); tick(xb, yd, 1, RoofPlan.amber)
-                text(gl, (xa + xb) / 2, yd + 12, 12, bold: true, color: RoofPlan.amber, bg: true)
+        let hasWalkways = !RoofWalkway.walkways(m).isEmpty
+        for f in m.faces {
+            let face = f.face
+            for (r, row) in f.rows.enumerated() {
+                for (c, slot) in row.slots.enumerated() {
+                    let ref = RoofMountLayout.SlotRef(face: face.id, row: r, column: c)
+                    let poly = [P(face, slot.u, row.v), P(face, slot.u + w, row.v),
+                                P(face, slot.u + w, row.v + l), P(face, slot.u, row.v + l)]
+                    let on = selected.contains(ref)
+                    if slot.isModule {
+                        if f.used {
+                            add(.polygon(poly, stroke: RoofPlan.pvLine, fill: on ? RGBA(hex: 0xF6C26B) : RGBA(0.122, 0.31, 0.561, 0.85), width: 0.5), "pv")
+                        } else {
+                            add(.polyline(poly + [poly[0]], width: 0.8, color: cutRed, dash: [3, 2]), "pvoff")
+                        }
+                        L.slots.append((ref, poly, true))
+                    } else if slot.cut {
+                        add(.polygon(poly, stroke: cutRed, fill: on ? cutRed.withAlpha(0.15) : nil, width: 1.2), "cut")
+                        L.slots.append((ref, poly, false))
+                    } else if slot.blocked == RoofMountLayout.removedByUser {
+                        add(.polyline(poly + [poly[0]], width: 0.8, color: on ? cutRed : RoofPlan.gridC, dash: [3, 2]), "removed")
+                        L.slots.append((ref, poly, false))
+                    } else {
+                        L.slots.append((ref, poly, false))
+                    }
+                }
+                guard f.used else { continue }
+                for run in row.runs {
+                    for (rail, feet) in zip([row.rails.0, row.rails.1], run.feet) {
+                        add(.line(P(face, run.start, rail), P(face, run.end, rail), width: 0.6, color: railInk, dash: []), "rail")
+                        for x in feet { add(.circle(P(face, x, rail), r: 1.1, stroke: nil, fill: railInk), "foot") }
+                    }
+                }
+            }
+            // rails up the slope, across the purlins
+            for run in f.columnRuns where f.used {
+                for (u, feet) in zip(run.railsAt, run.feet) {
+                    add(.line(P(face, u, run.start), P(face, u, run.end), width: 0.6, color: railInk, dash: []), "rail")
+                    for v in feet { add(.circle(P(face, u, v), r: 1.1, stroke: nil, fill: railInk), "foot") }
+                }
+            }
+            if !hasWalkways { faceLabel(f, m) }
+        }
+        // each face's label (over the walkways when there are any)
+        let ws = RoofWalkway.walkways(m)
+        if !ws.isEmpty { walkways(m) }
+        for f in m.faces where !ws.isEmpty { faceLabel(f, m) }
+        let q = m.quantities
+        pv.count = q.modules
+        pv.kWp = q.kWp
+    }
+
+    /// Landscape pairs numbered 1, 2, 3 … along the row, on a white chip just outside the row nearest the plan's top
+    /// (one face's: the one whose row is highest on the plan), as docs/ui/survey-c1-iphone-pv-fix01 states/05.
+    mutating func pairNumbers(_ m: RoofMountLayout) {
+        guard m.options.pairs else { return }
+        let w = m.moduleAlong, l = m.moduleUp, g = m.standard.moduleGap
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        // the row with a module highest on the plan, and the side of it that faces the plan's top
+        var top: (f: RoofMountLayout.Face, row: RoofMountLayout.Row, v: Double, y: Double)?
+        for f in m.faces where f.used {
+            for row in f.rows where row.slots.contains(where: \.isModule) {
+                let u = row.slots.first(where: \.isModule)!.u
+                for v in [row.v, row.v + l] {
+                    let y = P(f.face, u, v).y
+                    if y < top?.y ?? .infinity { top = (f, row, v, y) }
+                }
             }
         }
+        guard let top else { return }
+        let outward = top.v == top.row.v ? -0.35 : l + 0.35
+        // numbered as the plan reads, left to right (a face's u can run either way on plan)
+        let points = stride(from: 0, to: top.row.slots.count - 1, by: 2).compactMap { c -> Pt? in
+            let a = top.row.slots[c], b = top.row.slots[c + 1]
+            return a.isModule && b.isModule ? P(top.f.face, a.u + w + g / 2, top.row.v + outward) : nil
+        }.sorted { $0.x < $1.x }
+        for (i, at) in points.enumerated() {
+            let label = "\(i + 1)", tw = ApproxText.width(label, size: 8.5, bold: true) + 6
+            add(.rect(Box(at.x - tw / 2, at.y - 5.5, tw, 11), stroke: nil, fill: .white), "pairs")
+            add(.text(label, at: at, size: 8.5, bold: true, color: RoofPlan.pairInk, align: .center), "pairs")
+        }
+    }
+
+    /// `ใต้ | 105 แผง` at a face's middle, on a white box (and on a single-face roof the arrow to its low eave).
+    mutating func faceLabel(_ f: RoofMountLayout.Face, _ m: RoofMountLayout) {
+        let face = f.face, cutRed = RGBA(hex: 0xE0433A)
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        // ใต้ | 105 แผง, kept on the plan (the tab lists each face's yield)
+        let c = P(face, face.centre.x, face.centre.y)
+        let label = RoofFace.direction(face.azimuth) + " | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)")
+        let half = ApproxText.width(label, size: 10.5, bold: true) / 2 + 8
+        let cx = min(max(c.x, L.origin.x + half), L.origin.x + L.lx * k - half)
+        // drawn on the sketch directly (`text` maps design units)
+        let tw = ApproxText.width(label, size: 10.5, bold: true) + 6
+        add(.rect(Box(cx - tw / 2, c.y - 7, tw, 14), stroke: nil, fill: .white), nil)
+        add(.text(label, at: Pt(cx, c.y), size: 10.5, bold: true, color: f.used ? RoofPlan.navy : cutRed, align: .center), "facelabel")
+        if m.roof.faces.count == 1 {
+            let down = P(face, face.centre.x, face.centre.y - 1)
+            shedArrow(from: Pt(cx, c.y), towards: Pt(down.x - c.x, down.y - c.y))
+        }
+    }
+
+    /// The walkways and the roof access as the CAD export draws them, simplified for the screen and the PDF: each
+    /// walkway's 0.90 m band with its grating and lifeline, and at the way up the cat ladder (on a gable roof its cage
+    /// and landing at the gable wall on the ridge, else a ladder past the eave), with `ทางขึ้นหลังคา`.
+    mutating func walkways(_ m: RoofMountLayout) {
+        typealias W = RoofWalkway
+        let band = RGBA(hex: 0xFDE68A), ink = RGBA(hex: 0x92400E), life = RGBA(hex: 0x0E7490), access = RGBA(hex: 0xC026D3)
+        for w in W.walkways(m) {
+            func Q(_ a: Double, _ s: Double) -> Pt { let p = w.plan(a, s); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+            func box(_ a0: Double, _ a1: Double, _ s0: Double, _ s1: Double) -> [Pt] { [Q(a0, s0), Q(a1, s0), Q(a1, s1), Q(a0, s1)] }
+            add(.polygon(box(0, W.band, w.v0, w.v1), stroke: ink.withAlpha(0.7), fill: band.withAlpha(0.85), width: 0.5), "walkway")
+            add(.polygon(box(W.grating.0, W.grating.1, w.v0, w.v1), stroke: ink, fill: ink.withAlpha(0.18), width: 0.4), "walkway")
+            add(.line(Q(W.lifeline, w.v0), Q(W.lifeline, w.v1), width: 0.7, color: life, dash: [3, 2]), "walkway")
+            // a ridge walkway wider than the detail: its clear width, dashed, the band centred in it
+            if w.width > W.band + 1e-6 {
+                let side = (w.width - W.band) / 2
+                let clear = box(-side, W.band + side, w.v0, w.v1)
+                add(.polyline(clear + [clear[0]], width: 0.5, color: ink.withAlpha(0.6), dash: [3, 2]), "walkclear")
+            }
+            guard w.access else { continue }
+            let c = (W.grating.0 + W.grating.1) / 2
+            if w.ridge {
+                let inward: Double = w.accessAtStart ? 1 : -1, s0 = w.wallS, x = W.gableLadder / 2, r = W.cageRadius
+                let mid = W.band / 2, hub = s0 - inward * (W.cageOut - r)
+                add(.polygon(box(mid - x, mid + x, s0, s0 + inward * W.landing), stroke: access, fill: access.withAlpha(0.2), width: 0.8), "access")
+                let arc = (0...16).map { i -> Pt in let t = Double(i) / 16 * .pi; return Q(mid + r * cos(t), hub - inward * r * sin(t)) }
+                add(.polyline([Q(mid + r, s0)] + arc + [Q(mid - r, s0)], width: 1, color: access, dash: []), "access")
+                let tag = Q(mid, s0 - inward * (W.cageOut + 0.6))
+                add(.text("ทางขึ้นหลังคา", at: tag, size: 8, bold: true, color: access, align: .center), "access")
+            } else {
+                let foot = w.v0 - W.ladderOut
+                add(.polygon(box(c - W.ladderWidth / 2, c + W.ladderWidth / 2, foot, w.v0), stroke: access, fill: access.withAlpha(0.2), width: 0.8), "access")
+                add(.text("ทางขึ้นหลังคา", at: Q(c, foot - 0.6), size: 8, bold: true, color: access, align: .center), "access")
+            }
+        }
+    }
+
+    /// A shed roof's arrow from its label towards the low eave, `ด้านต่ำ` at its head (a tap turns it).
+    mutating func shedArrow(from c: Pt, towards dir: Pt) {
+        let n = hypot(dir.x, dir.y)
+        guard n > 1e-9 else { return }
+        let d = Pt(dir.x / n, dir.y / n), ink = RoofPlan.amber
+        let s = Pt(c.x + d.x * 14, c.y + d.y * 14), e = Pt(c.x + d.x * 52, c.y + d.y * 52)
+        add(.line(s, e, width: 2, color: ink, dash: []), "shedarrow")
+        let side = Pt(-d.y, d.x)
+        add(.polygon([e, Pt(e.x - d.x * 8 + side.x * 5, e.y - d.y * 8 + side.y * 5), Pt(e.x - d.x * 8 - side.x * 5, e.y - d.y * 8 - side.y * 5)],
+                     stroke: nil, fill: ink), "shedarrow")
+        let t = Pt(e.x + d.x * 10, e.y + d.y * 10)
+        let tw = ApproxText.width("ด้านต่ำ", size: 9.5, bold: true) + 6
+        add(.rect(Box(t.x - tw / 2, t.y - 6.5, tw, 13), stroke: nil, fill: .white), nil)
+        add(.text("ด้านต่ำ", at: t, size: 9.5, bold: true, color: ink, align: .center), "shedarrow")
+        let xs = [s.x, e.x, t.x - tw / 2, t.x + tw / 2], ys = [s.y, e.y, t.y - 7, t.y + 7]
+        L.shedArrow = Box(xs.min()! - 10, ys.min()! - 10, xs.max()! - xs.min()! + 20, ys.max()! - ys.min()! + 20)
     }
 
     /// An unfinished skylight / keep-out zone being dragged (metres, two corners).
@@ -380,7 +574,7 @@ private struct Drawer {
     /// Obstacle labels as on the old plan.
     mutating func obstacleLabels() {
         for (a, b) in L.areas where a.kind == "" && !a.label.isEmpty {
-            add(.text("\(a.label) \(fmt(a.w))x\(fmt(a.h))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark), nil)
+            add(.text("\(a.label) \(fmt(a.w))x\(fmt(a.h))", at: Pt(b.maxX + 3, b.maxY - 3), size: 8, color: .dark), "note")
         }
     }
 
@@ -391,8 +585,8 @@ private struct Drawer {
             [.circle(c, r: 10.5, stroke: sc, fill: .white, width: 1.4), .text("A", at: c, size: 14, bold: true, color: sc, align: .center)]
         }
         func ends(_ arrow: DrawOp, _ at: Pt) {
-            add(arrow, nil)
-            let b = bubble(at); add(b[0], "sec"); add(b[1], nil)
+            add(arrow, "sec")
+            let b = bubble(at); add(b[0], "sec"); add(b[1], "sec")
         }
         if hor {
             let sx = x0 + W * 0.42
@@ -414,9 +608,15 @@ private struct Drawer {
     /// The frame and slope labels (structure mode), then `สันหลังคา`.
     mutating func labels() {
         if !pvMode {
-            for (t, x, y) in notes { let s = t.hasPrefix("ลาด"); text(t, x, y, s ? 13 : 11, bold: !s, bg: true) }
+            for (t, x, y) in notes { let s = t.hasPrefix("ลาด"); text(t, x, y, s ? 13 : 11, bold: !s, bg: true, "note") }
         }
-        text("สันหลังคา", hor ? x0 + W + 34 : x0 + W / 2, hor ? y0 + H / 2 : y0 - 30, 13, bold: true, bg: true)
+        let c = ridgeAcross
+        if shed && hor {
+            // outside the high edge, clear of the chips at the right
+            text("สันหลังคา (ด้านสูง)", x0 + W * 0.78, c + (lowAtStart ? 15 : -15), 13, bold: true, bg: true, "note")
+        } else {
+            text(shed ? "สันหลังคา (ด้านสูง)" : "สันหลังคา", hor ? x0 + W + 34 : c, hor ? c : y0 - 30, 13, bold: true, bg: true, "note")
+        }
     }
 
     /// The chosen member's lines redrawn in red, over everything.

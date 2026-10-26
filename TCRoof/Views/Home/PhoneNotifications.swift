@@ -33,7 +33,7 @@ struct PhoneNotificationsView: View {
         case .survey: n.date > .now && n.job != nil
         case .syncPending: true
         case .install, .saved: false
-        case .calibration, .report, .feed: n.todo
+        case .calibration, .report, .feed, .claim: n.todo
         }
     }
 
@@ -135,7 +135,7 @@ struct PhoneNotificationsView: View {
                 if showSynced, let at = syncedAt { syncedRow(at) }
             }
             if !yesterday.isEmpty {
-                groupHeader("เมื่อวาน · " + ThaiFormat.dayMonth.string(from: .now.adding(days: -1)))
+                groupHeader("เมื่อวาน | " + ThaiFormat.dayMonth.string(from: .now.adding(days: -1)))
                 ForEach(yesterday) { row($0) }
             }
             if !earlier.isEmpty {
@@ -181,6 +181,7 @@ struct PhoneNotificationsView: View {
         case .syncPending: ("แตะเพื่อซิงก์ตอนนี้", Theme.pending)
         case .calibration: ("แตะเพื่อเปิดทะเบียนเครื่อง", Theme.pending)
         case .report: ("แตะเพื่อทำรายงานวันนี้", Theme.pending)
+        case .claim(let approved): ("แตะเพื่อเปิดใบเบิก", approved ? Theme.primary : Theme.dangerText)
         case .feed(let kind) where n.link != nil && n.link != .home: (kind.link, n.todo ? Theme.dangerText : Theme.primary)
         default: nil
         }
@@ -188,7 +189,7 @@ struct PhoneNotificationsView: View {
 
     /// The shared list's detail without its own "tap to sync" note, which the hint line replaces here.
     private func phoneDetail(_ n: AppNotification) -> String {
-        n.kind == .syncPending ? "เก็บไว้ในเครื่องแล้ว · ยังไม่ขึ้นคลาวด์" : n.detail
+        n.kind == .syncPending ? "เก็บไว้ในเครื่องแล้ว | ยังไม่ขึ้นคลาวด์" : n.detail
     }
 
     private func symbol(_ n: AppNotification) -> String {
@@ -204,6 +205,7 @@ struct PhoneNotificationsView: View {
         case .feed(.testResult): "checkmark.seal"
         case .feed(.issue): "exclamationmark.triangle"
         case .feed(.summary): "sum"
+        case .claim(let approved): approved ? "checkmark.circle" : "arrow.uturn.backward.circle"
         }
     }
 
@@ -217,6 +219,7 @@ struct PhoneNotificationsView: View {
         case .feed(.progress), .feed(.summary): Theme.primary
         case .feed(.testResult): Theme.success
         case .feed(.issue): n.todo ? Theme.danger : Theme.muted
+        case .claim(let approved): approved ? Theme.success : Theme.danger
         }
     }
 }

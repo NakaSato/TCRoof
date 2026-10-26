@@ -55,6 +55,8 @@ final class CloudSync {
     private static let ackCollection = "feedAcks"
     /// One document per job: the customer's phone and address, for the team only (`JobContactRecord`).
     private static let contactCollection = "jobContacts"
+    /// Each person's travel log (`Trip`, `Expense`, `ClaimMonth`).
+    private static let travelCollections = [Trip.collection, Expense.collection, ClaimMonth.collection]
     /// `config/app`: switches set in the Firebase console (`contactsSplit`).
     private static let configDocument = "config/app"
     private static let contactsSplitKey = "cloudSync.contactsSplit"
@@ -62,9 +64,11 @@ final class CloudSync {
 
     /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
     /// the listeners aren't using get evicted and have to be downloaded again. On a restart the listeners
-    /// then start from this cache and download only what changed. Must run before the first Firestore call.
+    /// then start from this cache and download only what changed. Must run before the first Firestore call: Firestore
+    /// throws (and the app aborts) on settings changed once it has started, so the app sets them at launch, right after
+    /// `FirebaseApp.configure()`; sign-in reads `members/<email>` before sync starts.
     private static var cacheConfigured = false
-    private static func configureCache() {
+    static func configureCache() {
         guard !cacheConfigured else { return }
         cacheConfigured = true
         let settings = Firestore.firestore().settings
@@ -104,6 +108,9 @@ final class CloudSync {
         survey?.cloudPush = nil
         survey?.cloudPending = nil
         FeedAcks.shared.send = nil
+        DesignLibrary.shared.onChange = nil
+        DesignLibrary.shared.onRoofChange = nil
+        TankStandard.Store.shared.onChange = nil
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
@@ -139,9 +146,18 @@ final class CloudSync {
             listen(Inspection.self)
             listen(ICLSheet.self, optional: true)   // optional until firestore.rules has `iclSheets`
             listen(PhotoAsset.self, optional: true)
+            // the travel log: each person's own (docs/specs/calendar-travel-expenses-swift.md §B6)
+            if external == nil, !me.email.isEmpty {
+                listen(Trip.self, optional: true, owner: me.email)
+                listen(Expense.self, optional: true, owner: me.email)
+                listen(ClaimMonth.self, optional: true, owner: me.email)
+                listenClaimReviews(owner: me.email)
+            }
             listenSurveys()
             listenRevisions()
             listenFeedAcks()
+            listenDesigns()
+            listenTankStandard()
             listenContacts()
             listenDirectory()
             listenConfig()
@@ -301,6 +317,13 @@ final class CloudSync {
         collect(ICLSheet.self, context, &iclSheets, &present)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
+        // the travel log goes in its own batches: a refusal (rules not deployed yet) mustn't hold back the jobs
+        var travel: [Change] = []
+        if external == nil {
+            collect(Trip.self, context, &travel, &present)
+            collect(Expense.self, context, &travel, &present)
+            collect(ClaimMonth.self, context, &travel, &present)
+        }
         var contacts = external == nil ? contactChanges(context, &present) : []
         for job in survey.jobs {
             let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
@@ -318,6 +341,7 @@ final class CloudSync {
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
             else if key.hasPrefix("\(ICLSheet.collection)/") { iclSheets.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
+            else if Self.travelCollections.contains(where: { key.hasPrefix("\($0)/") }) { travel.append(change) }
             else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
@@ -325,6 +349,7 @@ final class CloudSync {
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
         commitSeparately(iclSheets, "site ICL upload", size: external == nil ? 400 : 1)
+        commitSeparately(travel, "travel upload")
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
         // by one, so a refused photo doesn't hold back the rest.
@@ -336,6 +361,7 @@ final class CloudSync {
         let size = external == nil ? 400 : 1
         for start in stride(from: 0, to: changes.count, by: size) {
             let slice = changes[start..<min(start + size, changes.count)]
+            let sent = Array(slice)
             let batch = db.batch()
             var previous: [String: String?] = [:]
             for change in slice {
@@ -357,8 +383,14 @@ final class CloudSync {
                         // Put back what the server still has so the next push tries again.
                         for (key, old) in previous { self.known[key] = old }
                         self.saveKnown()
-                        if self.external != nil, (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue {
+                        let refused = (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue
+                        if self.external != nil, refused {
                             print("CloudSync: refused \(previous.keys.joined(separator: ", ")): \(error.localizedDescription)")
+                        } else if refused, sent.count > 1 {
+                            // One write the rules refuse fails the whole batch, and every later push with it: a delete
+                            // made here would never leave this device. Send the batch's writes one by one instead, so
+                            // only the refused one waits (and is named in the log).
+                            self.commitSeparately(sent, "refused write", size: 1)
                         } else {
                             self.failed(error)
                         }
@@ -409,7 +441,7 @@ final class CloudSync {
                     guard let self, let error else { return }
                     for (key, old) in previous { self.known[key] = old }
                     self.saveKnown()
-                    print("CloudSync: \(label) refused: \(error.localizedDescription)")
+                    print("CloudSync: \(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
                 }
             }
         }
@@ -417,17 +449,20 @@ final class CloudSync {
 
     /// What a push may send of a collection: everything, nothing (still kept, never deleted), or a job's IEC test.
     private enum Upload { case full, readOnly, iecOnly }
-    // iecOnly: a job's IEC test, and the weekly requests its contractor changed
+    // iecOnly: a job's IEC test, and the weekly requests and WBS ticks its contractor changed
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
                                          _ upload: Upload = .full) {
         guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
+        let me = MemberRole.shared.permissions.email
         for model in models {
             if model.syncID == nil { model.syncID = UUID().uuidString }
             guard model.syncs else { continue }
             let key = "\(M.collection)/\(model.syncID!)"
             present.insert(key)
             guard upload != .readOnly else { continue }
+            // someone else's travel log left on a shared iPad: theirs to send, and the rules would refuse it
+            if let owned = model as? OwnedRecord, Permissions.normalized(owned.ownerEmail) != me { continue }
             // an external member's record outside their jobs stays on the device: the rules would refuse it
             if let external, model.ownerJob?.externals.contains(external) != true { continue }
             let record = model.record
@@ -442,6 +477,11 @@ final class CloudSync {
                 if job.weeklyRequestsUnsent, let external {
                     fields["weeklyRequests"] = job.weeklyRequestsJSON ?? NSNull()
                     fields["weeklyRequestsBy"] = external
+                }
+                // the WBS rows the contractor ticked or took back, signed the same way
+                if job.wbsTicksUnsent, let external {
+                    fields["wbsTicks"] = job.wbsTicksJSON ?? "{}"
+                    fields["wbsTicksBy"] = external
                 }
                 changes.append(Change(key: key, write: { [fields] in $0.setData(fields, forDocument: ref, merge: true) },
                                       fingerprint: print))
@@ -474,8 +514,10 @@ final class CloudSync {
     /// The listeners take metadata changes too: when the cache already matches the server, the only event
     /// after the first (cached) snapshot is `isFromCache` turning false, and without it the state stays `.connecting`.
     /// `optional`: a refused listener (its rule not deployed yet) is logged and the rest still syncs.
-    private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false) {
-        let registration = query(M.collection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+    /// `owner`: only the documents of that person (`ownerEmail`), the one query the rules allow for the travel log.
+    private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false, owner: String? = nil) {
+        let q = owner.map { db.collection(M.collection).whereField("ownerEmail", isEqualTo: $0) } ?? query(M.collection)
+        let registration = q.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error {
@@ -604,6 +646,87 @@ final class CloudSync {
     /// The home feed's acknowledgements, live. A toggle adds or removes only its own member (`arrayUnion` /
     /// `arrayRemove`), so two people acknowledging at once never overwrite each other; offline, Firestore keeps the
     /// write and sends it later. Acknowledgements made before they were synced are sent once.
+    /// The standard design library (docs/specs/standard-designs.md §2): every member takes the designs saved on other
+    /// devices (the higher revision wins); a design saved, renamed, archived or imported here is sent, by the team only
+    /// (`design.library`; firestore.rules refuses anyone else and an older revision).
+    private func listenDesigns() {
+        let collection = db.collection("standardDesigns")
+        DesignLibrary.shared.onChange = { [weak self] d in
+            guard let self, self.external == nil else { return }
+            let json = String(decoding: d.exported(), as: UTF8.self)
+            collection.document(d.id).setData(["json": json, "revision": d.revision, "savedBy": d.savedBy ?? "",
+                                               "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: design upload: \(error.localizedDescription)") }
+            }
+            // its scanned sheet: each page once, as a JPEG in its own document
+            let sent = Set(UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? [])
+            for p in d.sheet where !sent.contains(p.id.uuidString) {
+                guard let u = DesignLibrary.shared.sheetURL(p), let data = try? Data(contentsOf: u) else { continue }
+                self.db.collection("standardDesignSheets").document(p.id.uuidString)
+                    .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { error in
+                        if let error { return print("CloudSync: design sheet upload: \(error.localizedDescription)") }
+                        let done = (UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? []) + [p.id.uuidString]
+                        UserDefaults.standard.set(done, forKey: "cloudSync.designSheetsSent")
+                    }
+            }
+        }
+        // building roofs (C1, §7) share the collection, marked `kind: roof`
+        DesignLibrary.shared.onRoofChange = { [weak self] d in
+            guard let self, self.external == nil else { return }
+            collection.document(d.id).setData(["json": String(decoding: d.exported(), as: UTF8.self), "kind": "roof", "revision": d.revision,
+                                               "savedBy": d.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
+            }
+        }
+        let registration = collection.addSnapshotListener { snapshot, error in
+            // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
+            if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
+            for change in snapshot?.documentChanges ?? [] where change.type != .removed {
+                let data = change.document.data()
+                guard let json = data["json"] as? String else { continue }
+                if data["kind"] as? String == "roof" {
+                    if let r = try? RoofDesign.imported(Data(json.utf8)) { DesignLibrary.shared.receiveRoof(r) }
+                } else if let d = try? TankDesign.imported(Data(json.utf8)) {
+                    DesignLibrary.shared.receive(d)
+                }
+            }
+        }
+        listeners.append(registration)
+        // sheet pages taken on other devices
+        let pages = db.collection("standardDesignSheets").addSnapshotListener { snapshot, error in
+            if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
+            for change in snapshot?.documentChanges ?? [] where change.type != .removed {
+                let data = change.document.data()
+                guard let id = UUID(uuidString: change.document.documentID), let b64 = data["data"] as? String,
+                      let jpeg = Data(base64Encoded: b64) else { continue }
+                let probe = Photo(id: id, fileName: id.uuidString + ".jpg", width: 0, height: 0)
+                if DesignLibrary.shared.hasSheetPage(probe) { continue }
+                DesignLibrary.shared.storeSheetPage(jpeg, width: data["width"] as? Int ?? 0, height: data["height"] as? Int ?? 0, id: id)
+            }
+        }
+        listeners.append(pages)
+    }
+
+    /// The team's tank structure standard (`config/tankStandard`, docs/specs/tank-mounting-layout.md §1): every member
+    /// takes a newer revision; a manager's save here is sent (`tank.standard`; firestore.rules refuses anyone else and
+    /// an older revision).
+    private func listenTankStandard() {
+        let ref = db.document("config/tankStandard")
+        TankStandard.Store.shared.onChange = { s in
+            guard MemberRole.shared.permissions.can(.tankStandard) else { return }
+            ref.setData(["json": s.json, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { print("CloudSync: tank standard refused: \(error.localizedDescription)") }
+            }
+        }
+        let registration = ref.addSnapshotListener { snapshot, error in
+            // never fail the whole sync over the standard (rules not deployed yet): the jobs still sync
+            if let error { return print("CloudSync: tank standard listener: \(error.localizedDescription)") }
+            guard let json = snapshot?.data()?["json"] as? String, let s = TankStandard.decode(json) else { return }
+            TankStandard.Store.shared.receive(s)
+        }
+        listeners.append(registration)
+    }
+
     private func listenFeedAcks() {
         let acks = FeedAcks.shared
         acks.send = { [weak self] post, member, on in
@@ -635,6 +758,19 @@ final class CloudSync {
 
     /// The team's names and emails (team only, `TeamDirectory`): this member's own entry goes up first, with the name in
     /// settings, so the people invited before the directory existed are listed too.
+    /// Managers' decisions on this person's submitted months (`ClaimReviews`); refused until the rule is deployed.
+    private func listenClaimReviews(owner email: String) {
+        ClaimReviews.shared.start(owner: email)
+        let q = db.collection(ClaimReviews.collection).whereField("ownerEmail", isEqualTo: Permissions.normalized(email))
+        let registration = q.addSnapshotListener { snapshot, error in
+            MainActor.assumeIsolated {
+                if let error { return print("CloudSync: claimReviews listener: \(error.localizedDescription)") }
+                if let snapshot { ClaimReviews.shared.receive(snapshot.documents) }
+            }
+        }
+        listeners.append(registration)
+    }
+
     private func listenDirectory() {
         guard external == nil else { return TeamDirectory.shared.clear() }
         let me = MemberRole.shared.permissions.email
@@ -683,7 +819,7 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    /// `config/app`, set in the Firebase console: `centerDriveFolder` and `driveShareWith` (`DriveConfig`),
+    /// `config/app`, set in the Firebase console: `centerDriveFolder`, `driveShareWith` and `claimShareWith` (`DriveConfig`),
     /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
     /// once every device runs this version: the jobs are then sent again without their phone and address.
     private func listenConfig() {
@@ -693,7 +829,8 @@ final class CloudSync {
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
                 // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
                 DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
-                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [])
+                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [],
+                                claimShareWith: snapshot?.get("claimShareWith") as? [String] ?? [])
                 // a build the console has let through again sends what waited
                 if AppGate.shared.update(minimum: (snapshot?.get("minSyncVersion") as? NSNumber)?.intValue,
                                          installLink: snapshot?.get("installLink") as? String) {

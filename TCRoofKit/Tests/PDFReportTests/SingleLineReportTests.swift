@@ -22,6 +22,30 @@ final class SingleLineReportTests: XCTestCase {
         let page = ReportLayout(job: SingleLineTestsFixture.job()).singleLinePage()
         XCTAssertFalse(page.ops.isEmpty)
     }
+
+    /// Level 2 (detailed MDP) reaches the A3 page through the shared layout: feeder cable rotated, SPARE, load name,
+    /// busbar, ground rod and the notes under the diagram, all on the one page.
+    func testLevel2OnThePage() {
+        var job = SingleLineTestsFixture.job()
+        var trs = job.values.transformers("trafos")
+        var b = trs[0].boards
+        b[0].busbar = "4x300A. Cu. BUSBAR W/GROUND BUS"; b[0].ground = "1x35-IEC01 ø20 PVC."
+        var lc = Breaker(at: "100", af: "100", ic: "25", poles: "3P", brand: "LS")
+        lc.cable = "4x50,1x10-IEC01"; lc.conduit = "ø50mm. UPVC"; lc.load = "LC11"; lc.floor = "1st FL."
+        var spare = Breaker(at: "30", af: "100", ic: "25", poles: "3P", brand: "LS"); spare.spare = true
+        b[0].breakers = [lc, spare]
+        trs[0].setBoards(b)
+        job.values["trafos"] = .transformers(trs)
+        let page = ReportLayout(job: job).singleLinePage()
+        XCTAssertEqual(page.width, ReportLayout.a3W, accuracy: 0.01)
+        let texts = page.ops.compactMap { op -> (String, Double)? in if case let .text(t, _, _, _, _, _, a) = op { return (t, a) }; return nil }
+        XCTAssertTrue(texts.contains { $0.0 == "4x50,1x10-IEC01, ø50mm. UPVC" && $0.1 == -90 })
+        for s in ["SPARE", "LC11", "(1st FL.)", "4x300A. Cu. BUSBAR W/GROUND BUS", "GROUND ROD"] { XCTAssertTrue(texts.contains { $0.0 == s }, s) }
+        XCTAssertTrue(texts.contains { $0.0.hasPrefix("• กระแสพิกัดหม้อแปลง TX1 630 kVA") })
+        XCTAssertTrue(texts.contains { $0.0.contains("ตรวจพิกัดบัสบาร์กับวิศวกร") })
+        // everything stays on the page
+        for op in page.ops { if case let .text(_, at, _, _, _, _, _) = op { XCTAssertTrue(at.x >= 0 && at.x <= page.width && at.y >= 0 && at.y <= page.height) } }
+    }
 }
 
 enum SingleLineTestsFixture {
@@ -55,7 +79,7 @@ final class BuildingPanelReportTests: XCTestCase {
             default: return nil
             }
         }
-        XCTAssertTrue(texts.contains("จุดเชื่อมต่อ PV · ช่องว่าง 2 ช่อง"), "\(texts)")
-        XCTAssertTrue(texts.contains { $0.contains("MDP-1 · CB1 · 400 AT") }, "\(texts)")
+        XCTAssertTrue(texts.contains("จุดเชื่อมต่อ PV | ช่องว่าง 2 ช่อง"), "\(texts)")
+        XCTAssertTrue(texts.contains { $0.contains("MDP-1 | CB1 | 400 AT") }, "\(texts)")
     }
 }

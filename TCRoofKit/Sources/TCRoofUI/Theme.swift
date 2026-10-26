@@ -143,6 +143,8 @@ public enum Theme {
     public static let installSunday = Color(light: 0xF8FAFC, dark: 0x18212C)
     /// A planned sub-task bar.
     public static let installPlanned = Color(light: 0xAFC0D4, dark: 0x4A5D74)
+    /// A stage's baseline line under its bar.
+    public static let installBaseline = Color(light: 0x6B7A8F, dark: 0x8A9AB0)
     // iPhone survey list (docs/ui/tcroof-survey-list-iphone)
     /// `TCSegmented(.filter)` track and the search field's ✕ circle.
     public static let segmentTrack = Color(light: 0xEEF2F7, dark: 0x1C2734)

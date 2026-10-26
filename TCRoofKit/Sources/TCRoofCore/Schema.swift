@@ -21,6 +21,9 @@ public enum FieldKind: Sendable {
     case plan(tank: Bool)
     /// Roof-frame diagram with components 1–7.
     case diagram
+    /// The roof framing section drawn from the section's measured sizes and heights (C2, C3:
+    /// `MeasuredRoofSection`); nothing is stored.
+    case roofSection
     case note(String)
 }
 
@@ -40,13 +43,16 @@ public struct FieldSpec: Identifiable, Sendable {
     public let kind: FieldKind
     public let optional: Bool
     public let visibleWhen: (@Sendable (Values) -> Bool)?
-    public init(_ id: String, _ label: String, _ kind: FieldKind, optional: Bool = false, when: (@Sendable (Values) -> Bool)? = nil) {
-        self.id = id; self.label = label; self.kind = kind; self.optional = optional; self.visibleWhen = when
+    /// Photos a `.photos` field needs to count as filled (D1's two roof photos).
+    public let minPhotos: Int
+    public init(_ id: String, _ label: String, _ kind: FieldKind, optional: Bool = false, minPhotos: Int = 1,
+                when: (@Sendable (Values) -> Bool)? = nil) {
+        self.id = id; self.label = label; self.kind = kind; self.optional = optional; self.minPhotos = minPhotos; self.visibleWhen = when
     }
     public func isVisible(_ v: Values) -> Bool { visibleWhen?(v) ?? true }
     /// Counted in the progress of a section.
     public var countable: Bool {
-        switch kind { case .plan, .diagram, .note: return false; default: return true }
+        switch kind { case .plan, .diagram, .roofSection, .note: return false; default: return true }
     }
     public func isFilled(_ v: Values) -> Bool {
         guard let val = v[id] else { return false }
@@ -55,7 +61,7 @@ public struct FieldSpec: Identifiable, Sendable {
         case .choice(let s, _): return !s.isEmpty
         case .multi(let a): return !a.isEmpty
         case .photo: return true
-        case .photos(let a): return !a.isEmpty
+        case .photos(let a): return a.count >= max(1, minPhotos)
         case .obstacles(let a): return !a.isEmpty
         case .transformers(let a): return a.contains { !$0.kva.trimmingCharacters(in: .whitespaces).isEmpty }
         case .marks(let a): return !a.isEmpty
@@ -214,11 +220,11 @@ public enum Schema {
     public static let shadeDirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     /// D1 shading — only asks what/which side when something does shade the tank.
     @Sendable public static func shaded(_ v: Values) -> Bool { v.choice("shade") == "มี" }
-    /// "ชนิด ค.ส.ล. · บนดิน" — nil when neither is filled.
+    /// "ชนิด ค.ส.ล. | บนดิน" — nil when neither is filled.
     public static func tankKind(_ v: Values) -> String? {
         let t = v.choice("tankType").map { $0 == "อื่นๆ" ? v.other("tankType") : $0 } ?? "", p = v.choice("tankPos") ?? ""
         let parts = [t.isEmpty ? "" : "ถัง " + t, p].filter { !$0.isEmpty }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        return parts.isEmpty ? nil : parts.joined(separator: " | ")
     }
     /// "เงาบัง: ต้นไม้, อาคาร ทิศ S, SW (สูง ~8 ม.)" / "ไม่มีเงาบัง" / nil when not answered.
     public static func shadeText(_ v: Values) -> String? {
@@ -227,7 +233,8 @@ public enum Schema {
         case "มี"?:
             let from = v.multi("shadeFrom").joined(separator: ", "), dir = v.multi("shadeDir").joined(separator: ", ")
             let note = v.text("shadeNote").trimmingCharacters(in: .whitespaces)
-            return "เงาบัง" + (from.isEmpty ? "" : ": " + from) + (dir.isEmpty ? "" : " ทิศ " + dir) + (note.isEmpty ? "" : " (\(note))")
+            let h = v.number(TankShade.Key.height).map { " สูง \(fmt($0)) ม." } ?? "", d = v.number(TankShade.Key.distance).map { " ห่าง \(fmt($0)) ม." } ?? ""
+            return "เงาบัง" + (from.isEmpty ? "" : ": " + from) + (dir.isEmpty ? "" : " ทิศ " + dir) + h + d + (note.isEmpty ? "" : " (\(note))")
         default: return nil
         }
     }
@@ -313,7 +320,7 @@ public enum Schema {
                                     + [("frameType", "ชนิดโครงหลังคา"), ("ridgeDir", "แนวสันหลังคา"), ("trussBays", "ช่องโครงถักต่อข้าง"), ("postGrid", "เสาที่แก้ในแปลน"),
                                        ("pvOrientation", "แนวแผงในแปลนจัดแผง"), ("roofShots", "มุมภาพหลังคา"), ("eaveOverhang", "ชายคา (ม.)"), ("clearHeight", "ความสูงใต้ขื่อ (ม.)"),
                                        ("purlinSpacing", "ระยะแป (ม.)"), ("roofStd", "หลังคามาตรฐาน"), ("pvRows", "แถวต่อชุด"), ("pvPerTable", "แผงต่อชุด"),
-                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)")]
+                                       ("pvGap", "ระยะห่างระหว่างชุด (ม.)"), ("ridgeHeight", "ความสูงสันหลังคา (ม.)"), ("planBearing", "ทิศของขอบบนแปลน (°)"), ("pvMount", "ผังแผงบนหลังคา"), ("shedLow", "ด้านต่ำของหลังคาเพิง")]
                                         .map { T($0.0, $0.1, optional: true, when: { _ in false }) }),
             GroupSpec("รูปแบบหลังคา", [C("roofShape", "**1. รูปแบบหลังคา", Options.roofShape, other: true), C("roofMaterial", "**2. วัสดุมุงหลังคา", Options.roofMaterial, other: true),
                                      C("roofStructure", "**3. ชนิดโครงสร้างหลังคา", Options.structure)]),
@@ -330,9 +337,17 @@ public enum Schema {
             GroupSpec("เงาบัง", [C("shade", "มีเงาบังพื้นที่ติดตั้งหรือไม่", ["ไม่มี", "มี"]),
                                FieldSpec("shadeFrom", "สิ่งที่บัง", .checks(shadeSources), when: shaded),
                                FieldSpec("shadeDir", "ทิศที่เงาบัง", .checks(shadeDirs), when: shaded),
+                               // for the shade simulation (`TankShade`); optional, so completion counts as before
+                               N(TankShade.Key.height, "ความสูงสิ่งที่บัง (จากพื้นดิน)", "M", optional: true, when: shaded),
+                               N(TankShade.Key.distance, "ห่างผนังถัง", "M", optional: true, when: shaded),
                                T("shadeNote", "รายละเอียด (ระยะห่าง / ความสูงโดยประมาณ)", "เช่น ต้นไม้สูง ~8 ม. ห่าง 5 ม.", optional: true, when: shaded)]),
             GroupSpec("ภาพถ่าย", [FieldSpec("obstPhotos", "ภาพสิ่งกีดขวาง (ภาพแรกลงกรอบใหญ่ \"สำหรับวาดขนาดของสิ่งกีดขวาง\")", .photos(max: 5)),
-                                P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 3))])]),
+                                P("aerialPhoto", "รูปมุมสูง / รูปโดรน"), FieldSpec("sidePhotos", "รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", .photos(max: 4)),
+                                // D1 sub-step 4's designed groups (docs/specs/tank-drawing-swift.md): the roof's overview and surface
+                                // and the cable route required (decided 2026-10-19), the shade photo optional
+                                FieldSpec(Tank.Key.roofPhotos, "หลังคาถัง (ภาพรวม + ผิวหลังคา)", .photos(max: 2), minPhotos: 2),
+                                P(Tank.Key.shadePhoto, "เงาบัง (ถ่ายจากกลางหลังคา)", optional: true),
+                                P(Tank.Key.cablePhoto, "ทางเดินสายไฟ (จากถังถึงห้อง Inverter)")])]),
         .sed: ModuleSpec(type: .sed, sheet: "บ่อตกตะกอน", label: "บ่อตกตะกอน", short: "บ่อตกตะกอน", reportTitle: "บ่อตกตะกอน", namePlaceholder: "เช่น บ่อ 1", groups: [
             GroupSpec("ภาพบ่อตกตะกอน (Google Earth/Google Map)", [FieldSpec("sitePhotos", "ภาพบ่อตกตะกอน", .photos(max: 6))]),
             GroupSpec("โครงสร้างบ่อตกตะกอน", [P("drawing", "*เขียนแบบบ่อพอสังเขป (ระบุจุด A–K)")] + Options.sedDims.map { N("dist\($0.0)", "\($0.0) — \($0.1)", "ซม.", optional: $0.0 > "F") }),
@@ -368,13 +383,14 @@ public enum Schema {
                 N("steelPurlinG", "แปเหล็ก ยาว g", "ซม.", when: isSteel), N("steelPurlinH", "แปเหล็ก ความยาวปีก h", "ซม.", when: isSteel),
                 N("prefabRafterLength", "แปสำเร็จรูป — ความยาวจันทัน", "ซม.", optional: true),
                 N("measH", "8. h: ระยะแนวระนาบจากปลายจันทันถึงเสา", "ซม."), N("measI1", "10. i1: จากพื้นดินถึงสันหลังคา", "ซม."),
-                N("measI2", "11. i2: จากพื้นดินถึงเชิงชายหลังคา", "ซม."), N("roofAngle", "12. มุมเอียงของหลังคา", "องศา")]),
+                N("measI2", "11. i2: จากพื้นดินถึงเชิงชายหลังคา", "ซม."), N("roofAngle", "12. มุมเอียงของหลังคา", "องศา"),
+                FieldSpec("roofSection", "รูปตัดโครงหลังคา (สร้างอัตโนมัติ)", .roofSection)]),
             GroupSpec(no: "14", "ร่างแบบหลังคาบ้านและตำแหน่งการวางแผง", [P("sketchPhoto", "ภาพร่าง")]),
             GroupSpec(no: "15", "ภาพถ่ายใต้หลังคา (เปิดฝ้า) หรือแบบแปลนหลังคา", [P("underRoofPhoto", "ภาพใต้หลังคา")]),
             GroupSpec(no: "16", "ภาพถ่ายมุมสูง / ภาพถ่ายดาวเทียม", [P("aerialPhoto", "ภาพมุมสูง")]),
             GroupSpec(no: "17", "ภาพถ่ายสถานที่ติดตั้ง", [P("photoFront", "17.1 ด้านหน้า"), P("photoBack", "17.2 ด้านหลัง"), P("photoLeft", "17.3 ด้านซ้าย"), P("photoRight", "17.4 ด้านขวา")]),
             GroupSpec(no: "18", "ภาพตำแหน่งติดตั้ง Inverter", [N("inverterCount", "จำนวนอินเวอร์เตอร์", "เครื่อง", optional: true),
-                FieldSpec("invNote", "", .note("*ต้องมีพื้นที่ ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร · กว้าง = 2 เมตร")),
+                FieldSpec("invNote", "", .note("*ต้องมีพื้นที่ ยาว = (1.5 × จำนวนอินเวอร์เตอร์) + 1.5 เมตร | กว้าง = 2 เมตร")),
                 P("inverterWidePhoto", "18 มุมกว้าง"), P("inverterClosePhoto", "18.1 ภาพใกล้")]),
             GroupSpec(no: "19", "ภาพถ่ายตู้ควบคุมไฟฟ้าหลัก", [P("mainPanelWide", "19 มุมกว้าง"), P("mainPanelOpen", "19.1 เปิดฝาตู้")]),
             GroupSpec(no: "20", "ภาพถ่ายเมนเบรกเกอร์", [P("breakerPhoto", "ภาพเมนเบรกเกอร์ (ขนาดจากข้อ 10)")]),
@@ -383,7 +399,10 @@ public enum Schema {
             GroupSpec(no: "23", "ภาพถ่ายบิลค่าไฟฟ้า", [T("userType", "ผู้ใช้ไฟประเภท"), T("caNo", "23.1 หมายเลขผู้ใช้ไฟฟ้า"), T("meterCode", "23.2 รหัสเครื่องวัด"), P("billPhoto", "ภาพบิลค่าไฟฟ้า")]),
             GroupSpec(no: "24", "ภาพถ่ายตำแหน่งกราวด์หลักดิน", [P("groundPhoto", "ภาพกราวด์หลักดิน (ถ้าถ่ายได้)", optional: true)])]),
         .roofForm: ModuleSpec(type: .roofForm, sheet: "หลังคาทั่วไป", label: "หลังคาอาคาร (แบบละเอียด)", short: "หลังคาอาคาร", reportTitle: "หลังคาอาคาร", namePlaceholder: "ชื่ออาคาร (ถ้ามี)", groups: [
-            GroupSpec("อาคาร", [N("floors", "อาคารสูง", "ชั้น"), N("buildingWidth", "ความกว้าง", "ซม."), N("buildingLength", "ความยาว", "ซม.")]),
+            GroupSpec("อาคาร", [N("floors", "อาคารสูง", "ชั้น"), N("buildingWidth", "ความกว้าง", "ซม."), N("buildingLength", "ความยาว", "ซม."),
+                                // optional, for the roof section (auto-drawing §4.4); completion is unchanged
+                                N("eaveHeight", "ความสูงชายคา (พื้น → ใต้ขื่อที่เสา)", "ม.", optional: true),
+                                N("ridgeHeight", "ความสูงสันหลังคา (พื้น → หลังคาที่สัน)", "ม.", optional: true)]),
             GroupSpec(no: "1", "รูปแบบหลังคา", [C("roofShape", "รูปแบบหลังคา", Options.roofShape, other: true)]),
             GroupSpec(no: "2", "วัสดุมุงหลังคา", [C("roofMaterial", "วัสดุมุงหลังคา", Options.roofMaterial, other: true)]),
             GroupSpec(no: "4", "ชนิดโครงสร้างหลังคา", [C("roofStructure", "ชนิดโครงสร้าง", Options.structure)]),
@@ -395,7 +414,8 @@ public enum Schema {
             GroupSpec("โครงสร้างหลังคา", [P("sketchPhoto", "*เขียนแบบโครงสร้างหลังคาพอสังเขป"), FieldSpec("diag", "แนะนำองค์ประกอบของหลังคา", .diagram)]
                       + Options.components.enumerated().flatMap { i, c in [FieldSpec("size\(i + 1)", "\(c) — ขนาด g x f x h (ซม.)", .pick(list: .roofSizeCm, unit: "ซม."), optional: true),
                                                                         FieldSpec("space\(i + 1)", "\(c) — ระยะห่าง", .pick(list: .spacingCm, unit: "ซม."), optional: true)] }
-                      + [C("structMaterial", "ลักษณะวัสดุโครงสร้างหลังคา", Options.structMaterial)]),
+                      + [C("structMaterial", "ลักษณะวัสดุโครงสร้างหลังคา", Options.structMaterial),
+                         FieldSpec("roofSection", "รูปตัดโครงหลังคา (สร้างอัตโนมัติ)", .roofSection)]),
             GroupSpec("ภาพถ่าย", [P("underRoofPhoto", "ภาพถ่ายใต้หลังคา (เปิดฝ้า)"), P("aerialPhoto", "ภาพถ่ายมุมสูง / ดาวเทียม"),
                                 P("photoFront", "ด้านหน้า"), P("photoBack", "ด้านหลัง"), P("photoLeft", "ด้านซ้าย"), P("photoRight", "ด้านขวา")])]),
     ]

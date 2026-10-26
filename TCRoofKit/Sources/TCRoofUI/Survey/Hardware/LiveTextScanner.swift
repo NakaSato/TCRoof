@@ -21,9 +21,9 @@ enum PlateKind {
 
     var hint: String {
         switch self {
-        case .single(.kva), .transformer: return "ส่องป้ายพิกัดหม้อแปลง · แตะบรรทัดที่ต้องการอ่าน"
-        case .single(.breakerAT): return "ส่องป้ายเบรกเกอร์ · แตะบรรทัดที่มีค่า In หรือ AT"
-        case .single(.meterNumber): return "ส่องหน้ามิเตอร์ · แตะหมายเลขมิเตอร์"
+        case .single(.kva), .transformer: return "ส่องป้ายพิกัดหม้อแปลง | แตะบรรทัดที่ต้องการอ่าน"
+        case .single(.breakerAT): return "ส่องป้ายเบรกเกอร์ | แตะบรรทัดที่มีค่า In หรือ AT"
+        case .single(.meterNumber): return "ส่องหน้ามิเตอร์ | แตะหมายเลขมิเตอร์"
         }
     }
 }
@@ -97,7 +97,7 @@ struct NameplateScannerView: View {
     @ViewBuilder private var panel: some View {
         VStack(spacing: 12) {
             if unavailable {
-                Text("ใช้กล้องไม่ได้ · อนุญาตการใช้กล้องใน การตั้งค่า แล้วลองใหม่").multilineTextAlignment(.center)
+                Text("ใช้กล้องไม่ได้ | อนุญาตการใช้กล้องใน การตั้งค่า แล้วลองใหม่").multilineTextAlignment(.center)
             } else if found.isEmpty {
                 Text(kind.hint).multilineTextAlignment(.center).foregroundStyle(Theme.inkMuted)
             } else if case .single = kind, let f = found.first {
@@ -247,7 +247,7 @@ public enum PlatePhotoReader {
     }
 }
 
-/// "พบในรูปป้าย: 630 kVA · Dyn11 · ใช้ค่านี้?": values the transformer's nameplate photo shows that its fields don't
+/// "พบในรูปป้าย: 630 kVA | Dyn11 | ใช้ค่านี้?": values the transformer's nameplate photo shows that its fields don't
 /// have yet. Shown once per photo; ไม่ใช่ hides it until another photo is taken.
 struct PlatePhotoSuggestion: View {
     let photo: Photo
@@ -270,7 +270,7 @@ struct PlatePhotoSuggestion: View {
             if dismissed != photo.id, !fresh.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "text.viewfinder").foregroundStyle(Theme.primary)
-                    Text("พบในรูปป้าย: " + fresh.map(\.display).joined(separator: " · ")).font(.sarabunFixed(14, .semibold))
+                    Text("พบในรูปป้าย: " + fresh.map(\.display).joined(separator: " | ")).font(.sarabunFixed(14, .semibold))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Button("ไม่ใช่") { dismissed = photo.id }.frame(minHeight: 44)
                     Button("ใช้ค่านี้") { apply(fresh); dismissed = photo.id }.bold().frame(minHeight: 44)

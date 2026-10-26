@@ -54,9 +54,9 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// Today is selected at first; an install row opens its station; the week arrows move the strip.
     func testAgendaRow() {
         let app = launch("schedule")
-        let row = button(app, "CONTAINS", " · ติดตั้ง · ")
+        let row = button(app, "CONTAINS", " | ติดตั้ง | ")
         XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station is in its install window today")
-        let today = button(app, "CONTAINS", " · วันนี้ · ")
+        let today = button(app, "CONTAINS", " | วันนี้ | ")
         XCTAssertTrue(today.isSelected, "today is selected at first")
         // the first install row can be an earlier day's: the list scrolls back to it, which selects that day
         row.tap()
@@ -72,7 +72,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// The agenda filter: a type with no row leaves every day's `ไม่มีงานในตัวกรองนี้`, and its chip brings the rows back.
     func testAgendaFilter() {
         let app = launch("schedule")
-        let row = button(app, "CONTAINS", " · ติดตั้ง · ")
+        let row = button(app, "CONTAINS", " | ติดตั้ง | ")
         XCTAssertTrue(row.waitForExistence(timeout: slow))
         button(app, "BEGINSWITH", "กรองตารางงาน").tap()
         let inspection = button(app, "BEGINSWITH", "ตรวจรับ ")
@@ -91,7 +91,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// list on moves the selection to a later day.
     func testCalendarAndDayList() {
         let app = launch("schedule")
-        let today = button(app, "CONTAINS", " · วันนี้ · ")
+        let today = button(app, "CONTAINS", " | วันนี้ | ")
         XCTAssertTrue(today.waitForExistence(timeout: slow))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "สัปดาห์ที่ ")).firstMatch.exists)
         app.buttons["เดือน"].firstMatch.tap()
@@ -108,7 +108,7 @@ final class PhonePWAPlanUITests: XCTestCase {
 
         app.buttons["สัปดาห์"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["งานสัปดาห์นี้"].waitForExistence(timeout: 8))
-        let cells = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND (label CONTAINS %@ OR label ENDSWITH %@)", "วัน", " ประเภทงาน", " · ไม่มีงาน"))
+        let cells = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND (label CONTAINS %@ OR label ENDSWITH %@)", "วัน", " ประเภทงาน", " | ไม่มีงาน"))
         XCTAssertEqual(cells.count, 7)
         // a day that is not today: the first or the second of the week
         let other = cells.element(boundBy: 0).isSelected ? cells.element(boundBy: 1) : cells.element(boundBy: 0)
@@ -123,7 +123,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// A Gantt row opens the station's MP plan.
     func testGanttRow() {
         let app = launch("mp")
-        let row = button(app, "CONTAINS", " · ส่งมอบ ")
+        let row = button(app, "CONTAINS", " | ส่งมอบ ")
         XCTAssertTrue(row.waitForExistence(timeout: slow))
         row.tap()
         let plan = app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "แผนงาน MP")).firstMatch
@@ -134,7 +134,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// The overdue handover opens its station, and the menu's `ยื่นเอกสาร` takes it off the list.
     func testDeadline() {
         let app = launch("due")
-        let row = button(app, "CONTAINS", " · ส่งมอบงาน")
+        let row = button(app, "CONTAINS", " | ส่งมอบงาน")
         XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station is past its handover")
         row.tap()
         XCTAssertTrue(app.staticTexts["ข้อมูลลูกค้า"].waitForExistence(timeout: 8), "a handover should open the station")
@@ -151,7 +151,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// An overdue submission opens the station's papers.
     func testDocumentDeadline() {
         let app = launch("due")
-        let row = button(app, "CONTAINS", " · ยื่น")
+        let row = button(app, "CONTAINS", " | ยื่น")
         XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station has a submission past its planned day")
         row.tap()
         XCTAssertTrue(app.navigationBars["เอกสารสถานี กปภ."].waitForExistence(timeout: 8), "a submission should open the station's papers")
@@ -161,7 +161,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     /// Today's 16:00 reminder opens the daily reports of a station that hasn't sent one.
     func testReportReminder() {
         let app = launch("schedule")
-        let row = button(app, "CONTAINS", " · ส่งรายงานประจำวันก่อน 18:00 · ")
+        let row = button(app, "CONTAINS", " | ส่งรายงานประจำวันก่อน 18:00 | ")
         XCTAssertTrue(row.waitForExistence(timeout: slow), "a seeded station is being installed and has no report today")
         for _ in 0..<4 where !row.isHittable { app.swipeUp() }
         row.tap()

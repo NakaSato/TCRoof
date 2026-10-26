@@ -1,6 +1,6 @@
 import Foundation
 
-/// Step 2 of the IEC test, `ก่อนออน · แรงดัน / กระแส` (docs/ui/iec62446-step2-before-vi-ipad): each string's Voc against
+/// Step 2 of the IEC test, `ก่อนออน | แรงดัน / กระแส` (docs/ui/iec62446-step2-before-vi-ipad): each string's Voc against
 /// the median of the strings with as many modules, its open-circuit current (0 A before the grid connection), its
 /// polarity (from the Voc's sign unless set by hand), and where its values and photos go in Excel and the report.
 public extension IECReport {
@@ -38,8 +38,9 @@ public extension IECReport {
         if vocPasses(inv, slot: slot) == false, let v = s.vocV, let d = vocDeviation(inv, slot: slot) {
             out.append("Voc \(String(format: "%.1f", v)) V ต่างจากมัธยฐาน \(Self.signedPercent(d)) (เกณฑ์ ±\(Int(Self.vocTolerance * 100))%)")
         }
-        if let a = s.iBeforeA, !Self.currentPassesBefore(a) { out.append("กระแส \(String(format: "%.2f", a)) A · ก่อนออนต้องเป็น 0 A") }
+        if let a = s.iBeforeA, !Self.currentPassesBefore(a) { out.append("กระแส \(String(format: "%.2f", a)) A | ก่อนออนต้องเป็น 0 A") }
         if s.polarityOK == false { out.append("ขั้วสายกลับ") }
+        if let p = parallelFailure(inv, slot: slot) { out.append(p) }
         return out
     }
 
@@ -117,7 +118,7 @@ public extension IECReport {
 
 // MARK: - After the connection (step 4)
 
-/// Step 4, `หลังออน · แรงดัน / กระแส` (docs/ui/iec62446-step4-after-vi-ipad): Vmp against the median of the strings
+/// Step 4, `หลังออน | แรงดัน / กระแส` (docs/ui/iec62446-step4-after-vi-ipad): Vmp against the median of the strings
 /// with as many modules, as Voc before; Imp is recorded with no pass or fail; there is no polarity.
 public extension IECReport {
     /// How far a string's Vmp is from the median Vmp of the inverter's strings with as many modules; nil without a

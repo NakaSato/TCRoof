@@ -74,10 +74,10 @@ public enum RoutineReport {
                 .joined(separator: "|")
         }
 
-        /// "2.1 ติดตั้งโครงสร้าง… · หลังคา 1", or the description alone.
+        /// "2.1 ติดตั้งโครงสร้าง… | หลังคา 1", or the description alone.
         public var title: String {
             let what = description.isEmpty ? (task?.title ?? "งานอื่น") : description
-            return location.isEmpty ? what : what + " · " + location
+            return location.isEmpty ? what : what + " | " + location
         }
     }
 
@@ -88,8 +88,24 @@ public enum RoutineReport {
         public var closed = false
         /// The day it was first reported; open problems carry to the next day with it.
         public var since: Date
-        public init(description: String = "", solution: String = "", closed: Bool = false, since: Date) {
+        /// The progress line it was raised under (`ProgressLine.key`), on the iPad one-page report; nil for one raised
+        /// elsewhere or before this field. The PDF's problem table doesn't use it.
+        public var lineKey: String?
+        public init(description: String = "", solution: String = "", closed: Bool = false, since: Date, lineKey: String? = nil) {
             self.description = description; self.solution = solution; self.closed = closed; self.since = since
+            self.lineKey = lineKey
+        }
+
+        enum CodingKeys: String, CodingKey { case id, description, solution, closed, since, lineKey }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+            solution = try c.decodeIfPresent(String.self, forKey: .solution) ?? ""
+            closed = try c.decodeIfPresent(Bool.self, forKey: .closed) ?? false
+            since = try c.decode(Date.self, forKey: .since)
+            lineKey = try c.decodeIfPresent(String.self, forKey: .lineKey)
         }
     }
 
@@ -110,11 +126,14 @@ public enum RoutineReport {
         public var problems: [Problem] = []
         /// Why there is no progress today (หยุดงาน); answers the "no progress" warning.
         public var stopReason = ""
+        /// The module installation checklist of ZNSHINE's manual (`ModuleRules.InstallDailyCheck`, JSON), on days with
+        /// module work; nil otherwise, so a report without one encodes as before (docs/specs/module-install-rules.md §7.3).
+        public var moduleCheck: String?
 
         public init(date: Date) { self.date = RoutineReport.calendar.startOfDay(for: date) }
 
         enum CodingKeys: String, CodingKey {
-            case date, workStart, workEnd, weather, crew, crewConfirmed, tools, materials, progress, problems, stopReason
+            case date, workStart, workEnd, weather, crew, crewConfirmed, tools, materials, progress, problems, stopReason, moduleCheck
         }
 
         public init(from decoder: Decoder) throws {
@@ -132,6 +151,7 @@ public enum RoutineReport {
             progress = try c.decodeIfPresent([ProgressLine].self, forKey: .progress) ?? []
             problems = try c.decodeIfPresent([Problem].self, forKey: .problems) ?? []
             stopReason = try c.decodeIfPresent(String.self, forKey: .stopReason) ?? ""
+            moduleCheck = try c.decodeIfPresent(String.self, forKey: .moduleCheck)
         }
 
         public var crewTotal: Int { crew.reduce(0) { $0 + $1.count } }
@@ -259,8 +279,35 @@ public enum RoutineReport {
         public var location = ""
         public var qty: Double = 0
         public var unit = ""
-        public init(task: MasterSchedule.Task?, description: String, location: String = "", qty: Double = 0, unit: String = "") {
+        /// The days of the week it is asked for, 0 = Monday … 5 = Saturday (`WeeklyRequest.date(ofDay:)`); empty = no day
+        /// yet. Older requests have none.
+        public var days: [Int] = []
+        public init(task: MasterSchedule.Task?, description: String, location: String = "", qty: Double = 0, unit: String = "",
+                    days: [Int] = []) {
             self.task = task; self.description = description; self.location = location; self.qty = qty; self.unit = unit
+            self.days = days
+        }
+
+        enum CodingKeys: String, CodingKey { case id, task, description, location, qty, unit, days }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            task = try c.decodeIfPresent(MasterSchedule.Task.self, forKey: .task)
+            description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+            location = try c.decodeIfPresent(String.self, forKey: .location) ?? ""
+            qty = try c.decodeIfPresent(Double.self, forKey: .qty) ?? 0
+            unit = try c.decodeIfPresent(String.self, forKey: .unit) ?? ""
+            days = try c.decodeIfPresent([Int].self, forKey: .days) ?? []
+        }
+
+        /// As before for a line with no day: `days` is left out while empty.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(id, forKey: .id); try c.encodeIfPresent(task, forKey: .task)
+            try c.encode(description, forKey: .description); try c.encode(location, forKey: .location)
+            try c.encode(qty, forKey: .qty); try c.encode(unit, forKey: .unit)
+            if !days.isEmpty { try c.encode(days, forKey: .days) }
         }
     }
 
@@ -278,11 +325,13 @@ public enum RoutineReport {
         /// the team. Nil: a draft, or sent back.
         public var sentAt: Date?
         public var sentBy = ""
+        /// Roles off on a day: `"<crew index>-<day>"` (`offKey`). Empty for older requests.
+        public var crewOff: [String] = []
 
         public var id: String { MasterSchedule.Actual.key(weekStart) }
         public init(weekStart: Date) { self.weekStart = MasterSchedule.weekStart(weekStart) }
 
-        enum CodingKeys: String, CodingKey { case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy, sentAt, sentBy }
+        enum CodingKeys: String, CodingKey { case weekStart, crew, tools, work, risks, engineerSignedAt, approvedAt, approvedBy, sentAt, sentBy, crewOff }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -296,6 +345,17 @@ public enum RoutineReport {
             approvedBy = try c.decodeIfPresent(String.self, forKey: .approvedBy) ?? ""
             sentAt = try c.decodeIfPresent(Date.self, forKey: .sentAt)
             sentBy = try c.decodeIfPresent(String.self, forKey: .sentBy) ?? ""
+            crewOff = try c.decodeIfPresent([String].self, forKey: .crewOff) ?? []
+        }
+
+        /// As before for a request with no role off: `crewOff` is left out while empty.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(weekStart, forKey: .weekStart); try c.encode(crew, forKey: .crew); try c.encode(tools, forKey: .tools)
+            try c.encode(work, forKey: .work); try c.encode(risks, forKey: .risks)
+            try c.encodeIfPresent(engineerSignedAt, forKey: .engineerSignedAt); try c.encodeIfPresent(approvedAt, forKey: .approvedAt)
+            try c.encode(approvedBy, forKey: .approvedBy); try c.encodeIfPresent(sentAt, forKey: .sentAt); try c.encode(sentBy, forKey: .sentBy)
+            if !crewOff.isEmpty { try c.encode(crewOff, forKey: .crewOff) }
         }
 
         public enum Status: Sendable { case draft, sent, approved }
@@ -365,8 +425,8 @@ public enum RoutineReport {
 
     // MARK: Rules (§3)
 
-    static func day(_ d: Date) -> Date { calendar.startOfDay(for: d) }
-    static func add(_ d: Date, _ n: Int) -> Date { calendar.date(byAdding: .day, value: n, to: d)! }
+    public static func day(_ d: Date) -> Date { calendar.startOfDay(for: d) }
+    public static func add(_ d: Date, _ n: Int) -> Date { calendar.date(byAdding: .day, value: n, to: d)! }
 
     /// The line's % in the latest report before `date` that has it; 0 when none does.
     public static func previousPercent(_ line: ProgressLine, before date: Date, in reports: [Daily]) -> Double {
@@ -397,9 +457,11 @@ public enum RoutineReport {
         return d
     }
 
+    /// A day the station works: one of its weekdays, not one of its own days off, not a public holiday (`PublicHolidays`).
     public static func isWorkingDay(_ date: Date, settings: Settings) -> Bool {
-        settings.workingWeekdays.contains(calendar.component(.weekday, from: date))
-            && !settings.holidays.contains(dayKey(date))
+        let key = dayKey(date)
+        return settings.workingWeekdays.contains(calendar.component(.weekday, from: date))
+            && !settings.holidays.contains(key) && !PublicHolidays.days.contains(key)
     }
 
     /// Working days from `from` to `to` (both included) with no report.
@@ -491,10 +553,16 @@ public enum RoutineReport {
         var r = WeeklyRequest(weekStart: weekStart)
         let ws = r.weekStart, we = add(ws, 6)
         if let plan {
+            let first = WeeklyRequest.workingDays(settings).first ?? 0
             for p in plan where p.weight > 0 {
-                guard let s = p.start, let e = p.end, s <= we, e >= ws else { continue }
-                if actual.done(p.task, through: we) >= p.weight - 1e-9 { continue }
-                r.work.append(PlanLine(task: p.task, description: p.task.title))
+                guard let s = p.start, let e = p.end else { continue }
+                if s <= we, e >= ws {
+                    if actual.done(p.task, through: we) >= p.weight - 1e-9 { continue }
+                    r.work.append(PlanLine(task: p.task, description: p.task.title, days: r.days(from: s, to: e, settings: settings)))
+                } else if e < ws, e >= add(ws, -7), p.task.part != .permit, actual.done(p.task, through: ws) < p.weight - 1e-9 {
+                    // behind the plan: it should have ended this week, so it carries over from the first working day
+                    r.work.append(PlanLine(task: p.task, description: p.task.title, days: [first]))
+                }
             }
         }
         r.crew = latest?.crew ?? settings.roles.map { Count(name: $0, count: 0) }

@@ -124,7 +124,7 @@ struct CompactJobCard<Destination: View, Status: View>: View {
     private var codeRow: some View {
         HStack(spacing: 6) {
             Text(job.code)
-            Text(verbatim: "·")
+            Text(verbatim: "|")
             Image(systemName: "bolt").font(.system(size: 11, weight: .medium))
             Text(job.capacityKW.kw)
         }

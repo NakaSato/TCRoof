@@ -5,9 +5,9 @@ public struct FieldChange: Hashable, Identifiable, Sendable {
     public enum Kind: Sendable { case changed, added, removed }
     /// scope|field|sub
     public let id: String
-    /// "A3 มิเตอร์ หม้อแปลง และตู้ MDB", "B1.2 ตู้ไฟฟ้า · โรงกรอง"
+    /// "A3 มิเตอร์ หม้อแปลง และตู้ MDB", "B1.2 ตู้ไฟฟ้า | โรงกรอง"
     public let group: String
-    /// Field label, with " · TR2" or " · สิ่งกีดขวาง 3" for a row inside a list.
+    /// Field label, with " | TR2" or " | สิ่งกีดขวาง 3" for a row inside a list.
     public let field: String
     /// The field id in its scope; "" for a section added, removed or renamed.
     public let fieldID: String
@@ -65,7 +65,7 @@ public enum FormDiff {
         for f in specs {
             if scope == nil && systemFields.contains(f.id) { continue }
             switch f.kind {
-            case .signature, .plan, .diagram, .note: continue
+            case .signature, .plan, .diagram, .roofSection, .note: continue
             default: break
             }
             let visA = f.isVisible(va), visB = f.isVisible(vb)
@@ -110,7 +110,7 @@ public enum FormDiff {
         let oldByID = Dictionary(a.enumerated().map { ($1.id, ($0, $1)) }, uniquingKeysWith: { x, _ in x })
         let newIDs = Set(b.map(\.id))
         for (i, e) in b.enumerated() {
-            let label = f.label + " · " + name(e, i)
+            let label = f.label + " | " + name(e, i)
             if let (_, o) = oldByID[e.id] {
                 let s = text(o), t = text(e)
                 if s != t { row(f, e.id.uuidString, label, .changed, s, t, nil, nil) }
@@ -119,7 +119,7 @@ public enum FormDiff {
             }
         }
         for (i, e) in a.enumerated() where !newIDs.contains(e.id) {
-            row(f, e.id.uuidString, f.label + " · " + name(e, i), .removed, text(e), "", nil, nil)
+            row(f, e.id.uuidString, f.label + " | " + name(e, i), .removed, text(e), "", nil, nil)
         }
     }
 
@@ -141,12 +141,12 @@ public enum FormDiff {
         let newIDs = Set(b.map(\.id))
         func name(_ m: MapMark) -> String { m.label.trimmed.isEmpty ? m.kind.paletteTitle : m.label }
         for m in b {
-            let label = f.label + " · " + name(m)
+            let label = f.label + " | " + name(m)
             guard let o = old[m.id] else { row(f, m.id.uuidString, label, .added, "", "เพิ่มสัญลักษณ์", nil, nil); continue }
             if o.value.trimmed != m.value.trimmed { row(f, m.id.uuidString + "|v", label, .changed, o.value, m.value, nil, nil) }
             if max(abs(o.x - m.x), abs(o.y - m.y)) > 0.02 { row(f, m.id.uuidString + "|xy", label, .changed, "ตำแหน่งเดิม", "ย้ายตำแหน่ง", nil, nil) }
         }
-        for m in a where !newIDs.contains(m.id) { row(f, m.id.uuidString, f.label + " · " + name(m), .removed, "มีสัญลักษณ์", "", nil, nil) }
+        for m in a where !newIDs.contains(m.id) { row(f, m.id.uuidString, f.label + " | " + name(m), .removed, "มีสัญลักษณ์", "", nil, nil) }
     }
 }
 

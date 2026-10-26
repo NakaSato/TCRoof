@@ -18,6 +18,13 @@ struct InstallStageSheet: View {
     var confirmation: MasterSchedule.Actual.Confirmation? = nil
     let close: () -> Void
     let openDaily: () -> Void
+    /// The task's WBS sub-tasks from the plan file, the other case's rows left out; empty for a plan without them.
+    var wbs: [MasterSchedule.WorkItem] = []
+    var ticks: [String: MasterSchedule.WBSTick] = [:]
+    var canTick = false
+    var canTakeBack: (MasterSchedule.WBSTick) -> Bool = { _ in false }
+    var toggleWBS: (MasterSchedule.WorkItem) -> Void = { _ in }
+    var setDocument: (MasterSchedule.WorkItem, String) -> Void = { _, _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -25,12 +32,18 @@ struct InstallStageSheet: View {
             if let confirmation { MPAssistantMark(confirmation: confirmation) }
             if row.overrunDays > 0 && row.status != .done { lateBox }
             if !row.subs.isEmpty { checklist }
+            if !wbs.isEmpty {
+                WBSChecklist(items: wbs, ticks: ticks, canTick: canTick, canTakeBack: canTakeBack, toggle: toggleWBS,
+                             setDocument: setDocument)
+            }
             footer
         }
         .padding(24)
-        .frame(width: 870)
+        .frame(maxWidth: 870)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+        // the phone's width less its margins
+        .padding(.horizontal, 12)
     }
 
     private var days: String {
@@ -38,7 +51,7 @@ struct InstallStageSheet: View {
         let n = (cal.dateComponents([.day], from: row.start, to: row.end).day ?? 0) + 1
         let range = row.start == row.end ? ThaiFormat.numericDate.string(from: row.start)
             : "\(ThaiFormat.dayMonth.string(from: row.start))–\(ThaiFormat.numericDate.string(from: row.end))"
-        return "ขั้นที่ \(index)/\(count) · \(range) · \(n) วัน"
+        return "ขั้นที่ \(index)/\(count) | \(range) | \(n) วัน"
     }
 
     private var head: some View {
@@ -67,28 +80,45 @@ struct InstallStageSheet: View {
         }
     }
 
+    /// One row on iPad; on a phone the cause chips go under the text, two by two when one row of them is too wide.
     private var lateBox: some View {
-        HStack(spacing: 10) {
-            Text("คาดว่าเกินแผน \(row.overrunDays) วัน · สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
-                .fixedSize()
-            Spacer(minLength: 4)
-            ForEach(MasterSchedule.LateCause.allCases, id: \.self) { c in
-                let on = cause == c
-                Button { setCause(on ? nil : c) } label: {
-                    Text(c.title).font(.sarabunFixed(14, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.dangerText)
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(on ? Theme.danger : Theme.surface, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.danger.opacity(on ? 0 : 0.45)))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("สาเหตุ " + c.title)
-                .accessibilityAddTraits(on ? .isSelected : [])
+        let label = Text("คาดว่าเกินแผน \(row.overrunDays) วัน | สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                label.fixedSize()
+                Spacer(minLength: 4)
+                causeChips
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                label
+                HStack(spacing: 8) { causeChips }
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                label
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) { causeChips }
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.danger.opacity(0.35)))
+    }
+
+    @ViewBuilder private var causeChips: some View {
+        ForEach(MasterSchedule.LateCause.allCases, id: \.self) { c in
+            let on = cause == c
+            Button { setCause(on ? nil : c) } label: {
+                Text(c.title).font(.sarabunFixed(14, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.dangerText)
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44)
+                    .background(on ? Theme.danger : Theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.danger.opacity(on ? 0 : 0.45)))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityLabel("สาเหตุ " + c.title)
+            .accessibilityAddTraits(on ? .isSelected : [])
+        }
     }
 
     private var checklist: some View {

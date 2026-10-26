@@ -75,11 +75,11 @@ struct IECStringGrid: View {
                                 case .performance: IECPerformancePage(job: job, inverter: index)
                                 case .conditions: IECConditionsPage(job: job)
                                 case .photos: IECStationPhotosPage(job: job)
-                                case .install: IECInstallPhotosPage(job: job)
+                                case .install: IECInstallPhotosPage(job: job, readOnly: report.isLocked)
                                 }
                             }
-                            // a closed test is read only; the side list still switches pages
-                            .disabled(report.isLocked)
+                            // a closed test is read only; the side list still switches pages (and report 9 still makes its PDF)
+                            .disabled(report.isLocked && page != .install)
                         }
                         .padding(20)
                     }
@@ -109,20 +109,20 @@ struct IECStringGrid: View {
     @ViewBuilder private func header(_ r: IECReport, _ inv: IECReport.Inverter, _ index: Int) -> some View {
         switch page {
         case .table:
-            IECHeader(title: "Inverter \(index + 1) · \(IECFormat.kW(inv.ratedKW))",
+            IECHeader(title: "Inverter \(index + 1) | \(IECFormat.kW(inv.ratedKW))",
                       subtitle: [inv.serial.isEmpty ? nil : "S/N " + inv.serial, "\(inv.strings.count) สตริง",
-                                 "\(IECFormat.number(r.installedKWp(inv))) kWp"].compactMap { $0 }.joined(separator: " · ")) {
+                                 "\(IECFormat.number(r.installedKWp(inv))) kWp"].compactMap { $0 }.joined(separator: " | ")) {
                 IECPhaseSwitch(phase: $phase)
             }
         case .performance:
-            IECHeader(title: "System Performance · Inverter \(index + 1)",
-                      subtitle: "หลังการเชื่อมต่อระบบ · \(IECFormat.number(r.installedKWp(inv))) kWp") { EmptyView() }
+            IECHeader(title: "System Performance | Inverter \(index + 1)",
+                      subtitle: "หลังการเชื่อมต่อระบบ | \(IECFormat.number(r.installedKWp(inv))) kWp") { EmptyView() }
         case .conditions:
             IECHeader(title: "สภาพการทดสอบและเครื่องมือ", subtitle: r.stationLine) { EmptyView() }
         case .photos:
             IECHeader(title: "ความเข้มแสงและภาพความร้อน", subtitle: r.stationLine) { EmptyView() }
         case .install:
-            IECHeader(title: "9 ภาพถ่ายติดตั้งระบบ", subtitle: "รายงานภาพถ่ายติดตั้งระบบผลิตไฟฟ้า · " + job.stationName) { EmptyView() }
+            IECHeader(title: "9 ภาพถ่ายติดตั้งระบบ", subtitle: "รายงานภาพถ่ายติดตั้งระบบผลิตไฟฟ้า | " + job.stationName) { EmptyView() }
         }
     }
 
@@ -158,7 +158,7 @@ struct IECStringGrid: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(r.inverters.enumerated()), id: \.offset) { i, inv in
-                    Text("Inverter \(i + 1) · \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
                         .padding(.top, i == 0 ? 0 : 12).padding(.horizontal, 8)
                     sideItem(i, .before, "ตารางสตริง ก่อนเชื่อมต่อ", r.tally(inv, .vocAndCurrent), r.tally(inv, .insulation))
                     sideItem(i, .after, "ตารางสตริง หลังเชื่อมต่อ", r.tally(inv, .vmpAndImp), nil)
@@ -245,7 +245,7 @@ struct IECStringGrid: View {
                 let outliers = r.vocOutliers(inv)
                 let worst = inv.strings.compactMap { r.vocDeviation(inv, slot: $0.slot) }.map(abs).max()
                 if !outliers.isEmpty {
-                    pill("Voc ต่างจากค่ากลางเกิน 5% · \(outliers.count) สตริง", .danger)
+                    pill("Voc ต่างจากค่ากลางเกิน 5% | \(outliers.count) สตริง", .danger)
                 } else if let worst {
                     pill("ต่างจากค่ากลางไม่เกิน \(IECFormat.number(worst * 100, digits: 1))%", .ok)
                 }
@@ -260,7 +260,7 @@ struct IECStringGrid: View {
                 pill(t.isComplete ? "✓ Vmp / Imp ครบ \(t.done)/\(t.total)" : "● Vmp / Imp ยังขาด \(t.total - t.done)", t.isComplete ? .ok : .warn)
             }
             Spacer(minLength: 8)
-            if !conditions.isEmpty { Text(conditions.joined(separator: " · ")).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
+            if !conditions.isEmpty { Text(conditions.joined(separator: " | ")).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
         }
     }
 
@@ -310,7 +310,7 @@ struct IECStringGrid: View {
             .padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
     }
 
-    /// `รายการ · MPPT 1 … 10` over `ช่อง String · 1 … 20`, on the sheet's green band.
+    /// `รายการ | MPPT 1 … 10` over `ช่อง String | 1 … 20`, on the sheet's green band.
     private var headerRows: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -452,7 +452,7 @@ struct IECStringGrid: View {
                     case .abnormal?: Text("Abnormal").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.dangerText)
                     case nil: Text("● ยังไม่ได้ตรวจ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningInk)
                     }
-                    if let note { Text("· " + note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    if let note { Text("| " + note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
                     Spacer()
                 }
                 .padding(.horizontal, 12).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -483,23 +483,23 @@ struct IECStringGrid: View {
         let close = { editing = nil }
         switch row {
         case .modules:
-            IECValueEditor(title: "จำนวนแผง · \(label)", unit: "แผง", initial: s.map { Double($0.modules) }, integer: true) { v in
+            IECValueEditor(title: "จำนวนแผง | \(label)", unit: "แผง", initial: s.map { Double($0.modules) }, integer: true) { v in
                 if let v, v > 0 { save { $0.slots[slot - 1]?.modules = Int(v) } }
                 close()
             }
         case .testV:
-            IECValueEditor(title: "Test Voltage · \(label)", unit: "V", initial: s?.irTestV.map(Double.init), integer: true) { v in
+            IECValueEditor(title: "Test Voltage | \(label)", unit: "V", initial: s?.irTestV.map(Double.init), integer: true) { v in
                 save { $0.slots[slot - 1]?.irTestV = v.map { Int($0) } }; close()
             }
         case .voltage:
             let before = phase == .before
-            IECValueEditor(title: (before ? "String Voltage (Voc) · " : "Vmp · ") + label, unit: "V", initial: before ? s?.vocV : s?.vmpV,
+            IECValueEditor(title: (before ? "String Voltage (Voc) | " : "Vmp | ") + label, unit: "V", initial: before ? s?.vocV : s?.vmpV,
                            hint: s.map { "คาดไว้ \($0.modules) แผง" }) { v in
                 save { if before { $0.slots[slot - 1]?.vocV = v } else { $0.slots[slot - 1]?.vmpV = v } }; close()
             }
         case .current:
             let before = phase == .before
-            IECValueEditor(title: (before ? "String Current · " : "Imp · ") + label, unit: "A", initial: before ? s?.iBeforeA : s?.impA,
+            IECValueEditor(title: (before ? "String Current | " : "Imp | ") + label, unit: "A", initial: before ? s?.iBeforeA : s?.impA,
                            hint: before ? "ก่อนเชื่อมต่อวงจรเปิด ค่า 0 A" : nil) { v in
                 save { if before { $0.slots[slot - 1]?.iBeforeA = v } else { $0.slots[slot - 1]?.impA = v } }; close()
             }
@@ -520,7 +520,7 @@ struct IECStringGrid: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let selected {
                     Text("ช่องเลือก: String \(selected) (MPPT \(IECReport.mppt(slot: selected)))" +
-                         (picked.map { " = ป้ายรูป " + IECReport.label(inverter: index + 1, seq: $0.seq) } ?? " · ไม่มีสตริง"))
+                         (picked.map { " = ป้ายรูป " + IECReport.label(inverter: index + 1, seq: $0.seq) } ?? " | ไม่มีสตริง"))
                         .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 } else {
                     Text("แตะช่องในตารางเพื่อเลือกสตริง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
@@ -618,7 +618,7 @@ struct IECInsulationEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Insulation Resistance · \(label)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text("Insulation Resistance | \(label)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
             HStack(spacing: 10) {
                 field("Positive – Earth", $pos).focused($focused)
                 field("Negative – Earth", $neg)

@@ -16,11 +16,18 @@ struct AssistantChatView: View {
     @State private var sending = false
     @State private var failure: String?
     @FocusState private var typing: Bool
+    /// A confirmed card that books a construction task at 100 % without its install photos, held while the warning asks.
+    @State private var photoCheck: [MPMissingPhotos] = []
+    @State private var photoCheckAction: Assistant.PendingAction?
     private let focus: Job?
     private let transport: Assistant.Transport
 
     /// Reads the stations for each tool call; filled once the view has its model context.
-    @MainActor final class Source { var read: @MainActor () -> [Assistant.Job] = { [] } }
+    @MainActor final class Source {
+        var read: @MainActor () -> [Assistant.Job] = { [] }
+        /// `get_project`'s facts of one station, built only when asked.
+        var project: @MainActor (Assistant.Job) -> Assistant.ProjectFacts? = { _ in nil }
+    }
 
     init(focus: Job? = nil) {
         self.focus = focus
@@ -36,7 +43,8 @@ struct AssistantChatView: View {
     }
 
     private static func makeSession(_ t: Assistant.Transport, focus: Job?, source: Source) -> Assistant.Session {
-        Assistant.Session(transport: t, focus: focus?.assistantJob(.team), jobs: { source.read() })
+        Assistant.Session(transport: t, focus: focus?.assistantJob(.team), jobs: { source.read() },
+                          project: { source.project($0) })
     }
 
     var body: some View {
@@ -48,7 +56,7 @@ struct AssistantChatView: View {
                             intro
                             ForEach(lines) { line in row(line) }
                             // confirmed only once the answer is done, so the note follows the model's words
-                            ForEach(session.proposals) { p in AssistantProposalCard(action: p, confirm: { resolve(p, true) },
+                            ForEach(session.proposals) { p in AssistantProposalCard(action: p, confirm: { confirm(p) },
                                                                                    dismiss: { resolve(p, false) }).disabled(sending) }
                             if sending { thinking }
                             if let failure { failureLine(failure) }
@@ -74,12 +82,20 @@ struct AssistantChatView: View {
                         .disabled(sending || lines.isEmpty)
                 }
             }
+            .mpMissingPhotos($photoCheck) {
+                if let a = photoCheckAction { resolve(a, true) }
+                photoCheckAction = nil
+            }
         }
         .onAppear {
             let context = self.context, permissions = self.permissions
             source.read = {
                 let library = StationDocsStore.loadLibrary()
-                return context.assistantStations().map { $0.assistantJob(permissions, library: library) }
+                return context.assistantProjects().map { $0.assistantJob(permissions, library: library) }
+            }
+            source.project = { job in
+                context.assistantProjects().first { $0.overviewID == job.id }
+                    .map { $0.assistantProject(library: StationDocsStore.loadLibrary()) }
             }
         }
     }
@@ -148,7 +164,7 @@ struct AssistantChatView: View {
 
     private var prompts: [String] {
         var p = ["สถานีไหนช้ากว่าแผน", "จัดลำดับความสำคัญทุกสถานี", "วางแผนเร่งงานให้ทันกำหนด",
-                 "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์"]
+                 "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์", "เอกสารและการทดสอบที่ค้าง"]
         if permissions.can(.mpProgress, on: focus?.access) { p.append("อัปเดตความก้าวหน้าจากรายงานประจำวัน") }
         if permissions.can(.mpSetup, on: focus?.access) { p.append("เสนอแผนใหม่ที่ทำได้จริง") }
         return p
@@ -195,8 +211,11 @@ struct AssistantChatView: View {
                 .accessibilityLabel("ส่ง")
             }
             if let n = session.remainingToday {
-                Text("วันนี้ใช้ได้อีก \(n) ครั้ง").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                Text("วันนี้ใช้ได้อีก \(n) คำถาม" + (session.servedBy.map { " | ตอบโดย " + $0 } ?? ""))
+                    .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                    .lineLimit(1).truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                    .accessibilityIdentifier("assistantServedBy")
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
@@ -218,6 +237,21 @@ struct AssistantChatView: View {
             defer { sending = false }
             do { try await session.send(t) } catch { failure = error.localizedDescription }
         }
+    }
+
+    /// `ยืนยัน`: as บันทึกความก้าวหน้า, a card bringing a construction task to 100 % while its install photos are missing
+    /// asks first (`บันทึกทั้งที่ยังไม่มีรูป`).
+    private func confirm(_ action: Assistant.PendingAction) {
+        if case let .progress(task, _, percent) = action.change, percent >= 99.95,
+           let job = context.assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput {
+            let weight = input.weight(task)
+            let done = (job.scheduleActual.points[task.rawValue] ?? [:]).values.reduce(0, +)
+            if weight > 0, done < weight - 1e-9 {
+                let list = MPMissingPhotos.list([task], job: job)
+                if !list.isEmpty { photoCheckAction = action; photoCheck = list; return }
+            }
+        }
+        resolve(action, true)
     }
 
     private func resolve(_ action: Assistant.PendingAction, _ confirmed: Bool) {

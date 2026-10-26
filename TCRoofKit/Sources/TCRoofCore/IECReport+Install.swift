@@ -1,8 +1,8 @@
 import Foundation
 
-/// IEC 62446 · 9 ภาพถ่ายติดตั้งระบบ: the photo report of the installation that goes to the hand-over as
+/// IEC 62446 | 9 ภาพถ่ายติดตั้งระบบ: the photo report of the installation that goes to the hand-over as
 /// `4. ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า.pdf` (`HandoverFolders`, `StationDocs` `install_photo_report`). Its pages follow the
-/// report as sent (the design canvas's `IECInstall1–12` and `iPad · IEC 62446 · 9`): two pages per roof, one per
+/// report as sent (the design canvas's `IECInstall1–12` and `iPad | IEC 62446 | 9`): two pages per roof, one per
 /// inverter, then ตู้ AC, ตู้ DC, Smart energy, กราวน์ DC, กราวน์ AC / Inverter Station and PQM. The pages are derived
 /// from the station's roofs (kept here) and inverters (step 1), so their number follows the job. An inverter's two
 /// photos are the front and S/N photos of step 1's add-inverter sheet, shared, not copied.
@@ -91,16 +91,16 @@ public extension IECReport {
         var out: [InstallPage] = []
         for roof in installPhotos.effectiveRoofs {
             let r = roof.id
-            out.append(InstallPage(id: r + ".a", title: roof.name + " (1/2)", group: roof.name, subtitle: "โครงสร้างรองรับ · 2 รูป", slots: [
+            out.append(InstallPage(id: r + ".a", title: roof.name + " (1/2)", group: roof.name, subtitle: "โครงสร้างรองรับ | 2 รูป", slots: [
                 InstallSlot(id: r + ".a0", caption: Self.installStructure, tip: "แนวรางและขาตั้ง มุมกว้างเห็นทั้งแถว", source: .own),
                 InstallSlot(id: r + ".a1", caption: Self.installStructure, tip: "ฐานและตัวยึด อีกมุมหนึ่ง", source: .own)]))
-            out.append(InstallPage(id: r + ".b", title: roof.name + " (2/2)", group: roof.name, subtitle: "โครงสร้าง · แผงเซลล์", slots: [
+            out.append(InstallPage(id: r + ".b", title: roof.name + " (2/2)", group: roof.name, subtitle: "โครงสร้าง | แผงเซลล์", slots: [
                 InstallSlot(id: r + ".b0", caption: Self.installStructure, tip: "โครงสร้างหลังวางแผง ด้านข้างหรือใต้แผง", source: .own),
                 InstallSlot(id: r + ".b1", caption: "ภาพถ่ายแผงเซลล์แสงอาทิตย์", tip: "แผงทั้งแถว มุมสูงหรือโดรน", source: .own)]))
         }
         for (i, inv) in inverters.enumerated() {
             let n = i + 1
-            let about = [inv.model, inv.serial.isEmpty ? nil : "S/N " + inv.serial].compactMap { $0 }.joined(separator: " · ")
+            let about = [inv.model, inv.serial.isEmpty ? nil : "S/N " + inv.serial].compactMap { $0 }.joined(separator: " | ")
             out.append(InstallPage(id: "inv\(n)", title: "Inverter No.\(n)", group: "", subtitle: about.isEmpty ? "รูปจากขั้น 1/7" : about, slots: [
                 InstallSlot(id: "inv\(n).front", caption: "ภาพถ่ายเครื่องแปลงไฟฟ้า Inverter", tip: "ด้านหน้า เห็นทั้งเครื่องและหน้าจอ",
                             source: .inverter(i, .front)),
@@ -120,12 +120,12 @@ public extension IECReport {
         page("se", "Smart energy", "ตู้อุปกรณ์ไหลย้อนกลับ", [
             ("ภาพถ่ายตู้อุปกรณ์ไหลย้อนกลับ Smart energy (ด้านนอก)", "ปิดฝา เห็นทั้งตู้"),
             ("ภาพถ่ายตู้อุปกรณ์ไหลย้อนกลับ Smart energy (ด้านใน)", "เปิดฝา เห็น Zero Export Controller และ CT")])
-        page("gdc", "กราวน์ DC", "สายดินด้านกระแสตรง · 1 รูป", [
+        page("gdc", "กราวน์ DC", "สายดินด้านกระแสตรง | 1 รูป", [
             ("ภาพถ่ายกราวน์กระแสตรง", "สายดินโครงสร้างและแผง เห็นจุดต่อ")])
-        page("gac", "กราวน์ AC / Inverter Station", "บาร์กราวด์ · อาคารอินเวอร์เตอร์", [
+        page("gac", "กราวน์ AC / Inverter Station", "บาร์กราวด์ | อาคารอินเวอร์เตอร์", [
             ("ภาพถ่ายกราวน์กระแสสลับ", "บาร์กราวด์ในตู้ เห็นสายและป้าย"),
             ("ภาพถ่าย Inverter Station", "ภายนอกอาคาร มุมกว้างเห็นทั้งหลัง")])
-        page("pqm", "PQM", "เครื่องวัดคุณภาพไฟฟ้า · 2 รูป", [
+        page("pqm", "PQM", "เครื่องวัดคุณภาพไฟฟ้า | 2 รูป", [
             ("ภาพถ่าย PQM", "เปิดฝา เห็นหน้าจอและการเดินสาย CT"),
             ("ภาพถ่าย PQM", "ตู้ PQM ภายนอก ปิดฝา")])
         return out

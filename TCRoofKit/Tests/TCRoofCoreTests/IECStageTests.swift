@@ -143,7 +143,7 @@ final class IECStageTests: XCTestCase {
         var closed = json
         closed["result"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(back.result!))
         let oldClosed = try JSONDecoder().decode(IECReport.self, from: JSONSerialization.data(withJSONObject: closed))
-        XCTAssertTrue(oldClosed.isLocked && !oldClosed.isAwaitingClose && oldClosed.lockedLine == "ปิดการทดสอบแล้ว · ดูได้อย่างเดียว")
+        XCTAssertTrue(oldClosed.isLocked && !oldClosed.isAwaitingClose && oldClosed.lockedLine == "ปิดการทดสอบแล้ว | ดูได้อย่างเดียว")
     }
 
     /// The contractor fills and sends; the internal team closes or sends back, like a daily report (fill, then sign).
@@ -156,7 +156,7 @@ final class IECStageTests: XCTestCase {
         XCTAssertEqual(r.submission?.submittedAt, sentAt)
         XCTAssertTrue(r.isLocked && r.isAwaitingClose)
         XCTAssertNil(r.result, "sending isn't closing: the MP plan doesn't count it")
-        XCTAssertEqual(r.lockedLine, "ส่งผลให้ทีมแล้ว · รอทีมภายในปิด · ดูได้อย่างเดียว")
+        XCTAssertEqual(r.lockedLine, "ส่งผลให้ทีมแล้ว | รอทีมภายในปิด | ดูได้อย่างเดียว")
         XCTAssertTrue(IECReport.Stage.allCases.allSatisfy(r.isConfirmed), "sending confirms every step")
         XCTAssertEqual(r.record(.setup)?.by, "หัวหน้างานผู้รับเหมา")
         XCTAssertFalse(r.submit(by: "หัวหน้างานผู้รับเหมา"), "sent once")

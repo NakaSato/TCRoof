@@ -86,7 +86,7 @@ struct SiteChangesPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             PermitSection(title: "ใบขอเปลี่ยนแปลงงาน",
-                          subtitle: "หน้างานไม่ตรงแบบ: เปิดใบก่อนลงมือ · รออนุมัติ \(home.site.pendingChanges.count) ใบ") {
+                          subtitle: "หน้างานไม่ตรงแบบ: เปิดใบก่อนลงมือ | รออนุมัติ \(home.site.pendingChanges.count) ใบ") {
                 TCButton("เปิดใบขอเปลี่ยนแปลง", systemImage: "plus", kind: .primary, size: .card) {
                     let c = HomeChange(number: home.site.nextChangeNumber, title: "")
                     home.site.changes.append(c)
@@ -131,7 +131,7 @@ struct SiteChangesPage: View {
         if c.priceDelta != 0 { p.append("ราคาลูกค้า " + BOQRenderer.money(c.priceDelta)) }
         if c.changesSize { p.append("เปลี่ยนขนาดระบบ") }
         if !c.decidedBy.isEmpty { p.append("โดย " + c.decidedBy) }
-        return p.joined(separator: " · ")
+        return p.joined(separator: " | ")
     }
 
     private func editor(_ id: String) -> some View {
@@ -193,7 +193,7 @@ struct SiteChangesPage: View {
         var site = job.site
         let sized = site.changes.first { $0.id == id }?.changesSize ?? false
         let errors = site.approve(id, by: approver, job: &job)
-        guard errors.isEmpty else { message = errors.joined(separator: " · "); return }
+        guard errors.isEmpty else { message = errors.joined(separator: " | "); return }
         job.site = site
         home = job
         message = sized ? "ขนาดระบบเปลี่ยนแล้ว: ร่าง BOQ ใหม่และออกชุดแบบ Rev.\(site.workOrder.revision) ก่อนลงมือ" : nil
@@ -227,7 +227,7 @@ struct SitePunchPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            PermitSection(title: "Punch list", subtitle: "เปิด \(home.site.openPunches.count) · ปิดแล้ว \(home.site.punches.count - home.site.openPunches.count)") {
+            PermitSection(title: "Punch list", subtitle: "เปิด \(home.site.openPunches.count) | ปิดแล้ว \(home.site.punches.count - home.site.openPunches.count)") {
                 TCButton("เพิ่มจุดที่ต้องแก้", systemImage: "plus", kind: .primary, size: .card) {
                     var p = HomePunch(title: "", raised: .now)
                     p.due = Calendar(identifier: .gregorian).date(byAdding: .day, value: 3, to: .now)

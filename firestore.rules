@@ -171,6 +171,17 @@ service cloud.firestore {
       allow read: if isMember();
       allow write: if isMaintainer();
     }
+    // The team's tank structure standard (`TankStandard`, tank.standard): every member reads it, a manager saves it,
+    // signed with their own email, and a save never goes back to an older revision. Never deleted.
+    match /config/tankStandard {
+      allow read: if isMember();
+      allow create, update: if isManager()
+        && request.resource.data.keys().hasOnly(['json', 'revision', 'savedBy', 'updatedAt'])
+        && request.resource.data.json is string && request.resource.data.json.size() < 20000
+        && request.resource.data.revision is int
+        && request.resource.data.savedBy == signedInEmail()
+        && (resource == null || request.resource.data.revision > resource.data.revision);
+    }
 
     // Jobs: the team reads and writes them; an external member reads their jobs and changes only the IEC test, while
     // it is open (`iecState`, written by the app beside the test). They may send it (`sent`), never close it: once
@@ -178,20 +189,22 @@ service cloud.firestore {
     match /jobs/{doc} {
       allow read: if isTeam() || readsMine();
       allow create: if isTeam();
-      // ลบงาน (job.delete) is the manager's only
-      allow delete: if isManager();
-      // A contractor changes only the IEC test (while it is open, and never closes it) and the weekly requests R1
-      // (weekly.request), signing the latter with their own email in `weeklyRequestsBy`: a rule can't read inside the
-      // JSON, so team devices drop a contractor's change to a week already sent or approved
-      // (RoutineReport.WeeklyRequest.trusting).
+      // ลบงาน (job.delete): the team and managers, never a contractor
+      allow delete: if isTeam();
+      // A contractor changes only the IEC test (while it is open, and never closes it), the weekly requests R1
+      // (weekly.request) and the plan's WBS ticks, signing the latter two with their own email in `weeklyRequestsBy` /
+      // `wbsTicksBy`: a rule can't read inside the JSON, so team devices drop a contractor's change to a week already
+      // sent or approved (RoutineReport.WeeklyRequest.trusting) and to a tick the team made (WBSTick.trusting).
       allow update: if isTeam()
         || (isExternal() && listsMe(resource.data)
-            && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy'])
+            && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy', 'wbsTicks', 'wbsTicksBy'])
             && (!changedKeys().hasAny(['iecReport', 'iecState'])
                 || (resource.data.get('iecState', 'open') == 'open'
                     && request.resource.data.get('iecState', null) in ['open', 'sent']))
             && (!changedKeys().hasAny(['weeklyRequests', 'weeklyRequestsBy'])
-                || request.resource.data.get('weeklyRequestsBy', null) == signedInEmail()));
+                || request.resource.data.get('weeklyRequestsBy', null) == signedInEmail())
+            && (!changedKeys().hasAny(['wbsTicks', 'wbsTicksBy'])
+                || request.resource.data.get('wbsTicksBy', null) == signedInEmail()));
     }
 
     // The customers' phones and addresses, one document per job: the team's only.
@@ -271,6 +284,60 @@ service cloud.firestore {
       allow delete: if isManager()
         || (isTeam() && !exists(/databases/$(database)/documents/pwaSurveys/$(doc.split('_')[0])));
       allow update: if isTeam() && request.resource.data.json == resource.data.json;
+    }
+
+    // The standard design library (docs/specs/standard-designs.md §2, `design.library`): every member reads the
+    // designs, only the team saves them, and an edit never goes back to an older revision. Never deleted (archived).
+    match /standardDesigns/{doc} {
+      allow read: if isMember();
+      allow create: if isTeam() && request.resource.data.revision is int;
+      allow update: if isTeam() && request.resource.data.revision is int
+        && request.resource.data.revision >= resource.data.revision;
+    }
+    // A design's scanned sheet, one JPEG page per document (base64 `data`, the design's id in `design`).
+    match /standardDesignSheets/{page} {
+      allow read: if isMember();
+      allow create, update: if isTeam() && request.resource.data.design is string && request.resource.data.data is string;
+    }
+
+    // The travel and expense log (docs/specs/calendar-travel-expenses-swift.md §B6): trips, expenses and monthly claims
+    // are personal. A team member reads and writes only their own (`ownerEmail` is their signed-in email, and can't be
+    // handed to someone else); a manager may read everyone's, to approve claims. External members have none.
+    function ownsTravel() {
+      return isTeam() && resource.data.ownerEmail == signedInEmail();
+    }
+    function keepsOwner() {
+      return isTeam() && request.resource.data.ownerEmail == signedInEmail()
+        && (resource == null || resource.data.ownerEmail == signedInEmail());
+    }
+    match /trips/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner();
+      allow delete: if ownsTravel();
+    }
+    match /expenses/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner() && request.resource.data.amount is int;
+      allow delete: if ownsTravel();
+    }
+    match /claims/{doc} {
+      allow read: if ownsTravel() || isManager();
+      allow create, update: if keepsOwner();
+      allow delete: if ownsTravel();
+    }
+    // A manager's decision on a submitted month (approved / returned), kept apart from the claim so its owner can't
+    // approve it: managers write it, never on their own claim, signed with their own email, one document per person
+    // and month (`<owner>_<month>`). The claimant reads theirs with the app's query.
+    match /claimReviews/{doc} {
+      allow read: if isManager() || (isTeam() && resource.data.ownerEmail == signedInEmail());
+      allow create, update: if isManager()
+        && request.resource.data.reviewedBy == signedInEmail()
+        && request.resource.data.ownerEmail is string
+        && request.resource.data.ownerEmail != signedInEmail()
+        && request.resource.data.decision in ['approved', 'returned']
+        && request.resource.data.submittedAt is int
+        && doc == request.resource.data.ownerEmail + '_' + request.resource.data.month;
+      allow delete: if false;
     }
 
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.

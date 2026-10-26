@@ -54,7 +54,7 @@ extension RoutineReport {
 
     // MARK: Quick picks
 
-    /// `+10% · +20% · +30% · +50% · เสร็จ` for a line at `before` %: the steps that still fit, then what is left (เสร็จ).
+    /// `+10% | +20% | +30% | +50% | เสร็จ` for a line at `before` %: the steps that still fit, then what is left (เสร็จ).
     /// Nothing once the line is done.
     public static func quickPicks(before: Double) -> [Double] {
         let left = 100 - min(max(before, 0), 100)
@@ -70,9 +70,9 @@ extension RoutineReport {
         public let hours: Int
         /// Rain slots inside the working time.
         public let rainHours: Int
-        /// คน·ชม.
+        /// คน-ชม.
         public var total: Int { people * hours }
-        /// คน·ชม. less the rain inside the working time.
+        /// คน-ชม. less the rain inside the working time.
         public var working: Int { people * max(hours - rainHours, 0) }
     }
 
@@ -159,5 +159,89 @@ extension RoutineReport {
             if isWorkingDay(d, settings: settings) { return d }
         }
         return nil
+    }
+
+    // MARK: Date picker (docs/ui/daily-report-ipad-v3 §1)
+
+    /// A day's dot in the one-page report's month calendar.
+    public enum DayStatus: Hashable, Sendable {
+        /// The reporter signed it (`engineerSignedAt`).
+        case sent
+        case draft
+        /// A working day before today, on or after the install start, with no report.
+        case missing
+        /// No dot: a day off, today or later without a report, or before the install start.
+        case none
+    }
+
+    /// The day's dot. `signed` is nil when the day has no report, else whether it is signed. A report on a day off still
+    /// shows its state; today without a report has no dot yet, since the day isn't over.
+    public static func dayStatus(_ date: Date, signed: Bool?, settings: Settings, today: Date, from start: Date? = nil) -> DayStatus {
+        if let signed { return signed ? .sent : .draft }
+        let d = day(date)
+        guard d < day(today), isWorkingDay(d, settings: settings) else { return .none }
+        if let start, d < day(start) { return .none }
+        return .missing
+    }
+
+    /// The month of `date` for a calendar grid that starts on Sunday: the blank cells before the 1st and every day.
+    public static func monthGrid(_ date: Date) -> (leading: Int, days: [Date]) {
+        guard let month = calendar.dateInterval(of: .month, for: date) else { return (0, []) }
+        let first = day(month.start)
+        let count = calendar.range(of: .day, in: .month, for: first)?.count ?? 30
+        return (calendar.component(.weekday, from: first) - 1, (0..<count).map { add(first, $0) })
+    }
+
+    // MARK: Working time (docs/ui/daily-report-ipad-v3 §2)
+
+    /// The working-time picker's limits: start 06–10, end 15–20, at least 4 hours, 1-hour steps.
+    public enum WorkHours {
+        public static let starts = 6...10
+        public static let ends = 15...20
+        public static let minimum = 4
+        /// The picker's presets (the station settings keep one pair of hours, not a list).
+        public static let presets: [(start: String, end: String)] = [("08.00", "17.00"), ("08.00", "18.00"), ("07.00", "16.00")]
+
+        /// `8` → `"08.00"`, the stored format.
+        public static func text(_ hour: Int) -> String { String(format: "%02d.00", hour) }
+
+        /// The start or end moved by `step` hours, or nil when that leaves its range or the 4-hour minimum.
+        public static func step(start: Int, end: Int, moveEnd: Bool, by step: Int) -> (start: Int, end: Int)? {
+            let s = moveEnd ? start : start + step, e = moveEnd ? end + step : end
+            guard starts.contains(s), ends.contains(e), e - s >= minimum else { return nil }
+            return (s, e)
+        }
+    }
+
+    // MARK: Task list (docs/ui/daily-report-ipad-v2 §4)
+
+    /// Today's % for a tap on the 10-segment bar's segment `segment` (1…10, each 10 % of the whole task): up to
+    /// `segment × 10`, capped at what is left; nil for a segment already done before today.
+    public static func todayFromSegment(_ segment: Int, before: Double) -> Double? {
+        let target = Double(min(max(segment, 1), 10) * 10)
+        guard target > before + 1e-9 else { return nil }
+        return min(target - before, 100 - before)
+    }
+
+    /// Today's % moved by `step` (the ± buttons, 5 %), kept within 0 … what is left.
+    public static func stepToday(_ today: Double, before: Double, by step: Double) -> Double {
+        min(max(today + step, 0), max(100 - before, 0))
+    }
+
+    /// Today's lines by location, in Thai numeric order (`หลังคา 2` before `หลังคา 10`), lines without a location last;
+    /// each group keeps the report's order.
+    public static func locationGroups(_ lines: [ProgressLine]) -> [(location: String, lines: [ProgressLine])] {
+        var order: [String] = [], groups: [String: [ProgressLine]] = [:]
+        for l in lines {
+            let k = l.location.trimmingCharacters(in: .whitespaces)
+            if groups[k] == nil { order.append(k) }
+            groups[k, default: []].append(l)
+        }
+        let thai = Locale(identifier: "th_TH")
+        order.sort { a, b in
+            if a.isEmpty != b.isEmpty { return b.isEmpty }
+            return a.compare(b, options: [.numeric, .caseInsensitive], locale: thai) == .orderedAscending
+        }
+        return order.map { ($0, groups[$0] ?? []) }
     }
 }

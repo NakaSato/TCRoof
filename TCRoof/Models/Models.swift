@@ -44,8 +44,8 @@ enum JobKind: String, CaseIterable, Identifiable, Codable {
     /// What the job detail follows for this kind.
     var detail: String {
         switch self {
-        case .home: "ขออนุญาต PEA · ติดตั้ง · ขนานไฟ"
-        case .pwa: "แผน MP · รายงานประจำ · เอกสารสถานี กปภ."
+        case .home: "ขออนุญาต PEA | ติดตั้ง | ขนานไฟ"
+        case .pwa: "แผน MP | รายงานประจำ | เอกสารสถานี กปภ."
         }
     }
 }
@@ -164,6 +164,14 @@ final class Job {
     /// A contractor changed the weekly requests here and Firestore hasn't echoed them back yet: their device pushes
     /// them (signed `weeklyRequestsBy`) and keeps them over an older copy arriving meanwhile. Device only.
     var weeklyRequestsUnsent = false
+    /// Encoded `[MasterSchedule.WorkItem]`: the plan file's work breakdown (docs/specs/project-plan-wbs.md), kept beside
+    /// the plan rather than inside `scheduleInputJSON`, so a device on an older build that saves the plan leaves it be.
+    var scheduleWBSJSON: String?
+    /// Encoded `[String: MasterSchedule.WBSTick]`, by row code: the WBS rows ticked done.
+    var wbsTicksJSON: String?
+    /// A contractor ticked here and Firestore hasn't echoed it back yet: their device pushes the ticks (signed
+    /// `wbsTicksBy`) and keeps them over an older copy arriving meanwhile. Device only.
+    var wbsTicksUnsent = false
     /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
     var stationDocsJSON: String?
     /// `JobKind`; nil on jobs made before the kind was kept, which `kind` reads from their data.
@@ -290,9 +298,56 @@ final class Job {
         get { routineSettingsJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Settings.self, from: Data($0.utf8)) } ?? .init() }
         set { routineSettingsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
     }
+    /// Setting it also books the MP permit tasks its papers approve (`PermitLink`: 1.4, 1.5, 1.7 at 100 % on the
+    /// approval day, once each). Every writer is a team screen behind `stationdocs.drafts` (the ERC flow too), so the
+    /// booking happens on the device that records the approval, by someone who may; sync writes `stationDocsJSON`
+    /// itself, so a received change books nothing and the booking arrives with it on the same job record.
     var stationDocs: StationDocs.Station {
         get { StationDocs.Station.decode(stationDocsJSON) }
-        set { stationDocsJSON = newValue.json }
+        set {
+            stationDocsJSON = newValue.json
+            bookPermitsFromDocs(newValue)
+        }
+    }
+
+    /// Books what the papers approve into the MP plan (`PermitLink.book`). The setter above runs it after each change
+    /// to the papers; the screens that create or replace the plan (ตั้งค่าแผน, the workbook import, the assistant's
+    /// re-plan) run it after saving theirs, so papers approved before there was a plan, or a file whose progress
+    /// lacks the booking, still get it. Sync runs neither: the booking travels on the job record.
+    func bookPermitsFromDocs(_ station: StationDocs.Station? = nil) {
+        guard let input = scheduleInput else { return }
+        let station = station ?? stationDocs
+        let before = scheduleActual
+        var a = before
+        PermitLink.book(&a, input: input, station: station, stationContext)
+        if a != before { scheduleActual = a }
+    }
+    /// The plan file's WBS rows; empty for a plan without them. Setting it books the ticks again (`bookFromWBS`).
+    var scheduleWBS: [MasterSchedule.WorkItem] {
+        get { scheduleWBSJSON.flatMap { try? JSONDecoder().decode([MasterSchedule.WorkItem].self, from: Data($0.utf8)) } ?? [] }
+        set {
+            scheduleWBSJSON = newValue.isEmpty ? nil : (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            bookFromWBS()
+        }
+    }
+    /// The ticked WBS rows. Setting it books them into the plan's progress (`bookFromWBS`).
+    var wbsTicks: [String: MasterSchedule.WBSTick] {
+        get { wbsTicksJSON.flatMap { try? JSONDecoder().decode([String: MasterSchedule.WBSTick].self, from: Data($0.utf8)) } ?? [:] }
+        set {
+            // sorted keys, so the same ticks always write the same text (sync compares and fingerprints it)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            wbsTicksJSON = newValue.isEmpty ? nil : (try? encoder.encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            bookFromWBS()
+        }
+    }
+    /// Books the ticked rows into the plan's progress, and takes back what an untick or a row gone from the plan booked
+    /// (`MasterSchedule.bookWBS`). Unlike the permits' booking it also runs when sync brings a contractor's ticks: a
+    /// contractor can't send progress, so a team device books them, and the same ticks always book the same.
+    func bookFromWBS() {
+        guard let input = scheduleInput else { return }
+        var a = scheduleActual
+        if MasterSchedule.bookWBS(&a, items: scheduleWBS, ticks: wbsTicks, input: input) { scheduleActual = a }
     }
     /// The IEC 62446 test; nil until the team sets up its inverters.
     var iecReport: IECReport? {
@@ -358,6 +413,9 @@ final class SurveyForm {
     var grounding: String = ""      // มี / ไม่มี / ไม่แน่ใจ
     var latitude: Double? = nil
     var longitude: Double? = nil
+    /// Added 2026-10: the installation checks of ZNSHINE's manual (`ModuleRules.SiteInstallCheck`, JSON; empty until
+    /// answered), docs/specs/module-install-rules.md §7.1.
+    var installCheckJSON: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.survey) var photos: [PhotoAsset] = []
 
@@ -573,7 +631,7 @@ final class PhotoAsset {
     var inspection: Inspection?
     /// The site ICL sheet of a photo (`SiteICL`), tagged `sheet#item`.
     var iclSheet: ICLSheet?
-    /// The job of an IEC 62446 test photo.
+    /// The job of an IEC 62446 test photo, or of the station's uploaded key plan (tag `Job.keyPlanTag`).
     var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).
     var driveFileID: String?

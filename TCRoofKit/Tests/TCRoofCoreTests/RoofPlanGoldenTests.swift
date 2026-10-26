@@ -5,8 +5,9 @@ import XCTest
 /// the drawing code can't change what it draws. Run with `ROOF_GOLDEN_RECORD=1` to print new fingerprints after an
 /// intended change to the drawing.
 final class RoofPlanGoldenTests: XCTestCase {
-    struct Case { let name: String; let values: Values; let mode: RoofPlan.Mode; var portrait: Bool? = nil
-        var chips = false; var dragging: (Double, Double, Double, Double)? = nil; var highlight: Int? = nil }
+    struct Case { let name: String; let values: Values; let mode: RoofPlan.Mode
+        var chips = false; var dragging: (Double, Double, Double, Double)? = nil; var highlight: Int? = nil
+        var ridge = Roof.Ridge.h }
 
     static func roof(_ f: RoofFrame, _ r: Roof.Ridge, areas: Bool, tables: Bool) -> Values {
         var v = Values()
@@ -18,7 +19,6 @@ final class RoofPlanGoldenTests: XCTestCase {
                                     Obstacle(label: "ถังน้ำ", x: "2", y: "2", w: "1.2", h: "1.2")])
             Roof.addArea(&v, kind: Roof.keepOutKind, x1: 14, y1: 9, x2: 18, y2: 12)
         }
-        if tables { Roof.setPV(&v, rows: 2, perTable: 3, gap: 0.8) }
         return v
     }
 
@@ -32,19 +32,22 @@ final class RoofPlanGoldenTests: XCTestCase {
                 out.append(Case(name: "\(tag)-plan-areas-chips", values: full, mode: .structure, chips: true))
                 out.append(Case(name: "\(tag)-plan-drag", values: plain, mode: .structure, dragging: (2, 2, 5, 4)))
                 for n in 1...7 { out.append(Case(name: "\(tag)-hl\(n)", values: plain, mode: .structure, highlight: n)) }
-                out.append(Case(name: "\(tag)-pv", values: plain, mode: .pv))
-                out.append(Case(name: "\(tag)-pv-full", values: full, mode: .pv))
-                out.append(Case(name: "\(tag)-pv-full-drag", values: full, mode: .pv, dragging: (3, 3, 6, 5)))
-                var land = plain; Roof.setPV(&land, perTable: 0)
-                out.append(Case(name: "\(tag)-pv-land", values: land, mode: .pv, portrait: false))
+                out.append(Case(name: "\(tag)-pv", values: plain, mode: .pv, ridge: r))
+                out.append(Case(name: "\(tag)-pv-full", values: full, mode: .pv, ridge: r))
+                out.append(Case(name: "\(tag)-pv-full-drag", values: full, mode: .pv, dragging: (3, 3, 6, 5), ridge: r))
             }
         }
         return out
     }
 
-    static func dump(_ c: Case) -> String {
-        let p = RoofPlan(c.values, mode: c.mode, portrait: c.portrait, module: RoofPlan.Module(length: 2.278, width: 1.134, kW: 0.57),
-                         chips: c.chips, dragging: c.dragging, highlight: c.highlight)
+    /// The PV layout with the old golden module, at 15° N.
+    static func mount(_ v: Values) -> RoofMountLayout {
+        var std = RoofMountStandard(); std.moduleLength = 2.278; std.moduleWidth = 1.134; std.moduleWp = 570
+        return RoofMountLayout.best(RoofMount.input(v, latitude: 15), standard: std)
+    }
+
+    static func dump(_ c: Case, mount: RoofMountLayout?) -> String {
+        let p = RoofPlan(c.values, mode: c.mode, chips: c.chips, dragging: c.dragging, highlight: c.highlight, mount: mount)
         var s = "\(p.sketch.width)x\(p.sketch.height)\n"
         for (op, t) in zip(p.sketch.ops, p.tags) { s += "\(t ?? "-") \(op)\n" }
         let l = p.layout
@@ -52,8 +55,27 @@ final class RoofPlanGoldenTests: XCTestCase {
         s += "nodes \(l.nodes.map { "\($0.i),\($0.j) \($0.at) \($0.post)" })\n"
         s += "areas \(l.areas.map { "\($0.area) \($0.box)" })\n"
         s += "add \(l.addX) \(l.addY) origin \(l.origin) k \(l.k) \(l.lx) \(l.ly)\n"
-        s += "pv \(p.pv.count) \(p.pv.kWp) \(p.pv.tables) \(p.pv.placed) \(p.pv.blocked)\n"
+        if c.mode == .pv {
+            s += "pv \(p.pv.count) \(p.pv.kWp) \(l.slots.map { "\($0.ref.face)\($0.ref.row).\($0.ref.column) \($0.module) \($0.outline)" })\n"
+        } else {
+            s += "pv 0 0.0 0 [] []\n"
+        }
         return s
+    }
+
+    /// The dump with every decimal rounded to 4 places, so the last-digit differences between Darwin's and Linux's maths
+    /// libraries (the PV layout's sun angles) don't change the fingerprint. 0.1 mm is far below anything drawn.
+    static func rounded(_ s: String) -> String {
+        let re = try! NSRegularExpression(pattern: #"-?\d+\.\d+(e[-+]?\d+)?"#)
+        var out = "", last = s.startIndex
+        for m in re.matches(in: s, range: NSRange(s.startIndex..., in: s)) {
+            let r = Range(m.range, in: s)!
+            out += s[last..<r.lowerBound]
+            let v = (Double(s[r]) ?? 0) * 10_000
+            out += String(format: "%.4f", (v.rounded() == 0 ? 0 : v.rounded()) / 10_000)
+            last = r.upperBound
+        }
+        return out + s[last...]
     }
 
     /// FNV-1a, stable across runs (Swift's `Hasher` is seeded per process).
@@ -61,185 +83,221 @@ final class RoofPlanGoldenTests: XCTestCase {
         s.utf8.reduce(0xcbf2_9ce4_8422_2325 as UInt64) { ($0 ^ UInt64($1)) &* 0x100_0000_01b3 }
     }
 
-    func testRoofPlanOutputUnchanged() {
-        let got = Dictionary(uniqueKeysWithValues: Self.cases.map { ($0.name, Self.fnv(Self.dump($0))) })
+    /// The cases picked, each against its fingerprint. The PV layout is searched once per roof (a drag doesn't change it).
+    func check(_ pick: (Case) -> Bool) {
+        let cases = Self.cases.filter(pick)
+        var mounts: [String: RoofMountLayout] = [:]
+        let got = Dictionary(uniqueKeysWithValues: cases.map { c -> (String, UInt64) in
+            var m: RoofMountLayout?
+            if c.mode == .pv {
+                let key = c.name.replacingOccurrences(of: "-drag", with: "")
+                m = mounts[key] ?? Self.mount(c.values)
+                mounts[key] = m
+            }
+            return (c.name, Self.fnv(Self.rounded(Self.dump(c, mount: m))))
+        })
         if ProcessInfo.processInfo.environment["ROOF_GOLDEN_RECORD"] != nil {
             print("ROOF_GOLDEN " + got.keys.sorted().map { "\"\($0)\": 0x\(String(got[$0]!, radix: 16))" }.joined(separator: ", "))
             return
         }
-        XCTAssertEqual(got.count, Self.expected.count)
+        XCTAssertFalse(got.isEmpty)
         for (name, h) in got.sorted(by: { $0.key < $1.key }) { XCTAssertEqual(h, Self.expected[name], name) }
     }
 
-    /// Recorded from the drawing before RoofPlan.init was split (4/10/2569).
+    /// Every case has a fingerprint, and every fingerprint a case.
+    func testTheCasesAreTheRecordedOnes() {
+        XCTAssertEqual(Set(Self.cases.map(\.name)), Set(Self.expected.keys))
+    }
+
+    // split so `swift test --parallel` spreads the PV searches
+    func testStructurePlanUnchanged() { check { $0.mode == .structure } }
+    func testPVPlanUnchangedRidgeAlongX() { check { $0.mode == .pv && $0.ridge == .h } }
+    func testPVPlanUnchangedRidgeAlongY() { check { $0.mode == .pv && $0.ridge == .v } }
+
+    /// Recorded from the drawing before RoofPlan.init was split (4/10/2569); the PV cases again with the roof PV engine
+    /// (19/10/2569), and the cases with areas after `Roof.Area` gained `height` (the dump prints it; the drawing is unchanged); the Howe frame's cases added 20/10/2569; the cases with labels again after "·" became "|" (21/10/2569); every case again after the labels, the section mark's letter and the purlin callout got their CAD layers (22/10/2569: the ops are unchanged, only their tags); every case again after the dump rounds decimals to 4 places (23/10/2569), since the cloud (Linux) and macOS gave different PV fingerprints.
     static let expected: [String: UInt64] = [
-        "c-h-hl1": 0x8fdab8eee450deab,
-        "c-h-hl2": 0x12622933c3ec6131,
-        "c-h-hl3": 0xe297348bcc1cf2ef,
-        "c-h-hl4": 0xb67d1cfce9b25db3,
-        "c-h-hl5": 0xe297348bcc1cf2ef,
-        "c-h-hl6": 0x6e26c5868a1d74d2,
-        "c-h-hl7": 0x5da85243d10956b7,
-        "c-h-plan": 0xe297348bcc1cf2ef,
-        "c-h-plan-areas-chips": 0x16bbadb58114d873,
-        "c-h-plan-drag": 0xc33e05d3681b1f76,
-        "c-h-pv": 0x3ac521a2d174d9ac,
-        "c-h-pv-full": 0xd1990af4d014022b,
-        "c-h-pv-full-drag": 0x47eedd3635a98d,
-        "c-h-pv-land": 0xd23ca3b66e50a0be,
-        "c-v-hl1": 0x98775f22b77115d7,
-        "c-v-hl2": 0xc57af26c8ac43e05,
-        "c-v-hl3": 0x49672cbd449528b1,
-        "c-v-hl4": 0x8bd1e3ab8a1a1dd1,
-        "c-v-hl5": 0x49672cbd449528b1,
-        "c-v-hl6": 0xf610f161c24ea510,
-        "c-v-hl7": 0x5b1b1c1f6c940fb3,
-        "c-v-plan": 0x49672cbd449528b1,
-        "c-v-plan-areas-chips": 0x54616a2170e763c7,
-        "c-v-plan-drag": 0x5100dd3cb495cd94,
-        "c-v-pv": 0xe74085c91cf964f2,
-        "c-v-pv-full": 0x4720d414b87310e6,
-        "c-v-pv-full-drag": 0xfb30a9809b217ad4,
-        "c-v-pv-land": 0xeb6f9385dec9ab7e,
-        "k-h-hl1": 0x9612d043883f1153,
-        "k-h-hl2": 0xee5a84bb5b23e2cb,
-        "k-h-hl3": 0x3104e8d67ac44ea1,
-        "k-h-hl4": 0xb354838de8a58b85,
-        "k-h-hl5": 0x3104e8d67ac44ea1,
-        "k-h-hl6": 0x945743437606a2ec,
-        "k-h-hl7": 0x97ecd1d608497509,
-        "k-h-plan": 0x3104e8d67ac44ea1,
-        "k-h-plan-areas-chips": 0x9c3ae087a04b5f5d,
-        "k-h-plan-drag": 0xebf3e107bbb33304,
-        "k-h-pv": 0x737f5d20f5963d7b,
-        "k-h-pv-full": 0xf67f2b0feebf7f94,
-        "k-h-pv-full-drag": 0xd4da10189594fe16,
-        "k-h-pv-land": 0xa265245dfe082541,
-        "k-v-hl1": 0xbbabb31e13ec8426,
-        "k-v-hl2": 0x6f910bd83984ee2,
-        "k-v-hl3": 0x9d73cf22ef06a2ae,
-        "k-v-hl4": 0xe16a488392c25616,
-        "k-v-hl5": 0x9d73cf22ef06a2ae,
-        "k-v-hl6": 0x328420066015215d,
-        "k-v-hl7": 0xaadff1c65753b360,
-        "k-v-plan": 0x9d73cf22ef06a2ae,
-        "k-v-plan-areas-chips": 0x3922e36a53c10f20,
-        "k-v-plan-drag": 0x9226f7eb52ee97c3,
-        "k-v-pv": 0x5b0679d68dd90a9e,
-        "k-v-pv-full": 0xcd72dd87e967125e,
-        "k-v-pv-full-drag": 0xf10f00e92414fd50,
-        "k-v-pv-land": 0x820a77ea868f162a,
-        "n-h-hl1": 0xa9bae10368a4f888,
-        "n-h-hl2": 0xb9093ff05ef15b92,
-        "n-h-hl3": 0xb9093ff05ef15b92,
-        "n-h-hl4": 0xb9093ff05ef15b92,
-        "n-h-hl5": 0xb9093ff05ef15b92,
-        "n-h-hl6": 0xa1309f658c7467c9,
-        "n-h-hl7": 0x118a817c7dd1f40e,
-        "n-h-plan": 0x74bc650e28d420ce,
-        "n-h-plan-areas-chips": 0x189b54a9f473c52c,
-        "n-h-plan-drag": 0x845ce39e06c04587,
-        "n-h-pv": 0x4761fe58cd7741c9,
-        "n-h-pv-full": 0x138062221f74f1be,
-        "n-h-pv-full-drag": 0xe996ff8788e01c90,
-        "n-h-pv-land": 0xb903bf6f907d22eb,
-        "n-v-hl1": 0xbf3fd02a88770fcb,
-        "n-v-hl2": 0x96fbdae7b55ee59,
-        "n-v-hl3": 0x96fbdae7b55ee59,
-        "n-v-hl4": 0x96fbdae7b55ee59,
-        "n-v-hl5": 0x96fbdae7b55ee59,
-        "n-v-hl6": 0x36503bb84893438e,
-        "n-v-hl7": 0xaf789bb4eb8b279b,
-        "n-v-plan": 0x351fa1819b94f42f,
-        "n-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
-        "n-v-plan-drag": 0x86b0ae56992c9efa,
-        "n-v-pv": 0x6bf76ae95b02fdb0,
-        "n-v-pv-full": 0xb06be413b5f34990,
-        "n-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "n-v-pv-land": 0x84109d01bde75d10,
-        "p-h-hl1": 0xa9bae10368a4f888,
-        "p-h-hl2": 0xb9093ff05ef15b92,
-        "p-h-hl3": 0xb9093ff05ef15b92,
-        "p-h-hl4": 0xb9093ff05ef15b92,
-        "p-h-hl5": 0xb9093ff05ef15b92,
-        "p-h-hl6": 0xa1309f658c7467c9,
-        "p-h-hl7": 0x118a817c7dd1f40e,
-        "p-h-plan": 0x74bc650e28d420ce,
-        "p-h-plan-areas-chips": 0x189b54a9f473c52c,
-        "p-h-plan-drag": 0x845ce39e06c04587,
-        "p-h-pv": 0x4761fe58cd7741c9,
-        "p-h-pv-full": 0x138062221f74f1be,
-        "p-h-pv-full-drag": 0xe996ff8788e01c90,
-        "p-h-pv-land": 0xb903bf6f907d22eb,
-        "p-v-hl1": 0xbf3fd02a88770fcb,
-        "p-v-hl2": 0x96fbdae7b55ee59,
-        "p-v-hl3": 0x96fbdae7b55ee59,
-        "p-v-hl4": 0x96fbdae7b55ee59,
-        "p-v-hl5": 0x96fbdae7b55ee59,
-        "p-v-hl6": 0x36503bb84893438e,
-        "p-v-hl7": 0xaf789bb4eb8b279b,
-        "p-v-plan": 0x351fa1819b94f42f,
-        "p-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
-        "p-v-plan-drag": 0x86b0ae56992c9efa,
-        "p-v-pv": 0x6bf76ae95b02fdb0,
-        "p-v-pv-full": 0xb06be413b5f34990,
-        "p-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "p-v-pv-land": 0x84109d01bde75d10,
-        "r-h-hl1": 0xc8129c547677ca9b,
-        "r-h-hl2": 0x675437508d41cc87,
-        "r-h-hl3": 0x675437508d41cc87,
-        "r-h-hl4": 0x675437508d41cc87,
-        "r-h-hl5": 0xcefc923affe70c35,
-        "r-h-hl6": 0x86f1ea44cf24a124,
-        "r-h-hl7": 0xd1a6c4f092b95501,
-        "r-h-plan": 0x5d4ae8f077e6b949,
-        "r-h-plan-areas-chips": 0x67ad2a3d7baec82d,
-        "r-h-plan-drag": 0x453bbb99d588d028,
-        "r-h-pv": 0x7c8b078516c9cd75,
-        "r-h-pv-full": 0x146173f873ae2172,
-        "r-h-pv-full-drag": 0xf38f464103d729ec,
-        "r-h-pv-land": 0xf4a420ae3ff5ee5f,
-        "r-v-hl1": 0x7377780f1e0666a0,
-        "r-v-hl2": 0xc316ffc525da69bc,
-        "r-v-hl3": 0xc316ffc525da69bc,
-        "r-v-hl4": 0xc316ffc525da69bc,
-        "r-v-hl5": 0xb49ae731e94f1072,
-        "r-v-hl6": 0xcc04a2a448200ffb,
-        "r-v-hl7": 0xdb424c8276397c64,
-        "r-v-plan": 0xb1e0a2f28e77368,
-        "r-v-plan-areas-chips": 0xed00293f8c9dd7da,
-        "r-v-plan-drag": 0x745f01669fdc2fed,
-        "r-v-pv": 0x56f898ad5606b280,
-        "r-v-pv-full": 0x89cd39433ecd60ac,
-        "r-v-pv-full-drag": 0x12f314c8cad6b5de,
-        "r-v-pv-land": 0x66b59e6f405018c4,
-        "w-h-hl1": 0xa9bae10368a4f888,
-        "w-h-hl2": 0xb9093ff05ef15b92,
-        "w-h-hl3": 0xb9093ff05ef15b92,
-        "w-h-hl4": 0xb9093ff05ef15b92,
-        "w-h-hl5": 0xb9093ff05ef15b92,
-        "w-h-hl6": 0xa1309f658c7467c9,
-        "w-h-hl7": 0x118a817c7dd1f40e,
-        "w-h-plan": 0x74bc650e28d420ce,
-        "w-h-plan-areas-chips": 0x189b54a9f473c52c,
-        "w-h-plan-drag": 0x845ce39e06c04587,
-        "w-h-pv": 0x4761fe58cd7741c9,
-        "w-h-pv-full": 0x138062221f74f1be,
-        "w-h-pv-full-drag": 0xe996ff8788e01c90,
-        "w-h-pv-land": 0xb903bf6f907d22eb,
-        "w-v-hl1": 0xbf3fd02a88770fcb,
-        "w-v-hl2": 0x96fbdae7b55ee59,
-        "w-v-hl3": 0x96fbdae7b55ee59,
-        "w-v-hl4": 0x96fbdae7b55ee59,
-        "w-v-hl5": 0x96fbdae7b55ee59,
-        "w-v-hl6": 0x36503bb84893438e,
-        "w-v-hl7": 0xaf789bb4eb8b279b,
-        "w-v-plan": 0x351fa1819b94f42f,
-        "w-v-plan-areas-chips": 0x9ec6f71cbf72cfd,
-        "w-v-plan-drag": 0x86b0ae56992c9efa,
-        "w-v-pv": 0x6bf76ae95b02fdb0,
-        "w-v-pv-full": 0xb06be413b5f34990,
-        "w-v-pv-full-drag": 0xe6b048bcc34076e2,
-        "w-v-pv-land": 0x84109d01bde75d10,
+        "h-h-hl1": 0x780a1b358da4c06d,
+        "h-h-hl2": 0x29cfa45744400ba9,
+        "h-h-hl3": 0x29cfa45744400ba9,
+        "h-h-hl4": 0x29cfa45744400ba9,
+        "h-h-hl5": 0x29cfa45744400ba9,
+        "h-h-hl6": 0x59cbfded6ed210b5,
+        "h-h-hl7": 0xc935e7ede86c46e3,
+        "h-h-plan": 0x70205da87c3bf0a3,
+        "h-h-plan-areas-chips": 0xa2fc780322752595,
+        "h-h-plan-drag": 0x14876ac04bce336c,
+        "h-h-pv": 0x25f17278310505bc,
+        "h-h-pv-full": 0x798abdea72dbe5f5,
+        "h-h-pv-full-drag": 0xa2ec92bec2739879,
+        "h-v-hl1": 0x688b30a71755d4d1,
+        "h-v-hl2": 0xb9fbccc4a2c1be93,
+        "h-v-hl3": 0xb9fbccc4a2c1be93,
+        "h-v-hl4": 0xb9fbccc4a2c1be93,
+        "h-v-hl5": 0xb9fbccc4a2c1be93,
+        "h-v-hl6": 0x7bbc0a06a26b15d7,
+        "h-v-hl7": 0x7fcbb7df1daaf801,
+        "h-v-plan": 0x74cc85fae54e1215,
+        "h-v-plan-areas-chips": 0xf7e5e7a3b9448631,
+        "h-v-plan-drag": 0x551d4424754773d8,
+        "h-v-pv": 0x2d93bed3ecad7501,
+        "h-v-pv-full": 0x6d345b503c8e92de,
+        "h-v-pv-full-drag": 0x3c2d7d594b8647ba,
+        "c-h-hl1": 0x8dbba85e38f6e052,
+        "c-h-hl2": 0x31c86ff5325a0fe7,
+        "c-h-hl3": 0xb63a058d47660fae,
+        "c-h-hl4": 0x481c80a9c4541cfa,
+        "c-h-hl5": 0xb63a058d47660fae,
+        "c-h-hl6": 0x94bd9fc91942bd7a,
+        "c-h-hl7": 0xef68a136bc1c4542,
+        "c-h-plan": 0xb63a058d47660fae,
+        "c-h-plan-areas-chips": 0x65718b73766f6f7a,
+        "c-h-plan-drag": 0x5232b23b010af2dd,
+        "c-h-pv": 0xac0847b8097a9e2d,
+        "c-h-pv-full": 0x28447252b0459446,
+        "c-h-pv-full-drag": 0xa56921e923bbea32,
+        "c-v-hl1": 0xa98ae197178e0e36,
+        "c-v-hl2": 0xca1bf295a75f9748,
+        "c-v-hl3": 0xa265ecd9601ed7a8,
+        "c-v-hl4": 0xaaf422a659bbcd84,
+        "c-v-hl5": 0xa265ecd9601ed7a8,
+        "c-v-hl6": 0x5d474013eb50ec7c,
+        "c-v-hl7": 0xee7683ff8e7119b6,
+        "c-v-plan": 0xa265ecd9601ed7a8,
+        "c-v-plan-areas-chips": 0xe514c0fe100f63f0,
+        "c-v-plan-drag": 0x56d96baf0a050f37,
+        "c-v-pv": 0xe9c90edbc79f2db2,
+        "c-v-pv-full": 0xbcb5b2dc16dc736a,
+        "c-v-pv-full-drag": 0xbe3b25e370d4b4fe,
+        "k-h-hl1": 0x82592e5434dc6777,
+        "k-h-hl2": 0xe2fc32444c7b35aa,
+        "k-h-hl3": 0x5e20ef7a132146c5,
+        "k-h-hl4": 0x2575467a40ed4191,
+        "k-h-hl5": 0x5e20ef7a132146c5,
+        "k-h-hl6": 0x6cccfb0631664ddf,
+        "k-h-hl7": 0x7b9dd099e4b437b5,
+        "k-h-plan": 0x5e20ef7a132146c5,
+        "k-h-plan-areas-chips": 0x808104feafbf14d3,
+        "k-h-plan-drag": 0x85e5893750e3004a,
+        "k-h-pv": 0xb1f1e846d8293412,
+        "k-h-pv-full": 0x25f297ffb0f3ed4b,
+        "k-h-pv-full-drag": 0x23a5d3fc6666cfcf,
+        "k-v-hl1": 0xdaeb457deebc751c,
+        "k-v-hl2": 0xe906190d354468d8,
+        "k-v-hl3": 0x4fa2b48ce98c9f78,
+        "k-v-hl4": 0xbbcbec2835b2fd54,
+        "k-v-hl5": 0x4fa2b48ce98c9f78,
+        "k-v-hl6": 0x851c4723a9b86c,
+        "k-v-hl7": 0xfbd649cb75c042c6,
+        "k-v-plan": 0x4fa2b48ce98c9f78,
+        "k-v-plan-areas-chips": 0x1d70b1565a338d60,
+        "k-v-plan-drag": 0xdbbe99078f3c8327,
+        "k-v-pv": 0x130dc433941d005b,
+        "k-v-pv-full": 0xcb3cc75d12cc64e4,
+        "k-v-pv-full-drag": 0x9d67722c857d9b30,
+        "n-h-hl1": 0x780a1b358da4c06d,
+        "n-h-hl2": 0x29cfa45744400ba9,
+        "n-h-hl3": 0x29cfa45744400ba9,
+        "n-h-hl4": 0x29cfa45744400ba9,
+        "n-h-hl5": 0x29cfa45744400ba9,
+        "n-h-hl6": 0x59cbfded6ed210b5,
+        "n-h-hl7": 0xc935e7ede86c46e3,
+        "n-h-plan": 0x70205da87c3bf0a3,
+        "n-h-plan-areas-chips": 0xa2fc780322752595,
+        "n-h-plan-drag": 0x14876ac04bce336c,
+        "n-h-pv": 0x25f17278310505bc,
+        "n-h-pv-full": 0x798abdea72dbe5f5,
+        "n-h-pv-full-drag": 0xa2ec92bec2739879,
+        "n-v-hl1": 0x688b30a71755d4d1,
+        "n-v-hl2": 0xb9fbccc4a2c1be93,
+        "n-v-hl3": 0xb9fbccc4a2c1be93,
+        "n-v-hl4": 0xb9fbccc4a2c1be93,
+        "n-v-hl5": 0xb9fbccc4a2c1be93,
+        "n-v-hl6": 0x7bbc0a06a26b15d7,
+        "n-v-hl7": 0x7fcbb7df1daaf801,
+        "n-v-plan": 0x74cc85fae54e1215,
+        "n-v-plan-areas-chips": 0xf7e5e7a3b9448631,
+        "n-v-plan-drag": 0x551d4424754773d8,
+        "n-v-pv": 0x2d93bed3ecad7501,
+        "n-v-pv-full": 0x6d345b503c8e92de,
+        "n-v-pv-full-drag": 0x3c2d7d594b8647ba,
+        "p-h-hl1": 0x780a1b358da4c06d,
+        "p-h-hl2": 0x29cfa45744400ba9,
+        "p-h-hl3": 0x29cfa45744400ba9,
+        "p-h-hl4": 0x29cfa45744400ba9,
+        "p-h-hl5": 0x29cfa45744400ba9,
+        "p-h-hl6": 0x59cbfded6ed210b5,
+        "p-h-hl7": 0xc935e7ede86c46e3,
+        "p-h-plan": 0x70205da87c3bf0a3,
+        "p-h-plan-areas-chips": 0xa2fc780322752595,
+        "p-h-plan-drag": 0x14876ac04bce336c,
+        "p-h-pv": 0x25f17278310505bc,
+        "p-h-pv-full": 0x798abdea72dbe5f5,
+        "p-h-pv-full-drag": 0xa2ec92bec2739879,
+        "p-v-hl1": 0x688b30a71755d4d1,
+        "p-v-hl2": 0xb9fbccc4a2c1be93,
+        "p-v-hl3": 0xb9fbccc4a2c1be93,
+        "p-v-hl4": 0xb9fbccc4a2c1be93,
+        "p-v-hl5": 0xb9fbccc4a2c1be93,
+        "p-v-hl6": 0x7bbc0a06a26b15d7,
+        "p-v-hl7": 0x7fcbb7df1daaf801,
+        "p-v-plan": 0x74cc85fae54e1215,
+        "p-v-plan-areas-chips": 0xf7e5e7a3b9448631,
+        "p-v-plan-drag": 0x551d4424754773d8,
+        "p-v-pv": 0x2d93bed3ecad7501,
+        "p-v-pv-full": 0x6d345b503c8e92de,
+        "p-v-pv-full-drag": 0x3c2d7d594b8647ba,
+        "r-h-hl1": 0x507fe6e334246652,
+        "r-h-hl2": 0x3bb4f11c858e3539,
+        "r-h-hl3": 0x3bb4f11c858e3539,
+        "r-h-hl4": 0x3bb4f11c858e3539,
+        "r-h-hl5": 0x21bb520b4d91a828,
+        "r-h-hl6": 0x57aa82fa6a02824,
+        "r-h-hl7": 0x1864590e8bbba340,
+        "r-h-plan": 0x2b8c7ab8829ec5e8,
+        "r-h-plan-areas-chips": 0x8e8bc910625719e4,
+        "r-h-plan-drag": 0xbf62fd4775c5455b,
+        "r-h-pv": 0xe24a62b65f3c93c4,
+        "r-h-pv-full": 0x41f185b430d0c895,
+        "r-h-pv-full-drag": 0x3fced9fc9d26e949,
+        "r-v-hl1": 0x306137675b0f4f21,
+        "r-v-hl2": 0xdda55e0bba702a5d,
+        "r-v-hl3": 0xdda55e0bba702a5d,
+        "r-v-hl4": 0xdda55e0bba702a5d,
+        "r-v-hl5": 0x9e0554ec7c5a11be,
+        "r-v-hl6": 0x3b7c1cde847cd127,
+        "r-v-hl7": 0xe92435a5de584349,
+        "r-v-plan": 0x74086c2cdf3a2445,
+        "r-v-plan-areas-chips": 0x9f3230717123279b,
+        "r-v-plan-drag": 0xe6ae640700984c9e,
+        "r-v-pv": 0xb70bf42475521b25,
+        "r-v-pv-full": 0x2d9f8a272d25a326,
+        "r-v-pv-full-drag": 0xc556adcaa4fd2722,
+        "w-h-hl1": 0x780a1b358da4c06d,
+        "w-h-hl2": 0x29cfa45744400ba9,
+        "w-h-hl3": 0x29cfa45744400ba9,
+        "w-h-hl4": 0x29cfa45744400ba9,
+        "w-h-hl5": 0x29cfa45744400ba9,
+        "w-h-hl6": 0x59cbfded6ed210b5,
+        "w-h-hl7": 0xc935e7ede86c46e3,
+        "w-h-plan": 0x70205da87c3bf0a3,
+        "w-h-plan-areas-chips": 0xa2fc780322752595,
+        "w-h-plan-drag": 0x14876ac04bce336c,
+        "w-h-pv": 0x25f17278310505bc,
+        "w-h-pv-full": 0x798abdea72dbe5f5,
+        "w-h-pv-full-drag": 0xa2ec92bec2739879,
+        "w-v-hl1": 0x688b30a71755d4d1,
+        "w-v-hl2": 0xb9fbccc4a2c1be93,
+        "w-v-hl3": 0xb9fbccc4a2c1be93,
+        "w-v-hl4": 0xb9fbccc4a2c1be93,
+        "w-v-hl5": 0xb9fbccc4a2c1be93,
+        "w-v-hl6": 0x7bbc0a06a26b15d7,
+        "w-v-hl7": 0x7fcbb7df1daaf801,
+        "w-v-plan": 0x74cc85fae54e1215,
+        "w-v-plan-areas-chips": 0xf7e5e7a3b9448631,
+        "w-v-plan-drag": 0x551d4424754773d8,
+        "w-v-pv": 0x2d93bed3ecad7501,
+        "w-v-pv-full": 0x6d345b503c8e92de,
+        "w-v-pv-full-drag": 0x3c2d7d594b8647ba,
     ]
 }

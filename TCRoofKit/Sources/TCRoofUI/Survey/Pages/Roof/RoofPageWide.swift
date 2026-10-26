@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 import PDFReport
+import ModuleRules
 
 /// C1 roof (docs/ui/survey-c1): the interactive roof plan above section A-A on the left; the roof /
 /// PV-layout tabs, member sizes 1–7 and the six photo angles on the right, on one screen. Field ids, choices and Excel
@@ -21,7 +22,7 @@ struct RoofPageWide: View {
     @Environment(SurveyModel.self) var model
 
     struct SpanRef: Hashable { var axis: Roof.Axis; var index: Int }
-    enum Tool { case keepOut, skylight }
+    enum Tool: Equatable { case keepOut, skylight, obstacle(RoofObstacleKind) }
 
     /// โครงสร้าง / จัดแผง: the plan's mode and the right card's tab (หลังคา / การจัดแผง) are one choice.
     @State var mode: RoofPlan.Mode = Self.startMode
@@ -30,6 +31,8 @@ struct RoofPageWide: View {
     @State var tool: Tool?
     /// The rectangle being dragged out, metres (x1, y1, x2, y2).
     @State var drag: (Double, Double, Double, Double)?
+    /// An area being dragged to its site position on a roof filled from a design: its `obst` index and the finger's offset.
+    @State var moving: (index: Int, offset: CGSize)?
     /// The member row picked (1…7): its size list is open and its lines are red on the plan and the section.
     @State var member: Int?
     @State var dropdown: String?
@@ -44,6 +47,8 @@ struct RoofPageWide: View {
     @State var savingStandard = false
     @State var showCAD = false
     @State var sectionBig = false
+    /// รายละเอียด A / B and the member schedule (`RoofTruss`).
+    @State var trussOpen = false
     /// A photo tile the bottom bar pointed at (pulses).
     @State var flashShot: Roof.Shot?
     @State var panelsFocused = false
@@ -51,6 +56,32 @@ struct RoofPageWide: View {
     @State var scrollTarget: String?
     /// Roofs the team saved (`RoofStandards`).
     @State var saved: [Roof.Standard] = RoofStandards.load()
+    // แผงบนหลังคา (RoofPageWide+Mount)
+    @State var mount: RoofMountLayout?
+    @State var mountBusy = false
+    @State var mountSelection: MountSelection?
+    @State var mountUndo: [RoofMount.Choice] = []
+    /// The layout's yearly energy from the hourly engine, or SolarModel's (RoofPageWide+Energy).
+    @State var mountYield: RoofMountYield.Estimate?
+    @State var mountYieldBusy = false
+    @State var energyOpen = false
+    @State var rowSectionOpen = false
+    @State var boqOpen = false
+    /// iPhone จัดแผง: `แก้แผง` is on (a tap on the plan takes a module out or puts it back), and the closed section below `03`.
+    @State var editModules = false
+    @State var moreOpen = false
+    @State var mountYieldFor: RoofMountYield.Inputs?
+    /// The name of the roof design just saved to the team's library (RoofPageWide+Design).
+    @State var roofDesignSaved: String?
+    @Environment(\.permissions) var roofPermissions
+    @State var mountNote: String?
+    @State var mountFace = "S"
+    /// Layouts the last search tried, and its best count.
+    @State var mountTried: (tried: Int, best: Int)?
+    /// The directions the last `หาผังที่ได้แผงมากที่สุด` tried, with their module counts.
+    @State var mountArrangements: [RoofMount.Arrangement] = []
+    /// The row the section card shows (face index, row).
+    @State var sectionRow: (face: Int, row: Int) = (0, 0)
 
     /// จัดแผง for the `-surveyC1 pv` checks (also the offscreen render), else โครงสร้าง.
     static var startMode: RoofPlan.Mode {
@@ -79,16 +110,29 @@ struct RoofPageWide: View {
     static let line = Theme.borderSubtle
     static let amber = Theme.pending
 
+    /// The page's view type is erased in a few places (`AnyView`): written out in full it nests so deep that a Debug
+    /// build on a device runs out of stack working it out (SIGSEGV in swift_getTypeByMangledName on opening C1).
     var body: some View {
+        presented(page)
+    }
+
+    private var page: some View {
         VStack(spacing: 16) {
             PageStepBar(job: job, here: .module(moduleID), title: "แปลนและโครงสร้างหลังคา")
-            if stacked { stackedLayout } else { wideLayout }
+            if stacked { AnyView(stackedLayout) } else { AnyView(wideLayout) }
         }
         .foregroundStyle(Theme.navy)
         #if DEBUG
         .task { await openDebugState() }
         #endif
         .onChange(of: request.wrappedValue) { _, k in if let k { open(gap: k); request.wrappedValue = nil } }
+        .task(id: mountKey) { await refreshMount() }
+        .task(id: mountYieldInputs) { await refreshYield() }
+    }
+
+    /// The page's alerts and sheets.
+    private func presented<V: View>(_ page: V) -> some View {
+        page
         .alert("ระบุ" + (otherKey == Roof.Key.material ? "วัสดุมุง" : "รูปแบบหลังคา"), isPresented: Binding(get: { otherKey != nil }, set: { if !$0 { otherKey = nil } })) {
             TextField("พิมพ์ชื่อ", text: $otherText)
             Button("ตกลง") { if let k = otherKey, !otherText.trimmingCharacters(in: .whitespaces).isEmpty { update { Roof.chooseOther(&$0, k, text: otherText) } } }
@@ -104,6 +148,7 @@ struct RoofPageWide: View {
         }
         .sheet(isPresented: $savingStandard) { saveStandardSheet }
         .fullScreenCover(isPresented: $sectionBig) { sectionZoom.presentationBackground(.black.opacity(0.45)) }
+        .sheet(isPresented: $trussOpen) { trussSheet }
     }
 
     /// Opens what a bottom-bar gap names.
@@ -120,7 +165,7 @@ struct RoofPageWide: View {
         case Roof.Key.shape, Roof.Key.material: mode = .structure; scrollTarget = "info"; dropdown = key
         case Roof.Key.structure: mode = .structure; scrollTarget = "info"
         default:
-            if key.hasPrefix("comp"), let n = Int(key.dropFirst(4)) { scrollTarget = "members"; member = n }
+            if key.hasPrefix("comp"), let n = Int(key.dropFirst(4)) { mode = .structure; scrollTarget = "members"; member = n }
         }
     }
 
@@ -129,8 +174,8 @@ struct RoofPageWide: View {
             // the section keeps the design's 297 pt on a tall screen and gives the plan room on a short one (11" landscape)
             GeometryReader { geo in
                 VStack(spacing: 12) {
-                    planCard.frame(maxHeight: .infinity)
-                    sectionCard.frame(height: min(297, max(200, geo.size.height * 0.375)))
+                    AnyView(planCard).frame(maxHeight: .infinity)
+                    AnyView(sectionCard).frame(height: sectionHeight(min(297, max(200, geo.size.height * 0.375))))
                 }
             }
             .frame(width: leftWidth)
@@ -150,9 +195,14 @@ struct RoofPageWide: View {
 
     func cardsColumn(fill: Bool) -> some View {
         VStack(spacing: 12) {
-            roofCard
-            membersCard.frame(maxHeight: fill ? .infinity : nil)
-            photosCard
+            // the panel layout doesn't edit the members, so their card stays with the structure
+            if mode == .pv {
+                AnyView(roofCard).frame(maxHeight: fill ? .infinity : nil)
+            } else {
+                AnyView(roofCard)
+                AnyView(membersCard).frame(maxHeight: fill ? .infinity : nil)
+            }
+            AnyView(photosCard)
         }
     }
 
@@ -168,13 +218,18 @@ struct RoofPageWide: View {
 
     var stackedColumn: some View {
             VStack(spacing: 12) {
+                // the frame type drives the plan and the section, so it leads the page
+                if mode == .structure { AnyView(frameCard) }
                 // iPhone: the legend and footer sit under the plan, so the plan gets the full width
-                planCard.frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + 290
+                AnyView(planCard).frame(height: narrow ? width * RoofPlan.height / RoofPlan.width + (mode == .pv ? 370 : 290)
                                               : min(620, (width - 170) * RoofPlan.height / RoofPlan.width) + 64)
-                sectionCard.frame(height: min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72))
-                roofCard.id("info")
-                membersCard.id("members")
-                photosCard.id("photos")
+                // iPhone จัดแผง shows the plan and the two cards below it; the section and photos stay with the structure
+                if !(narrow && mode == .pv) {
+                    AnyView(sectionCard).frame(height: sectionHeight(min(340, width * RoofSection.height / RoofSection.width) + (narrow ? 124 : 72)))
+                }
+                AnyView(roofCard).id("info")
+                if mode != .pv { AnyView(membersCard).id("members") }
+                if !(narrow && mode == .pv) { AnyView(photosCard).id("photos") }
             }
             .padding(.bottom, 4)
     }
@@ -201,10 +256,10 @@ struct RoofPageWide: View {
 
     var roofCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            RoofSegments(options: ["หลังคา *", "การจัดแผง"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
+            RoofSegments(options: ["หลังคา *", "แผงบนหลังคา"], selected: mode == .pv ? 1 : 0, minSegment: 100, height: 44) { i in
                 setMode(i == 1 ? .pv : .structure)
             }
-            if mode == .structure { roofTab } else { pvTab }
+            if mode == .structure { AnyView(VStack(alignment: .leading, spacing: 10) { roofTab; roofDesignSection }) } else { AnyView(mountTab) }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,21 +268,29 @@ struct RoofPageWide: View {
     }
 
     func setMode(_ m: RoofPlan.Mode) {
-        mode = m; editPosts = false; tool = nil; span = nil; member = nil; dropdown = nil
+        mode = m; editPosts = false; editModules = false; tool = nil; span = nil; member = nil; dropdown = nil; mountSelection = nil
     }
 
     @ViewBuilder var roofTab: some View {
         if narrow { roofTabNarrow } else { roofTabWide }
     }
 
-    /// iPhone: two fields per row.
+    /// iPhone: two fields per row (ชนิดโครงหลังคา is on its own card above the plan).
     var roofTabNarrow: some View {
         Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow { standardField; dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes) }
             GridRow { dropdownField("วัสดุมุง", key: Roof.Key.material, list: Roof.materials); purlinField }
             GridRow { ridgeField; structureField }
-            GridRow { frameField.gridCellColumns(2) }
         }
+    }
+
+    /// Stacked (portrait, iPhone): ชนิดโครงหลังคา on its own card above the plan.
+    var frameCard: some View {
+        frameField
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderSubtle))
     }
 
     var frameField: some View {
@@ -241,6 +304,7 @@ struct RoofPageWide: View {
 
     var roofTabWide: some View {
         Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 8) {
+            if !stacked { GridRow { frameField.gridCellColumns(6) } }
             GridRow {
                 standardField.gridCellColumns(2)
                 dropdownField("รูปแบบหลังคา", key: Roof.Key.shape, list: Roof.shapes).gridCellColumns(2)
@@ -251,7 +315,6 @@ struct RoofPageWide: View {
                 ridgeField.gridCellColumns(2)
                 structureField.gridCellColumns(2)
             }
-            GridRow { frameField.gridCellColumns(6) }
         }
     }
 
@@ -362,92 +425,38 @@ struct RoofPageWide: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: การจัดแผง tab
+    // MARK: panels field
 
-    var pvTab: some View {
-        let portrait = Roof.pvPortrait(values), rows = Roof.pvRows(values), per = Roof.pvPerTable(values)
-        let pv = RoofPV(values), tables = rows > 0 || per > 0
-        let watts = Int((RoofPlan.Module.catalogDefault.kW * 1000).rounded())
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(pv.count)").font(.sarabunFixed(26, .bold)).monospacedDigit()
-                        Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                        Text(String(format: "%.1f", pv.kWp)).font(.sarabunFixed(26, .bold)).monospacedDigit().padding(.leading, 8)
-                        Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    }
-                    Text((tables && pv.count > 0 ? "\(pv.tables) ชุด · " : "") + "แผง \(watts) W").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
-                .accessibilityElement(children: .combine)
-                Spacer(minLength: 6)
-                panelsField(pv.count)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(Self.track, in: RoundedRectangle(cornerRadius: 10))
-            let pair = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
-            pair {
-                VStack(alignment: .leading, spacing: 3) {
-                    A3Label(text: "แนวแผง")
-                    RoofSegments(options: ["แนวตั้ง", "แนวนอน"], selected: portrait ? 0 : 1, minSegment: 60) { i in
-                        set(Roof.Key.pvOrientation, i == 1 ? .text("l") : nil)
-                    }
-                }
-                .frame(maxWidth: narrow ? .infinity : 170)
-                VStack(alignment: .leading, spacing: 3) {
-                    A3Label(text: "แถวต่อชุด (ตามแนวลาด)")
-                    RoofSegments(options: ["ต่อเนื่อง", "1", "2", "3", "4"], selected: rows, minSegment: 40) { i in update { Roof.setPV(&$0, rows: i) } }
-                }
-            }
-            let perRow = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 3)) : AnyLayout(HStackLayout(spacing: 10))
-            perRow {
-                Text(narrow ? "แผงต่อชุด (ตามแนวสัน)" : "ตามแนวสัน\nแผงต่อชุด").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize()
-                RoofSegments(options: ["ต่อเนื่อง", "ทุก 2 แผง", "ทุก 4 แผง", "ทุก 6 แผง"], selected: [0, 2, 4, 6].firstIndex(of: per), minSegment: 64) { i in
-                    update { Roof.setPV(&$0, perTable: [0, 2, 4, 6][i]) }
-                }
-            }
-            if tables { gapRow }
-        }
-    }
-
-    var gapRow: some View {
-        let g = Roof.pvGap(values)
-        return HStack(spacing: 8) {
-            Text("ระยะห่างระหว่างชุด").font(.sarabunFixed(14))
-            Spacer(minLength: 6)
-            stepButton("minus", enabled: g > 0) { update { Roof.setPV(&$0, gap: g - 0.05) } }
-            (Text(String(format: "%.2f", g)).font(.sarabunFixed(20, .bold)).foregroundColor(Self.amber) + Text(" ม.").font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
-                .monospacedDigit().frame(minWidth: 70)
-            stepButton("plus", enabled: g < 2) { update { Roof.setPV(&$0, gap: g + 0.05) } }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("ระยะห่างระหว่างชุด " + String(format: "%.2f", g) + " เมตร")
-    }
-
-    /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout.
+    /// จำนวนแผงก่อนเข้าสำรวจ (required, the report's count): typed, or taken from the layout. The line under the box says
+    /// whether it matches the layout, and offers the layout's count when it doesn't.
     func panelsField(_ count: Int) -> some View {
-        let cur = values.text(Roof.Key.panels)
-        return VStack(alignment: .trailing, spacing: 2) {
-            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            HStack(spacing: 6) {
+        let cur = values.text(Roof.Key.panels).trimmingCharacters(in: .whitespaces)
+        let same = cur == String(count)
+        return VStack(alignment: .leading, spacing: 4) {
+            (Text("จำนวนแผงก่อนเข้าสำรวจ") + Text(" *").foregroundColor(Theme.danger)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            HStack(spacing: 10) {
                 HStack(spacing: 4) {
                     TextField("", text: Binding(get: { cur }, set: { set(Roof.Key.panels, $0.isEmpty ? nil : .text($0)) }))
                         .keyboardType(.numberPad).multilineTextAlignment(.trailing)
                     Text("แผง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 .inputBox(focused: panelsFocused && cur.isEmpty, minHeight: 44, trailing: 8)
-                .frame(width: 100)
+                .frame(width: 120)
                 .accessibilityLabel("จำนวนแผงก่อนเข้าสำรวจ")
-                if count > 0 && cur != String(count) {
+                if count > 0 && !cur.isEmpty && same {
+                    Label("ตรงกับผัง", systemImage: "checkmark.circle.fill").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.okText)
+                } else if count > 0 {
+                    Text("ผังได้ \(count) แผง").font(.sarabunFixed(13)).foregroundStyle(cur.isEmpty ? Theme.inkMuted : Self.amber)
                     Button { set(Roof.Key.panels, .text(String(count))); panelsFocused = false } label: {
                         Text("ใช้ \(count)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                            .padding(.horizontal, 8).frame(minHeight: 44)
+                            .padding(.horizontal, 10).frame(minHeight: 44)
                             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.primary.opacity(0.5)))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("ใช้จำนวนแผงจากการจัดแผง \(count) แผง")
                 }
+                Spacer(minLength: 0)
             }
         }
     }
@@ -457,7 +466,7 @@ struct RoofPageWide: View {
 extension RoofPageWide {
     /// `-surveyC1 <state>` seeds the design's example roof (19 × 16, Pratt, ridge นอน, two skylights) and opens one of the
     /// states in docs/ui/survey-c1: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r|k, picker, shape,
-    /// material, wood, bays12, std, save, purlin, zoom, cad, member.
+    /// material, wood, bays12, std, save, purlin, zoom, cad, member; pvyield / pvyieldfar set A1's GPS for the energy card.
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyC1") else { return }
         update { v in
@@ -475,16 +484,130 @@ extension RoofPageWide {
         case "span": span = SpanRef(axis: .x, index: 2)
         case "spany": span = SpanRef(axis: .y, index: 1)
         case "posts": editPosts = true
-        case "pv": mode = .pv
+        case "pv": set(Roof.Key.shape, .choice("หลังคาทรงจั่ว", other: "")); mode = .pv
         case "keepout":
             update { v in
                 Roof.addArea(&v, kind: Roof.keepOutKind, x1: 2.4, y1: 9.2, x2: 6.6, y2: 12.2)
                 Roof.addArea(&v, kind: Roof.keepOutKind, x1: 13, y1: 2.2, x2: 15.4, y2: 4.4)
             }
             mode = .pv; tool = .keepOut
-        case "landscape": set(Roof.Key.pvOrientation, .text("l")); mode = .pv
+        case "landscape": mode = .pv
+        // แผงบนหลังคา: the tab in view, a module's or an obstacle's details, remove mode, the standard, a hip roof
+        case "pvtab": mode = .pv; scrollTarget = "info"
+        // the walkway along the ridge alone (a new layout's default) on the demo gable, its switch in view
+        case "pvridge":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v); c.walkwayRidge = true; c.walkwayCentre = false; c.walkwayEvery = 0; c.removed = []
+                RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            scrollTarget = "walkway"
+        // หาผังที่ได้แผงมากที่สุด run on the demo roof (every direction tried), its button and list in view
+        case "pvmost":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v); c.landscape = false; c.railsAcross = false; c.removed = []; RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            await searchMostModules()
+            scrollTarget = "most"
+        // the yearly energy card: A1's GPS in Bangkok (the hourly engine) or in Chiang Mai (no weather: SolarModel)
+        case "pvyield", "pvyieldfar":
+            job.values["gps"] = .text(state == "pvyield" ? "13.7563, 100.5018" : "18.7883, 98.9853")
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+            }
+            mode = .pv; scrollTarget = "info"
+        // pvrules: the installation checks card (ModuleRules) (information only)
+        case "pvrules":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setChoice(&v, RoofMount.Choice())
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            scrollTarget = "rules"
+        case "pvinfo", "pvobst", "pvhip", "pvshed", "pvtile", "pvacross", "pvland", "pvlandalong":
+            // the demo job keeps its answers: each state sets its own shape, material, low side and walkway
+            let shape = state == "pvhip" ? "หลังคาทรงปั้นหยา" : state == "pvshed" ? "หลังคาเพิงหมาแหงน" : "หลังคาทรงจั่ว"
+            update { v in
+                v[Roof.Key.shape] = .choice(shape, other: "")
+                v[Roof.Key.material] = .choice(state == "pvtile" ? "กระเบื้องซีแพค" : "เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, state == "pvshed")
+                var c = RoofMount.choice(v)
+                c.walkwayEvery = state == "pvtile" ? 6 : 0
+                // pvacross: rails across the purlins; pvland: landscape on them; pvlandalong: landscape on rails along (the hint)
+                c.landscape = ["pvland", "pvlandalong"].contains(state)
+                c.railsAcross = ["pvacross", "pvland"].contains(state)
+                if c.landscape || c.railsAcross { c.ribClamp = false }
+                RoofMount.setChoice(&v, c)
+            }
+            if state == "pvobst" {
+                update { v in
+                    Roof.addArea(&v, kind: RoofObstacleKind.stack.rawValue, x1: 15.2, y1: 2.0, x2: 15.8, y2: 2.6)
+                    Roof.addArea(&v, kind: RoofObstacleKind.turbine.rawValue, x1: 4.0, y1: 10.8, x2: 4.6, y2: 11.4)
+                }
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            switch state {
+            case "pvinfo", "pvacross", "pvland":
+                if let f = mount?.faces.first, let r = f.rows.indices.first,
+                   let c = f.rows[r].slots.firstIndex(where: \.isModule) {
+                    mountSelection = .slot(.init(face: f.face.id, row: r, column: c))
+                }
+            case "pvobst": mountSelection = Roof.areas(values).last.map { .area($0.index) }
+            default: break
+            }
+            // the hip roof and the obstacles keep the plan in view
+            if !["pvhip", "pvobst", "pvshed", "pvacross", "pvland"].contains(state) { scrollTarget = "info" }
+        // docs/ui/survey-c1-iphone-pv-fix01: landscape pairs with the plan in view (pvland2) or scrolled to the pair gap
+        // (pvpairs); the roof access on the left with the ridge walkway 1.00 m wide (pvaccessleft)
+        case "pvland2", "pvpairs", "pvaccessleft":
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v)
+                c.removed = []; c.walkwayEvery = 0; c.walkwayCentre = false; c.walkwayRidge = true
+                let pairs = state != "pvaccessleft"
+                c.landscape = pairs; c.landscapePairs = pairs; c.railsAcross = pairs; c.ribClamp = false
+                c.accessRight = pairs ? c.accessRight : false
+                c.ridgeWalkwayWidth = pairs ? nil : 1.00
+                RoofMount.setChoice(&v, c)
+            }
+            mode = .pv
+            for _ in 0..<40 where mount == nil || mountBusy { try? await Task.sleep(nanoseconds: 250_000_000) }
+            if state == "pvpairs" { scrollTarget = "pairs" }
+            if state == "pvaccessleft" { scrollTarget = "walkway" }
+        case "design", "designpv", "designlist":
+            // docs/specs/standard-designs.md §7: the demo roof saved as a design, picked, its purlins changed and two items confirmed
+            update { v in v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: "") }
+            let name = "อาคารตัวอย่าง " + RoofDesign.from(values, name: "", job: "", by: nil).size
+            // saved once per simulator, so the dropdown doesn't list a copy per launch
+            let d = DesignLibrary.shared.roofs.first { $0.name == name && !$0.archived }
+                ?? RoofDesign.from(values, name: name, job: "DEMO", by: nil)
+            if !DesignLibrary.shared.roofs.contains(where: { $0.id == d.id }) { DesignLibrary.shared.saveRoof(d) }
+            update { v in
+                RoofDesign.apply(&v, d)
+                Roof.setPurlinSpacing(&v, 1.2)
+                RoofDesign.toggle(&v, "size"); RoofDesign.toggle(&v, "frame")
+            }
+            scrollTarget = "info"
+            // designpv: the แผงบนหลังคา tab, with its ยังตรวจแบบไม่ครบ banner
+            if state == "designpv" { mode = .pv }
+            // designlist: the หลังคามาตรฐาน dropdown open, the design's card ticked
+            if state == "designlist" { try? await Task.sleep(nanoseconds: 800_000_000); dropdown = "std" }
         case "ridgev": update { Roof.setRidge(&$0, .v) }
         case "frame-n": update { Roof.setFrame(&$0, .normal) }
+        case "frame-h": update { Roof.setFrame(&$0, .howe) }
+        case "truss": update { Roof.setFrame(&$0, .howe) }; try? await Task.sleep(nanoseconds: 500_000_000); trussOpen = true
         case "frame-w": update { Roof.setFrame(&$0, .warren) }
         case "frame-c": update { Roof.setFrame(&$0, .rafterTie) }
         case "frame-r": update { Roof.setFrame(&$0, .rafterTruss) }

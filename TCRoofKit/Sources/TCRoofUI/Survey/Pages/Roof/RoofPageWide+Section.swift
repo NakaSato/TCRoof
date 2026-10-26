@@ -8,27 +8,75 @@ import PDFReport
 extension RoofPageWide {
     // MARK: section card
 
-    var sectionCard: some View {
+    @ViewBuilder var sectionCard: some View {
+        if mode == .pv { rowSectionCard } else { frameSectionCard }
+    }
+
+    /// The card's height: a row's section is closed until tapped on the panel layout, so it takes one row.
+    func sectionHeight(_ open: CGFloat) -> CGFloat { mode == .pv && !rowSectionOpen ? 70 : open }
+
+    /// แผงบนหลังคา: the selected row along the slope (§5.4), closed until tapped.
+    var rowSectionCard: some View {
+        card {
+            Button { withAnimation(.easeInOut(duration: 0.2)) { rowSectionOpen.toggle() } } label: {
+                HStack(spacing: 6) {
+                    (Text("รูปตัดแถวที่เลือก").bold().underline() + Text(" | หน่วย ม.").foregroundColor(Theme.inkMuted))
+                        .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkMuted)
+                        .rotationEffect(.degrees(rowSectionOpen ? 180 : 0))
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("รูปตัดแถวที่เลือก")
+            .accessibilityValue(rowSectionOpen ? "เปิดอยู่" : "ปิดอยู่")
+            if rowSectionOpen {
+                Divider()
+                rowSectionStage.frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text("แตะแผงบนแปลนเพื่อเปลี่ยนแถว").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+        }
+    }
+
+    var frameSectionCard: some View {
         let f = Roof.frame(values)
         return card {
             sectionStage(big: false).frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            let caption = (Text("รูปตัด A-A · " + f.title).bold().underline() + Text(" · หน่วย ม.").foregroundColor(Theme.inkMuted))
+            let caption = (Text("รูปตัด A-A | " + f.title).bold().underline() + Text(" | หน่วย ม.").foregroundColor(Theme.inkMuted))
                 .font(.sarabunFixed(14)).lineLimit(1).minimumScaleFactor(0.6).truncationMode(.tail)
             let zoom = footerButton("ขยาย", icon: "arrow.up.left.and.arrow.down.right", tint: Theme.primary) { sectionBig = true }
                 .accessibilityLabel("ขยายรูปตัดเต็มจอ")
+            let parts = footerButton("ชิ้นส่วน", icon: "list.bullet.rectangle", tint: Theme.primary) { trussOpen = true }
+                .accessibilityLabel(f.isTruss ? "รายละเอียด A B และตารางชิ้นส่วน" : "ตารางชิ้นส่วน")
+            pitchNote
             if narrow {
-                // iPhone: the caption and ขยาย on one line, the bays stepper under them
-                HStack(spacing: 8) { caption; Spacer(minLength: 8); zoom }
+                // iPhone: the caption, ชิ้นส่วน and ขยาย on one line, the bays stepper under them
+                HStack(spacing: 8) { caption; Spacer(minLength: 8); parts; zoom }
                 if !f.isRafter { baysStepper }
             } else {
                 HStack(spacing: 8) {
                     caption
                     Spacer(minLength: 8)
+                    parts
                     zoom
                     if !f.isRafter { baysStepper }
                 }
             }
+        }
+    }
+
+    /// The pitch from the measured heights (auto-drawing §4.4), or its check; nothing for the frame type's slope.
+    @ViewBuilder var pitchNote: some View {
+        let p = Roof.pitch(values)
+        if let w = p.warning {
+            Label(w, systemImage: "exclamationmark.triangle.fill").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.warningText)
+                .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+        } else if p.measured {
+            Text("มุมหลังคา " + Roof.slopeText(values) + " จากความสูงสัน " + String(format: "%.2f", Roof.ridgeHeight(values)) + " ม.")
+                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -40,10 +88,11 @@ extension RoofPageWide {
             let fit = SketchFit(RoofSection.width, RoofSection.height, in: geo.size)
             ZStack(alignment: .topLeading) {
                 SketchCanvas(ops: sec.sketch.ops, fit: fit)
-                    .accessibilityLabel(String(format: "รูปตัด A-A %@ ช่วง %.2f ม. มุม %@ องศา R %.2f ม.", f.title, sec.span, fmt(f.slope), sec.rise))
+                    .accessibilityLabel(String(format: "รูปตัด A-A %@ ช่วง %.2f ม. มุม %@ องศา R %.2f ม.", f.title, sec.span, fmt((Roof.slope(values) * 10).rounded() / 10), sec.rise))
                 if !big {
                     lengthButton(Roof.Key.overhang, "ชายคา").position(fit.point(sec.overhangLabel))
                     lengthButton(Roof.Key.clearHeight, f.isRafter ? "สูงถึงหัวเสา" : "สูงใต้ขื่อ").position(fit.point(sec.clearLabel))
+                    lengthButton(Roof.Key.ridgeHeight, "สูงถึงสันหลังคา").position(fit.point(sec.riseLabel))
                 }
                 ForEach(sec.callouts.keys.sorted(), id: \.self) { n in
                     Button { member = member == n ? nil : n } label: { Color.clear.frame(width: 44, height: 44).contentShape(Circle()) }
@@ -87,7 +136,7 @@ extension RoofPageWide {
         .accessibilityLabel(symbol == "plus" ? "เพิ่ม" : "ลด")
     }
 
-    /// The section's overhang and clear height: tap to step them by 0.05 m.
+    /// The section's overhang, clear height and ridge height: tap to step them by 0.05 m.
     func lengthButton(_ key: String, _ name: String) -> some View {
         Button { lengthKey = key } label: { Color.clear.frame(width: 88, height: 44).contentShape(Rectangle()) }
             .buttonStyle(.plain)
@@ -98,8 +147,10 @@ extension RoofPageWide {
     }
 
     func lengthEditor(_ key: String, _ name: String) -> some View {
-        let overhang = key == Roof.Key.overhang
-        let m = overhang ? Roof.overhang(values) : Roof.clearHeight(values), range = overhang ? 0.0...3.0 : 1.0...30.0
+        let overhang = key == Roof.Key.overhang, ridge = key == Roof.Key.ridgeHeight
+        let m = overhang ? Roof.overhang(values) : ridge ? Roof.ridgeHeight(values) : Roof.clearHeight(values)
+        let range = overhang ? 0.0...3.0 : ridge ? 1.0...40.0 : 1.0...30.0
+        let reset = overhang ? "ใช้ค่าตามแบบ (0.70)" : ridge ? "ใช้มุมตามแบบ (" + fmt(Roof.frame(values).slope) + "°)" : "ใช้ค่าตามแบบ (4.00)"
         return VStack(alignment: .leading, spacing: 10) {
             Text(name + " (ม.)").font(.sarabunFixed(15, .bold))
             HStack(spacing: 10) {
@@ -108,9 +159,12 @@ extension RoofPageWide {
                 stepButton("plus", enabled: m < range.upperBound) { update { Roof.setLength(&$0, key, min(range.upperBound, m + 0.05)) } }
             }
             Button { update { Roof.setLength(&$0, key, nil) } } label: {
-                Text("ใช้ค่าตามแบบ (" + (overhang ? "0.70" : "4.00") + ")").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
+                Text(reset).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary).frame(minHeight: 44)
             }
             .buttonStyle(.plain)
+            if ridge {
+                Text("พื้นถึงหลังคาที่สัน | มุมคิดจากความสูงนี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
         }
         .foregroundStyle(Theme.navy)
         .padding(14)

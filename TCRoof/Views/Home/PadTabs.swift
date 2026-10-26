@@ -73,17 +73,19 @@ struct PadTabs<HomeRoot: View>: View {
 
     private func stack(_ t: PadTab) -> some View {
         NavigationStack {
+            // each root erased: written out, every tab's screen type sat in one switch and SwiftUI worked out all of their
+            // layouts at launch, tabs never opened included (seconds of CPU on a device)
             Group {
                 switch t {
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-ipad-v3 §2)
-                case .pwa: PWARoot()
+                case .pwa: AnyView(PWARoot())
                 // every PWA station's papers (docs/ui/pwa-docs-ipad); the residential library is the settings sheet's
                 // `เอกสารงานบ้าน` row, as on the iPhone
-                case .docs: PWADocsPadView()
+                case .docs: AnyView(PWADocsPadView())
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
-                case .tools: ToolsView(modules: [.plan, .install])
-                default: if let module = t.module { module.destination } else { home() }
+                case .tools: AnyView(ToolsView(modules: [.plan, .travel]))
+                default: if let module = t.module { AnyView(module.destination) } else { AnyView(home()) }
                 }
             }
             .padDock(fade: dock.noFade ? nil : t.fade)
@@ -117,8 +119,8 @@ struct PadDockBar: View {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
             TCTabItem(.home, title: "หน้าแรก", symbol: "house"),
-            TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ · นัดวันนี้ \(pwa)" : nil),
-            TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน · นัดวันนี้ \(home)" : nil),
+            TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),
+            TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),

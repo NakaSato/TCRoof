@@ -22,8 +22,9 @@ final class TankPointsTests: XCTestCase {
             let c = centre(o)
             XCTAssertEqual(c.0, e.0, accuracy: 1e-9, o.label); XCTAssertEqual(c.1, e.1, accuracy: 1e-9, o.label)
         }
-        XCTAssertEqual(list[0].x, "1.7"); XCTAssertEqual(list[0].w, "0.6")
-        XCTAssertEqual(list[10].x, "9.6"); XCTAssertEqual(list[10].y, "0.8"); XCTAssertEqual(list[10].w, "0.8")
+        // the กปภ. sheets' sizes: vents 1.45 m, hatches 1.15 m
+        XCTAssertEqual(list[0].x, "1.275"); XCTAssertEqual(list[0].w, "1.45")
+        XCTAssertEqual(list[10].x, "9.425"); XCTAssertEqual(list[10].y, "0.625"); XCTAssertEqual(list[10].w, "1.15")
         XCTAssertTrue(list.allSatisfy { $0.origin == TankPoints.standard && $0.status.isEmpty && $0.stdX == $0.x && $0.stdY == $0.y })
         XCTAssertFalse(list.contains(where: TankPoints.moved))
     }
@@ -80,14 +81,14 @@ final class TankPointsTests: XCTestCase {
         var v = tank()
         TankPoints.seed(&v)
         let v9 = TankPoints.points(v)[8]
-        TankPoints.move(&v, v9.id, x: 16.82, y: nil)
+        TankPoints.move(&v, v9.id, x: 16.81, y: nil)
         var o = TankPoints.points(v)[8]
         XCTAssertEqual(o.x, "16.8"); XCTAssertEqual(o.y, v9.y)
         XCTAssertTrue(TankPoints.moved(o))
         TankPoints.move(&v, v9.id, x: 50, y: -3)
         o = TankPoints.points(v)[8]
-        XCTAssertEqual(o.x, "39.4"); XCTAssertEqual(o.y, "0")
-        TankPoints.move(&v, v9.id, x: 17.7, y: 19.7)
+        XCTAssertEqual(o.x, "38.55"); XCTAssertEqual(o.y, "0")
+        TankPoints.move(&v, v9.id, x: 17.275, y: 19.275)
         XCTAssertFalse(TankPoints.moved(TankPoints.points(v)[8]))
     }
 
@@ -96,16 +97,16 @@ final class TankPointsTests: XCTestCase {
         TankPoints.seed(&v)
         let list = TankPoints.points(v), v9 = list[8]
         // near V6's column (centre 18) and V10's row (centre 20): both taken, with guides
-        let d = TankPoints.drop(v, v9.id, x: 17.85, y: 19.9)!
-        XCTAssertEqual(d.x, 17.7, accuracy: 1e-9); XCTAssertEqual(d.y, 19.7, accuracy: 1e-9)
+        let d = TankPoints.drop(v, v9.id, x: 17.4, y: 19.45)!
+        XCTAssertEqual(d.x, 17.275, accuracy: 1e-9); XCTAssertEqual(d.y, 19.275, accuracy: 1e-9)
         XCTAssertEqual(d.guideX!, 18, accuracy: 1e-9); XCTAssertEqual(d.guideY!, 20, accuracy: 1e-9)
-        // far from any line: only the 5 cm grid
-        let e = TankPoints.drop(v, v9.id, x: 14.123, y: 12.377)!
-        XCTAssertEqual(e.x, 14.1, accuracy: 1e-9); XCTAssertEqual(e.y, 12.4, accuracy: 1e-9)
+        // far from any line: only the 2.5 cm grid
+        let e = TankPoints.drop(v, v9.id, x: 14.123, y: 12.41)!
+        XCTAssertEqual(e.x, 14.125, accuracy: 1e-9); XCTAssertEqual(e.y, 12.4, accuracy: 1e-9)
         XCTAssertNil(e.guideX); XCTAssertNil(e.guideY)
         // kept inside
         let f = TankPoints.drop(v, v9.id, x: -5, y: 45)!
-        XCTAssertEqual(f.x, 0); XCTAssertEqual(f.y, 39.4, accuracy: 1e-9)
+        XCTAssertEqual(f.x, 0); XCTAssertEqual(f.y, 38.55, accuracy: 1e-9)
     }
 
     func testCheckLine() {
@@ -114,7 +115,7 @@ final class TankPointsTests: XCTestCase {
         let list = TankPoints.points(v)
         var c = TankPoints.check(v, list[8].id)!
         XCTAssertEqual(c.aligned.first, "V10")
-        XCTAssertEqual(c.text, "แนวเดียวกับ V10, V3 · ไม่ทับจุดอื่น")
+        XCTAssertEqual(c.text, "แนวเดียวกับ V10, V3 | ไม่ทับจุดอื่น")
         XCTAssertFalse(c.warning)
         TankPoints.move(&v, list[8].id, x: list[9].x.isEmpty ? 0 : Double(list[9].x)! - 0.3, y: Double(list[9].y)!)
         c = TankPoints.check(v, list[8].id)!
@@ -148,7 +149,7 @@ final class TankPointsTests: XCTestCase {
         XCTAssertEqual(centre(TankPoints.points(e)[0]).1, 20, accuracy: 1e-9)
         let h = TankPoints.add(&v, kind: TankPoints.hatch)!
         XCTAssertEqual(TankPoints.points(v).first { $0.id == h }?.label, "H6")
-        XCTAssertEqual(TankPoints.points(v).first { $0.id == h }?.w, "0.8")
+        XCTAssertEqual(TankPoints.points(v).first { $0.id == h }?.w, "1.15")
 
         // repeat V8 (centre 38, 38) along its row: no room to the right
         XCTAssertEqual(TankPoints.repeatRow(&v, TankPoints.points(v)[7].id, count: 3, spacing: 4), [])
@@ -157,8 +158,8 @@ final class TankPointsTests: XCTestCase {
         XCTAssertEqual(ids.count, 3)
         let row = TankPoints.points(v).filter { ids.contains($0.id) }
         XCTAssertEqual(row.map(\.label), ["V13", "V14", "V15"])
-        XCTAssertEqual(row.map(\.x), ["5.7", "9.7", "13.7"])
-        XCTAssertTrue(row.allSatisfy { $0.y == "37.7" && $0.origin == TankPoints.added })
+        XCTAssertEqual(row.map(\.x), ["5.275", "9.275", "13.275"])
+        XCTAssertTrue(row.allSatisfy { $0.y == "37.275" && $0.origin == TankPoints.added })
 
         // standard points can't be deleted, added ones can
         XCTAssertFalse(TankPoints.delete(&v, TankPoints.points(v)[0].id))
@@ -179,7 +180,7 @@ final class TankPointsTests: XCTestCase {
         XCTAssertEqual(hatches(Drawings.plan(v, tank: false)!), 14)
         XCTAssertEqual(TankPoints.points(v).count, 15)
         let spec = Schema.spec(.tank).fields.first { $0.id == "obst" }!
-        XCTAssertTrue(spec.displayText(v).hasPrefix("V1 (ไม่มีจริง); V2 (0.6x0.6 ม. @37.7,1.7)"))
+        XCTAssertTrue(spec.displayText(v).hasPrefix("V1 (ไม่มีจริง); V2 (1.45x1.45 ม. @37.275,1.275)"))
     }
 
     func testOldObstaclesDecodeAndRoundTrip() throws {

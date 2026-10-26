@@ -11,6 +11,8 @@ public enum Roof {
         public static let frame = "frameType", ridge = "ridgeDir", bays = "trussBays", posts = "postGrid"
         public static let pvOrientation = "pvOrientation", shots = "roofShots"
         public static let overhang = "eaveOverhang", clearHeight = "clearHeight"
+        /// Ground to the roof at the ridge (m), optional: with the clear height it gives the pitch (auto-drawing §4.4).
+        public static let ridgeHeight = "ridgeHeight"
         public static let purlin = "purlinSpacing", standard = "roofStd"
         public static let pvRows = "pvRows", pvPerTable = "pvPerTable", pvGap = "pvGap"
         public static let shape = "roofShape", material = "roofMaterial", structure = "roofStructure", panels = "panelsBefore"
@@ -85,6 +87,43 @@ public enum Roof {
         v[key] = m.map { .text(fmt(($0 * 100).rounded() / 100)) }
     }
 
+    // MARK: pitch
+
+    /// The section's pitch: the frame type's slope (15°, 30° for ขื่อรัด), or derived from the measured heights
+    /// (docs/specs/auto-drawing.md §4.4) once `ridgeHeight` is set: rise `R = ridgeHeight − clearHeight − heel`, pitch
+    /// `atan(R / run)` with the run half the span (the whole span for a shed). A ridge not above the eave, or a pitch
+    /// over 60°, keeps the frame's slope with the warning; under 3° or over 45° it is used, with a warning.
+    public struct Pitch: Equatable, Sendable {
+        /// Degrees.
+        public let degrees: Double
+        /// From the heights, not the frame type.
+        public let measured: Bool
+        public let warning: String?
+    }
+    public static func pitch(_ v: Values) -> Pitch {
+        let f = frame(v)
+        guard let ridge = v.number(Key.ridgeHeight) else { return Pitch(degrees: f.slope, measured: false, warning: nil) }
+        let rise = ridge - clearHeight(v) - f.heel
+        let run = RoofMount.shape(v) == .shed ? span(v) : span(v) / 2
+        guard rise >= 0.05, run > 0, rise.isFinite else {
+            return Pitch(degrees: f.slope, measured: false, warning: "ความสูงสันต้องมากกว่าชายคา")
+        }
+        let a = atan(rise / run) * 180 / .pi
+        let check = String(format: "ตรวจความสูงอีกครั้ง (มุมประมาณ %.1f°)", a)
+        guard a <= 60 else { return Pitch(degrees: f.slope, measured: false, warning: check) }
+        return Pitch(degrees: a, measured: true, warning: a < 3 || a > 45 ? check : nil)
+    }
+    /// The pitch in degrees, as every C1 drawing and the PV layout use it.
+    public static func slope(_ v: Values) -> Double { pitch(v).degrees }
+    /// "15°", or "14.9°" for a measured pitch.
+    public static func slopeText(_ v: Values) -> String { fmt((slope(v) * 10).rounded() / 10) + "°" }
+    /// The ridge height: measured, else what the frame's slope gives above the clear height.
+    public static func ridgeHeight(_ v: Values) -> Double {
+        if let r = v.number(Key.ridgeHeight) { return r }
+        let f = frame(v), run = RoofMount.shape(v) == .shed ? span(v) : span(v) / 2
+        return clearHeight(v) + f.heel + run * tan(f.slope * .pi / 180)
+    }
+
     // MARK: purlins
 
     /// ระยะแป measured along the slope (m), 0.60–1.50 in 0.05 steps; 1.00 until set.
@@ -97,10 +136,10 @@ public enum Roof {
         v[Key.purlin] = p.map { .text(String(format: "%.2f", min(purlinRange.upperBound, max(purlinRange.lowerBound, ($0 * 100).rounded() / 100)))) }
     }
     /// Purlin lines across the ridge, metres from the plan's first grid line: 0.15 m each side of the ridge, then every
-    /// `spacing · cos(slope)` down to the eaves (the design's `PUR`).
+    /// `spacing | cos(slope)` down to the eaves (the design's `PUR`).
     public static func purlinLines(_ v: Values) -> [Double] {
         let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
-        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        let step = purlinSpacing(v) * cos(slope(v) * .pi / 180)
         var out: [Double] = [], d = 0.15
         while d < across / 2 - 0.05 { out += [across / 2 - d, across / 2 + d]; d += step }
         return out
@@ -108,7 +147,7 @@ public enum Roof {
     /// "ข้างละ 9 แนว"
     public static func purlinNote(_ v: Values) -> String {
         let across = ridge(v) == .h ? spans(v, .y).reduce(0, +) : spans(v, .x).reduce(0, +)
-        let step = purlinSpacing(v) * cos(frame(v).slope * .pi / 180)
+        let step = purlinSpacing(v) * cos(slope(v) * .pi / 180)
         return "ข้างละ \(Int(((across / 2 - 0.15) / step).rounded(.up))) แนว"
     }
 
@@ -187,13 +226,15 @@ public enum Roof {
         public var kind: String
         public var canCover: Bool
         public var label: String
+        /// Height above the roof (m), typed; nil = the kind's default.
+        public var height: Double? = nil
     }
     /// Every entry of `obst` with a usable rectangle (metres from the plan's top-left).
     public static func areas(_ v: Values) -> [Area] {
         v.obstacles(Key.obstacles).enumerated().compactMap { i, o in
             guard let x = NumberInput.value(o.x), let y = NumberInput.value(o.y), let w = NumberInput.value(o.w), let h = NumberInput.value(o.h),
                   w > 0, h > 0 else { return nil }
-            return Area(index: i, x: x, y: y, w: w, h: h, kind: o.kind, canCover: o.canCover, label: o.label)
+            return Area(index: i, x: x, y: y, w: w, h: h, kind: o.kind, canCover: o.canCover, label: o.label, height: NumberInput.value(o.height))
         }
     }
     /// Adds a skylight or keep-out zone; rounded to 0.1 m, at least 0.3 × 0.3 m. Returns false when too small.
@@ -203,7 +244,8 @@ public enum Roof {
         let x = r(min(x1, x2)), y = r(min(y1, y2)), w = r(abs(x2 - x1)), h = r(abs(y2 - y1))
         guard w >= 0.3, h >= 0.3 else { return false }
         var list = v.obstacles(Key.obstacles)
-        list.append(Obstacle(label: kind == skylightKind ? "แผ่นใส" : "เขตห้ามติด", x: fmt(x), y: fmt(y), w: fmt(w), h: fmt(h), kind: kind))
+        let label = kind == skylightKind ? "แผ่นใส" : kind == keepOutKind ? "เขตห้ามติด" : RoofObstacleKind(rawValue: kind)?.title ?? "สิ่งกีดขวาง"
+        list.append(Obstacle(label: label, x: fmt(x), y: fmt(y), w: fmt(w), h: fmt(h), kind: kind))
         v[Key.obstacles] = .obstacles(list)
         return true
     }
@@ -212,6 +254,19 @@ public enum Roof {
         guard list.indices.contains(index) else { return }
         list.remove(at: index)
         v[Key.obstacles] = list.isEmpty ? nil : .obstacles(list)
+    }
+    /// Moves an area to where it is on site: its top-left corner to (x, y) in metres, snapped to 5 cm and kept on a roof of
+    /// lx × ly. Its size and kind stay. False (and unchanged) when the index isn't an area or nothing moves.
+    @discardableResult
+    public static func moveArea(_ v: inout Values, index: Int, x: Double, y: Double, lx: Double, ly: Double) -> Bool {
+        var list = v.obstacles(Key.obstacles)
+        guard list.indices.contains(index), let w = NumberInput.value(list[index].w), let h = NumberInput.value(list[index].h) else { return false }
+        let snap = { (d: Double, room: Double) in (max(0, min(max(0, room), d)) * 20).rounded() / 20 }
+        let nx = fmt(snap(x, lx - w)), ny = fmt(snap(y, ly - h))
+        guard nx != list[index].x || ny != list[index].y else { return false }
+        list[index].x = nx; list[index].y = ny
+        v[Key.obstacles] = .obstacles(list)
+        return true
     }
     public static func toggleCover(_ v: inout Values, index: Int) {
         var list = v.obstacles(Key.obstacles)
@@ -259,11 +314,11 @@ public enum Roof {
         return "other"
     }
 
-    /// "ชุดมาตรฐาน · โครงถักเหล็ก 16 ม."
+    /// "ชุดมาตรฐาน | โครงถักเหล็ก 16 ม."
     public static func memberNote(_ v: Values) -> String {
         let f = frame(v), wood = v.choice(Key.structure) == "ไม้"
         let kind = f.isTruss ? "โครงถัก" : f == .rafterTie ? "โครงขื่อรัด" : f == .rafterTruss ? "โครงจันทันถัก" : "โครง"
-        return "ชุดมาตรฐาน · \(kind)\(wood ? "ไม้" : "เหล็ก") \(fmt(span(v))) ม."
+        return "ชุดมาตรฐาน | \(kind)\(wood ? "ไม้" : "เหล็ก") \(fmt(span(v))) ม."
     }
 
     // MARK: roof shape and material
@@ -274,12 +329,12 @@ public enum Roof {
         public let stored: String?
     }
     public static let shapes: [Option] = [
-        Option(name: "ทรงจั่ว", sub: "Gable · ลาด 2 ด้าน", stored: "หลังคาทรงจั่ว"),
-        Option(name: "ทรงปั้นหยา", sub: "Hip · ลาด 4 ด้าน", stored: "หลังคาทรงปั้นหยา"),
-        Option(name: "ทรงเพิงหมาแหงน", sub: "Shed · ลาดด้านเดียว", stored: "หลังคาเพิงหมาแหงน"),
-        Option(name: "ทรงฟันเลื่อย", sub: "Saw-tooth · โรงงาน", stored: nil),
+        Option(name: "ทรงจั่ว", sub: "Gable | ลาด 2 ด้าน", stored: "หลังคาทรงจั่ว"),
+        Option(name: "ทรงปั้นหยา", sub: "Hip | ลาด 4 ด้าน", stored: "หลังคาทรงปั้นหยา"),
+        Option(name: "ทรงเพิงหมาแหงน", sub: "Shed | ลาดด้านเดียว", stored: "หลังคาเพิงหมาแหงน"),
+        Option(name: "ทรงฟันเลื่อย", sub: "Saw-tooth | โรงงาน", stored: nil),
         Option(name: "ทรงโค้ง", sub: "Arch / Curved", stored: "หลังคาทรงโค้ง"),
-        Option(name: "หลังคาแบน / ดาดฟ้า", sub: "Flat · คอนกรีต", stored: "หลังคาคอนกรีต (ดาดฟ้า)"),
+        Option(name: "หลังคาแบน / ดาดฟ้า", sub: "Flat | คอนกรีต", stored: "หลังคาคอนกรีต (ดาดฟ้า)"),
     ]
     public static let materials: [Option] = [
         Option(name: "เมทัลชีท", sub: "ลอนสแน็ปล็อก / ลอนทั่วไป", stored: "เมทัลชีท"),
@@ -397,24 +452,24 @@ public enum Roof {
     public static func statusLine(_ v: Values) -> String {
         let g = gaps(v)
         if g.isEmpty { return "ครบช่องบังคับแล้ว" }
-        if g.allSatisfy({ $0.key.hasPrefix("shot-") }) { return "ยังขาดภาพหลังคา: " + g.map(\.title).joined(separator: " · ") }
-        return "ยังขาด: " + g.map { $0.key.hasPrefix("shot-") ? "ภาพ" + $0.title : $0.title }.joined(separator: " · ")
+        if g.allSatisfy({ $0.key.hasPrefix("shot-") }) { return "ยังขาดภาพหลังคา: " + g.map(\.title).joined(separator: " | ") }
+        return "ยังขาด: " + g.map { $0.key.hasPrefix("shot-") ? "ภาพ" + $0.title : $0.title }.joined(separator: " | ")
     }
 }
 
 /// ชนิดโครงหลังคา, stored in `frameType`.
 public enum RoofFrame: String, CaseIterable, Sendable {
-    case normal = "n", pratt = "p", warren = "w", rafterTie = "c", rafterTruss = "r", eaveCeiling = "k"
+    case normal = "n", pratt = "p", howe = "h", warren = "w", rafterTie = "c", rafterTruss = "r", eaveCeiling = "k"
 
     /// The segmented control's label, in the design's order (ปกติ first).
-    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
+    public var label: String { ["n": "ปกติ", "p": "ถัก Pratt", "h": "ถัก Howe", "w": "ถัก Warren", "c": "ขื่อรัด", "r": "จันทันถัก", "k": "ชายคาฝ้า"][rawValue]! }
     public var title: String {
-        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
-         "k": "โครงจันทันพาดเสา · ชายคาฝ้า"][rawValue]!
+        ["n": "โครงปกติ", "p": "โครงถัก Pratt", "h": "โครงถัก Howe", "w": "โครงถัก Warren", "c": "โครงจันทัน-ขื่อรัด", "r": "โครงจันทันถัก + T2",
+         "k": "โครงจันทันพาดเสา | ชายคาฝ้า"][rawValue]!
     }
-    public static let ordered: [RoofFrame] = [.normal, .pratt, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
-    /// Pratt, Warren and the normal frame are trusses with a bottom chord.
-    public var isTruss: Bool { self == .normal || self == .pratt || self == .warren }
+    public static let ordered: [RoofFrame] = [.normal, .pratt, .howe, .warren, .rafterTie, .rafterTruss, .eaveCeiling]
+    /// Pratt, Howe, Warren and the normal frame are trusses with a bottom chord.
+    public var isTruss: Bool { self == .normal || self == .pratt || self == .howe || self == .warren }
     /// Rafters on eaves beams (ขื่อรัด, ชายคาฝ้า): no truss panels, the plan draws rafters @1.00.
     public var isRafter: Bool { self == .rafterTie || self == .eaveCeiling }
     public var slope: Double { self == .rafterTie ? 30 : 15 }
@@ -503,13 +558,13 @@ public extension Roof {
             }
             return name + " " + size
         }
-        /// "ถัก Pratt · ช่วงเสา 4 ม. · 7 × 6 กริด", or for a saved roof "ขื่อรัด · แป @0.90 · โดย วิชัย · 28 ก.ย. · ทั้งทีม".
+        /// "ถัก Pratt | ช่วงเสา 4 ม. | 7 × 6 กริด", or for a saved roof "ขื่อรัด | แป @0.90 | โดย วิชัย | 28 ก.ย. | ทั้งทีม".
         public var subtitle: String {
             if let by {
                 return [roofFrame.label, "แป @" + String(format: "%.2f", purlin ?? 1), "โดย " + by, date ?? "", scope ?? ""]
-                    .filter { !$0.isEmpty }.joined(separator: " · ")
+                    .filter { !$0.isEmpty }.joined(separator: " | ")
             }
-            return roofFrame.label + " · ช่วงเสา " + fmt(xs.max() ?? 0) + " ม. · \(xs.count + 1) × \(ys.count + 1) กริด"
+            return roofFrame.label + " | ช่วงเสา " + fmt(xs.max() ?? 0) + " ม. | \(xs.count + 1) × \(ys.count + 1) กริด"
         }
     }
 

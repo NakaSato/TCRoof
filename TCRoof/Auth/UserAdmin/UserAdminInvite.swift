@@ -93,7 +93,7 @@ struct InviteSheet: View {
         HStack(spacing: 12) {
             Image(systemName: "envelope").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.primary)
                 .frame(width: 40, height: 40).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
-            Text("สร้าง members/<email> · เข้าแอปด้วย Google ของอีเมลนี้เท่านั้น").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+            Text("สร้าง members/<email> | เข้าแอปด้วย Google ของอีเมลนี้เท่านั้น").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -140,7 +140,7 @@ struct InviteSheet: View {
                 .frame(width: 40, height: 40).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 0) {
                 Text("เพิ่มผู้ใช้ด้วยอีเมล").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
-                Text("สร้าง members/<email> · เข้าแอปด้วย Google ของอีเมลนี้เท่านั้น").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("สร้าง members/<email> | เข้าแอปด้วย Google ของอีเมลนี้เท่านั้น").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             Button { done(nil) } label: {
@@ -157,7 +157,7 @@ struct InviteSheet: View {
         if email.isEmpty { return ("ใช้อีเมลบัญชี Google ที่จะใช้เข้าแอป", Theme.inkMuted) }
         if valid == nil { return ("รูปแบบอีเมลไม่ถูกต้อง", Theme.dangerText) }
         if duplicate { return ("อีเมลนี้อยู่ในรายชื่อแล้ว", Theme.dangerText) }
-        return (companyDomain ? "✓ โดเมนบริษัท · แนะนำ ทีมภายใน" : "✓ โดเมนภายนอก · แนะนำ วิศวกรภายนอก / ผู้รับเหมา", Theme.successText)
+        return (companyDomain ? "✓ โดเมนบริษัท | แนะนำ ทีมภายใน" : "✓ โดเมนภายนอก | แนะนำ วิศวกรภายนอก / ผู้รับเหมา", Theme.successText)
     }
 
     private var emailField: some View {
@@ -180,7 +180,7 @@ struct InviteSheet: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 6) {
-            (Text("ชื่อที่แสดง ") + Text("ไม่บังคับ · ใช้ในรายชื่อทีม").font(.sarabun(13)).foregroundColor(Theme.muted))
+            (Text("ชื่อที่แสดง ") + Text("ไม่บังคับ | ใช้ในรายชื่อทีม").font(.sarabun(13)).foregroundColor(Theme.muted))
                 .font(.sarabun(13, .bold)).foregroundStyle(Theme.projectTabInk)
             TextField("ชื่อ นามสกุล", text: $name)
                 .font(.sarabun(15)).foregroundStyle(Theme.navy)
@@ -192,7 +192,7 @@ struct InviteSheet: View {
 
     private var roleField: some View {
         let xs = Capability.allCases.map { $0.access(role, overrides: store.overrides) }
-        let line = "ทำได้ \(xs.filter { $0 == .allow }.count) · มีเงื่อนไข \(xs.filter { $0 == .conditional }.count) · ดู \(xs.filter { $0 == .view }.count) จาก \(xs.count) สิทธิ์ · Maintainer ตั้งจากหน้านี้ไม่ได้"
+        let line = "ทำได้ \(xs.filter { $0 == .allow }.count) | มีเงื่อนไข \(xs.filter { $0 == .conditional }.count) | ดู \(xs.filter { $0 == .view }.count) จาก \(xs.count) สิทธิ์ | Maintainer ตั้งจากหน้านี้ไม่ได้"
         return VStack(alignment: .leading, spacing: 6) {
             Text("บทบาท").font(.sarabun(13, .bold)).foregroundStyle(Theme.projectTabInk)
             AdminSegments(items: UserRole.allCases.map {
@@ -204,7 +204,7 @@ struct InviteSheet: View {
 
     private var jobsField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            (Text("งานที่มอบหมาย ") + Text("ภายนอกเห็นเฉพาะงานที่เลือก · เพิ่มภายหลังได้").font(.sarabun(13)).foregroundColor(Theme.muted))
+            (Text("งานที่มอบหมาย ") + Text("ภายนอกเห็นเฉพาะงานที่เลือก | เพิ่มภายหลังได้").font(.sarabun(13)).foregroundColor(Theme.muted))
                 .font(.sarabun(13, .bold)).foregroundStyle(Theme.projectTabInk)
             if store.jobChoices.isEmpty {
                 Text("ยังไม่มีงานให้มอบหมาย").font(.sarabun(13)).foregroundStyle(Theme.muted)
@@ -230,7 +230,7 @@ struct InviteSheet: View {
         HStack(alignment: .top, spacing: 10) {
             Text("i").font(.sarabun(12, .heavy)).foregroundStyle(Theme.warningText)
                 .frame(width: 22, height: 22).background(Theme.warningTint, in: Circle())
-            Text("เข้าแอปได้หลังกด ") + Text("บันทึกและซิงก์").bold() + Text(" แล้วส่งคำเชิญจากหน้าต่างที่ขึ้นมา · ลบออกได้ก่อนบันทึก")
+            Text("เข้าแอปได้หลังกด ") + Text("บันทึกและซิงก์").bold() + Text(" แล้วส่งคำเชิญจากหน้าต่างที่ขึ้นมา | ลบออกได้ก่อนบันทึก")
         }
         .font(.sarabun(12.5)).foregroundStyle(Theme.projectTabInk)
         .padding(.horizontal, 14).padding(.vertical, 12)

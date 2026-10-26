@@ -111,14 +111,14 @@ final class TankTests: XCTestCase {
         XCTAssertNil(Tank.sourceLine(v))
         Tank.setAzimuth(&v, 372, source: .manual)
         XCTAssertEqual(Tank.azimuth(v), 12)
-        XCTAssertEqual(Tank.sourceLine(v), "ป้อนเอง · แปลนและลูกศร N หมุนตามค่านี้")
+        XCTAssertEqual(Tank.sourceLine(v), "ป้อนเอง | แปลนและลูกศร N หมุนตามค่านี้")
         var c = DateComponents(); c.year = 2026; c.month = 9; c.day = 30; c.hour = 16; c.minute = 55
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Bangkok")!
         Tank.setAzimuth(&v, 14, source: .compass, at: cal.date(from: c)!, accuracy: 3.4)
         XCTAssertEqual(v.text("tankAzimuthSrc"), "compass")
-        XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone), "วัดด้วยเข็มทิศ iPad · ±3° · 30/9 16:55 · แปลนและลูกศร N หมุนตามค่านี้")
+        XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone), "วัดด้วยเข็มทิศ iPad | ±3° | 30/9 16:55 | แปลนและลูกศร N หมุนตามค่านี้")
         XCTAssertEqual(Tank.sourceLine(v, timeZone: cal.timeZone, device: "iPhone", tail: "แปลนหมุนตามค่านี้"),
-                       "วัดด้วยเข็มทิศ iPhone · ±3° · 30/9 16:55 · แปลนหมุนตามค่านี้")
+                       "วัดด้วยเข็มทิศ iPhone | ±3° | 30/9 16:55 | แปลนหมุนตามค่านี้")
         Tank.setAzimuth(&v, nil, source: .manual)
         XCTAssertNil(v["tankAzimuth"]); XCTAssertNil(v["tankAzimuthAt"]); XCTAssertNil(v["tankAzimuthSrc"])
     }
@@ -139,7 +139,8 @@ final class TankTests: XCTestCase {
         XCTAssertTrue(Tank.sizeDone(old.values))
         XCTAssertNil(Tank.azimuth(old.values))
         let before = old.completion
-        XCTAssertEqual(before.total, 11)
+        // 11, plus the roof and cable photos required since 2026-10-19
+        XCTAssertEqual(before.total, 13)
         // the new fields are optional and hidden: filling them changes nothing in the count
         var m = old
         Tank.syncExposed(&m.values)
@@ -200,7 +201,7 @@ final class TankTests: XCTestCase {
         let plan = try XCTUnwrap(TankPlan(v, chips: true, hints: true))
         XCTAssertEqual(plan.chips.count, 26)
         XCTAssertFalse(texts(plan.sketch).contains("4.00"))
-        XCTAssertTrue(texts(plan.sketch).contains("ผนัง ค.ส.ล. · สิ่งกีดขวางระบุในขั้นที่ 2"))
+        XCTAssertTrue(texts(plan.sketch).contains("ผนัง ค.ส.ล. | สิ่งกีดขวางระบุในขั้นที่ 2"))
         XCTAssertNil(TankPlan(Values()))
     }
 
@@ -221,10 +222,16 @@ final class TankTests: XCTestCase {
 
     func testPhotoStatus() {
         var v = Values()
-        XCTAssertEqual(Tank.photoCompletion(v), Completion(filled: 0, total: 3))
-        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 3 ภาพ")
+        // aerial, walls, roof (both photos), cable route, obstacles
+        XCTAssertEqual(Tank.photoCompletion(v), Completion(filled: 0, total: 5))
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 5 ภาพ")
         v["aerialPhoto"] = .photo(Photo(fileName: "a.jpg", width: 4, height: 3))
-        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 2 ภาพ")
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 4 ภาพ")
+        // the roof needs its overview and its surface
+        v[Tank.Key.roofPhotos] = .photos([Photo(fileName: "r.jpg", width: 4, height: 3)])
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 4 ภาพ")
+        v[Tank.Key.roofPhotos] = .photos([Photo(fileName: "r.jpg", width: 4, height: 3), Photo(fileName: "s.jpg", width: 4, height: 3)])
+        XCTAssertEqual(Tank.statusLine(v), "ยังขาดภาพบังคับ 3 ภาพ")
     }
 
     // MARK: compass lock (states/08)

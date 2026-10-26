@@ -25,11 +25,7 @@ struct WeeklyRequestScreen: View {
         _request = State(initialValue: Self.load(job, ws))
     }
 
-    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest {
-        job.weeklyRequest(for: week) ?? RoutineReport.requestDraft(
-            weekStart: week, plan: job.scheduleInput.map { MasterSchedule.plan($0) }, actual: job.scheduleActual,
-            latest: job.dailyReports.last, settings: job.routineSettings)
-    }
+    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest { WeeklyRequestStore.load(job, week) }
 
     private var weekEnd: Date { RoutineReport.calendar.date(byAdding: .day, value: 6, to: week)! }
     private var stored: Bool { job.weeklyRequest(for: week) != nil }
@@ -169,12 +165,12 @@ struct WeeklyRequestScreen: View {
 
     /// What the week bar says under the dates: who sent it and when, or that it is a draft.
     private var stateLine: String {
-        if let at = request.approvedAt { return "อนุมัติแล้ว \(RoutineReport.thaiDate(at))" + (request.approvedBy.isEmpty ? "" : " · \(request.approvedBy)") }
+        if let at = request.approvedAt { return "อนุมัติแล้ว \(RoutineReport.thaiDate(at))" + (request.approvedBy.isEmpty ? "" : " | \(request.approvedBy)") }
         if let at = request.sentAt ?? request.engineerSignedAt {
-            let by = request.sentBy.isEmpty ? "" : " · \(TeamDirectory.shared.person(request.sentBy)?.name ?? request.sentBy)"
-            return "ส่งขออนุมัติ \(RoutineReport.thaiDate(at))\(by)" + (external ? " · แก้ไม่ได้จนกว่าทีมส่งกลับ" : "")
+            let by = request.sentBy.isEmpty ? "" : " | \(TeamDirectory.shared.person(request.sentBy)?.name ?? request.sentBy)"
+            return "ส่งขออนุมัติ \(RoutineReport.thaiDate(at))\(by)" + (external ? " | แก้ไม่ได้จนกว่าทีมส่งกลับ" : "")
         }
-        return stored ? "บันทึกร่างแล้ว" : "ร่างจากแผน MP · ยังไม่บันทึก"
+        return stored ? "บันทึกร่างแล้ว" : "ร่างจากแผน MP | ยังไม่บันทึก"
     }
 
     private var bottomBar: some View {
@@ -198,7 +194,7 @@ struct WeeklyRequestScreen: View {
                     if !external { exportPDF() }
                 }
             case .sent where external:
-                barNote("ส่งแล้ว · รอทีมอนุมัติ")
+                barNote("ส่งแล้ว | รอทีมอนุมัติ")
             case .sent:
                 barButton("ส่งกลับให้แก้", .secondary, id: "weeklyRequest.sendBack") { request.sendBack(); save(file: false) }
                 barButton("บันทึกอนุมัติแล้ว", .primary, id: "weeklyRequest.approve") { showApprove = true }
@@ -230,6 +226,27 @@ struct WeeklyRequestScreen: View {
     }
 
     private func save(file: Bool) {
+        WeeklyRequestStore.save(request, job: job, external: external, file: file, context: context)
+    }
+
+    private func exportPDF() {
+        if let url = WeeklyRequestStore.pdfURL(job, request) { share = ReportShare(url: url) }
+    }
+}
+
+/// What the request screen and the iPad install page's `คำขอรายสัปดาห์` tab share: the week's request (or its draft
+/// from the MP plan), keeping it, and its R1 PDF.
+@MainActor
+enum WeeklyRequestStore {
+    static func draft(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest {
+        RoutineReport.requestDraft(weekStart: week, plan: job.scheduleInput.map { MasterSchedule.plan($0) }, actual: job.scheduleActual,
+                                   latest: job.dailyReports.last, settings: job.routineSettings)
+    }
+
+    static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest { job.weeklyRequest(for: week) ?? draft(job, week) }
+
+    /// Keeps the request on the job, and with `file` adds its PDF to the job's documents.
+    static func save(_ request: RoutineReport.WeeklyRequest, job: Job, external: Bool, file: Bool, context: ModelContext) {
         job.saveRequest(request)
         // a contractor's device sends the requests with its IEC test only when it changed them (`CloudSync`)
         if external { job.weeklyRequestsUnsent = true }
@@ -237,7 +254,36 @@ struct WeeklyRequestScreen: View {
         try? context.save()
     }
 
-    private func exportPDF() {
-        if let url = try? RoutineReportFiles.temporaryURL(RoutineReportFiles.request(job, request)) { share = ReportShare(url: url) }
+    /// The R1 PDF in a temporary file, to share or preview.
+    static func pdfURL(_ job: Job, _ request: RoutineReport.WeeklyRequest) -> URL? {
+        try? RoutineReportFiles.temporaryURL(RoutineReportFiles.request(job, request))
+    }
+}
+
+/// The requester's drawn signature of a week's request: a `PhotoAsset` on the job (`iecPhotos`, the job's own photos,
+/// as the uploaded key plan), tagged with the week, so it syncs, goes to Drive beside the request and prints on R1.
+extension Job {
+    static func requestSignatureTag(_ r: RoutineReport.WeeklyRequest) -> String { "request.signature." + r.id }
+
+    func requestSignature(_ r: RoutineReport.WeeklyRequest) -> PhotoAsset? {
+        let tag = Self.requestSignatureTag(r)
+        return iecPhotos.first { $0.tag == tag && !$0.data.isEmpty }
+    }
+
+    /// Keeps `png` as the week's signature (nil removes it).
+    @MainActor func setRequestSignature(_ png: Data?, for r: RoutineReport.WeeklyRequest, context: ModelContext) {
+        let tag = Self.requestSignatureTag(r)
+        for p in iecPhotos where p.tag == tag { context.delete(p) }
+        if let png {
+            let asset = PhotoAsset(data: png, tag: tag)
+            context.insert(asset)
+            asset.iecJob = self
+        }
+        try? context.save()
+    }
+
+    /// Every week's signature, with its request, for the Drive upload.
+    var requestSignatures: [(request: RoutineReport.WeeklyRequest, photo: PhotoAsset)] {
+        weeklyRequests.compactMap { r in requestSignature(r).map { (r, $0) } }
     }
 }

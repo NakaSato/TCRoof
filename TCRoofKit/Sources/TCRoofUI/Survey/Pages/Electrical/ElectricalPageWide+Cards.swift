@@ -180,12 +180,12 @@ extension ElectricalPageWide {
         }
     }
 
-    /// "CA · อัตรา TOU · CT 400/5 · ภาพมิเตอร์ ครบแล้ว" — what the folded part holds.
+    /// "CA | อัตรา TOU | CT 400/5 | ภาพมิเตอร์ ครบแล้ว" — what the folded part holds.
     var meterSummary: String? {
         let v = job.values
         let parts = [v.text("meterCA").isEmpty ? nil : "CA", v.text("meterRate").isEmpty ? nil : "อัตรา " + v.text("meterRate"),
                      v.text("meterCT").isEmpty ? nil : "CT " + v.text("meterCT"), v.photo("meterPic") == nil ? nil : "ภาพมิเตอร์"].compactMap { $0 }
-        return parts.isEmpty ? nil : "✓ " + parts.joined(separator: " · ") + " ครบแล้ว"
+        return parts.isEmpty ? nil : "✓ " + parts.joined(separator: " | ") + " ครบแล้ว"
     }
 }
 
@@ -413,7 +413,7 @@ extension ElectricalPageWide {
                     Text("AT").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 0)
                 }
-                Text("CB ย่อย \(breakerTotal(b.breakers))" + (sizeSummary(b.breakers).isEmpty ? "" : " · " + sizeSummary(b.breakers)))
+                Text("CB ย่อย \(breakerTotal(b.breakers))" + (sizeSummary(b.breakers).isEmpty ? "" : " | " + sizeSummary(b.breakers)))
                     .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
         }
@@ -439,7 +439,7 @@ extension ElectricalPageWide {
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.navy.opacity(0.3)))
-                    Text("ตู้หลัก · ปลายสาย").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.success)
+                    Text("ตู้หลัก | ปลายสาย").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.success)
                         .padding(.horizontal, 10).frame(minHeight: 26).background(Theme.mint.opacity(0.4), in: Capsule())
                 }
                 (narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .top, spacing: 14))) {
@@ -461,6 +461,7 @@ extension ElectricalPageWide {
                             }
                         }
                         A3Input(label: "ยี่ห้อ / รุ่น", text: bText(i, 0, \.brand))
+                        boardSLDButton(i, 0)
                         breakerList(i, 0)
                     }
                     VStack(alignment: .leading, spacing: 8) {
@@ -496,7 +497,7 @@ extension ElectricalPageWide {
     func breakerList(_ i: Int, _ k: Int) -> some View {
         let list = boards(i)[safe: k]?.breakers ?? []
         return VStack(alignment: .leading, spacing: 6) {
-            A3Label(text: "CB ลูกย่อย · แตะแถวเพื่อแก้")
+            A3Label(text: "CB ลูกย่อย | แตะแถวเพื่อแก้")
             let rows = VStack(spacing: 6) {
                 ForEach(Array(list.enumerated()), id: \.element.id) { n, br in
                     Button { editBreaker = BreakerEdit(id: br.id, trafo: i, board: k) } label: { breakerRow(n + 1, br) }.buttonStyle(.plain)
@@ -521,7 +522,7 @@ extension ElectricalPageWide {
     func breakerRow(_ n: Int, _ b: Breaker) -> some View {
         func v(_ s: String, _ unit: String) -> Text { s.isEmpty ? Text("?" + unit).foregroundColor(Theme.danger).bold() : Text(s + unit) }
         let unknown = b.at.isEmpty || b.af.isEmpty || b.ic.isEmpty || b.brand.isEmpty
-        let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P · ") + v(b.at, "AT") + Text("/") + v(b.af, "AF") + Text(" · ") + v(b.ic, "kA")
+        let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P | ") + v(b.at, "AT") + Text("/") + v(b.af, "AF") + Text(" | ") + v(b.ic, "kA")
         let line2 = [b.brand.isEmpty ? "ยี่ห้อ ?" : b.brand, b.target.isEmpty ? nil : "→ " + b.target].compactMap { $0 }.joined(separator: " ")
         return HStack(spacing: 8) {
             Text("\(n)").font(.sarabunFixed(13, .bold)).frame(width: 24, height: 24).background(Theme.primarySoft, in: Circle())
@@ -530,6 +531,7 @@ extension ElectricalPageWide {
                 Text(line2).font(.sarabunFixed(12)).foregroundStyle(b.brand.isEmpty ? Theme.danger : Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 0)
+            if b.spare { a3Chip("SPARE", ok: true) }
             if !b.condition.isEmpty { a3Chip(b.condition, ok: b.condition != "ชำรุด") }
         }
         .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
@@ -568,6 +570,7 @@ extension ElectricalPageWide {
                 }
                 .buttonStyle(.plain)
                 A3Input(label: "ตำแหน่งตู้", text: bText(i, k, \.location))
+                boardSLDButton(i, k)
                 Spacer(minLength: 0)
                 A3PhotoTile(photo: Binding(get: { boards(i)[safe: k]?.photos.first },
                                            set: { p in editBoards(i) { if $0.indices.contains(k) { $0[k].photos = p.map { [$0] } ?? [] } } }),
@@ -638,6 +641,7 @@ struct BreakerSheet: View {
                         A3Label(text: "สภาพ")
                         A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: breaker.condition) { breaker.condition = $0 }
                     }
+                    BreakerSLDFields(breaker: $breaker)
                     if !phone {
                         Button(role: .destructive, action: onDelete) {
                             Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)

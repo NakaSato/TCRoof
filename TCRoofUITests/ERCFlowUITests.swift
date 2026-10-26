@@ -27,6 +27,20 @@ final class ERCFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["ลบรายการล่าสุด"].exists, "the history should list what was recorded")
     }
 
+    /// Under 200 kVA the tab shows the small flow: the inspection request is ours after installation, with no พค.2 step.
+    func testStationUnder200ShowsTheSmallFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "stationdocs", "-stationDocsERC", "ready", "-stationDocsERCSize", "150",
+                               "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let inspection = app.buttons["erc.inspectionRequest"]
+        XCTAssertTrue(inspection.waitForExistence(timeout: slow), "the flag should open ลำดับ กกพ. on the small flow")
+        XCTAssertFalse(app.buttons["erc.pk2Request"].exists, "under 200 kVA there is no พค.2 step")
+        XCTAssertFalse(app.buttons["Check list พค.2"].exists)
+        XCTAssertTrue(app.buttons["erc.papers.grid_connection"].exists, "the open inspection request should offer its papers")
+    }
+
     /// Once installed, the พค.2 request is ours: its row leads to the พค.2 papers, and the job's card says whose turn it is.
     func testOpenRequestLeadsToItsPapersAndShowsOnTheJobCard() {
         let app = XCUIApplication()
@@ -42,7 +56,7 @@ final class ERCFlowUITests: XCTestCase {
 
         app.launchArguments = ["-screen", "job", "-jobKind", "pwa", "-noNotificationPrompt", "YES"]
         app.launch()
-        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ลำดับ กกพ. · ถึงคิวทีมเรา")).firstMatch
+        let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ลำดับ กกพ. | ถึงคิวทีมเรา")).firstMatch
         XCTAssertTrue(app.staticTexts["เอกสารสถานี กปภ."].waitForExistence(timeout: slow) || line.waitForExistence(timeout: 8))
         for _ in 0..<8 where !line.exists { app.swipeUp() }
         XCTAssertTrue(line.exists, "the job's card should say whose turn it is in the ERC flow")

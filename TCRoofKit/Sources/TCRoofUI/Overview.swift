@@ -219,7 +219,7 @@ public struct TCPhoneSearchHeader: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(bell.unread > 0 ? "การแจ้งเตือน · ยังไม่อ่าน \(bell.unread)" : "การแจ้งเตือน")
+        .accessibilityLabel(bell.unread > 0 ? "การแจ้งเตือน | ยังไม่อ่าน \(bell.unread)" : "การแจ้งเตือน")
     }
 
     private func settingsButton(_ action: @escaping () -> Void) -> some View {

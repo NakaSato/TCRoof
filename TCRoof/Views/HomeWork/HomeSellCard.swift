@@ -43,11 +43,11 @@ struct HomeSellCard: View {
 
     var body: some View {
         PermitSection(title: "คำขอขายไฟและสัญญา",
-                      subtitle: "ยื่น PPIM 2 ครั้ง: คำขอขายไฟ → ประกาศ · ชำระ · สัญญา → ขออนุญาตเชื่อมต่อ") {
+                      subtitle: "ยื่น PPIM 2 ครั้ง: คำขอขายไฟ → ประกาศ | ชำระ | สัญญา → ขออนุญาตเชื่อมต่อ") {
             PermitField("เลขคำขอขายไฟ (PPIM)", text: $home.ppimRequestNo)
             offerRow
             HomeDateRow(title: "วันที่ PEA ประกาศรายชื่อ", date: $home.announcedOn,
-                        caption: "เริ่มนับ 30 วัน: ชำระ 2,140 บาท · ส่งเอกสารสัญญา 2 ชุด · ลงนามสัญญา")
+                        caption: "เริ่มนับ 30 วัน: ชำระ 2,140 บาท | ส่งเอกสารสัญญา 2 ชุด | ลงนามสัญญา")
             HomeDateRow(title: "SCOD ตามสัญญา", date: $home.scod, caption: "ต้องจ่ายไฟเข้าระบบภายในวันนี้ (ภายในปี 2570)")
             if !home.sellDeadlines.isEmpty { deadlines }
             PermitField("เลขคำขอขออนุญาตเชื่อมต่อ (PPIM)", text: $home.connectRequestNo)
@@ -80,7 +80,7 @@ struct HomeSellCard: View {
         let parts = [o.pvKWp.map { "แผง \(HomeOffer.text($0)) kWp" }, o.inverterKW.map { "อินเวอร์เตอร์ \(HomeOffer.text($0)) kW" },
                      o.sellKW.map { "ขาย \(HomeOffer.text($0)) kW" }].compactMap { $0 }
         let issues = home.offerIssues
-        return parts.joined(separator: " · ") + (issues.isEmpty ? "" : "\n" + issues.joined(separator: "\n"))
+        return parts.joined(separator: " | ") + (issues.isEmpty ? "" : "\n" + issues.joined(separator: "\n"))
     }
 
     // MARK: Deadlines

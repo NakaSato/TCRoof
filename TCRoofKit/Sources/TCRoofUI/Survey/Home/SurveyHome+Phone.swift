@@ -35,7 +35,8 @@ extension SurveyHomeView {
         }
         .overlay(alignment: .bottomTrailing) {
             // iPad: 116 pt above the screen's edge, over the dock's 98
-            if page == .project && tab == .survey && !showsPlan { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
+            // a contractor can't create jobs (`job.edit`)
+            if page == .project && tab == .survey && !showsPlan && permissions.can(.jobEdit) { addButton.padding(.trailing, compact ? 20 : margin).padding(.bottom, compact ? 4 : 18) }
         }
     }
 
@@ -116,7 +117,7 @@ extension SurveyHomeView {
 
     private var filterLabel: String {
         switch tab {
-        case .survey: "กรองและเรียงงาน: \(mineOn ? "งานของฉัน · " : "")\(filter.heading) \(shown.count) งาน · เรียง \(sort.title)"
+        case .survey: "กรองและเรียงงาน: \(mineOn ? "งานของฉัน | " : "")\(filter.heading) \(shown.count) งาน | เรียง \(sort.title)"
         case .install: "กรองงาน: ติดตั้ง \(installStations.count) สถานี"
         case .maintenance: "กรองงาน: บำรุงรักษา \(maintenanceStations.count) สถานี"
         }
@@ -307,7 +308,7 @@ extension SurveyHomeView {
     /// `งานของฉัน`: a row that turns the filter on and off, with how many of the surveys are mine.
     private var mineRow: some View {
         let n = model.jobs(in: .survey).filter(isMine).count
-        return filterRow("งานของฉัน", count: n, on: onlyMine, label: onlyMine ? "งานของฉัน \(n) งาน · เปิดอยู่" : "งานของฉัน \(n) งาน") {
+        return filterRow("งานของฉัน", count: n, on: onlyMine, label: onlyMine ? "งานของฉัน \(n) งาน | เปิดอยู่" : "งานของฉัน \(n) งาน") {
             onlyMine.toggle()
         }
         .accessibilityIdentifier("pwaHome.mine")

@@ -57,7 +57,7 @@ struct PowerBanner: View {
         if !notes.isEmpty {
             HStack(spacing: 8) {
                 Image(systemName: monitor.advice.hot ? "thermometer.sun.fill" : monitor.advice.lowStorage ? "externaldrive.badge.exclamationmark" : "battery.25")
-                Text(notes.joined(separator: " · ")).lineLimit(2)
+                Text(notes.joined(separator: " | ")).lineLimit(2)
                 Spacer(minLength: 0)
             }
             .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.pending)

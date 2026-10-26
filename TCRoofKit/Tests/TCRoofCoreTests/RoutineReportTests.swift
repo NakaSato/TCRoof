@@ -238,6 +238,17 @@ final class RoutineReportTests: XCTestCase {
         XCTAssertEqual(RoutineReport.Weather.next(.cloudy), .rain)
         XCTAssertNil(RoutineReport.Weather.next(.rain))
     }
+
+    /// The module checklist is optional: a report without one encodes as before (no re-upload), and one with it keeps it.
+    func testTheModuleChecklistIsOptional() throws {
+        var d = RoutineReport.Daily(date: Date(timeIntervalSince1970: 1_800_000_000))
+        let plain = String(decoding: try JSONEncoder().encode(d), as: UTF8.self)
+        XCTAssertFalse(plain.contains("moduleCheck"))
+        d.moduleCheck = "{\"gapMm\":12}"
+        let back = try JSONDecoder().decode(RoutineReport.Daily.self, from: JSONEncoder().encode(d))
+        XCTAssertEqual(back.moduleCheck, d.moduleCheck)
+        XCTAssertNil(try JSONDecoder().decode(RoutineReport.Daily.self, from: Data(plain.utf8)).moduleCheck)
+    }
 }
 
 private extension RoutineReport.Daily {

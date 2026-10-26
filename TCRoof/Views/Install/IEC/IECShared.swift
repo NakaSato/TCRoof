@@ -41,7 +41,7 @@ extension Job {
         r.sampleName = "แพรกหนามแดง"
         r.stationLine += " (ตัวอย่าง)"
         if let context {
-            for p in iecPhotos { context.delete(p) }
+            for p in iecPhotos where p.tag != Job.keyPlanTag { context.delete(p) }
             let photo = IECCamera.stubPhoto("OK")
             func store() -> String { let id = UUID().uuidString; let a = PhotoAsset(data: photo, tag: id); context.insert(a); a.iecJob = self; return id }
             r.testDate = .now; r.tester = "ทีมทดสอบ"

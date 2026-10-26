@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import TCRoofUI
 import TCRoofCore
 import PDFReport
@@ -6,8 +7,39 @@ import PDFReport
 /// The key plan (docs/specs/routine-reports-swift.md §2.1): the A2 site picture of the station's survey report, with a
 /// point per location placed in the report settings.
 extension Job {
-    /// The newest linked survey report's site picture, when it has one on this device.
+    /// The tag of the station's uploaded key plan: a `PhotoAsset` on the job (`iecPhotos`, the job's own photos), so it
+    /// syncs and goes to Drive as the IEC photos do (docs/ui/daily-report-ipad-v2 rules).
+    static let keyPlanTag = "keyplan"
+
+    /// The key plan uploaded for this station, once its picture is on this device.
+    var uploadedKeyPlan: PhotoAsset? { iecPhotos.first { $0.tag == Self.keyPlanTag } }
+
+    /// Replaces the uploaded key plan with `data` (a JPEG); the locations keep their points.
+    @MainActor func setKeyPlan(_ data: Data, context: ModelContext) {
+        for p in iecPhotos where p.tag == Self.keyPlanTag { context.delete(p) }
+        let asset = PhotoAsset(data: data, tag: Self.keyPlanTag)
+        context.insert(asset)
+        asset.iecJob = self
+        try? context.save()
+    }
+
+    /// Back to the survey's A2 picture.
+    @MainActor func clearKeyPlan(context: ModelContext) {
+        for p in iecPhotos where p.tag == Self.keyPlanTag { context.delete(p) }
+        try? context.save()
+    }
+
+    /// The key plan: the one uploaded for the station, else the newest linked survey report's site picture, when this
+    /// device has it.
     @MainActor var keyPlanPicture: (photo: Photo, image: UIImage)? {
+        if let p = uploadedKeyPlan, !p.data.isEmpty, let img = UIImage(data: p.data) {
+            return (Photo(fileName: "keyplan.jpg", width: Int(img.size.width), height: Int(img.size.height)), img)
+        }
+        return surveyKeyPlan
+    }
+
+    /// The newest linked survey report's site picture (A2), when it has one on this device.
+    @MainActor var surveyKeyPlan: (photo: Photo, image: UIImage)? {
         let survey = SurveyModel.shared
         #if DEBUG
         if UserDefaults.standard.bool(forKey: "routineKeyPlan") { return Self.demoPicture }

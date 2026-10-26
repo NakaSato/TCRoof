@@ -14,14 +14,14 @@ public struct ComponentGallery: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if show(1) { GallerySection(number: 1, title: "โครงหน้า", subtitle: "Layout") { GalleryLayout() } }
-                if show(2) { GallerySection(number: 2, title: "ปุ่ม", subtitle: "Buttons · สูง ≥ 44 pt") { GalleryButtons() } }
+                if show(2) { GallerySection(number: 2, title: "ปุ่ม", subtitle: "Buttons | สูง ≥ 44 pt") { GalleryButtons() } }
                 if show(3) { GallerySection(number: 3, title: "ช่องกรอกข้อมูล", subtitle: "Inputs") { GalleryInputs() } }
                 if show(4) { GallerySection(number: 4, title: "สถานะและข้อความแจ้ง", subtitle: "Status & feedback") { GalleryStatus() } }
                 if show(5) { GallerySection(number: 5, title: "การ์ดและรายการ", subtitle: "Cards & lists") { GalleryCards() } }
                 if show(6) { GallerySection(number: 6, title: "ภาพ แผนที่ และแบบ", subtitle: "Media") { GalleryMedia() } }
                 if show(7) { GallerySection(number: 7, title: "หน้าต่างซ้อน และการแจ้งเตือน", subtitle: "Overlays") { GalleryOverlays() } }
                 if show(8) { GallerySection(number: 8, title: "สีและตัวอักษร", subtitle: "Tokens (tcroofsurvey)") { GalleryTokens() } }
-                if show(9) { GallerySection(number: 9, title: "ป้อนตัวเลข", subtitle: "Number input popup · แป้นตัวเลขแบบ popover") { GalleryNumberPad() } }
+                if show(9) { GallerySection(number: 9, title: "ป้อนตัวเลข", subtitle: "Number input popup | แป้นตัวเลขแบบ popover") { GalleryNumberPad() } }
             }
             .padding(sizeClass == .compact ? 16 : 24)
         }
@@ -35,11 +35,11 @@ public struct ComponentGallery: View {
     func show(_ n: Int) -> Bool { only == nil || only == n }
 }
 
-#Preview("Gallery · iPad", traits: .landscapeLeft) {
+#Preview("Gallery | iPad", traits: .landscapeLeft) {
     NavigationStack { ComponentGallery() }
 }
 
-#Preview("Gallery · iPhone") {
+#Preview("Gallery | iPhone") {
     NavigationStack { ComponentGallery() }
 }
 #endif

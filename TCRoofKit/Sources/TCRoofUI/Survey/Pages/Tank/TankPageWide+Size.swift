@@ -38,8 +38,9 @@ extension TankPageWide {
             .stroke(Theme.navy.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
             .overlay {
                 VStack(spacing: 8) {
-                    Image(systemName: "square.grid.3x3").font(.system(size: 34)).foregroundStyle(Theme.disabledText)
-                    Text("เลือกขนาดถัง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.inkMuted)
+                    let round = Tank.isRound(values)
+                    Image(systemName: round ? "circle.dashed" : "square.grid.3x3").font(.system(size: 34)).foregroundStyle(Theme.disabledText)
+                    Text(round ? "ใส่เส้นผ่านศูนย์กลาง" : "เลือกขนาดถัง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.inkMuted)
                 }
             }
             .padding(24)
@@ -82,11 +83,12 @@ extension TankPageWide {
             AnyView(sizeField)
             AnyView(typeField)
             AnyView(heightRow)
+            AnyView(volumeLine)
             AnyView(positionRow)
             AnyView(surfaceRow)
             AnyView(azimuthField)
             if fill { Spacer(minLength: 8) }
-            nextButton("ถัดไป · สิ่งกีดขวาง ›") { withAnimation { tab = 2 } }.padding(.top, fill ? 0 : 6)
+            nextButton("ถัดไป | สิ่งกีดขวาง ›") { withAnimation { tab = 2 } }.padding(.top, fill ? 0 : 6)
         })
     }
 
@@ -94,6 +96,15 @@ extension TankPageWide {
         HStack(alignment: .top, spacing: 10) {
             field("ความสูงถัง", unit: "(ม.)", required: true) { heightStepper }
             field("ส่วนพ้นดิน", unit: "(ม.)") { exposedStepper }
+        }
+    }
+
+    /// The size and volume summary under the heights (docs/specs/auto-drawing.md §5.5); nothing without a size.
+    @ViewBuilder var volumeLine: some View {
+        if let s = Tank.summary(values) {
+            Text(s.figures).font(.sarabunFixed(phone ? 13 : 14, .semibold)).foregroundStyle(Theme.inkMuted)
+                .lineLimit(2).minimumScaleFactor(0.8).frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("ขนาดถัง " + s.text)
         }
     }
 
@@ -177,11 +188,58 @@ extension TankPageWide {
 
     // MARK: size
 
+    /// The shape, then the presets / span editor of a rectangle or the diameter of a round tank.
     var sizeField: some View {
         let shown = Tank.sizeLabel(values)
-        return field("ขนาดถัง", aside: "เลือกจากรายการ", required: true) {
-            if phone { sizeMenu } else { sizeButton(shown) }
+        return VStack(alignment: .leading, spacing: phone ? 10 : 12) {
+            field("รูปทรงถัง") { shapeControl }
+            if Tank.isRound(values) {
+                field("เส้นผ่านศูนย์กลาง", unit: "(ม.)", required: true) { diameterStepper }
+            } else {
+                field("ขนาดถัง", aside: "เลือกจากรายการ", required: true) {
+                    if phone { sizeMenu } else { sizeButton(shown) }
+                }
+            }
         }
+    }
+
+    /// `สี่เหลี่ยม / ทรงกลม`: the iPad's two buttons as the position row, the iPhone's segmented track.
+    var shapeControl: some View {
+        let cur = Tank.shape(values)
+        return HStack(spacing: phone ? 3 : 6) {
+            ForEach([(Tank.Shape.rect, "สี่เหลี่ยม", "square"), (Tank.Shape.round, "ทรงกลม", "circle")], id: \.0) { s, name, icon in
+                let on = cur == s
+                Button { update { Tank.setShape(&$0, s) } } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+                        Text(name).font(.sarabunFixed(phone ? 14 : 15, on ? .bold : .semibold)).lineLimit(1)
+                    }
+                    .foregroundStyle(on || !phone ? Theme.navy : Theme.inkMuted)
+                    .frame(maxWidth: .infinity, minHeight: phone ? 38 : 44)
+                    .background {
+                        if phone {
+                            if on { RoundedRectangle(cornerRadius: 8).fill(Theme.surface).shadow(color: Theme.navy.opacity(0.2), radius: 1.5, y: 1) }
+                        } else {
+                            RoundedRectangle(cornerRadius: 10).fill(on ? Self.teal : Theme.surface)
+                            RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.3), lineWidth: on ? 1.5 : 1)
+                        }
+                    }
+                    // 44 pt on the iPhone with the track's padding
+                    .contentShape(Rectangle().inset(by: phone ? -3 : 0))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ถัง" + name)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(phone ? 3 : 0)
+        .frame(minHeight: 44)
+        .background(phone ? Theme.disabledFill : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    var diameterStepper: some View {
+        TankStepper(value: Tank.diameter(values), step: 0.5, range: Tank.minDiameter...200, label: "เส้นผ่านศูนย์กลาง",
+                    unit: phone ? "ม." : nil, glyph: phone ? 17 : 15) { d in update { Tank.setDiameter(&$0, d) } }
     }
 
     /// iPhone: the presets as a menu (a popover this low on the screen has room for one row).
@@ -190,14 +248,14 @@ extension TankPageWide {
         return Menu {
             ForEach(Tank.presets, id: \.name) { p in
                 Button { choose(p) } label: {
-                    if cur == p { Label(p.name + " · " + p.sub, systemImage: "checkmark") } else { Text(p.name + " · " + p.sub) }
+                    if cur == p { Label(p.name + " | " + p.sub, systemImage: "checkmark") } else { Text(p.name + " | " + p.sub) }
                 }
             }
             Divider()
             Button("+ กำหนดขนาดเอง (กว้าง × ยาว)") { customSize() }
         } label: {
             HStack(spacing: 6) {
-                Text(shown.map { $0.name + " · " + $0.sub } ?? "เลือกจากรายการ").font(.sarabunFixed(16, shown == nil ? .regular : .semibold))
+                Text(shown.map { $0.name + " | " + $0.sub } ?? "เลือกจากรายการ").font(.sarabunFixed(16, shown == nil ? .regular : .semibold))
                     .foregroundStyle(shown == nil ? Theme.inkMuted : Theme.navy).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 4)
                 dropIcon
@@ -212,7 +270,7 @@ extension TankPageWide {
             Button { sizeOpen.toggle() } label: {
                 HStack(spacing: 6) {
                     if let shown {
-                        (Text(shown.name).font(.sarabunFixed(17, .bold)) + Text(" · " + shown.sub).font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
+                        (Text(shown.name).font(.sarabunFixed(17, .bold)) + Text(" | " + shown.sub).font(.sarabunFixed(13)).foregroundColor(Theme.inkMuted))
                             .lineLimit(1).minimumScaleFactor(0.7)
                     } else {
                         Text("เลือกจากรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)

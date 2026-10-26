@@ -106,7 +106,7 @@ public enum WebBackup {
                     return MapMark(kind: k, x: mx, y: my, value: str(m["v"]), label: str(m["l"]))
                 }
                 if !a.isEmpty { v[f.id] = .marks(a) }
-            case .plan, .diagram, .note: break
+            case .plan, .diagram, .roofSection, .note: break
             }
         }
         return v

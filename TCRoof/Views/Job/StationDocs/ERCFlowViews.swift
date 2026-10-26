@@ -3,19 +3,21 @@ import TCRoofUI
 import TCRoofCore
 
 extension Job {
-    /// What the ERC flow reads from the job: the day the MP plan's installation tasks were all finished, and the
-    /// site's holidays as the days that don't count as working days.
+    /// What the ERC flow reads from the job: the day the MP plan's installation tasks were all finished, the site's
+    /// holidays as the days that don't count as working days, and the flow the station's size gives (under 200 kVA, or
+    /// 200 and over: `StationDocs.Context.over200kVA`).
     var ercContext: ERCFlow.Context {
         let tasks = MasterSchedule.Task.allCases.filter { $0.part == .construction }
         let finished = tasks.compactMap { scheduleActual.finished[$0.rawValue] }
         let done = finished.count == tasks.count ? finished.max().map(ERCFlow.day) : nil
-        return ERCFlow.Context(installDone: done, holidays: Set(routineSettings.holidays))
+        return ERCFlow.Context(installDone: done, holidays: Set(routineSettings.holidays),
+                               variant: .init(over200kVA: stationContext.over200kVA))
     }
 }
 
-/// ลำดับ กกพ. of a station of 200 kVA or more: the twelve steps of the exemption flow by section, whose turn each is
-/// and when a time limit ends (`ERCFlow`). The team records the day a step happened; a "not passed" answer sends
-/// the request round again.
+/// ลำดับ กกพ. of a station: the steps of its exemption flow by section (seven under 200 kVA, twelve from 200), whose
+/// turn each is and when a time limit ends (`ERCFlow`). The team records the day a step happened; a "not passed"
+/// answer sends the request round again. A record keeps the flow it was started in (`ERCFlow.Record.variant(_:)`).
 struct ERCFlowRows: View {
     @Bindable var job: Job
     let library: StationDocs.Library
@@ -26,14 +28,15 @@ struct ERCFlowRows: View {
 
     private var record: ERCFlow.Record { job.stationDocs.erc ?? ERCFlow.Record() }
     private var ctx: ERCFlow.Context { job.ercContext }
+    private var variant: ERCFlow.Variant { record.variant(ctx) }
 
     var body: some View {
-        let states = ERCFlow.states(record, ctx)
+        let states = ERCFlow.states(record, ctx), variant = variant
         Group {
             PadSection { summary(states) }
-            ForEach(ERCFlow.Section.allCases, id: \.self) { section in
-                PadSection(section.title) {
-                    ForEach(ERCFlow.Step.allCases.filter { $0.section == section }) { step in
+            ForEach(variant.sections, id: \.self) { section in
+                PadSection(section.title(in: variant)) {
+                    ForEach(variant.steps.filter { $0.section == section }) { step in
                         row(step, states[step] ?? .blocked)
                         if states[step] == .open, let package = package(step) {
                             Button { openPackage(package) } label: {
@@ -43,7 +46,7 @@ struct ERCFlowRows: View {
                             .accessibilityIdentifier("erc.papers." + package.rawValue)
                         }
                     }
-                    if section == .connect { wantsPK2Picker }
+                    if section == .connect, variant == .from200 { wantsPK2Picker }
                 }
             }
             history
@@ -55,9 +58,11 @@ struct ERCFlowRows: View {
         }
     }
 
+    /// Every change first keeps the flow the record follows now, so it stays in it if the station's size moves.
     private func update(_ change: (inout ERCFlow.Record) -> Void) {
         var station = job.stationDocs
         var r = station.erc ?? ERCFlow.Record()
+        r.pin(ctx)
         change(&r)
         station.erc = r
         job.stationDocs = station
@@ -70,19 +75,45 @@ struct ERCFlowRows: View {
         let ours = now.filter { states[$0] == .open }
         let theirs = now.filter { states[$0] != .open }
         return VStack(alignment: .leading, spacing: 4) {
-            Text(now.isEmpty ? "ครบทุกขั้นแล้ว" : ours.isEmpty ? "รอหน่วยงานอื่น" : "ถึงคิวทีมเรา: " + ours.map(label).joined(separator: " · "))
+            Text(now.isEmpty ? "ครบทุกขั้นแล้ว" : ours.isEmpty ? "รอหน่วยงานอื่น" : "ถึงคิวทีมเรา: " + ours.map(label).joined(separator: " | "))
                 .font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
             if !theirs.isEmpty {
-                Text("รออยู่: " + theirs.map { "\(label($0)) (\($0.party.title))" }.joined(separator: " · "))
+                Text("รออยู่: " + theirs.map { "\(label($0)) (\($0.party.title))" }.joined(separator: " | "))
                     .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
             }
-            Text("แจ้งยกเว้นฯ โครงข่ายการไฟฟ้า 200 ถึงต่ำกว่า 1,000 kVA · วันทำการไม่นับเสาร์ อาทิตย์ และวันหยุดของหน้างาน")
+            Text(variant.title + " | วันทำการไม่นับเสาร์ อาทิตย์ และวันหยุดของหน้างาน")
                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            if variant == .under200 {
+                Text("การไฟฟ้าส่งข้อมูลให้สำนักงาน กกพ. เองหลังตรวจผ่าน ทีมเราไม่ต้องยื่นแจ้งยกเว้นหรือ พค.2")
+                    .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+            }
+            flowMismatch
+        }
+    }
+
+    private static func sizeText(_ v: ERCFlow.Variant) -> String { v == .under200 ? "ต่ำกว่า 200 kVA" : "200 kVA ขึ้นไป" }
+
+    /// The record was started in the other size's flow than the station has now: it stays there, and the team can
+    /// move it where nothing recorded would be hidden.
+    @ViewBuilder private var flowMismatch: some View {
+        if !record.events.isEmpty, variant != ctx.variant {
+            Text("บันทึกไว้ตามลำดับ\(Self.sizeText(variant)) | ขนาดสถานีตอนนี้\(Self.sizeText(ctx.variant))")
+                .font(.sarabun(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.pending)
+            if record.canSwitch(to: ctx.variant) {
+                Button {
+                    update { $0.variant = ctx.variant }
+                } label: {
+                    Label("เปลี่ยนเป็นลำดับ\(Self.sizeText(ctx.variant))", systemImage: "arrow.triangle.swap")
+                        .font(.sarabun(15, relativeTo: .subheadline)).frame(minHeight: touchMin)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                .accessibilityIdentifier("erc.switchFlow")
+            }
         }
     }
 
     private func label(_ step: ERCFlow.Step) -> String {
-        step.number.map { "ข้อ \($0)" } ?? "ติดตั้ง"
+        step.number(in: variant).map { "ข้อ \($0)" } ?? "ติดตั้ง"
     }
 
     // MARK: Rows
@@ -91,7 +122,7 @@ struct ERCFlowRows: View {
         let canRecord: Bool = { switch state { case .open, .waiting: true; default: false } }()
         return Button { recording = step } label: {
             HStack(alignment: .top, spacing: 12) {
-                Text(step.number.map(String.init) ?? "–")
+                Text(step.number(in: variant).map(String.init) ?? "–")
                     .font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit()).foregroundStyle(Theme.inkMuted)
                     .frame(width: 28, alignment: .trailing)
                 VStack(alignment: .leading, spacing: 4) {
@@ -125,7 +156,7 @@ struct ERCFlowRows: View {
 
     private func detail(_ step: ERCFlow.Step, _ state: ERCFlow.State) -> String {
         let failed = record.failedRounds(step)
-        let rounds = failed > 0 ? " · ไม่ผ่านมาแล้ว \(failed) รอบ" : ""
+        let rounds = failed > 0 ? " | ไม่ผ่านมาแล้ว \(failed) รอบ" : ""
         switch state {
         case .done(let day): return thai(day) + rounds
         case .open: return "แตะเพื่อบันทึกวัน" + papers(step)
@@ -133,7 +164,7 @@ struct ERCFlowRows: View {
             var s = "รอตั้งแต่ \(thai(since))"
             if let due, let n = left(step, state) {
                 let unit = step.limit?.working == true ? "วันทำการ" : "วัน"
-                s += " · ครบกำหนด \(thai(due)) " + (n >= 0 ? "(เหลือ \(n) \(unit))" : "(เกินกำหนด \(-n) \(unit))")
+                s += " | ครบกำหนด \(thai(due)) " + (n >= 0 ? "(เหลือ \(n) \(unit))" : "(เกินกำหนด \(-n) \(unit))")
             }
             return s + rounds
         case .blocked: return ""
@@ -150,7 +181,7 @@ struct ERCFlowRows: View {
     private func papers(_ step: ERCFlow.Step) -> String {
         guard let package = package(step) else { return "" }
         let p = StationDocs.progress(package, station: job.stationDocs, library: library, job.stationContext)
-        return " · เอกสารชุด\(package.title)พร้อม \(p.ready)/\(p.total)"
+        return " | เอกสารชุด\(package.title)พร้อม \(p.ready)/\(p.total)"
     }
 
     @ViewBuilder private func chip(_ step: ERCFlow.Step, _ state: ERCFlow.State) -> some View {
@@ -182,7 +213,7 @@ struct ERCFlowRows: View {
             PadSection("ประวัติ") {
                 ForEach(Array(record.events.enumerated().reversed()), id: \.offset) { _, e in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(thai(e.day)) · \(e.step.title)" + (e.result == .failed ? " · ไม่ผ่าน" : e.result == .passed ? " · ผ่าน" : ""))
+                        Text("\(thai(e.day)) | \(e.step.title)" + (e.result == .failed ? " | ไม่ผ่าน" : e.result == .passed ? " | ผ่าน" : ""))
                             .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(e.result == .failed ? Theme.dangerText : Theme.navy)
                         if !e.note.isEmpty { Text(e.note).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted) }
                     }

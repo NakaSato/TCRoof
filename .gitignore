@@ -42,3 +42,11 @@ __pycache__/
 # GISTDA API key (see Secrets.example.xcconfig)
 Secrets.xcconfig
 **/Secrets.xcconfig
+.claude/worktrees/
+
+# yield reference: per-site PVGIS downloads are re-fetched on demand (Bangkok TMY is kept)
+tools/yield-reference/data/pvgis-tmy-era5-*.csv
+!tools/yield-reference/data/pvgis-tmy-era5-bangkok-13.75-100.50.csv
+tools/yield-reference/data/virtual-inverter-*.json
+tools/yield-reference/results-summary.json
+__pycache__/

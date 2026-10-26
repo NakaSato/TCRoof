@@ -14,7 +14,7 @@ extension JobEditorView {
         case .info: groupPage(Schema.info, code: "A1", title: "ข้อมูลโครงการ", subtitle: "ข้อมูลหัวกระดาษของทุกแผ่นงาน (เลขที่ วันที่ ผู้ประสานงาน ที่อยู่)")
         case .site: groupPage(Schema.site, code: "A2", title: "ภาพสถานที่ติดตั้ง", subtitle: "แผ่น ระบบไฟฟ้า — ภาพสถานที่ติดตั้ง และ LIST")
         case .electrical: groupPage(Schema.electrical, code: "A3", title: "มิเตอร์ หม้อแปลง และตู้ MDB", subtitle: "แผ่น ระบบไฟฟ้า — ผังมิเตอร์ หม้อแปลง และตู้ MDB")
-        case .flood: groupPage(Schema.flood, code: "A4", title: "ประวัติน้ำท่วม", subtitle: "ใช้กำหนดความสูงติดตั้งอินเวอร์เตอร์ ตู้ SMDB/กันย้อน และแนวรางสายไฟ · แสดงในรายงาน PDF")
+        case .flood: groupPage(Schema.flood, code: "A4", title: "ประวัติน้ำท่วม", subtitle: "ใช้กำหนดความสูงติดตั้งอินเวอร์เตอร์ ตู้ SMDB/กันย้อน และแนวรางสายไฟ | แสดงในรายงาน PDF")
         case .final: groupPage(Schema.final, code: "E1", title: "สรุปผลและลงนาม", subtitle: "หน้าสุดท้ายของรายงาน PDF")
         case .photos, .revisions: EmptyView()
         case .module(let id):
@@ -72,7 +72,7 @@ extension JobEditorView {
         let m = job.modules[i], spec = m.spec
         let number = job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? spec.code
         return VStack(alignment: .leading, spacing: 16) {
-            header(number + " " + spec.label, subtitle: "ไฟล์ Excel แผ่น \(spec.sheet) · ในรายงาน: \(spec.reportTitle)", completion: m.completion)
+            header(number + " " + spec.label, subtitle: "ไฟล์ Excel แผ่น \(spec.sheet) | ในรายงาน: \(spec.reportTitle)", completion: m.completion)
             HStack {
                 Text("ชื่อ/อาคาร").font(.sarabun(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.inkStrong)
                 TextField(spec.namePlaceholder, text: $job.modules[i].name).textFieldStyle(OutlinedFieldStyle()).frame(maxWidth: 360)

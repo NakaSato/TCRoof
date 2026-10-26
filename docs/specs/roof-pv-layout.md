@@ -1,6 +1,6 @@
 # Auto PV layout on the roof (วางแผงบนหลังคาอัตโนมัติ)
 
-**Status:** Partly built (checked 2026-10-17): `TCRoofCore/RoofPV.swift` lays the modules face by face from the eave with tables, gaps and blocked slots under skylights, obstacles and keep-out zones (§3.1–3.3), drawn by `RoofPlan` on C1. Not built: shade from obstacles (§3.4), L-feet (§3.5), the best-layout search (§3.6), yield (§3.7), quantities (§3.8), the `แผงบนหลังคา` tab of §5 and the report rows of §7.
+**Status:** Built (2026-10-19). Engine: `TCRoofCore/RoofPV/` (§3.1–3.8), matching `img/roof_pv.py` on the three samples (`RoofMountLayoutTests`). C1: `RoofMount` maps C1's answers and keeps the tab's choices (`pvMount`); the แผงบนหลังคา tab (`RoofPageWide+Mount.swift`) replaces the table layout, `RoofPlan` draws the layout and the section card shows the selected row (`img/roof_pv_c1_*.png`). Report (§7): the PDF prints แปลนวางแผงบนหลังคา and detail A after section A-A (`img/roof_pv_report_page.png`); Excel writes the summary and BOQ into the roof sheet's blank rows A38–A39 (NO.224 has no cells for them); จำนวนแผงก่อนเข้าสำรวจ starts from the layout when empty. Decided (19/10/2569): hips take the verge setback; a skylight marked วางทับได้ keeps only its 0.20 m lap clear of L-feet; the pitch is C1's `Roof.slope`: the frame type's slope, or from the measured `ridgeHeight` minus `clearHeight` when entered. Directions (2026-10-21, replacing portrait only): `แนวแผง` ด้านยาวตัดแป (portrait) or ด้านยาวตามแป (landscape, `Options.landscape`), and with L-feet on purlins `แนวราง` รางตามแป (on the purlins) or รางตัดแป (up the slope, a foot on every purlin crossed, `Options.railsAcross`, `Face.columnRuns`; a gap may reach the purlin spacing and an end overhang half of it). A side of the module crossed by the rails takes the clamping zone's share of its length (`clampZone`); landscape modules on rails along the purlins need purlins close enough for both rails (`purlinsHoldLandscape`), else the tab offers รางตัดแป. The other §9 questions stay open.
 **Section:** C1 หลังคา (station roofs); C2/C3 reuse it once their spans are known (§9)
 **Builds on:** [`auto-drawing.md`](auto-drawing.md) (roof geometry, pitch, purlins), [`tank-mounting-layout.md`](tank-mounting-layout.md)
 (the no-collision rule, the energy model), [`tank-mounting-layout.md`](tank-mounting-layout.md) (the editor pattern)
@@ -48,9 +48,9 @@ reason. This is the same rule as on the tank. There is never a flagged leg that 
 |---|---|
 | `spansX`, `spansY` | roof outline `LX × LY`; grid lines on the plan |
 | `sheetDir` | ridge direction: sheets run down the slope, so vertical sheets mean the ridge runs along x |
-| `eaveHeight`, `ridgeHeight` (from auto-drawing §5.1) | rise → pitch `θ = atan(rise / (B/2))` (shed: `atan(rise / B)`) |
+| frame type, `ridgeHeight`, `clearHeight` | pitch `θ` = C1's `Roof.slope`: the frame type's slope, or, when `ridgeHeight` is entered, `atan(rise / (B/2))` (shed: `atan(rise / B)`) with rise = `ridgeHeight` − `clearHeight` − heel |
 | `roofShape` | faces: จั่ว 2, ปั้นหยา 4, เพิงหมาแหงน 1. คอนกรีต (ดาดฟ้า) → use the tank mounting layout. โค้ง → §9 |
-| `comp1` (แป) `"… @1.20M"` | purlin spacing `s` (`MemberSpec.parse`). Falls back to 1.00 m and prints ค่าสมมติ |
+| `purlinSpacing` (C1 `ระยะแป`) | purlin spacing `s` along the slope, 0.60–1.50 m (`Roof.purlinSpacing`); 1.00 m until set |
 | `obst` | obstacles (x, y, w, h) |
 | `roofMaterial` | เมทัลชีท / กระเบื้อง: default fixing method (§3.2) |
 
@@ -59,7 +59,7 @@ reason. This is the same rule as on the tank. There is never a flagged leg that 
 | Field | Kind | Default | Note |
 |---|---|---|---|
 | `obst[].kind` | choice per row: แผ่นโปร่งแสง, ลูกหมุนระบายอากาศ, ปล่อง/ท่อไอเสีย, ท่อระบาย, อื่นๆ | อื่นๆ (old rows) | Same `kind` key as the tank openings |
-| `obst[].hgt` | number, m above the roof | by kind (0, 0.60, 2.00, 0.50, 0) | Drives the shade (§3.4) |
+| `obst[].height` | number, m above the roof | by kind (0, 0.60, 2.00, 0.50, 0) | Drives the shade (§3.4) |
 | `planBearing` | number, ° | the job's value when there is one, else 0 | Compass bearing of the plan's top edge, read on site with the phone compass |
 
 Latitude comes from the survey GPS.
@@ -223,27 +223,29 @@ Sample: 216 modules, 129.6 kWp, 191 MWh/yr, 502 m rail, 80 splices, 496 L-feet, 
 
 ## 5. Interaction (a tab **แผงบนหลังคา** in the C1 editor)
 
-This follows [`tank-mounting-layout.md`](tank-mounting-layout.md): inspect and remove modes, undo, deltas,
-iPad left column, iPhone sheet.
+This follows [`tank-mounting-layout.md`](tank-mounting-layout.md): inspect and remove modes (`MountTool`), undo (the
+last 50 changes), iPad left column, iPhone sheet. Quantity deltas are not built.
 
 ### 5.1 State
 
+There is no `RoofPVEditorModel`. The tab's choices are `RoofMount.Choice` (`TCRoofCore/RoofPV/RoofMountC1.swift`),
+stored as JSON in the hidden C1 field `pvMount`:
+
 ```swift
-@Observable final class RoofPVEditorModel {
-    var fixing: RoofFixing = .purlin              // .purlin | .ribClamp
-    var avoidShade = true
-    var faceUse: [RoofFace.ID: Bool] = [:]        // nil = automatic (≥ 85 % of the best face)
-    var colOffset: [RoofFace.ID: Double] = [:]    // from best layout, or the slider for the chosen face
-    var rowShift: [RoofFace.ID: Double] = [:]
-    var centred: [RoofFace.ID: Bool] = [:]
-    var standard: RoofMountStandard               // settings; per-job edits stored on the module
-    var removed: Set<SlotRef> = []                // (face, row, column)
-    var mode: MountMode = .inspect
-    var view: RoofPVView = .plan                  // .plan | .rowSection
-    var selection: RoofPVSelection?               // .slot(face,row,col) | .foot(face,row,run,rail,i) | .obstacle(i)
-    private(set) var layout: RoofPVLayout
+public struct Choice: Codable, Equatable, Sendable {
+    public var ribClamp = false                          // fixing: purlin, or rib clamp
+    public var avoidShade = true
+    public var faceUse: [String: Bool] = [:]             // nil = automatic (≥ 85 % of the best face)
+    public var placements: [String: RoofMountLayout.Placement] = [:]   // per face: column offset, row shift, centred
+    public var removed: [RoofMountLayout.SlotRef] = []   // (face, row, column)
+    public var standard: RoofMountStandard?              // per-job standard; nil = the default
+    public var digest = ""                               // the inputs the placements belong to
+    public var walkwayEvery = 0                          // a walkway after every n columns
 }
 ```
+
+The view state (the tool, `MountTool` `.inspect` / `.remove`, and the selection) lives in
+`TCRoofUI/Survey/Pages/Roof/RoofPageWide+Mount.swift`.
 
 The **best layout** runs on first open and whenever any of these change: roof size, heights, purlin spacing,
 bearing, obstacles, the standard, the fixing method, or the shade switch. `removed` is cleared then, with the note
@@ -288,17 +290,17 @@ Shows the selected row (default: row 1 of the south face) along the slope:
 
 | File | Contents |
 |---|---|
-| `TCRoofCore/RoofPV/RoofFaces.swift` | faces from `RoofGeometry` (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
-| `TCRoofCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`, in `SurveySettings`), obstacle kind table |
-| `TCRoofCore/RoofPV/ShadeHulls.swift` | sun positions (shared with `MountEnergy`), ray–plane projection, convex hull, SAT |
-| `TCRoofCore/RoofPV/RoofPVLayout.swift` | `compute(faces:purlins:obstacles:std:options:) -> RoofPVLayout` and `best(…)`: §3.2–3.6 |
-| `TCRoofCore/RoofPV/RoofPVQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
-| `TCRoofCore/RoofPV/RoofPVDrawings.swift` | plan, section, detail A → `Sketch` |
-| `SurveyUI/Roof/RoofPVEditorView.swift` | §5 |
+| `TCRoofCore/RoofPV/RoofFaces.swift` | faces from C1 (shape, `A`, `B`, pitch, ridge axis, bearing): polygon, edge kinds, half-planes, plan map, 3D basis, azimuth |
+| `TCRoofCore/RoofPV/RoofMountStandard.swift` | §3 values (`Codable`), obstacle kind table |
+| `TCRoofCore/RoofPV/RoofMountLayout.swift` | `compute(…)` and `best(…)`: §3.2–3.6, with the shade hulls (§3.4) inside it |
+| `TCRoofCore/RoofPV/RoofMountQuantities.swift` | §3.8; feeds the report and the Excel BOQ |
+| `TCRoofCore/RoofPV/RoofMountDrawings.swift` | plan, section, detail A → `Sketch` |
+| `TCRoofCore/RoofPV/RoofMountC1.swift` | `RoofMount`: C1's answers → the layout input, and `Choice` (`pvMount`) |
+| `TCRoofCore/RoofPV/SolarModel.swift` | sun positions and the clear-sky yield |
+| `TCRoofUI/Survey/Pages/Roof/RoofPageWide+Mount.swift` | §5, the แผงบนหลังคา tab |
 
 **Shared with the tank:**
-- sun and yield: `MountEnergy`
-- foot and post placement with column cutting: `ClearPlacement.place(xa:xb:forbidden:maxSpacing:maxCantilever:minBay:)`
+- sun and yield: `SolarModel` (`MountEnergy` and `ClearPlacement` were not built; each layout places its own feet)
 - polygon helpers
 
 **Tests:**
@@ -325,17 +327,21 @@ Shows the selected row (default: row 1 of the south face) along the slope:
 - [ ] The best layout is never worse than the current one.
 - [ ] The quantities in the app equal the BOQ in the PDF and Excel.
 
-## 9. Open questions
+## 9. Decided questions
 
-1. **Fixing method:** is ยึดเข้าแป (rails on purlins, L-foot through the rib crest) the team's default on metal
-   sheet? Or is จับสันลอน (rib clamp) used on newer sheets? And what does the team use on กระเบื้อง?
-2. **Clamping zone:** 0.34–0.68 m is taken from typical 2.28 m module manuals. Should it come from the module chosen
-   for the job instead?
-3. **Portrait only?** Landscape needs a second rail layer (rails up the slope on the purlins). Is that ever used?
-4. **Shade rule:** is 09:00–15:00 all year right, or should it be winter-solstice only? Or should the modules be
-   derated instead of removed?
-5. **Walkways:** the default has none, except the ridge setback. Should there be an automatic walkway every n columns
-   for cleaning?
-6. **Shed low side:** it is assumed to be at the plan bottom. Should it come from `sheetDir` plus an arrow?
-7. **Curved roofs:** follow the arc (rows on purlins spaced by arc length) or leave them out of v1?
-8. **Roof capacity:** should the layout warn above a dead-load limit per m² when the purlin size is known?
+Decided 2026-10-19:
+
+1. **Fixing method:** ยึดเข้าแป stays the default on metal sheet; จับสันลอน is the tab's switch. On กระเบื้องซีแพค the
+   rails go on tile hooks screwed into the rafters (`RoofMountStandard.rafterSpacing`, 1.00 m by default): rows don't
+   depend on the purlins (rails at ¼ and ¾ of the module), a hook goes on every rafter under a rail and none on an
+   obstacle, and a rail that would skip a rafter cuts the column. กระเบื้องลอนคู่ sits on purlins like metal sheet.
+2. **Clamping zone:** worked out from the module length (0.34 / 2.28 and 0.68 / 2.28 of it, to the cm) until the job
+   edits it.
+3. **Portrait only.**
+4. **Shade rule:** 09:00–15:00 all year, unchanged.
+5. **Walkways:** optional and off by default: one module wide after every n columns (8 when switched on).
+6. **Shed low side:** the plan's bottom (or right) by default; the tab and the plan's `ด้านต่ำ` arrow turn it to the
+   top (or left), kept in the hidden field `shedLow`.
+7. **Curved roofs:** left out of v1.
+8. **Roof load:** the modules, rails and fixings over the modules' area in kg/m², with a warning above the standard's
+   `loadLimit` (15 kg/m²), on the tab, the PDF page and the Excel row A39.

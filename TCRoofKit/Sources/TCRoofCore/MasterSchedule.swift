@@ -130,7 +130,7 @@ public enum MasterSchedule {
         public var kickoff: Date
         public var engineeringStart: Date
         public var siteHandover: Date
-        /// Inverters total more than 200 kVA (the workbook's `เกิน 200 kVA` flag): adds พค.2.
+        /// Inverters total 200 kVA or more (the workbook's `เกิน 200 kVA` flag, `isOver200kVA`): adds พค.2.
         public var over200kVA: Bool
         public var engineeringDays = 7
         public var buildingPermitDays = 21
@@ -154,8 +154,8 @@ public enum MasterSchedule {
             self.over200kVA = over200kVA
         }
 
-        /// Inverter total over 200 kVA, from the station's inverter rating (kW at PF 1).
-        public static func isOver200kVA(inverterKW: Double) -> Bool { inverterKW > 200 }
+        /// Inverter total of 200 kVA or more (`ERCFlow.needsPK2`), from the station's inverter rating (kW at PF 1).
+        public static func isOver200kVA(inverterKW: Double) -> Bool { ERCFlow.needsPK2(kVA: inverterKW) }
 
         /// An imported plan's install window: from its site tasks' (parts 2 and 3) first start to their last end, so the
         /// Plan calendar shows what the workbook plans.
@@ -164,6 +164,22 @@ public enum MasterSchedule {
             let site = Task.allCases.filter { $0.part != .permit }.compactMap { fixed[$0.rawValue] }
             if let s = site.compactMap(\.start).min() { installStart = s }
             if let e = site.compactMap(\.end).max() { installEnd = max(e, installStart) }
+        }
+
+        /// The same plan `days` later (earlier when negative): every date moves, durations and weights stay. A template
+        /// plan (`MPTemplates`) is moved this way to a station's kickoff.
+        public func shifted(days: Int, calendar cal: Calendar = MasterSchedule.calendar) -> Input {
+            func move(_ d: Date) -> Date { cal.date(byAdding: .day, value: days, to: d) ?? d }
+            func move(_ t: FixedTask) -> FixedTask { FixedTask(start: t.start.map(move), end: t.end.map(move), weight: t.weight) }
+            var i = self
+            i.installStart = move(installStart)
+            i.installEnd = move(installEnd)
+            i.kickoff = move(kickoff)
+            i.engineeringStart = move(engineeringStart)
+            i.siteHandover = move(siteHandover)
+            i.fixed = fixed?.mapValues(move)
+            i.baseline = baseline?.mapValues(move)
+            return i
         }
 
         /// The plan before its first re-plan, with dates; nil when it was never re-planned.
@@ -337,6 +353,12 @@ public enum MasterSchedule {
         /// Changes confirmed on the project assistant's cards, oldest first: who confirmed what and when. Changes typed
         /// in by hand are not listed. Optional in older plans.
         public var confirmations: [Confirmation] = []
+        /// Task raw value → the approval day the station's papers booked it at 100 % on (`PermitLink`). The link books a
+        /// task once: progress the team changes afterwards, or an approval taken back, is left to the team. Optional in
+        /// older plans.
+        public var fromDocuments: [String: Date] = [:]
+        /// WBS row code → what its tick booked (`MasterSchedule.bookWBS`). Optional in older plans.
+        public var fromWBS: [String: WBSBooking] = [:]
 
         public init() {}
 
@@ -362,7 +384,7 @@ public enum MasterSchedule {
             confirmations.last { $0.task == task.rawValue }
         }
 
-        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations }
+        enum CodingKeys: String, CodingKey { case points, started, finished, lateCauses, confirmations, fromDocuments, fromWBS }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -373,6 +395,8 @@ public enum MasterSchedule {
             let raw = (try? c.decodeIfPresent([String: String].self, forKey: .lateCauses)) ?? nil
             lateCauses = (raw ?? [:]).compactMapValues(LateCause.init(rawValue:))
             confirmations = (try? c.decodeIfPresent([Confirmation].self, forKey: .confirmations)) ?? []
+            fromDocuments = (try? c.decodeIfPresent([String: Date].self, forKey: .fromDocuments)) ?? [:]
+            fromWBS = (try? c.decodeIfPresent([String: WBSBooking].self, forKey: .fromWBS)) ?? [:]
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -383,6 +407,8 @@ public enum MasterSchedule {
             try c.encode(lateCauses, forKey: .lateCauses)
             // left out when empty, so a plan without any reads as before
             if !confirmations.isEmpty { try c.encode(confirmations, forKey: .confirmations) }
+            if !fromDocuments.isEmpty { try c.encode(fromDocuments, forKey: .fromDocuments) }
+            if !fromWBS.isEmpty { try c.encode(fromWBS, forKey: .fromWBS) }
         }
 
         public static func key(_ week: Date, calendar cal: Calendar = MasterSchedule.calendar) -> String {

@@ -56,6 +56,9 @@ struct SurveyHomeView: View {
     @AppStorage("solarSurvey.lastOpened") var lastOpened = ""
     @State var importing = false
     @State var showSettings = false
+    /// มาตรฐานโครงสร้างแผงบนถัง (`TankStandardView`).
+    @State var showTankStandard = false
+    @State var showLibrary = false
     @State var showDriveOpen = false
     @State var share: SurveyModel.ExportFile?
     @State var toDelete: Job?
@@ -164,6 +167,8 @@ struct SurveyHomeView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveyNew") { showNew = true } }
         // `-surveySettings YES` opens the survey settings (เครื่องนี้ lists the detected hardware).
         .task { if UserDefaults.standard.bool(forKey: "surveySettings") { showSettings = true } }
+        // `-surveyTankStandard YES` opens มาตรฐานโครงสร้างแผงบนถัง.
+        .task { if UserDefaults.standard.bool(forKey: "surveyTankStandard") { showTankStandard = true } }
         .task { applyDebugHome() }
         .task {
             guard UserDefaults.standard.bool(forKey: "surveyDemo"), open == nil else { return }
@@ -204,6 +209,8 @@ struct SurveyHomeView: View {
         .task { if UserDefaults.standard.bool(forKey: "surveyInstallPicker") { showInstallPicker = true } }
         #endif
         .sheet(isPresented: $showSettings) { SurveySettingsView().environment(model) }
+        .sheet(isPresented: $showLibrary) { DesignLibraryView() }
+        .sheet(isPresented: $showTankStandard) { TankStandardView() }
         .sheet(isPresented: $showDriveOpen) { DriveOpenView { j in showDriveOpen = false; go(j) }.environment(model) }
         .sheet(item: $share) { f in ShareSheet(items: [f.url]) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json], allowsMultipleSelection: false) { r in
@@ -235,7 +242,7 @@ struct SurveyHomeView: View {
         } message: { p in Text(p.notes.joined(separator: "\n")) }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
-        .onAppear { model.reload() }
+        .onAppear { model.reload(); model.linkInstallJobs() }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {
@@ -342,8 +349,8 @@ struct SurveyHomeView: View {
                 Button(complete ? "เปิดดูแบบสำรวจ" : "กรอกต่อ") { asking = nil; go(job, complete ? nil : job.nextStep?.page) }
                 Button("ยกเลิก", role: .cancel) { asking = nil }
             } message: {
-                Text(complete ? "แบบสำรวจกรอกครบแล้ว · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)"
-                     : "แบบสำรวจกรอกแล้ว \(job.completion.percent)% · เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง และยังกรอกแบบสำรวจต่อได้ (ย้ายกลับได้จากงานติดตั้ง)")
+                Text(complete ? "แบบสำรวจกรอกครบแล้ว | เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง (ย้ายกลับได้จากงานติดตั้ง)"
+                     : "แบบสำรวจกรอกแล้ว \(job.completion.percent)% | เมื่อย้าย สถานะงานจะเปลี่ยนเป็นกำลังติดตั้ง และยังกรอกแบบสำรวจต่อได้ (ย้ายกลับได้จากงานติดตั้ง)")
             }
         }
     }
@@ -358,7 +365,7 @@ struct SurveyHomeView: View {
         TCEmptyState(model.jobs.isEmpty ? "ยังไม่มีงานสำรวจ" : "ไม่พบงาน", systemImage: "list.clipboard",
                      description: Text(model.jobs.isEmpty ? "เริ่มงานใหม่ หรือเปิดงานที่บันทึกไว้จาก Google Drive / ไฟล์สำรอง"
                                        : search.isEmpty ? "ไม่มีงานในกลุ่ม \"\(filter.title)\"" : "ลองคำค้นอื่น")) {
-            if model.jobs.isEmpty { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
+            if model.jobs.isEmpty && permissions.can(.jobEdit) { Button("งานสำรวจใหม่") { showNew = true }.buttonStyle(TCButtonStyle(.primary, size: .card)) }
         }
         .padding(.top, 40)
     }

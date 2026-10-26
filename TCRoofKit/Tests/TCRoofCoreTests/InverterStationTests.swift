@@ -7,13 +7,13 @@ final class InverterStationTests: XCTestCase {
     func testCatalogDecodes() {
         XCTAssertEqual(cat.version, "2026-09-30")
         XCTAssertEqual(cat.inverters.count, 4)
-        XCTAssertEqual(cat.pv.count, 3)
+        XCTAssertEqual(cat.pv.count, 4)
         XCTAssertEqual(cat.cabinets.ac.map(\.w), [900, 1000, 1200])
         XCTAssertEqual(cat.cabinets.dc.map(\.w), [600, 700, 800])
         XCTAssertEqual(cat.cabinets.meter.w, 630)
         XCTAssertEqual(cat.rules.cbFactor, 1.25)
         XCTAssertEqual(cat.inverterSizes, [40, 60, 80, 125])
-        XCTAssertEqual(cat.pv.first { $0.def == true }?.id, "p550")
+        XCTAssertEqual(cat.pv.first { $0.def == true }?.id, "p570")
     }
 
     func testLookupsAndGenericInverter() {
@@ -65,7 +65,7 @@ final class InverterStationTests: XCTestCase {
         XCTAssertEqual(s.spans.map { InverterStation.r2($0) }, [2.5, 2.25, 2.25, 2.5])
         XCTAssertEqual(s.walkway, 1.48, accuracy: 1e-9)
         XCTAssertTrue(s.isOK)
-        XCTAssertEqual(s.status, "ครบช่องบังคับแล้ว · พื้นที่พอสำหรับ 2 เครื่อง")
+        XCTAssertEqual(s.status, "ครบช่องบังคับแล้ว | พื้นที่พอสำหรับ 2 เครื่อง")
     }
 
     func testIndoorWall() {
@@ -172,7 +172,7 @@ final class InverterStationTests: XCTestCase {
         let svg = InverterStationDrawing.sketch(s).svg()
         XCTAssertTrue(svg.contains("EXISTING WALL"))
         XCTAssertTrue(svg.contains("GROWATT MAX 60KTL3 LV"))
-        XCTAssertTrue(svg.contains("TO INJECTION POINT · AC CABLE LADDER 200x100 (NON COVER)"))
+        XCTAssertTrue(svg.contains("TO INJECTION POINT | AC CABLE LADDER 200x100 (NON COVER)"))
         XCTAssertFalse(svg.contains("เกินพื้นที่"))
     }
 
@@ -182,7 +182,7 @@ final class InverterStationTests: XCTestCase {
         XCTAssertEqual(sk.width, 1470); XCTAssertEqual(sk.height, 752)
         let svg = sk.svg()
         XCTAssertTrue(svg.contains("AC PERFORATED TRAY 100x100 WITH COVER"))
-        XCTAssertTrue(svg.contains("CABLE LADDER 200x100 (NON COVER) · 4×1C 120 + G25"))
+        XCTAssertTrue(svg.contains("CABLE LADDER 200x100 (NON COVER) | 4×1C 120 + G25"))
         XCTAssertTrue(svg.contains(">1.48<"))
         XCTAssertTrue(svg.contains(">9.50<"))
         XCTAssertTrue(svg.contains("INVERTER No.2"))

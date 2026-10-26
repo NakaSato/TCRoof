@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import TCRoofUI
 import TCRoofCore
 
@@ -89,6 +90,10 @@ struct RoutineReportCard: View {
 struct DailyReportListView: View {
     let job: Job
     @State private var share: ReportShare?
+    /// A signed report the team is recording the inspector's `รับทราบ` for.
+    @State private var acking: InstallLog?
+    @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
 
     private var days: [Date] {
         let cal = RoutineReport.calendar
@@ -109,7 +114,10 @@ struct DailyReportListView: View {
             }
             PadSection {
                 ForEach(days, id: \.self) { d in
-                    PadLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+                    HStack(spacing: 12) {
+                        PadLink { DailyReportScreen(job: job, date: d) } label: { row(d) }
+                        ackButton(d)
+                    }
                 }
             }
         }
@@ -120,6 +128,25 @@ struct DailyReportListView: View {
             menu.buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
         }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+        .sheet(item: $acking) { log in
+            InspectorAckSheet(title: "Inspector รับทราบ", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAck(log, name: name, at: when, signature: drawn, context: context)
+            }
+        }
+    }
+
+    /// `รับทราบ` beside a signed report the inspector hasn't acknowledged, for the people who sign (`daily.sign`).
+    @ViewBuilder private func ackButton(_ d: Date) -> some View {
+        if let log = job.dailyLog(on: d), log.engineerSignedAt != nil, log.inspectorAckAt == nil,
+           permissions.can(.dailySign, on: job.access) {
+            Button { acking = log } label: {
+                Text("รับทราบ").font(.sarabun(15, .semibold, relativeTo: .subheadline)).padding(.horizontal, 6)
+            }
+            .buttonStyle(TCButtonStyle(.secondary, size: .card))
+            .fixedSize()
+            .accessibilityLabel("Inspector รับทราบ " + RoutineReport.thaiDate(d))
+            .accessibilityIdentifier("dailyListAck")
+        }
     }
 
     private var menu: some View {
@@ -144,7 +171,7 @@ struct DailyReportListView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(RoutineReport.thaiDate(d)).font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                 if let r {
-                    Text("\(r.crewTotal) คน · \(r.progress.count) งาน" + (r.rainHours > 0 ? " · ฝน \(r.rainHours) ชม." : ""))
+                    Text("\(r.crewTotal) คน | \(r.progress.count) งาน" + (r.rainHours > 0 ? " | ฝน \(r.rainHours) ชม." : ""))
                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
                 }
             }

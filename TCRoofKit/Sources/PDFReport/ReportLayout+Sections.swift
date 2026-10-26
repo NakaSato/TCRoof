@@ -44,7 +44,7 @@ extension ReportLayout {
                             _ = field("เวลา", d.text("loadTime"), x: nx, y: y + 26, valueWidth: 50, ops: &o) },
                         infoR: { y, o in
                             detailLine(y, &o)
-                            if let link { _ = field("ตู้ใน A3", "\(link.boardName) · \(link.cbText)", x: 6, y: y + 26, valueWidth: half - 60, ops: &o) } })
+                            if let link { _ = field("ตู้ใน A3", "\(link.boardName) | \(link.cbText)", x: 6, y: y + 26, valueWidth: half - 60, ops: &o) } })
             // the PV connection point marked on the wide photo, in the same fitted rect as the photo
             if let p = d.photo(BuildingPanels.Key.photoWide), var pt = d.shapes(BuildingPanels.Key.pvPoint).first {
                 pt.label = BuildingPanels.pointLabel(d)
@@ -123,9 +123,128 @@ extension ReportLayout {
 
     /// C1 section A-A across the full width, titled with the frame type; replaces the generic truss diagram.
     func roofSectionUnit(_ d: Values) -> Unit {
-        let W = Self.cw, sec = RoofSection(d).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 4
-        var o = box("รูปตัด A-A · " + Roof.frame(d).title + " (หน่วย ม.)", height: h)
+        let W = Self.cw, sec = RoofSection(d, callouts: false).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 16
+        var o = box("รูปตัด A-A | " + Roof.frame(d).title + " (หน่วย ม.)", height: h)
         o += sec.translated(8, Self.band + 6, scale: k)
+        // where the pitch came from (auto-drawing §4.4), its check, and the note every drawing carries
+        let p = Roof.pitch(d)
+        let pitch = p.measured ? "มุม " + Roof.slopeText(d) + " จากความสูงสัน " + String(format: "%.2f", Roof.ridgeHeight(d)) + " ม."
+            : "มุม " + Roof.slopeText(d) + " ตามชนิดโครง"
+        o.append(.text(([pitch, p.warning].compactMap { $0 } + [TankDrawings.note]).joined(separator: " | "), at: Pt(8, h - 7), size: 7.5,
+                       color: p.warning == nil ? .faint : .tag))
+        return Unit(h: h, ops: o)
+    }
+
+    /// C1's details A / B (trusses only) and member schedule (`RoofTruss`, auto-drawing §4.4), after section A-A.
+    func roofTrussUnits(_ d: Values) -> [Unit] {
+        guard let s = RoofTruss.schedule(d) else { return [] }
+        let W = Self.cw
+        var out: [Unit] = []
+        if let det = RoofTruss.details(d) {
+            let k = (W - 16) / det.width, h = Self.band + 6 + det.height * k + 6
+            var o = box("รายละเอียด A / B | " + Roof.frame(d).title, height: h)
+            o += det.translated(8, Self.band + 6, scale: k)
+            out.append(Unit(h: h, ops: o))
+        }
+        let rafter = Roof.frame(d).isRafter
+        let fixed = 14.0 + 72 + 72 + 80 + 34 + 46 + 50
+        let rowH = 14.0, cols: [(String, Double, TextAlign)] = [("", 14, .center), ("ชิ้นส่วน", 72, .left), ("ขนาด", W - 16 - fixed, .left),
+                                                                 (rafter ? "ต่อคู่ (ชิ้น | ม.)" : "ต่อโครง (ชิ้น | ม.)", 72, .right), ("ทั้งหลังคา (ชิ้น | ม.)", 80, .right),
+                                                                 ("กก./ม.", 34, .right), (rafter ? "กก./คู่" : "กก./โครง", 46, .right), ("กก. รวม", 50, .right)]
+        let rows = [cols.map(\.0)]
+            + s.rows.map { r in [r.row.map(String.init) ?? "", r.name, r.size, RoofTruss.perFrameText(r), RoofTruss.totalText(r),
+                                 RoofTruss.kgPerMetreText(r), RoofTruss.perFrameKgText(r), RoofTruss.kgText(r)] }
+            + [["", "รวมเหล็ก (ประมาณ)", "ไม่รวมแผ่นประกับ", "", "", "", RoofTruss.steelPerFrameKgText(s), RoofTruss.steelKgText(s)]]
+        let h = Self.band + 18 + rowH * Double(rows.count) + 32
+        var o = box("ตารางชิ้นส่วนโครงหลังคา", height: h)
+        o.append(.text(s.summary, at: Pt(8, Self.band + 9), size: 7.5, bold: true))
+        for (ri, row) in rows.enumerated() {
+            let y = Self.band + 16 + Double(ri) * rowH
+            var x = 8.0
+            for (ci, c) in cols.enumerated() {
+                o.append(.rect(Box(x, y, c.1, rowH), stroke: .black, fill: ri == 0 ? .band : nil, width: 0.5))
+                let head = ri == 0, total = ri == rows.count - 1
+                o.append(.textBox(row[ci], Box(x + 2, y + 2, c.1 - 4, rowH - 2), size: head && ci >= 3 ? 6.5 : 7.5, bold: head || (total && ci != 2),
+                                  align: head ? .center : c.2))
+                x += c.1
+            }
+        }
+        o.append(.text(RoofTruss.steelNote(s), at: Pt(8, h - 19), size: 7, color: .faint))
+        o.append(.text(s.note, at: Pt(8, h - 9), size: 7, color: .faint))
+        out.append(Unit(h: h, ops: o))
+        return out
+    }
+
+    /// แปลนวางแผงบนหลังคา (docs/specs/roof-pv-layout.md §7): the automatic layout on the C1 plan with its summary, the
+    /// faces, the BOQ and the assumptions, then the first row's section as detail A.
+    func roofPVUnits(_ d: Values) -> [Unit] {
+        guard RoofMount.printable(d) else { return [] }
+        let lat = RoofMount.latitude(gps: j.text("gps"))
+        let (m, energy) = RoofMount.printed(d, job: job), q = m.quantities
+        guard q.modules > 0 else { return [] }
+        let W = Self.cw, plan = RoofPlan(d, mode: .pv, mount: m).sketch, k = (W - 16) / plan.width
+        let used = m.faces
+        let lineH = 11.0, faceRows = Double(used.count)
+        let assumed = RoofMount.assumptions(d, latitude: lat)
+        let textH = 10 + lineH * (3 + faceRows) + (assumed.isEmpty ? 0 : lineH) + lineH + 6
+        let h = Self.band + 6 + plan.height * k + textH
+        var o = box("แปลนวางแผงบนหลังคา (หน่วย ม.)", height: h)
+        o += plan.translated(8, Self.band + 6, scale: k)
+        var y = Self.band + 6 + plan.height * k + 10
+        o.append(.text(RoofMount.summaryLine(m, energy: energy.mwh), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+        for f in used {
+            let face = f.face
+            // the energy card's figure for a face in use, the plane's for one left empty
+            let kWhPerKWp = energy.faces.first { $0.id == face.id }?.kWhPerKWp ?? f.yield
+            let t = "ด้าน\(RoofFace.direction(face.azimuth)) \(Int(face.azimuth.rounded()))° | ลาด " + String(format: "%.0f°", face.tilt * 180 / .pi)
+                + " | \(Int(kWhPerKWp.rounded())) kWh/kWp | \(f.modules) แผง" + (f.used ? "" : " (ไม่วาง)") + (f.cuts > 0 ? " | ตัด \(f.cuts)" : "")
+            o.append(.text(t, at: Pt(14, y), size: 8, color: f.used ? .black : .tag)); y += lineH
+        }
+        o.append(.text(RoofMount.boqLine(q), at: Pt(8, y), size: 8)); y += lineH
+        let walk = RoofMount.walkwayLine(q)
+        if !walk.isEmpty { o.append(.text(walk, at: Pt(8, y), size: 8)); y += lineH }
+        o.append(.text(RoofMount.loadLine(q), at: Pt(8, y), size: 8, bold: q.overLoad, color: q.overLoad ? .tag : .black)); y += lineH
+        if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " | "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
+        o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | ตรวจน้ำหนักบรรทุกของโครงหลังคากับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
+        var out = [Unit(h: h, ops: o)]
+        // detail A: the first row of the first face in use, along the slope
+        if let fi = m.faces.firstIndex(where: { $0.used && !$0.rows.isEmpty }) {
+            let sec = RoofMountDrawings.rowSection(m, face: fi, row: 0), ks = (W - 16) / sec.width
+            let sh = Self.band + 6 + sec.height * ks + 4
+            var s = box("รายละเอียด A | รูปตัดแถวแผงตามแนวลาด (หน่วย ม.)", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+        }
+        out.append(roofEnergyUnit(energy))
+        return out
+    }
+
+    /// พลังงานไฟฟ้าโดยประมาณ (docs/specs/energy-yield/preliminary-energy-yield.md §11): the P90–P50 range, the lifetime
+    /// total, the monthly bars, the loss chain, the source with its attribution, and the disclaimer in Thai and English.
+    /// The same estimate as C1's energy card.
+    func roofEnergyUnit(_ e: RoofMountYield.Estimate) -> Unit {
+        let W = Self.cw, lineH = 11.0, textW = W - 16
+        var lines: [(String, Double, Bool, RGBA)] = [(RoofMountYield.headline(e), 8.5, true, .black)]
+        if let life = RoofMountYield.lifetimeLine(e) { lines.append((life, 8, false, .black)) }
+        let chart = RoofMountYield.monthlyChart(e, width: 760)
+        var after: [(String, Double, Bool, RGBA)] = []
+        if let loss = RoofMountYield.lossLine(e) {
+            after += ApproxText.wrap(loss, width: textW, size: 7.5).map { ($0, 7.5, false, .black) }
+        }
+        after += ApproxText.wrap(RoofMountYield.sourceReportLine(e), width: textW, size: 7.5).map { ($0, 7.5, false, .black) }
+        after += e.assumptions.isEmpty ? [] : ApproxText.wrap("ค่าสมมติ: " + e.assumptions.joined(separator: " | "), width: textW, size: 7.5).map { ($0, 7.5, false, .tag) }
+        after += ApproxText.wrap(RoofMountYield.disclaimerTH, width: textW, size: 7.5).map { ($0, 7.5, false, .faint) }
+        after += ApproxText.wrap(RoofMountYield.disclaimerEN, width: textW, size: 7).map { ($0, 7, false, .faint) }
+        let kc = chart.map { (W - 16) / $0.width } ?? 0
+        let h = Self.band + 10 + lineH * Double(lines.count + after.count) + (chart.map { $0.height * kc + 6 } ?? 0) + 4
+        var o = box("พลังงานไฟฟ้าโดยประมาณ", height: h)
+        var y = Self.band + 10
+        for (t, size, bold, color) in lines { o.append(.text(t, at: Pt(8, y), size: size, bold: bold, color: color)); y += lineH }
+        if let chart {
+            o += chart.translated(8, y - 4, scale: kc)
+            y += chart.height * kc + 6
+        }
+        for (t, size, bold, color) in after { o.append(.text(t, at: Pt(8, y), size: size, bold: bold, color: color)); y += lineH }
         return Unit(h: h, ops: o)
     }
 
@@ -163,7 +282,10 @@ extension ReportLayout {
 
         if !tank && Roof.hasFrame(d) {
             U.append(roofSectionUnit(d))
+            U += roofTrussUnits(d)
         }
+        if !tank, let sum = RoofDesign.summary(d) { U.append(designUnit(sum)) }
+        if !tank { U += roofPVUnits(d) }
         if !tank {
             // structure: truss + component table + option rows (a C1 frame type names the rows and draws section A-A above)
             let framed = Roof.hasFrame(d), names = framed ? Roof.frame(d).members.map(\.name) : Options.components
@@ -233,21 +355,100 @@ extension ReportLayout {
             s.append(.text("รูปภาพเพิ่มเติม: *รูปมุมสูง/รูปโดรน  *รูปสิ่งกีดขวาง  *รูปข้างถัง (สำหรับทางเดินรางสายไฟ)", at: Pt(0, h2 + 9), size: 8))
             U.append(Unit(h: h2 + 16, ops: s))
             if TankDesign.current(d) != nil, let sum = TankDesign.summary(d) { U.append(designUnit(sum)) }
+            U += tankLayoutUnits(d)
             if let a = d.photo("aerialPhoto") { U += grid(title, [(a, nil)], cellH: 330, columns: 1) }
-            U += grid("สิ่งกีดขวาง", ob.dropFirst().map { ($0, nil) })
-            U += grid(title + " — รูปข้างถัง / รูปเพิ่มเติม", d.photos("sidePhotos").map { ($0, nil) })
+            // each photo's opening tag and note under it (D1 sub-step 4)
+            U += grid("สิ่งกีดขวาง", ob.dropFirst().map { ($0, $0.caption) })
+            U += grid(title + " — รูปข้างถัง / รูปเพิ่มเติม", d.photos("sidePhotos").map { ($0, $0.caption) })
+            // sub-step 4's optional groups
+            func named(_ p: Photo, _ t: String) -> (Photo?, String?) { (p, p.caption.map { t + " | " + $0 } ?? t) }
+            let extra: [(Photo?, String?)] = d.photos(Tank.Key.roofPhotos).map { named($0, "หลังคาถัง") }
+                + [d.photo(Tank.Key.shadePhoto).map { named($0, "เงาบัง (จากกลางหลังคา)") }, d.photo(Tank.Key.cablePhoto).map { named($0, "ทางเดินสายไฟ") }].compactMap { $0 }
+            U += grid(title + " — หลังคา | เงาบัง | ทางเดินสายไฟ", extra)
         }
         return U
     }
 
+    /// D1's stored panel layout (docs/specs/tank-drawing-swift.md §5): the layout on the plan with its figures, BOQ,
+    /// checks and assumptions, the standard row section, then the tank sections 1–1 and 2–2.
+    func tankLayoutUnits(_ d: Values) -> [Unit] {
+        let W = Self.cw, (lat, lon) = RoofMount.site(job)
+        var out: [Unit] = []
+        if let l = TankLayout.current(d), l.count > 0, let plan = TankDrawings.layoutPlan(d, l, structure: true) {
+            let k = (W - 16) / plan.width, lineH = 11.0
+            let assumed = TankLayout.assumptions(d, latitude: lat)
+            let h = Self.band + 6 + plan.height * k + 10 + lineH * (assumed.isEmpty ? 4 : 5) + 6
+            var o = box("ผังจัดแผงบนหลังคาถัง (หน่วย ม.)", height: h)
+            o += plan.translated(8, Self.band + 6, scale: k)
+            var y = Self.band + 6 + plan.height * k + 10
+            o.append(.text(l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, longitude: lon, facing: TankLayout.facing(d)), at: Pt(8, y), size: 8.5, bold: true)); y += lineH
+            o.append(.text(l.boqLine, at: Pt(8, y), size: 8)); y += lineH
+            o.append(.text(l.checksLine, at: Pt(8, y), size: 8, color: l.checks.allOK ? .black : .tag)); y += lineH
+            if !assumed.isEmpty { o.append(.text("ค่าสมมติ: " + assumed.joined(separator: " | "), at: Pt(8, y), size: 7.5, color: .tag)); y += lineH }
+            o.append(.text("สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง | ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง", at: Pt(8, y), size: 7.5, color: .faint))
+            out.append(Unit(h: h, ops: o))
+            if let sh = TankShade(d, latitude: lat ?? RoofMount.defaultLatitude, longitude: lon) { out.append(tankShadeUnit(d, l, sh)) }
+            let sec = TankDrawings.tableSection(l.params), ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
+            var s = box("ภาพตัดโต๊ะแผง", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+            if let front = TankDrawings.tableFront(l) {
+                let kf = (W - 16) / front.width, fh = Self.band + 6 + front.height * kf + 4
+                var f = box("รูปด้านหน้าโต๊ะแผง", height: fh)
+                f += front.translated(8, Self.band + 6, scale: kf)
+                out.append(Unit(h: fh, ops: f))
+            }
+        }
+        for across in [false, true] {
+            guard let sec = TankDrawings.section(d, across: across) else { continue }
+            let ks = (W - 16) / sec.width, sh = Self.band + 6 + sec.height * ks + 4
+            var s = box(across ? "รูปตัดถัง 2–2" : "รูปตัดถัง 1–1", height: sh)
+            s += sec.translated(8, Self.band + 6, scale: ks)
+            out.append(Unit(h: sh, ops: s))
+        }
+        return out
+    }
+
+    /// `เงาบัง`: the losses, the recommendation, the month × hour map and the plan on 21 ธ.ค. at 09:00 and 15:00.
+    func tankShadeUnit(_ d: Values, _ l: TankLayout, _ sh: TankShade) -> Unit {
+        let W = Self.cw, map = TankDrawings.heatMap(sh), km = (W - 16) / map.width
+        let snaps = sh.snapshots.filter { $0.title.hasPrefix("21 ธ.ค.") }
+        let plans = snaps.compactMap { s in TankDrawings.layoutPlan(d, l, shaded: s.shaded).map { (s.title, $0) } }
+        let pw = (W - 24) / 2, kp = plans.first.map { pw / $0.1.width } ?? 0, ph = plans.first.map { $0.1.height * kp } ?? 0
+        let h = Self.band + 8 + 24 + map.height * km + 8 + (plans.isEmpty ? 0 : ph + 16) + 6
+        var o = box("เงาบัง (จำลองทั้งปี)", height: h)
+        var y = Self.band + 10
+        o.append(.text(sh.summaryLine, at: Pt(8, y), size: 8.5, bold: true)); y += 12
+        o.append(.text(sh.recommendation(d), at: Pt(8, y), size: 8, color: sh.objectLoss >= 0.01 ? .tag : .black)); y += 12
+        o += map.translated(8, y, scale: km); y += map.height * km + 8
+        for (i, p) in plans.enumerated() {
+            let x = 8 + Double(i) * (pw + 8)
+            o.append(.text("เงาบนแผง " + p.0 + " (สีส้ม)", at: Pt(x, y + 4), size: 8, bold: true))
+            o += p.1.translated(x, y + 12, scale: kp)
+        }
+        return Unit(h: h, ops: o)
+    }
+
     /// D1 from a standard design (docs/specs/standard-designs.md §6): the design, the counts and where the site differs.
     func designUnit(_ sum: TankDesign.Summary) -> Unit {
-        let lineH = 11.0, h = Self.band + 34 + Double(max(1, sum.differences.count)) * lineH + 6
+        // a difference with a photo gets a thumbnail row (docs/specs/standard-designs.md §6)
+        let lineH = 11.0, thumbH = 46.0
+        let rowH = sum.differences.indices.map { (sum.photos[safe: $0] ?? nil) == nil ? lineH : thumbH + 4 }
+        let h = Self.band + 34 + max(lineH, rowH.reduce(0, +)) + 6
         var s = box("เทียบกับแบบมาตรฐาน", height: h)
         s.append(.text("เริ่มจากแบบมาตรฐาน: " + sum.design, at: Pt(8, Self.band + 9), size: 8.5, bold: true))
         s.append(.text(sum.counts, at: Pt(8, Self.band + 22), size: 8))
-        let lines = sum.differences.isEmpty ? ["ไม่มีจุดที่ต่างจากแบบ"] : sum.differences
-        for (i, t) in lines.enumerated() { s.append(.text("• " + t, at: Pt(14, Self.band + 36 + Double(i) * lineH), size: 7.5)) }
+        if sum.differences.isEmpty { s.append(.text("• ไม่มีจุดที่ต่างจากแบบ", at: Pt(14, Self.band + 36), size: 7.5)) }
+        var y = Self.band + 31
+        for (i, t) in sum.differences.enumerated() {
+            if let p = sum.photos[safe: i] ?? nil {
+                s.append(.photoFill(p, Box(14, y, thumbH * 4 / 3, thumbH)))
+                s.append(.text("• " + t, at: Pt(20 + thumbH * 4 / 3, y + thumbH / 2), size: 7.5))
+            } else {
+                s.append(.text("• " + t + (sum.photosExpected ? " (ไม่มีรูป)" : ""), at: Pt(14, y + lineH / 2), size: 7.5))
+            }
+            y += rowH[i]
+        }
         return Unit(h: h + 8, ops: s)
     }
 
@@ -278,12 +479,26 @@ extension ReportLayout {
         return U
     }
 
+    /// C2 / C3's roof framing section (`MeasuredRoofSection`, auto-drawing §4.4) at full width, scaled down to fit a
+    /// page rather than split; without enough data, the line naming what it needs.
+    func measuredSectionUnit(_ mod: SurveyModule) -> Unit {
+        let W = Self.cw, title = "รูปตัดโครงหลังคา" + (mod.name.isEmpty ? "" : " — " + mod.name)
+        let r = MeasuredRoofSection.draw(mod)
+        guard let sk = r.sketch else {
+            return Unit(h: 14, ops: [.text("ข้อมูลไม่พอวาดรูปตัด: " + r.missing.joined(separator: ", "), at: Pt(0, 7), size: 8, color: .tag)])
+        }
+        let k = min((W - 16) / sk.width, 640 / sk.height), h = Self.band + 6 + sk.height * k + 4
+        var o = box(title, height: h)
+        o += sk.translated(8 + (W - 16 - sk.width * k) / 2, Self.band + 6, scale: k)
+        return Unit(h: h, ops: o)
+    }
+
     /// House / roof-form sections: numbered question tables like the paper form, then all photos.
     func formSection(_ mod: SurveyModule) -> [Unit] {
         let d = mod.values, W = Self.cw, labelW = 190.0, unitW = 44.0, valW = W - labelW - unitW
         var U: [Unit] = [], photos: [(Photo?, String?)] = []
         for g in mod.spec.groups {
-            for f in g.fields { if case .photo = f.kind, let p = d.photo(f.id) { photos.append((p, (g.no.map { "ข้อ \($0) · " } ?? "") + f.label)) } }
+            for f in g.fields { if case .photo = f.kind, let p = d.photo(f.id) { photos.append((p, (g.no.map { "ข้อ \($0) | " } ?? "") + f.label)) } }
             let rows = g.fields.filter { f in
                 guard f.countable, f.isVisible(d) else { return false }
                 switch f.kind { case .photo, .photos, .signature: return false; default: return true }
@@ -317,6 +532,7 @@ extension ReportLayout {
             }
             let title = (g.no.map { $0 + ". " } ?? "") + (g.title ?? "") + (mod.name.isEmpty ? "" : " — " + mod.name)
             U.append(Unit(h: y, ops: box(title, height: y, left: true) + o))
+            if g.fields.contains(where: { if case .roofSection = $0.kind { return true }; return false }) { U.append(measuredSectionUnit(mod)) }
         }
         if mod.type == .house, let n = d.number("inverterCount"), n > 0 {
             U.append(Unit(h: 12, ops: [.text("ข้อ 18: อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ยาว \(String(format: "%.2f", 1.5 * n + 1.5)) ม. กว้าง 2.00 ม.", at: Pt(0, 6), size: 8, color: .tag)]))

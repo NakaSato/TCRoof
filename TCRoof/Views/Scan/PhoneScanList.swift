@@ -29,12 +29,12 @@ struct PhoneScanList: View {
         .fullScreenCover(item: $scanJob) { job in ScannerView(job: job) }
     }
 
-    /// `แผง 12/26 · อื่น 1` with a short bar of panels scanned against the estimate.
+    /// `แผง 12/26 | อื่น 1` with a short bar of panels scanned against the estimate.
     private func status(_ job: Job) -> some View {
         let panels = job.devices.filter { $0.kind == .panel }.count
         let others = job.devices.count - panels
         let estimate = max(job.estimatedPanels, 1)
-        return CompactStatusBox(key: "แผง", value: "\(panels)/\(job.estimatedPanels)" + (others > 0 ? " · อื่น \(others)" : "")) {
+        return CompactStatusBox(key: "แผง", value: "\(panels)/\(job.estimatedPanels)" + (others > 0 ? " | อื่น \(others)" : "")) {
             ProgressView(value: Double(min(panels, estimate)), total: Double(estimate))
                 .tint(Theme.teal).frame(width: 64)
                 .accessibilityHidden(true)

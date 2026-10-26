@@ -1,13 +1,19 @@
 # แผนงาน MP (Master Project Schedule) per station (iPad Swift dev spec)
 
-**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 10 tests). Storage (§2), the job card
+**Status:** Core logic built and tested (`TCRoofCore/MasterSchedule.swift`, 16 tests). Storage (§2), the job card
 (§3.1), ตั้งค่าแผน (§3.2), the full screen (§3.3) and บันทึกความก้าวหน้า (§3.4) built 2026-10-07
 (`TCRoof/Views/Job/MPScheduleViews.swift`, `MPScheduleScreen.swift`), and ภาพรวมทุกสถานี (§3.5, `MPOverviewView`, from
 the Plan tab header) 2026-10-08, and §4's weekly-meeting PDF (`MasterScheduleSheet`, one A3 page). The station's own
 `Master Plan Weekly` workbook imports and exports (2026-10-17, `ExcelExport/MPWorkbook.swift`, `MPWorkbookFlow`: its
 dates and weights become `Input.fixed`, the file is kept on the job, and export writes the plan and actual into it in
-place); the tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
+place). Many station files import at once (`MPBulkImportSheet`, from แผน MP ทุกสถานี): each file is matched to a
+station by its PROJECT line, its kWp and an `MP n` file name (`ExcelExport/MPWorkbook+Match.swift`). A station that
+already has a plan can take only the file's progress (`รับเฉพาะความก้าวหน้า`), merged with `Actual.merging` against the
+snapshot the app writes into each exported file (`MPWorkbook+Snapshot.swift`). The tracking workbook's station list imports (2026-10-17, `ExcelExport/StationList.swift`, `StationListImportSheet`, §4); the MP 189 workbook import (§4's first bullet) is not built yet (no copy of that file to build it against). The overview averages plan and actual over the stations' kWp. The progress sheet
 takes each task's วันเริ่มจริง / วันเสร็จจริง (2026-10-17, `Actual.setDates`).
+Permit tasks 1.4 / 1.5 / 1.7 take their 100 % from the station's approved papers, and booking a construction task at
+100 % warns about its missing install photos (2026-10-20, `TCRoofCore/MasterSchedule+Links.swift`, §5).
+Not built: the MP 189 import, locking past weeks, contract dates / ระยะเวลาคงเหลือ.
 **Source:** the company's per-station workbook `MP 189 สถานีผลิตน้ำทุ่งน้อย กปภ.สาขาเมืองพล 92.34 kWp.xlsx` (one sheet,
 5,605 formulas). Every PWA station of โครงการประปา ระยะที่ 3–4 (102 stations) has one copy of it.
 **Goal:** replace the 102 workbook copies with one screen per job: the plan is generated from three dates and one
@@ -120,12 +126,62 @@ variance (most behind first). Totals: number of stations behind, weighted averag
 
 ---
 
-## 5. Links to other modules (later)
+## 5. Links to other modules
 
-- Permit tasks (1.4 อ.1, 1.5 พค.2, 1.7 ขนานไฟ) take their actual from the PWA document flow
-  (`forms/pwa/` in the TCRoof Project): approved → 100 %.
-- Construction tasks 2.1…2.9 map to install photo slots; the progress sheet can require the slot's photos before
-  100 %.
+Built:
+- Signed daily reports feed the MP actual: each linked task's % at the week's last report is booked into that week
+  (`RoutineReport.feed`, `TCRoofCore/RoutineReport.swift`; the app calls it through `RoutineReportSupport.swift`).
+- Closing the IEC test (`ปิดการทดสอบ`) books `3.1 Pre-Commissioning Test` at 100 % that week and sets its finish date
+  (`IECTestScreen.swift`).
+- The assistant's update cards, once confirmed, write progress into the plan (`TCRoof/Assistant/AssistantJobs.swift`).
+- **Permit tasks take their actual from the PWA document flow** (`PermitLink`, `TCRoofCore/MasterSchedule+Links.swift`).
+  One table, `PermitLink.sources`, says what approves each task; any one source does, the earliest day wins:
+
+  | Task | Approved when | Why |
+  |---|---|---|
+  | 1.4 อ.1 | `building_permit_o1` (ใบอนุญาต อ.1 ที่ได้รับ) or `building_exempt_notice` (หนังสือแจ้งเทศบาลยกเว้น) is `อนุมัติแล้ว`; only the one the station's `buildingRoute` needs counts | the เทศบาล's answer, either route (project.json `building_docs` rule, folder 4.1) |
+  | 1.5 พค.2 | `pk1_form` (คำขอ พค.1) is `อนุมัติแล้ว`, or the ERC flow records step 6 `ได้รับ พค.2 ที่ลงนามแล้ว` | the request granted by the ERC; the catalog has no paper for the licence itself |
+  | 1.7 ขนานไฟ | every site paper of the `ขนานไฟ` package the station needs is `อนุมัติแล้ว` (not-needed ones skipped), or the ERC flow records step 11 `ขนานไฟ / COD` | the utility approves the set as a whole (flow.mmd `กฟภ. อนุมัติ?`); no one paper stands for it |
+
+  A paper's approval day is its `updatedAt` (stamped when it was set approved), an ERC step's the day recorded. The
+  shared papers (device library) are left out: they aren't synced, so another device would decide differently.
+  When the papers approve a task, it is booked at 100 % in the week of the approval (`Actual.setPercent`, like the IEC
+  close), its วันเสร็จจริง set to that day (a later วันเริ่มจริง moves back to it), and the day kept in
+  `Actual.fromDocuments` (new, optional, left out of the JSON while empty). Each task is booked once: running it again
+  changes nothing, a task already at 100 % is only remembered, an approval taken back lowers nothing, and progress the
+  team changes afterwards stays. A task without weight in the plan (พค.2 under 200 kVA) is skipped. It runs in
+  `Job.stationDocs`'s setter, which every writer of the papers and the ERC flow goes through, all behind
+  `stationdocs.drafts` (team only): the booking happens on the device that records the approval and syncs with the
+  job record. Sync writes the JSON directly, so a received change books nothing. The screens that create or replace
+  the plan run the same pass after saving it (`Job.bookPermitsFromDocs`): ตั้งค่าแผน (papers approved while there was
+  no plan yet, or พค.2 gaining weight when the station goes over 200 kVA), the workbook import (a file whose progress
+  replaced the job's carries no `fromDocuments`, so an approved permit below 100 % in the file is booked again) and
+  the assistant's re-plan. Stations whose papers were approved before this build book at their next paper change or
+  plan save. The progress sheet marks such a task `100% จากเอกสารอนุมัติ`.
+- **Construction tasks 2.1…2.9 map to the install photo report's slots** (`IECReport.installTask(page:slot:)`, from
+  project.json's `photo_slots`; the source is `9 ภาพถ่ายติดตั้งระบบ`, the hand-over's `install_photo_report`, not the
+  daily reports' photos, which aren't kept per slot):
+
+  | Task | Slots |
+  |---|---|
+  | 2.1 โครงสร้าง | each roof's three structure photos (pages `<roof>.a` both, `<roof>.b` first) |
+  | 2.2 DC | ตู้ DC (2), กราวน์ DC (1) |
+  | 2.3 แผง | each roof's panels photo (`<roof>.b` second) |
+  | 2.4 Fire switch | none |
+  | 2.5 Inverter | each inverter's front and S/N (step 1's photos), Inverter Station |
+  | 2.6 AC | ตู้ AC (2), กราวน์ AC |
+  | 2.7 ตู้ควบคุม | none |
+  | 2.8 Zero Export | Smart energy (2) |
+  | 2.9 Monitoring | PQM (2) |
+
+  `IECReport.missingPhotoLabels(_:for:)` names a task's missing photos (a job without an IEC test counts as an empty
+  one; no inverter set up yet is a line of its own). Booking a construction task to 100 % with any missing shows
+  `ยังไม่มีรูปติดตั้งของงานนี้` with the list, and `บันทึกทั้งที่ยังไม่มีรูป` saves anyway (`กลับไปแก้` doesn't): in
+  บันทึกความก้าวหน้า (`MPProgressSheet`, now also behind `mp.progress` from a Gantt row), on an assistant card's `ยืนยัน`
+  and when a daily report that brings the task to 100 % is signed (its sign sheet lists them too). The install page's
+  task sheet books nothing itself (it opens the daily report).
+
+Today the permit chips (install page, R4) read the MP plan's permit tasks, which now follow the papers.
 
 ---
 
@@ -133,11 +189,15 @@ variance (most behind first). Totals: number of stations behind, weighted averag
 
 1. Contract period: the workbook's 540 days from 3 ก.ค. 2567 is the same in every copy. Is there a real contract
    start/end per project (PEA(EMD)-03/2024, 05/2024) to show "ระยะเวลาคงเหลือ"?
-2. Who may enter actual points: Engineer only, or Admin too? Should past weeks lock after the weekly meeting?
+2. ~~Who may enter actual points: Engineer only, or Admin too?~~ Managers and the team (`mp.progress`); contractors
+   don't. Still open: should past weeks lock after the weekly meeting?
 3. COP (1.6) has weight 0 in every case. Keep it as an untracked row or drop it?
 4. The lower table in the workbook (rows 111–152) has other durations (โครงสร้าง 45 วัน, Inverter 60 วัน). Is it an
    older template, or a second plan type the app should offer?
 5. Week labels: the sheet shows both an index (53…105) and "W0…W50". Which one does the team read in meetings?
+6. Permit links (§5): is `pk1_form` approved the right signal for 1.5 when the ERC flow isn't used, and should 1.7 for
+   a station under 200 kVA rather wait for one paper (กฟภ.'s approval letter, not in the catalog yet) than the whole
+   ขนานไฟ set? Should the install photos ever be required (not just warned about) before 100 %?
 
 ---
 
@@ -146,3 +206,8 @@ variance (most behind first). Totals: number of stations behind, weighted averag
 Weights sum to 100 and Permit to 5 both ways; every MP 189 date; พค.2 dates when over 200 kVA; weekly plan spread;
 cumulative plan and actual against the workbook; Weekly Update at week 92; Monthly Update for ส.ค. 2569 (construction
 22, commissioning 2); `setPercent` capping; JSON round trip; Sunday week keys.
+
+`MasterScheduleLinksTests.swift` (§5): the permit table, each task's approval (route, 200 kVA, ERC steps, the whole
+ขนานไฟ set), booking at 100 % in the approval's week with its finish, idempotent and never undone, a task already done
+or without weight left alone, `fromDocuments` decoding from older plans; every install slot mapped to one task, the
+missing photos' labels, and a job without an IEC test.

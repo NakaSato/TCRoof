@@ -20,10 +20,12 @@ public enum RemarkSuggestions {
 
     // MARK: rules
 
-    /// D pages: something shades a tank. Trees can be trimmed; other shade is a warning for the panel layout.
-    /// No page computes a shading percentage yet, so none is quoted.
+    /// D pages: something shades a tank. Trees can be trimmed; other shade is a warning for the panel layout. With a
+    /// stored layout and the object's height, D1's simulation (`TankShade`) decides: it is quoted when the objects cost
+    /// 1 % or more, and the line is left out below that.
     static func shade(_ job: Job) -> [RemarkSuggestion] {
         let sections = job.sectionsByCategory.flatMap(\.sections)
+        let lat = RoofMount.latitude(gps: job.values.text("gps")), lon = lat == nil ? nil : RoofMount.longitude(gps: job.values.text("gps"))
         return job.modules.filter { $0.type == .tank }.compactMap { m in
             let v = m.values
             guard Schema.shaded(v) else { return nil }
@@ -34,7 +36,12 @@ public enum RemarkSuggestions {
             let name = m.name.trimmingCharacters(in: .whitespaces)
             let title = m.spec.short + (name.isEmpty ? "" : " " + name)
             let text: String
-            if from == ["ต้นไม้"] {
+            if !TankShade.objects(v).isEmpty, let sim = TankShade.current(v, latitude: lat ?? RoofMount.defaultLatitude, longitude: lon) {
+                guard sim.objectLoss >= 0.01 else { return nil }
+                let what = from == ["ต้นไม้"] ? "ตัดแต่งต้นไม้" : "ลดเงาจาก" + (from.isEmpty ? "สิ่งกีดขวาง" : from.joined(separator: "/"))
+                let cut = sim.cutTo.map { " ให้สูงไม่เกิน \(fmt($0)) ม." } ?? ""
+                text = "\(what)\(side) \(title)\(cut) (เงาทำให้เสีย " + String(format: "%.1f%%, %.1f MWh/ปี)", sim.objectLoss * 100, sim.objectMWh)
+            } else if from == ["ต้นไม้"] {
                 text = "ตัดแต่งต้นไม้\(side) \(title) ก่อนติดตั้ง"
             } else {
                 let what = from.isEmpty ? "สิ่งกีดขวาง" : from.joined(separator: "/")
@@ -148,8 +155,8 @@ public enum FinalSummary {
 
     public static func statusLine(_ job: Job) -> String {
         let here = pageGaps(job.values), others = otherPages(job)
-        if !here.isEmpty { return "ยังขาดในหน้านี้: " + here.joined(separator: ", ") + (others.isEmpty ? "" : " · และอีก \(others.count) หน้า") }
-        if !others.isEmpty { return "หน้านี้ครบแล้ว · ยังขาดอีก \(others.count) หน้า (\(others.map(code).joined(separator: ", ")))" }
-        return "ครบทุกหน้าแล้ว · พร้อมส่งออก"
+        if !here.isEmpty { return "ยังขาดในหน้านี้: " + here.joined(separator: ", ") + (others.isEmpty ? "" : " | และอีก \(others.count) หน้า") }
+        if !others.isEmpty { return "หน้านี้ครบแล้ว | ยังขาดอีก \(others.count) หน้า (\(others.map(code).joined(separator: ", ")))" }
+        return "ครบทุกหน้าแล้ว | พร้อมส่งออก"
     }
 }

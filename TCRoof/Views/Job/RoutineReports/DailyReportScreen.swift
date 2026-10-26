@@ -3,6 +3,7 @@ import SwiftData
 import QuickLook
 import TCRoofUI
 import TCRoofCore
+import ModuleRules
 
 /// A photo of the day being edited, tagged with a progress line id (or "").
 struct DraftPhoto: Identifiable, Equatable {
@@ -37,7 +38,7 @@ struct DailyReportScreen: View {
 }
 
 /// One day's report. iPad regular width (≥ 1000 pt): the one-page layout of docs/ui/daily-report-ipad
-/// (`DailyOnePage`); otherwise one column of sections 1–6 and the photos, with the bottom bar บันทึกร่าง · ตรวจ & ลงนาม.
+/// (`DailyOnePage`); otherwise one column of sections 1–6 and the photos, with the bottom bar บันทึกร่าง | ตรวจ & ลงนาม.
 struct DailyReportEditor: View {
     @Bindable var job: Job
     let date: Date
@@ -74,6 +75,20 @@ struct DailyReportEditor: View {
     private var log: InstallLog? { job.dailyLog(on: date) }
     /// Reports of other days, for "วันนี้" and the carry-over.
     private var others: [RoutineReport.Daily] { job.dailyReports.filter { RoutineReport.dayKey($0.date) != RoutineReport.dayKey(date) } }
+
+    /// Construction tasks this report brings to 100 % while the MP plan has them below it, and whose install photos are
+    /// missing (`IECReport.missingPhotoLabels`): signing books them, so the sign sheet asks first.
+    private var photoWarnings: [MPMissingPhotos] {
+        guard let input = job.scheduleInput else { return [] }
+        let actual = job.scheduleActual, settings = job.routineSettings, reports = others + [report]
+        let tasks = MasterSchedule.Task.allCases.filter { t in
+            guard t.part == .construction, input.weight(t) > 0, report.progress.contains(where: { $0.task == t }),
+                  let pct = RoutineReport.taskPercent(t, reports: reports, through: report.date, settings: settings), pct >= 99.95
+            else { return false }
+            return (actual.points[t.rawValue] ?? [:]).values.reduce(0, +) < input.weight(t) - 1e-9
+        }
+        return MPMissingPhotos.list(tasks, job: job)
+    }
     private var dirty: Bool { saved.map { $0.0 != report || $0.1 != photos } ?? true }
 
     var body: some View {
@@ -85,7 +100,8 @@ struct DailyReportEditor: View {
             }
         }
         .sheet(isPresented: $showSign) {
-            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), engineer: job.routineSettings.siteEngineer) { name, drawn in
+            DailySignSheet(warnings: RoutineReport.warnings(report, previous: others), photos: photoWarnings,
+                           engineer: job.routineSettings.siteEngineer) { name, drawn in
                 sign(engineer: name, signature: drawn)
             }
         }
@@ -122,9 +138,9 @@ struct DailyReportEditor: View {
 
     private var onePage: some View {
         DailyOnePage(job: job, date: date, report: $report, photos: $photos, others: others, log: log, dirty: dirty,
-                     actions: .init(saveDraft: requestSaveDraft, sign: requestSign, acknowledge: requestAck,
-                                    clearSignature: clearSignature, clearAck: clearAck, preview: previewPDF, send: exportPDF,
-                                    day: moveDay, settings: { showSettings = true }))
+                     actions: .init(mustAsk: mustAskBeforeSaving, saveDraft: { write() }, sign: requestSign,
+                                    clearSignature: clearSignature, preview: previewPDF, send: exportPDF, day: moveDay, open: openDay,
+                                    settings: { showSettings = true }, toast: { t in withAnimation { toast = t } }))
     }
 
     private var classic: some View {
@@ -150,6 +166,17 @@ struct DailyReportEditor: View {
     /// The previous or next report day; today's unsaved edits are kept as a draft first (a signed report asks).
     private func moveDay(_ step: Int) {
         guard let d = RoutineReport.reportDay(from: date, by: step, settings: job.routineSettings, limit: .now) else { return }
+        go(to: d)
+    }
+
+    /// A day picked in the calendar (up to today), handled as `moveDay`.
+    private func openDay(_ day: Date) {
+        let d = RoutineReport.calendar.startOfDay(for: day)
+        guard d != date, d <= RoutineReport.calendar.startOfDay(for: .now) else { return }
+        go(to: d)
+    }
+
+    private func go(to d: Date) {
         if dirty, log?.engineerSignedAt != nil {
             // a contractor's edits to a signed report aren't kept (they'd take our engineer's signature off)
             guard canSign else { return moveTo(d) }
@@ -165,7 +192,11 @@ struct DailyReportEditor: View {
     private var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการ" }
 
     private func requestSign() {
-        if canSign { showSign = true } else { withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
+        guard canSign else { return withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
+        // ZNSHINE's manual: no open block, and a reason for every warn, before our engineer signs
+        let stops = DailyModuleCard.stops(report)
+        guard stops.isEmpty else { return withAnimation { toast = "ตรวจติดตั้งแผงยังไม่ผ่าน: " + stops.joined(separator: " | ") } }
+        showSign = true
     }
 
     /// The inspector acknowledges a signed report only.
@@ -181,13 +212,6 @@ struct DailyReportEditor: View {
         log.setSignature(nil, tag: InstallLog.engineerSignatureTag, context: context)
         log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         job.feedMP()
-        try? context.save()
-    }
-
-    private func clearAck() {
-        guard canSign else { return }
-        log?.inspectorAckAt = nil
-        log?.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
         try? context.save()
     }
 
@@ -267,6 +291,7 @@ struct DailyReportEditor: View {
             MaterialsCard(materials: $report.materials, locations: job.routineSettings.locations)
             ProgressCard(report: $report, previous: others, job: job)
             ProblemsCard(problems: $report.problems, date: date)
+            DailyModuleCard(report: $report, photos: $photos).cardStyle()
         }
     }
 
@@ -321,6 +346,15 @@ struct DailyReportEditor: View {
         saved = (report, photos)
         #if DEBUG
         debugState()
+        // `-dailyModuleDemo YES|open`: today's module checklist with a bolt at 22 N·m (the spec's case), not saved
+        if let demo = UserDefaults.standard.string(forKey: "dailyModuleDemo") {
+            var c = InstallDailyCheck()
+            c.method = .clamp; c.ppe = true; c.noJewelry = true; c.weatherDry = true; c.modulesDry = true
+            c.boltTorquesNm = [18, 19, 22]; c.clampsPerModule = 4; c.clampOverlapMm = 8; c.gapMm = 20; c.rearClearanceMm = 100
+            c.frameModified = false; c.bendRadiusMm = 50; c.groundTorquesNm = [6]; c.installedSerials = ["ZX7523351920001", "ZX7523351920002"]
+            report.moduleCheck = c.json
+            if demo == "open" { DailyModuleCard.openOnAppear = true }
+        }
         #endif
     }
 
@@ -364,6 +398,14 @@ struct DailyReportEditor: View {
         return target
     }
 
+    /// The one-page bar's save button: a signed report that was edited asks first (or, for someone who can't sign,
+    /// says why), and the button stays as it is.
+    private func mustAskBeforeSaving() -> Bool {
+        guard dirty, log?.engineerSignedAt != nil else { return false }
+        if canSign { askUnsign = true } else { withAnimation { toast = signedForOthers } }
+        return true
+    }
+
     /// A signed report that was edited loses its signatures on save, so ask first.
     private func requestSaveDraft() {
         if dirty, log?.engineerSignedAt != nil {
@@ -374,7 +416,7 @@ struct DailyReportEditor: View {
     }
 
     /// Only our engineer takes a signature off (firestore.rules refuses a contractor's change to `engineerSignedAt`).
-    private var signedForOthers: String { "รายงานนี้ลงนามแล้ว · แก้ได้เฉพาะ\(signers)" }
+    private var signedForOthers: String { "รายงานนี้ลงนามแล้ว | แก้ได้เฉพาะ\(signers)" }
 
     private func saveDraft() {
         write()
@@ -384,6 +426,11 @@ struct DailyReportEditor: View {
     private func sign(engineer: String, signature: Data?) {
         if job.routineSettings.siteEngineer != engineer {
             var s = job.routineSettings; s.siteEngineer = engineer; job.routineSettings = s
+        }
+        // the module checklist keeps the rule set and catalog it was signed under
+        if var c = DailyModuleCard.check(report) {
+            c.ruleSetVersion = ModuleCatalog.ruleSetVersion; c.catalogVersion = ModuleCatalog.version
+            report.moduleCheck = c.json
         }
         let target = write()
         target.engineerSignedAt = .now
@@ -395,19 +442,12 @@ struct DailyReportEditor: View {
         }
         if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()
-        withAnimation { toast = "ลงนามแล้ว · เก็บ PDF ในเอกสารโครงการ" }
+        withAnimation { toast = "ลงนามแล้ว | เก็บ PDF ในเอกสารโครงการ" }
     }
 
     private func acknowledge(name: String, at when: Date, signature: Data?) {
         guard let target = log else { return }
-        if job.routineSettings.inspector != name {
-            var s = job.routineSettings; s.inspector = name; job.routineSettings = s
-        }
-        target.inspectorAckAt = when
-        target.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
-        if let built = RoutineReportFiles.daily(job, log: target) { RoutineReportFiles.file(built, job: job, context: context) }
-        if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
-        try? context.save()
+        job.recordInspectorAck(target, name: name, at: when, signature: signature, context: context)
     }
 
     private func exportPDF() {

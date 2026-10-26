@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 import TCRoofCore
 
-/// Roofs saved with "บันทึกค่าปัจจุบันเป็นแบบใหม่". They are kept on this iPad only: the app has no shared store for
-/// them yet, so "ทั้งทีม" is recorded with the roof but not sent to the team.
+/// Roofs saved with "บันทึกค่าปัจจุบันเป็นแบบใหม่" as `เฉพาะฉัน`, kept on this iPad only. `ทั้งทีม` saves a
+/// `RoofDesign` to the synced `DesignLibrary` instead (older roofs saved here as ทั้งทีม stay on this iPad).
 enum RoofStandards {
     static let key = "c1.savedRoofs"
     static func load() -> [Roof.Standard] {
@@ -20,7 +20,9 @@ extension RoofPageWide {
     // MARK: หลังคามาตรฐาน
 
     var standardField: some View {
-        let label = Roof.standardLabel(values, in: Roof.standards + saved), open = dropdown == "std"
+        let label = RoofDesign.current(values).map { $0.name.contains($0.size) ? $0.name : $0.name + " " + $0.size }
+            ?? Roof.standardLabel(values, in: Roof.standards + saved)
+        let open = dropdown == "std"
         return VStack(alignment: .leading, spacing: 3) {
             A3Label(text: "หลังคามาตรฐาน")
             Button { dropdown = open ? nil : "std" } label: {
@@ -42,14 +44,21 @@ extension RoofPageWide {
     }
 
     var standardList: some View {
-        let hit = Roof.matchingStandard(values, in: Roof.standards + saved)
+        // a roof filled from a team design ticks that design only, not a กปภ. standard of the same spans
+        let hit = RoofDesign.current(values) == nil ? Roof.matchingStandard(values, in: Roof.standards + saved) : nil
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 listHeader("แบบมาตรฐาน กปภ.")
                 ForEach(Roof.standards) { s in standardRow(s, on: hit?.id == s.id) }
+                let designs = RoofDesign.ranked(values)
+                if !designs.isEmpty {
+                    Divider().padding(.vertical, 4)
+                    listHeader("แบบที่ทีมบันทึก | ตรวจทีละรายการ")
+                    ForEach(designs, id: \.design.id) { m in designRow(m.design, difference: m.difference, matches: m.matches) }
+                }
                 if !saved.isEmpty {
                     Divider().padding(.vertical, 4)
-                    listHeader("แบบที่ทีมบันทึก")
+                    listHeader("แบบในเครื่องนี้")
                     ForEach(saved) { s in
                         standardRow(s, on: hit?.id == s.id)
                             .contextMenu { Button("ลบแบบนี้", role: .destructive) { saved.removeAll { $0.id == s.id }; RoofStandards.save(saved) } }
@@ -74,6 +83,19 @@ extension RoofPageWide {
         Text(t).font(.sarabunFixed(12.5, .semibold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 2)
     }
 
+    /// A design from the team's library (`DesignLibrary`, synced): it fills every C1 answer it carries, and the card under
+    /// หลังคา then checks it item by item.
+    func designRow(_ d: RoofDesign, difference: Double?, matches: Bool) -> some View {
+        let on = RoofDesign.current(values)?.id == d.id
+        let line = difference.map { matches ? "ตรงกับขนาดที่วัด" : "ต่างจากที่วัด " + fmt(($0 * 100).rounded() / 100) + " ม." }
+        return Button { update { RoofDesign.apply(&$0, d) }; dropdown = nil; span = nil } label: {
+            DesignCard(name: d.name, detail: d.size + " | " + d.contents, line: line, matches: matches,
+                       source: d.source, sketch: d.thumbnail, selected: on)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 6).padding(.vertical, 3)
+    }
+
     func standardRow(_ s: Roof.Standard, on: Bool) -> some View {
         Button { update { Roof.applyStandard(&$0, s) }; dropdown = nil; span = nil } label: {
             HStack(spacing: 12) {
@@ -96,11 +118,21 @@ extension RoofPageWide {
     }
 
     var saveStandardSheet: some View {
-        SaveRoofStandardSheet(defaultName: defaultStandardName, summary: standardSummary) { name, team in
+        let current = RoofDesign.current(values)
+        let teamOK = roofPermissions.can(.designLibrary) && (current == nil || RoofDesign.done(values))
+        return SaveRoofStandardSheet(defaultName: defaultStandardName, summary: standardSummary, teamAllowed: teamOK) { name, team in
+            if team {
+                // the team's library (synced): every C1 answer a design carries, checked item by item where it's used
+                let d = RoofDesign.from(values, name: name, job: job.docNo.isEmpty ? job.projectName : job.docNo,
+                                        by: roofPermissions.email.isEmpty ? nil : roofPermissions.email)
+                DesignLibrary.shared.saveRoof(d)
+                roofDesignSaved = d.name
+                return
+            }
             let f = DateFormatter(); f.locale = Locale(identifier: "th_TH"); f.dateFormat = "d MMM"
             let by = job.values.text("engineer").split(separator: " ").first.map(String.init) ?? "ฉัน"
             let s = Roof.standard(from: values, id: "t-" + UUID().uuidString, name: name, by: by.isEmpty ? "ฉัน" : by,
-                                  scope: team ? "ทั้งทีม" : "เฉพาะฉัน", date: f.string(from: Date()))
+                                  scope: "เฉพาะฉัน", date: f.string(from: Date()))
             saved.append(s); RoofStandards.save(saved)
             update { $0[Roof.Key.standard] = .text(s.id) }
         }
@@ -115,8 +147,8 @@ extension RoofPageWide {
 
     var standardSummary: String {
         let xs = Roof.spans(values, .x), ys = Roof.spans(values, .y)
-        return fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +)) + " ม. · " + Roof.frame(values).label + " · แป @"
-            + String(format: "%.2f", Roof.purlinSpacing(values)) + " · กริด \(xs.count + 1) × \(ys.count + 1)"
+        return fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +)) + " ม. | " + Roof.frame(values).label + " | แป @"
+            + String(format: "%.2f", Roof.purlinSpacing(values)) + " | กริด \(xs.count + 1) × \(ys.count + 1)"
     }
 
     // MARK: ระยะแป
@@ -152,7 +184,7 @@ extension RoofPageWide {
                     .buttonStyle(.plain)
                 }
             }
-            Text(Roof.purlinNote(values) + " · 0.60–1.50 ม.").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            Text(Roof.purlinNote(values) + " | 0.60–1.50 ม.").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
         }
         .foregroundStyle(Theme.navy)
         .padding(16)
@@ -166,8 +198,8 @@ extension RoofPageWide {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("รูปตัด A–A · " + f.title).font(.sarabunFixed(20, .bold))
-                    Text("หน่วย ม. · แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("รูปตัด A–A | " + f.title).font(.sarabunFixed(20, .bold))
+                    Text("หน่วย ม. | แตะรายการขนาดชิ้นส่วนเพื่อไฮไลต์ตำแหน่ง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button { sectionBig = false } label: {
@@ -219,6 +251,9 @@ extension RoofPageWide {
 struct SaveRoofStandardSheet: View {
     let defaultName: String
     let summary: String
+    /// Team saves go to the synced library: team and managers only (`design.library`), and a roof filled from a
+    /// design only once every item is checked.
+    let teamAllowed: Bool
     let save: (String, Bool) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -241,13 +276,15 @@ struct SaveRoofStandardSheet: View {
                 }
                 TextField("ชื่อแบบ", text: $name).font(.sarabunFixed(17)).inputBox(minHeight: 46)
                     .onChange(of: name) { _, t in if t.count > 40 { name = String(t.prefix(40)) } }
-                Text("ในวงเล็บคือชื่อสถานที่ (จาก A1) · ขนาดใส่ให้อัตโนมัติ · สูงสุด 40 ตัวอักษร · \(name.count)/40")
+                Text("ในวงเล็บคือชื่อสถานที่ (จาก A1) | ขนาดใส่ให้อัตโนมัติ | สูงสุด 40 ตัวอักษร | \(name.count)/40")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 4) {
                 A3Label(text: "ใครใช้ได้")
-                RoofSegments(options: ["ทั้งทีม", "เฉพาะฉัน"], selected: team ? 0 : 1, minSegment: 90) { team = $0 == 0 }
-                Text(team ? "ทุกคนในทีมเห็นในรายการ \"แบบที่ทีมบันทึก\" และเลือกใช้ได้ทันที" : "เห็นเฉพาะในเครื่อง/บัญชีของคุณ")
+                if teamAllowed {
+                    RoofSegments(options: ["ทั้งทีม", "เฉพาะฉัน"], selected: team ? 0 : 1, minSegment: 90) { team = $0 == 0 }
+                }
+                Text(team && teamAllowed ? "ทุกคนในทีมเห็นในรายการ \"แบบที่ทีมบันทึก\" และเลือกใช้ได้ทันที" : "เห็นเฉพาะในเครื่องนี้")
                     .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 10) {
@@ -258,7 +295,7 @@ struct SaveRoofStandardSheet: View {
                 .buttonStyle(.plain)
                 Button {
                     let t = name.trimmingCharacters(in: .whitespaces)
-                    save(t.isEmpty ? defaultName : t, team); dismiss()
+                    save(t.isEmpty ? defaultName : t, team && teamAllowed); dismiss()
                 } label: {
                     Text("บันทึกแบบ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary).frame(maxWidth: .infinity, minHeight: 46)
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
@@ -282,14 +319,24 @@ struct RoofCADSheet: View {
     let pvMode: Bool
     let close: () -> Void
     @State private var parts: Set<RoofDXF.Part> = [.plan, .section, .table]
-    @State private var mm = true
+    @State private var mm = false
     @State private var result: (url: URL, out: RoofDXF.Output)?
     @State private var sharing = false
+    /// Why the file couldn't be written, shown under the button.
+    @State private var failure: String?
 
     var chosen: Set<RoofDXF.Part> { pvMode ? parts : parts.subtracting([.pv]) }
+    /// "NO224_TCR2569-23404_C1.dxf": letters (Thai with its marks), digits, "-" and "." kept, anything else (a "/" or
+    /// "|" in the document number, spaces) one "_", so the file can be written and shared by name.
     var fileName: String {
         let no = job.docNo.isEmpty ? "C1" : "NO" + job.docNo
-        return (no + "_" + section).replacingOccurrences(of: " ", with: "") + ".dxf"
+        let keep = CharacterSet.alphanumerics.union(.nonBaseCharacters).union(CharacterSet(charactersIn: "-."))
+        var out = "", gap = false
+        for u in (no + "_" + section).unicodeScalars {
+            if keep.contains(u) { out.unicodeScalars.append(u); gap = false } else if !gap && !out.isEmpty { out += "_"; gap = true }
+        }
+        while out.hasSuffix("_") { out.removeLast() }
+        return (out.isEmpty ? "C1" : out) + ".dxf"
     }
 
     var body: some View {
@@ -297,7 +344,7 @@ struct RoofCADSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ส่งออก CAD").font(.sarabunFixed(17, .bold))
-                    Text("DXF R12 · เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("DXF R2000 | เปิดได้ใน CAD ทั่วไป").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 Button(action: close) { Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.inkMuted).frame(width: 44, height: 36) }
@@ -329,6 +376,10 @@ struct RoofCADSheet: View {
                     .background(chosen.isEmpty ? Theme.disabledFill : Theme.primary, in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain).disabled(chosen.isEmpty)
+            if let failure {
+                Label(failure, systemImage: "exclamationmark.triangle.fill").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.warningText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -352,7 +403,7 @@ struct RoofCADSheet: View {
     func done(_ r: (url: URL, out: RoofDXF.Output)) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(r.url.lastPathComponent, systemImage: "checkmark.circle.fill").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.success)
-            Text("\(r.out.entities) วัตถุ · \(r.out.layers.count) เลเยอร์ · \(max(1, r.out.data.count / 1024)) KB · " + (mm ? "มม. 1:1" : "ม."))
+            Text("\(r.out.entities) วัตถุ | \(r.out.layers.count) เลเยอร์ | \(max(1, r.out.data.count / 1024)) KB | " + (mm ? "มม. 1:1" : "ม."))
                 .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 8) {
                 Button { result = nil } label: {
@@ -370,9 +421,15 @@ struct RoofCADSheet: View {
     }
 
     func export() {
-        let out = RoofDXF.build(values, parts: chosen, millimetres: mm)
+        let site = RoofMount.site(job)
+        let out = RoofDXF.build(values, parts: chosen, millimetres: mm, latitude: site.latitude, longitude: site.longitude)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        do { try out.data.write(to: url, options: .atomic); result = (url, out); sharing = true } catch {}
+        do {
+            try out.data.write(to: url, options: .atomic)
+            failure = nil; result = (url, out); sharing = true
+        } catch {
+            failure = "บันทึกไฟล์ไม่ได้: " + error.localizedDescription
+        }
     }
 }
 #endif

@@ -1,6 +1,6 @@
 # Standard design library (คลังแบบมาตรฐาน กปภ.), iPad app
 
-**Status:** Partly built (2026-10-17): the two sheets as `TCRoofCore/TankDesign.swift`, picked in D1 sub-step 2 (`เริ่มจากแบบมาตรฐาน กปภ.`, ranked by the measured size, turned when it fits a quarter turn), checked with the sub-step's own states, and the §6 difference list in the PDF and the counts on the Excel tank sheet (N19). `ยืนยันที่เหลือ n จุดว่าตรงแบบ` (printed as ยืนยันแบบรวม). Not yet: required photos, the `เทียบกับแบบ` view, the library (save, import, Drive, settings), roofs (§7).
+**Status:** Built (2026-10-19; first part 2026-10-17): the two sheets as `TCRoofCore/TankDesign.swift`, picked in D1 sub-step 2 (`เริ่มจากแบบมาตรฐาน กปภ.`, ranked by the measured size, turned when it fits a quarter turn), checked with the sub-step's own states, and the §6 difference list in the PDF and the counts on the Excel tank sheet (N19). `ยืนยันที่เหลือ n จุดว่าตรงแบบ` (printed as ยืนยันแบบรวม). Built 2026-10-19: tolerances ±1.00 m (overall) and ±0.20 m (a point; within it a point still matches), a photo on each point (`Obstacle.photo`) required for ไม่มีจริง / ย้าย / เพิ่มหน้างาน on a standard design (sub-step 2 isn't done without them), the `หน้างาน / เทียบกับแบบ` switch on the obstacle plan with the difference list, and the PDF's difference list with thumbnails. Library built 2026-10-19: `DesignLibrary` (Application Support `standard-designs.json`), `บันทึกเป็นแบบมาตรฐาน` once every point is checked (team only: the new capability `design.library`), revisions, a snapshot of the design on each job (`tankDesignSnapshot`), Settings › คลังแบบมาตรฐาน (rename, archive, import / export `.tcdesign`), and sync through Firestore `standardDesigns` (every member reads, the team writes, never an older revision) instead of a Drive folder (decided 2026-10-19). Scanned sheet built 2026-10-19: `แนบแบบ (PDF / รูป)` in the library (PDF pages or an image as JPEGs under ~700 KB, kept beside the library, synced one page per Firestore `standardDesignSheets` document), opened with `ดูแบบ` in the library and on D1's design line (`DesignSheetViewer`, swipe and pinch; an inset, not Split View). Roofs built 2026-10-19 (`RoofDesign`; an area dragged on C1's plan to its site position, snapped to 5 cm (`Roof.moveArea`), built 2026-10-21; C1's `แบบมาตรฐาน` under หลังคา; since 2026-10-21 picked from the `หลังคามาตรฐาน` dropdown's `แบบที่ทีมบันทึก` and saved from its `บันทึกค่าปัจจุบันเป็นแบบใหม่` as `ทั้งทีม`, the card only checking the design in use): a design keeps C1's spans, shape, material, frame, ridge and sheet direction, bays, posts, purlin spacing, overhang, clear height, member sizes and the plan's obstacles; picked (ranked by size, turned too), each item is confirmed `ตรงแบบ` or counts as `ต่างจากแบบ` once its answers change (an obstacle gone `ไม่มีจริง`, a new one `เพิ่มหน้างาน`); saved by the team, kept in the library (`standard-roof-designs.json`), synced in `standardDesigns` with `kind: roof`, and printed in the roof section of the PDF. Not built: region tie ranking (§3.1), Pencil dragging, Split View for the sheet, the 5-minute timing (§9).
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+). The same screens work on iPhone in compact layout.
 **Where:**
 - **D1 ถังน้ำใส:** a **"เริ่มจากแบบมาตรฐาน"** button at the top of the tank plan group.
@@ -52,8 +52,8 @@ No other กปภ. design codes or sizes are invented. The library grows in thr
 - **บันทึกเป็นแบบมาตรฐาน (save as a standard design):** available after a complete check (every item checked).
   Saves the checked result as a new design, with a name and a reference to the design it came from. This is the main
   way the library grows: the second station of the same type starts from it.
-- **Import:** a `.tcdesign` file (JSON, §5), sent by email/LINE, or put in the shared Drive folder
-  `TCRoof/แบบมาตรฐาน/`.
+- **Import:** a `.tcdesign` file (JSON, §5), sent by email/LINE. Saved designs reach the other devices through Firestore
+  `standardDesigns` (scanned sheets in `standardDesignSheets`), not a Drive folder.
 - **Scanned sheet** (optional): the PDF or photo of the original drawing is attached to the design. It opens next to
   the plan in the check screen (§3.4).
 
@@ -66,19 +66,16 @@ No other กปภ. design codes or sizes are invented. The library grows in thr
 
 ### 3.1 Pick a design
 
-- **Open it:** tap **"เริ่มจากแบบมาตรฐาน"** in D1. A sheet opens: **measured width × length** fields (decimal
-  keypad), then the design cards.
-- **Card contents:**
-  - thumbnail plan
-  - name, size
-  - counts of vents / hatches / ladders / pipes
-  - source
-  - match line: **"ตรงกับขนาดที่วัด"** (green) when `|ΔW| + |ΔL| ≤ 0.50 m` in either orientation, otherwise
-    "ต่างจากที่วัด x ม." (red)
-- **Order:** cards are sorted by that difference. Designs the team used most recently in the same region (เขต) come
-  first on a tie.
-- **After picking:** the D1 values are replaced after a confirmation ("แทนค่าแปลนถังที่กรอกไว้?"), with one undo
-  step.
+- **Open it:** tap **`เริ่มจากแบบมาตรฐาน กปภ.`** in D1 sub-step 2. A confirmation dialog lists the designs, each as
+  its name and its match line (`TankDesign.ranked`, `TankPageWide+Obstacles.swift`). The measured size comes from
+  sub-step 1; there is no size field in the picker.
+- **Match line:** "ตรงกับขนาดที่วัด" when `|ΔW| + |ΔL| ≤ 1.00 m` (`TankDesign.tolerance`) in either orientation,
+  otherwise how far it differs.
+- **Order:** sorted by that difference. (Not built: designs the team used most recently in the same region (เขต) first
+  on a tie.)
+- **After picking:** the dialog's message reads "แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่";
+  the pick is one undo step.
+- **Cards** (built 2026-10-21, `DesignCard`): each design shows a small plan (`DesignThumbnail`: the outline, the bays and a mark per item), its size and contents, the match line in green or red, and its source; D1's picker is a sheet of them (`TankDesignPicker`) and C1's `หลังคามาตรฐาน` dropdown lists the team's designs the same way.
 - **Rotated tanks:** a tank measured 40 × 64 matches the 64 × 40 design **rotated**. The app rotates the template so
   the plan matches the site picture's orientation.
 
@@ -97,7 +94,7 @@ No other กปภ. design codes or sizes are invented. The library grows in thr
 | **จากแบบ (not checked)** | blue, dashed | as filled from the design |
 | **ตรงแบบ** | green + tick | tap the item, then **ตรงแบบ**. The next unchecked item is selected automatically |
 | **ไม่มีจริง** | red cross | **ไม่มีจริง** |
-| **ย้าย / ขนาดต่าง** | orange | vent: **drag** to another bay (snaps to bay centres). Hatch, ladder, pipe: **drag along the wall** (snaps to 0.10 m) or type **ระยะตามผนัง** |
+| **ย้าย / ขนาดต่าง** | orange | **drag** (snaps to 2.5 cm, `TankPoints.grid`, and takes another point's row or column within 0.30 m, the magnet); a hatch, ladder or pipe on a wall slides along it; or type the distances |
 | **เพิ่มหน้างาน** | purple | mode **เพิ่มสิ่งที่ไม่มีในแบบ**, pick the kind, tap a bay (vent) or near a wall (the rest) |
 
 - **Size and bays** are one item: **ตรงแบบ**, or edit the bay lists. Editing recalculates the overall size, and the
@@ -105,8 +102,10 @@ No other กปภ. design codes or sizes are invented. The library grows in thr
 - **Photos:** every item has **ถ่ายรูป**. The camera opens, and the photo is stored on the item.
   - A photo is **required** for ไม่มีจริง, ย้าย and เพิ่มหน้างาน, so the difference can be shown to the reviewer.
 - **Pencil and keyboard:**
-  - Apple Pencil drags items precisely. Fingers pan and zoom.
-  - With a hardware keyboard: **Return** = ตรงแบบ, **⌫** = ไม่มีจริง, **Tab** = next item.
+  - Apple Pencil drags items precisely. Fingers pan and zoom. (Not built.)
+  - With a hardware keyboard (built 2026-10-21, D1 sub-step 2, `KeyCatcher`): **Return** = ตรงแบบ and on to the next
+    unchecked point, **⌫** = ไม่มีจริง, **Tab** = next item; off while a text field is edited. XCUITest delivers only
+    Tab to it (`TankKeyboardUITests`); Return and ⌫ are checked by hand on a device.
 - **Bulk confirm:** "ยืนยันที่เหลือ n จุดว่าตรงแบบ" is allowed. Those items are stored as `bulk` and printed as
   "ยืนยันแบบรวม" in the report, so the reviewer can see which items were not checked one by one.
 
@@ -120,9 +119,8 @@ The difference list under the plan is the same list the PDF prints (§6).
 
 ### 3.4 Side by side with the sheet
 
-When the design has a scanned sheet, **"ดูแบบ"** opens it:
-- as a **second window in Split View / Stage Manager**
-- or as an inset that can be zoomed
+When the design has a scanned sheet, **"ดูแบบ"** opens it as an inset that can be zoomed (`DesignSheetViewer`, swipe
+and pinch). The second window in Split View / Stage Manager is not built.
 
 This lets the surveyor read notes on the original drawing while checking.
 
@@ -130,45 +128,31 @@ This lets the surveyor read notes on the original drawing while checking.
 
 - **Nothing unchecked goes into the design outputs:**
   - Unchecked items are drawn dashed in every drawing that uses D1: tank plan, mounting layout, PV layout.
-  - The mounting and PV layouts show "ยังตรวจแบบไม่ครบ n จุด".
+  - The mounting and PV layouts show "ยังตรวจแบบไม่ครบ n จุด" (built 2026-10-21, `DesignCheckBanner`: D1 sub-step 3 counts points, C1's แผงบนหลังคา counts รายการ; a tap goes back to the check).
   - The PDF won't mark D1 complete (`Progress`) until every item is checked.
 - **ไม่มีจริง** removes the item from D1. **ย้าย** uses the site position. **เพิ่มหน้างาน** adds it. The downstream
   layouts are recomputed.
 - **Changing to another design** after checks have started asks first. The checks are lost (undo brings them back).
-- **Measured size vs design:** if the measured size doesn't match the chosen design (more than 0.50 m), the bay item
+- **Measured size vs design:** if the measured size doesn't match the chosen design (more than 1.00 m), the bay item
   starts as **ขนาดต่าง**, and the info bar says so.
 
 ## 5. Data model
 
-```swift
-public struct StandardDesign: Codable, Hashable, Identifiable {
-    public var id: String                       // "pwa-40x40", "team-<uuid>"
-    public var name: String
-    public var kind: DesignKind                 // .tank, .roof
-    public var revision: Int
-    public var source: String                   // "แบบ กปภ. …" or "บันทึกจากงาน <job> อ้างอิง <design>"
-    public var basedOn: String?                 // parent design id
-    public var tank: TankTemplate?              // bays, ventStyle, vents [(row, col)], hatches/ladders/pipes [(edge, along, Ø, label)]
-    public var roof: RoofTemplate?              // §7
-    public var sheet: [Photo] = []              // scanned drawing pages
-}
-public enum CheckState: String, Codable { case open, matches, missing, moved, added }
-public struct DesignItemCheck: Codable, Hashable { public var itemID: String; public var state: CheckState; public var bulk = false
-    public var value: DesignItemValue?          // site position when moved/added
-    public var photo: Photo? }
-public struct DesignCheck: Codable, Hashable {  // stored on the D1 module (new field "designCheck")
-    public var design: StandardDesign           // snapshot
-    public var measured: (w: Double, l: Double)?
-    public var rotated: Bool
-    public var items: [DesignItemCheck]
-}
-```
+Built as `TankDesign` (`TCRoofCore/TankDesign.swift`, `Codable`), not the draft's `StandardDesign` / `DesignCheck`:
 
-- **The D1 values** (`spansX`, `spansY`, `obst` with kinds, vent style) are **written from** `DesignCheck` whenever a
-  check changes. The rest of the app keeps reading D1 as before.
-- **Library file:** `standard-designs.json` in the app's Application Support. It syncs with the shared Drive folder
-  through `DriveSync`: last-writer-wins per design, and the higher revision wins.
-- **Old jobs** have no `designCheck`. They decode and behave as today.
+- **`TankDesign`:** `id` (`pwa-64x40`, `pwa-40x40` or a saved one), `name`, `source`, the bay grid (`nx`, `ny`,
+  `span`, or `spansX` / `spansY`), `ventStyle`, `vents` (bay cells), `hatches`, `ladders`, `pipes` (wall and distance
+  along it), `revision`, `basedOn`, `savedBy`, `savedAt`, `archived` and `sheet` (the scanned pages).
+  `tolerance = 1.0` (overall size) and `pointTolerance = 0.2` (a point). Roofs have their own `RoofDesign`.
+- **On the job (D1 module):** `tankDesign` (the design id, `@r` when turned) and `tankDesignSnapshot` (the design as it
+  was used), so later library edits never change old jobs.
+- **The checks live on the points themselves:** each `Obstacle` in `obst` carries `kind`, `status` (`""` / `ok` /
+  `absent`), `origin` (`standard` / `added`), `stdX` / `stdY` (the design position; moved is derived from it), `bulk`
+  and `photo`. Picking a design writes `spansX`, `spansY` and `obst`; the rest of the app keeps reading D1 as before.
+- **Library:** `DesignLibrary` keeps `standard-designs.json` (and `standard-roof-designs.json`) in Application Support,
+  and the app syncs it through Firestore `standardDesigns` (`kind: roof` for roofs) and `standardDesignSheets`: the
+  higher revision wins.
+- **Old jobs** have no `tankDesign`. They decode and behave as before.
 
 ## 6. Report and export
 
@@ -199,12 +183,12 @@ No roof designs are seeded. The first station of each building type saves one.
 
 | File | Contents |
 |---|---|
-| `TCRoofCore/Designs/StandardDesign.swift` | §5 model, seed JSON for the two sheets, `.tcdesign` import/export |
-| `TCRoofCore/Designs/DesignLibrary.swift` | load/save, revision, match ranking (§3.1), rotation, Drive sync hooks |
-| `TCRoofCore/Designs/DesignCheck.swift` | states, apply to D1/C1 values, the difference list, progress |
-| `SurveyUI/Designs/DesignPickerSheet.swift` | §3.1 |
-| `SurveyUI/Designs/DesignCheckView.swift` | §3.2 and §3.3; drag snapping; keyboard shortcuts; camera |
-| `SurveyUI/Designs/DesignLibrarySettings.swift` | Settings › คลังแบบมาตรฐาน |
+| `TCRoofCore/TankDesign.swift` | §5 model, the two seed sheets, match ranking (§3.1), rotation, apply to D1, the difference list |
+| `TCRoofCore/DesignLibrary.swift` | load/save, revision, `.tcdesign` import/export, the Firestore sync hooks |
+| `TCRoofCore/RoofDesign.swift` | §7 roofs |
+| `TCRoofUI/Survey/Pages/Tank/TankPageWide+Obstacles.swift` | the picker (§3.1) and the checks (§3.2, §3.3) in D1 sub-step 2 |
+| `TCRoofUI/Survey/Designs/DesignLibraryView.swift` | Settings › คลังแบบมาตรฐาน |
+| `TCRoofUI/Survey/Designs/DesignSheetViewer.swift` | the scanned sheet (§3.4) |
 | `PDFReport/ReportLayout.swift` | the §6 block |
 
 **Tests:**
@@ -225,18 +209,20 @@ No roof designs are seeded. The first station of each building type saves one.
 - [ ] The demo steps pass as an XCUITest on iPad (landscape and portrait).
 - [ ] Target: a surveyor starts and checks a 40 × 40 tank in under 5 minutes. Time it against manual entry on a test job.
 - [ ] No drawing or layout uses an unchecked item without showing it as unchecked.
-- [ ] A design saved on one iPad appears on another after Drive sync.
+- [ ] A design saved on one iPad appears on another after Firestore sync.
 
 ## 10. Open questions
 
 Answered 2026-10-17: (1) yes, the team will share more sheets; (2) no drawing number: a design is a template;
-(3) ±0.50 m / ±0.10 m are not right, values to come; (4) bulk confirm is allowed. (5) is still open.
+(3) ±0.50 m / ±0.10 m are not right, values to come; (4) bulk confirm is allowed. Answered 2026-10-19: (3) ±1.00 m
+and ±0.20 m; (5) the team only (`design.library`).
 
 1. **More designs:** can the team send the other standard sheets they meet (tank sizes, pump buildings), so they can
    be seeded instead of saved from the first job?
 2. **Design codes:** should designs carry the official กปภ. drawing number and year? If yes, which field on the sheet
    is it?
-3. **Tolerance:** is ±0.50 m on the overall size right for "matches"? And ±0.10 m along a wall for hatches and
-   ladders?
+3. ~~**Tolerance:** is ±0.50 m on the overall size right for "matches"? And ±0.10 m along a wall for hatches and
+   ladders?~~ ±1.00 m on the overall size, ±0.20 m for a point (2026-10-19).
 4. **Bulk confirm:** allow it at all, or only after a photo of the whole roof?
-5. **Who may save a design:** anyone, or only an engineer role (`MemberPicker` roles)?
+5. ~~**Who may save a design:** anyone, or only an engineer role (`MemberPicker` roles)?~~ The team only, through the
+   `design.library` capability (2026-10-19).

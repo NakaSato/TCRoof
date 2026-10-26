@@ -31,10 +31,10 @@ struct PhoneHome: View {
         ScrollView {
             VStack(spacing: 10) {
                 if !appointments.isEmpty {
-                    AppointmentHero(size: .phone, appointments: appointments.map { $0.heroItem(open: open) }, page: $page, open: open, newSurvey: {})
+                    AppointmentHero(size: .phone, appointments: appointments.map { $0.heroItem(open: open) }, page: $page, open: open, newSurvey: nil)
                 } else if !ahead.isEmpty {
-                    AppointmentHero(size: .phone, title: "แผนงานถัดไป", titleLabel: "แผนงานถัดไป · ไม่มีนัดสำรวจวันนี้",
-                                    pagerLabels: ("แผนงานก่อนหน้า", "แผนงานถัดไป"), appointments: ahead, page: $page, open: open, newSurvey: {})
+                    AppointmentHero(size: .phone, title: "แผนงานถัดไป", titleLabel: "แผนงานถัดไป | ไม่มีนัดสำรวจวันนี้",
+                                    pagerLabels: ("แผนงานก่อนหน้า", "แผนงานถัดไป"), appointments: ahead, page: $page, open: open, newSurvey: nil)
                 }
                 HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), open: openFeed)
             }

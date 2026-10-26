@@ -41,7 +41,7 @@ extension ReportLayout {
         let lines: [(String, String, Bool)] = [
             ("กำลังรวม", "\(s.sizesText) = \(s.totalKW) kW" + (cap.map { " " + $0.text } ?? ""), cap?.ok ?? true),
             ("CB อินเวอร์เตอร์", s.breakerSummary, true),
-            ("Feeder AC-DB → จุดเชื่อม", "\(fd.at) AT · \(fd.label)", true),
+            ("Feeder AC-DB → จุดเชื่อม", "\(fd.at) AT | \(fd.label)", true),
             ("Tray อินเวอร์เตอร์ → AC-DB", "\(s.trayWidth) มม. (ขั้นต่ำ \(s.trayMin))", true),
             ("Ladder ออกจาก AC-DB", "\(s.ladderWidth) มม. (ขั้นต่ำ \(fd.ladderMin))", true),
             (s.site == .outdoor ? "ห้องขั้นต่ำ" : "ผนังยาวขั้นต่ำ", s.minimumText.components(separatedBy: "ขั้นต่ำ ").last ?? "", s.fits),
@@ -51,7 +51,7 @@ extension ReportLayout {
             o.append(.text(value, at: Pt(170, y + rh / 2), size: 8.5, bold: true, color: ok ? .blue : .red))
             y += rh
         }
-        o.append(.text(s.status + " · แคตตาล็อกอุปกรณ์ \(s.catalog.version)", at: Pt(W - 6, y + 6), size: 7, color: s.isOK ? .ink2 : .red, align: .right))
+        o.append(.text(s.status + " | แคตตาล็อกอุปกรณ์ \(s.catalog.version)", at: Pt(W - 6, y + 6), size: 7, color: s.isOK ? .ink2 : .red, align: .right))
         y += 14
         let table = Unit(h: y, ops: box("อุปกรณ์ที่คำนวณจากแคตตาล็อก", height: y, left: true) + o)
         return [photos, plan, table]

@@ -76,7 +76,7 @@ final class MoveToInstallUITests: XCTestCase {
         let noPlan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ยังไม่มีแผน MP")).firstMatch
         XCTAssertTrue(noPlan.waitForExistence(timeout: slow), "the overview offers ยังไม่มีแผน MP")
         noPlan.tap()
-        // linked, the station is the TCRoof job's, under its name (`TEST_RUNNER_MOVE_LINK_NAME`)
+        // the station is the TCRoof job's: made from the survey, or the linked one under its name (`TEST_RUNNER_MOVE_LINK_NAME`)
         let listed = ProcessInfo.processInfo.environment["MOVE_LINK_NAME"] ?? "ทดสอบย้ายติดตั้ง"
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", listed)).firstMatch.waitForExistence(timeout: 10),
                       "the moved survey is listed there")
@@ -85,16 +85,15 @@ final class MoveToInstallUITests: XCTestCase {
         again = card(app)
         XCTAssertTrue(again.waitForExistence(timeout: slow))
 
-        // linked, a tap on the card opens the station's install tracking page, as the overview's row does
-        if !link.isEmpty {
-            again.tap()
-            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "รายละเอียดงาน")).firstMatch.waitForExistence(timeout: 15),
-                          "the install tracking page opens")
-            app.terminate()
-            app = launch()
-            again = card(app)
-            XCTAssertTrue(again.waitForExistence(timeout: slow))
-        }
+        // a tap on the card opens the station's install tracking page, as the overview's row does: an unlinked survey
+        // gets a TCRoof job when it moves (`SurveyModel.makeInstallJob`)
+        again.tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.waitForExistence(timeout: 15),
+                      "the install tracking page opens")
+        app.terminate()
+        app = launch()
+        again = card(app)
+        XCTAssertTrue(again.waitForExistence(timeout: slow))
 
         // and its survey still opens editable, from the card's menu
         again.press(forDuration: 1.2)

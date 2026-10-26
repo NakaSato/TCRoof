@@ -20,16 +20,17 @@ final class IECBeforeVITests: XCTestCase {
     }
 
     func testFivePercentPassesAndMoreFails() {
-        // three 16-module strings, median 800: 840 is exactly +5 %, 841 is over
-        var inv = IECReport.Inverter(slots: [IECReport.Slot(modules: 16, polarityOK: true, vocV: 800, iBeforeA: 0),
-                                             IECReport.Slot(modules: 16, polarityOK: true, vocV: 760, iBeforeA: 0),
+        // three 16-module strings, one per MPPT (slots 1, 3, 5, so ZN-110 has no pair), median 800: 840 is exactly
+        // +5 %, 841 is over
+        var inv = IECReport.Inverter(slots: [IECReport.Slot(modules: 16, polarityOK: true, vocV: 800, iBeforeA: 0), nil,
+                                             IECReport.Slot(modules: 16, polarityOK: true, vocV: 760, iBeforeA: 0), nil,
                                              IECReport.Slot(modules: 16, polarityOK: true, vocV: 840, iBeforeA: 0)])
         let r = IECReport(inverters: [inv])
-        XCTAssertEqual(r.vocPasses(inv, slot: 3), true, "exactly 5 % passes")
-        XCTAssertEqual(r.beforeVIStatus(inv, slot: 2), .pass, "−5 % too")
-        inv.slots[2]?.vocV = 841
-        XCTAssertEqual(IECReport(inverters: [inv]).vocPasses(inv, slot: 3), false)
-        XCTAssertEqual(IECReport(inverters: [inv]).beforeVIStatus(inv, slot: 3), .fail)
+        XCTAssertEqual(r.vocPasses(inv, slot: 5), true, "exactly 5 % passes")
+        XCTAssertEqual(r.beforeVIStatus(inv, slot: 3), .pass, "−5 % too")
+        inv.slots[4]?.vocV = 841
+        XCTAssertEqual(IECReport(inverters: [inv]).vocPasses(inv, slot: 5), false)
+        XCTAssertEqual(IECReport(inverters: [inv]).beforeVIStatus(inv, slot: 5), .fail)
     }
 
     func testTheSamplesFailingStringSaysWhy() throws {
@@ -37,8 +38,11 @@ final class IECBeforeVITests: XCTestCase {
         r.inverters[0].slots[4]?.vocV = 712
         let inv = r.inverters[0]
         XCTAssertEqual(r.beforeVIStatus(inv, slot: 5), .fail)
-        XCTAssertEqual(r.beforeVIFailures(inv, slot: 5), ["Voc 712.0 V ต่างจากมัธยฐาน −5.4% (เกณฑ์ ±5%)"])
-        XCTAssertEqual(r.beforeVITally(inv), .init(done: 16, total: 16, failed: 1))
+        // slot 6 shares MPPT 3 with it: 750 − 712 = 38 V, over ZN-110's 10 V, so both fail
+        let pair = "MPPT 3 | Voc 2 สตริงต่างกัน 38.0 V (เกิน 10 V ก่อนต่อขนาน)"
+        XCTAssertEqual(r.beforeVIFailures(inv, slot: 5), ["Voc 712.0 V ต่างจากมัธยฐาน −5.4% (เกณฑ์ ±5%)", pair])
+        XCTAssertEqual(r.beforeVIFailures(inv, slot: 6), [pair])
+        XCTAssertEqual(r.beforeVITally(inv), .init(done: 16, total: 16, failed: 2))
     }
 
     func testCurrentMustBeZeroBeforeTheConnection() throws {
@@ -47,7 +51,7 @@ final class IECBeforeVITests: XCTestCase {
         XCTAssertFalse(IECReport.currentPassesBefore(0.01))
         r.inverters[0].slots[0]?.iBeforeA = 0.4
         XCTAssertEqual(r.beforeVIStatus(r.inverters[0], slot: 1), .fail)
-        XCTAssertEqual(r.beforeVIFailures(r.inverters[0], slot: 1), ["กระแส 0.40 A · ก่อนออนต้องเป็น 0 A"])
+        XCTAssertEqual(r.beforeVIFailures(r.inverters[0], slot: 1), ["กระแส 0.40 A | ก่อนออนต้องเป็น 0 A"])
     }
 
     func testPolarityFollowsTheVocSignUntilSetByHand() throws {

@@ -69,7 +69,7 @@ final class EmergencyButtonTests: XCTestCase {
         m.values["photoFTS"] = .photo(Self.photo); m.values["emgPlace"] = .text("ผนังข้างประตู Site Office")
         XCTAssertEqual(m.completion.total, 1)
         var j = job(ftsModules: 0); j.modules = [m]
-        XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ครบช่องบังคับแล้ว · ตำแหน่งแสดงบนภาพ A2 และ SLD")
+        XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ครบช่องบังคับแล้ว | ตำแหน่งแสดงบนภาพ A2 และ SLD")
         j.values["emgMountCm"] = .text("165")
         XCTAssertEqual(EmergencyButton.statusLine(j, m.values), "ความสูงปุ่มแนะนำ 1.10–1.50 ม.")
         m.values["photoEmg"] = nil
@@ -97,7 +97,10 @@ final class EmergencyButtonTests: XCTestCase {
     /// The SLD exposes the FTS / Emergency crop round the button (B5's "ใน SLD" card); none without a connection board.
     func testSLDCropBox() throws {
         XCTAssertNil(SingleLineLayout.draw(SingleLine.build(job(ftsModules: 1))).ftsBox)
-        let d = SingleLineLayout.draw(SingleLine.build(SingleLineTests.fixture()))
+        // the fixture with its B5 (without one there is no FTS part: SingleLineTests.testFTSOnlyWithB5)
+        var withB5 = SingleLineTests.fixture()
+        if !withB5.modules.contains(where: { $0.type == .fts }) { withB5.modules.append(SurveyModule(type: .fts)) }
+        let d = SingleLineLayout.draw(SingleLine.build(withB5))
         let b = try XCTUnwrap(d.ftsBox)
         XCTAssertGreaterThan(b.w, 300); XCTAssertGreaterThan(b.h, 100)
         XCTAssertLessThanOrEqual(b.maxX, d.width); XCTAssertLessThanOrEqual(b.maxY, d.height)

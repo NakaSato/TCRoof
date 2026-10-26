@@ -58,6 +58,15 @@ extension JobEditorView {
     }
 
     func openDebugPage() {
+        // `-surveyPageCycle YES`: A2 and C1 in turn every 3 s, for profiling what opening C1 costs each time
+        if UserDefaults.standard.bool(forKey: "surveyPageCycle"), let roof = job.modules.first(where: { $0.type == .roof }) {
+            Task { @MainActor in
+                for i in 0..<20 {
+                    try? await Task.sleep(for: .seconds(3))
+                    select(i % 2 == 0 ? .site : .module(roof.id))
+                }
+            }
+        }
         seedAutofill()
         seedPlatePhoto()
         seedReview()
@@ -89,6 +98,14 @@ extension JobEditorView {
             if let p = first(.roof) { select(p) }
             // `-surveyRoofRender YES` also writes C1 at free widths 980 / 1100 / 1318 to Documents/roof-<w>.png (no rotation here)
             if UserDefaults.standard.bool(forKey: "surveyRoofRender"), let m = job.modules.first(where: { $0.type == .roof }) { renderRoof(m.id) }
+            // `-surveyRoofPDF YES` writes the report (with the roof PV layout pages) to Documents/survey.pdf after 6 s, once
+            // the layout task has kept its placements
+            if UserDefaults.standard.bool(forKey: "surveyRoofPDF") {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    writeDebugFile("survey.pdf", model.pdfData(job))
+                }
+            }
         case "final":
             select(.final)
             // `-surveyFinalRender YES` also writes E1 at free widths 1366 / 1180 to Documents/final-<w>x<h>.png
@@ -104,6 +121,13 @@ extension JobEditorView {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     if let v = job.modules.first(where: { $0.id == id })?.values, let out = TankDXF.build(v) { writeDebugFile("tank.dxf", out.data) }
+                }
+            }
+            // `-surveyTankPDF YES` writes the report (with the tank layout and section pages) to Documents/survey.pdf
+            if UserDefaults.standard.bool(forKey: "surveyTankPDF") {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    writeDebugFile("survey.pdf", model.pdfData(job))
                 }
             }
         default: break

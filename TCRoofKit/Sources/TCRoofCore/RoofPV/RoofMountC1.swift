@@ -1,0 +1,337 @@
+import Foundation
+
+/// C1's answers as the roof PV layout's input, and the choices the แผงบนหลังคา tab keeps on the job
+/// (docs/specs/roof-pv-layout.md §2 and §5.1). The pitch comes from the frame type's slope, the purlins from ระยะแป,
+/// the obstacles from the plan's skylights, keep-out zones and obstacles, the latitude from A1's GPS.
+public enum RoofMount {
+    public enum Key {
+        /// Compass bearing of the plan's top edge (°).
+        public static let bearing = "planBearing"
+        /// The tab's choices (`Choice`, JSON).
+        public static let choice = "pvMount"
+        /// A shed roof's low side: "start" = the plan's top (ridge along x) or left; empty = bottom or right.
+        public static let shedLow = "shedLow"
+    }
+
+    /// The shed roof's low eave is at the plan's top or left.
+    public static func shedLowAtStart(_ v: Values) -> Bool { v.text(Key.shedLow) == "start" }
+    public static func setShedLowAtStart(_ v: inout Values, _ on: Bool) { v[Key.shedLow] = on ? .text("start") : nil }
+
+    /// Concrete tiles: tile hooks on the rafters (กระเบื้องลอนคู่ sits on purlins like metal sheet).
+    public static func tileRoof(_ v: Values) -> Bool {
+        (v.choice(Roof.Key.material) ?? v.text(Roof.Key.material)).contains("ซีแพค")
+    }
+
+    /// Latitude when the survey has no GPS: central Thailand (ค่าสมมติ).
+    public static let defaultLatitude = 15.0
+
+    /// The shapes the layout handles; nil for a flat, curved or saw-tooth roof (or another typed in).
+    public static func shape(_ v: Values) -> RoofMountInput.Shape? {
+        let t = v.choice(Roof.Key.shape) ?? v.text(Roof.Key.shape)
+        if t.isEmpty || t.contains("จั่ว") { return .gable }
+        if t.contains("ปั้นหยา") { return .hip }
+        if t.contains("เพิง") { return .shed }
+        return nil
+    }
+
+    public static func bearing(_ v: Values) -> Double? { v.number(Key.bearing) }
+    public static func setBearing(_ v: inout Values, _ b: Double?) {
+        v[Key.bearing] = b.map { .text(String(format: "%.0f", ($0.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360))) }
+    }
+
+    /// Latitude from A1's `gps` ("lat, lon").
+    public static func latitude(gps: String) -> Double? { GPS.parse(gps).map(\.lat) }
+    /// Longitude from A1's `gps`: with it, the energy figures come from the hourly engine near the bundled weather
+    /// (`PlaneYield`).
+    public static func longitude(gps: String) -> Double? { GPS.parse(gps).map(\.lon) }
+
+    /// The engine's input. `latitude` nil takes the default; `longitude` nil keeps the face yields on `SolarModel`.
+    public static func input(_ v: Values, latitude: Double?, longitude: Double? = nil) -> RoofMountInput {
+        let xs = Roof.spans(v, .x), ys = Roof.spans(v, .y), alongX = Roof.ridge(v) == .h
+        let shape = shape(v) ?? .gable
+        let across = alongX ? ys.reduce(0, +) : xs.reduce(0, +)
+        let run = shape == .shed ? across : across / 2
+        let rise = tan(Roof.slope(v) * .pi / 180) * run
+        let obstacles: [RoofMountInput.Obstacle] = Roof.areas(v).map { a in
+            let kind: RoofObstacleKind = a.kind == Roof.skylightKind ? .skylight : a.kind == Roof.keepOutKind ? .keepOut
+                : RoofObstacleKind(rawValue: a.kind) ?? .other
+            return .init(kind: kind, x: a.x, y: a.y, w: a.w, h: a.h, height: a.height, label: a.label.isEmpty ? nil : a.label,
+                         coverable: kind == .skylight && a.canCover)
+        }
+        var out = RoofMountInput(spansX: xs, spansY: ys, ridgeAlongX: alongX, shape: shape, eaveHeight: 0, ridgeHeight: rise,
+                                 purlinSpacing: Roof.purlinSpacing(v), latitude: latitude ?? defaultLatitude, bearing: bearing(v) ?? 0,
+                                 obstacles: obstacles, shedLowAtStart: shape == .shed && shedLowAtStart(v))
+        out.tileRoof = tileRoof(v)
+        out.longitude = latitude == nil ? nil : longitude
+        return out
+    }
+
+    /// The standard with the catalogue's default module: what a job starts from.
+    public static var defaultStandard: RoofMountStandard {
+        var s = RoofMountStandard()
+        let m = RoofPlan.Module.catalogDefault
+        s.moduleLength = m.length; s.moduleWidth = m.width; s.moduleWp = (m.kW * 1000).rounded(); s.moduleKg = m.kg
+        (s.clampMin, s.clampMax) = s.clampFromModule
+        return s
+    }
+
+    // MARK: - Choices
+
+    /// What the tab keeps: the fixing method, the shade switch, the faces in use, each face's placement from the
+    /// search (or the slider), the slots removed, the job's standard, and the inputs the placements were found for.
+    public struct Choice: Codable, Equatable, Sendable {
+        public var ribClamp = false
+        public var avoidShade = true
+        public var faceUse: [String: Bool] = [:]
+        public var placements: [String: RoofMountLayout.Placement] = [:]
+        public var removed: [RoofMountLayout.SlotRef] = []
+        /// nil = `defaultStandard`.
+        public var standard: RoofMountStandard?
+        /// `digest` of the inputs the placements belong to; the search runs again when they change.
+        public var digest = ""
+        /// A walkway after every n columns; 0 = none.
+        public var walkwayEvery = 0
+        /// One walkway down the middle of each face (most roofs).
+        public var walkwayCentre = false
+        /// The roof access ladder at the ridge's right end on plan (false = left); drawing only, not in the digest.
+        public var accessRight = false
+        /// A walkway along the ridge: on for a new layout, off for a job kept before it existed (its layout stays).
+        public var walkwayRidge = true
+        /// Modules landscape, the long side along the purlins (ด้านยาวตามแป).
+        public var landscape = false
+        /// Rails up the slope across the purlins (รางตัดแป); L-feet on purlins only.
+        public var railsAcross = false
+        /// Landscape modules in pairs along the row (วางคู่ 2 แผ่น); only with `landscape`.
+        public var landscapePairs = false
+        /// The gap between pairs (m); nil = `RoofMountStandard.pairGap`.
+        public var pairGap: Double?
+        /// The ridge walkway's clear width (m); nil = the team's detail band (`RoofWalkway.band`).
+        public var ridgeWalkwayWidth: Double?
+        public init() {}
+
+        enum CodingKeys: String, CodingKey { case ribClamp, avoidShade, faceUse, placements, removed, standard, digest, walkwayEvery, landscape, railsAcross, walkwayCentre, accessRight, walkwayRidge, landscapePairs, pairGap, ridgeWalkwayWidth }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            ribClamp = try c.decodeIfPresent(Bool.self, forKey: .ribClamp) ?? false
+            avoidShade = try c.decodeIfPresent(Bool.self, forKey: .avoidShade) ?? true
+            faceUse = try c.decodeIfPresent([String: Bool].self, forKey: .faceUse) ?? [:]
+            placements = try c.decodeIfPresent([String: RoofMountLayout.Placement].self, forKey: .placements) ?? [:]
+            removed = try c.decodeIfPresent([RoofMountLayout.SlotRef].self, forKey: .removed) ?? []
+            standard = try c.decodeIfPresent(RoofMountStandard.self, forKey: .standard)
+            digest = try c.decodeIfPresent(String.self, forKey: .digest) ?? ""
+            walkwayEvery = try c.decodeIfPresent(Int.self, forKey: .walkwayEvery) ?? 0
+            landscape = try c.decodeIfPresent(Bool.self, forKey: .landscape) ?? false
+            railsAcross = try c.decodeIfPresent(Bool.self, forKey: .railsAcross) ?? false
+            walkwayCentre = try c.decodeIfPresent(Bool.self, forKey: .walkwayCentre) ?? false
+            accessRight = try c.decodeIfPresent(Bool.self, forKey: .accessRight) ?? false
+            walkwayRidge = try c.decodeIfPresent(Bool.self, forKey: .walkwayRidge) ?? false
+            landscapePairs = try c.decodeIfPresent(Bool.self, forKey: .landscapePairs) ?? false
+            pairGap = try c.decodeIfPresent(Double.self, forKey: .pairGap)
+            ridgeWalkwayWidth = try c.decodeIfPresent(Double.self, forKey: .ridgeWalkwayWidth)
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(ribClamp, forKey: .ribClamp); try c.encode(avoidShade, forKey: .avoidShade)
+            try c.encode(faceUse, forKey: .faceUse); try c.encode(placements, forKey: .placements)
+            try c.encode(removed, forKey: .removed); try c.encodeIfPresent(standard, forKey: .standard)
+            try c.encode(digest, forKey: .digest)
+            if walkwayEvery > 0 { try c.encode(walkwayEvery, forKey: .walkwayEvery) }
+            if landscape { try c.encode(landscape, forKey: .landscape) }
+            if railsAcross { try c.encode(railsAcross, forKey: .railsAcross) }
+            if walkwayCentre { try c.encode(walkwayCentre, forKey: .walkwayCentre) }
+            if accessRight { try c.encode(accessRight, forKey: .accessRight) }
+            if walkwayRidge { try c.encode(walkwayRidge, forKey: .walkwayRidge) }
+            if landscapePairs { try c.encode(landscapePairs, forKey: .landscapePairs) }
+            try c.encodeIfPresent(pairGap, forKey: .pairGap)
+            try c.encodeIfPresent(ridgeWalkwayWidth, forKey: .ridgeWalkwayWidth)
+        }
+
+        /// The layout's options for a roof (tile hooks on concrete tiles).
+        public func options(tile: Bool) -> RoofMountLayout.Options {
+            .init(ribClamp: ribClamp && !tile, avoidShade: avoidShade, faceUse: faceUse, removed: Set(removed), tileHooks: tile,
+                  walkwayEvery: walkwayEvery, landscape: landscape, railsAcross: railsAcross, walkwayCentre: walkwayCentre,
+                  walkwayAccessRight: accessRight, walkwayRidge: walkwayRidge, landscapePairs: landscapePairs,
+                  pairGap: pairGapOrDefault, ridgeWalkwayWidth: ridgeWalkwayWidth)
+        }
+        public var pairGapOrDefault: Double { pairGap ?? RoofMountStandard.pairGap }
+        public var standardOrDefault: RoofMountStandard { standard ?? RoofMount.defaultStandard }
+    }
+
+    public static func choice(_ v: Values) -> Choice {
+        let t = v.text(Key.choice)
+        return t.isEmpty ? Choice() : (try? JSONDecoder().decode(Choice.self, from: Data(t.utf8))) ?? Choice()
+    }
+
+    public static func setChoice(_ v: inout Values, _ c: Choice) {
+        let e = JSONEncoder()
+        e.outputFormatting = .sortedKeys
+        v[Key.choice] = (try? e.encode(c)).map { .text(String(decoding: $0, as: UTF8.self)) }
+    }
+
+    /// A short fingerprint of what the best layout depends on: the roof, its obstacles, the latitude and bearing, the
+    /// standard, the fixing method and the shade switch (not the faces in use or the removed slots).
+    public static func digest(_ input: RoofMountInput, choice c: Choice) -> String {
+        var parts: [String] = [
+            input.spansX.map { String(format: "%.3f", $0) }.joined(separator: ","),
+            input.spansY.map { String(format: "%.3f", $0) }.joined(separator: ","),
+            input.ridgeAlongX ? "x" : "y", input.shape.rawValue,
+            String(format: "%.4f|%.3f|%.1f|%.1f", input.ridgeHeight - input.eaveHeight, input.purlinSpacing, input.latitude, input.bearing),
+            c.ribClamp ? "rib" : "purlin", c.avoidShade ? "shade" : "noshade",
+        ]
+        // added later: only when set, so older jobs keep their digest
+        if input.tileRoof { parts.append("tile") }
+        if input.shedLowAtStart { parts.append("shedStart") }
+        if c.walkwayEvery > 0 { parts.append("walk \(c.walkwayEvery)") }
+        if c.walkwayCentre { parts.append("walkCentre") }
+        if c.walkwayRidge && !c.walkwayCentre && input.shape != .shed { parts.append("walkRidge") }
+        if c.landscape { parts.append("landscape") }
+        if c.railsAcross && !c.ribClamp && !input.tileRoof { parts.append("railsAcross") }
+        if c.landscape && c.landscapePairs { parts.append(String(format: "pairs %.3f", c.pairGapOrDefault)) }
+        if let w = c.ridgeWalkwayWidth, c.walkwayRidge || c.walkwayCentre, input.shape != .shed { parts.append(String(format: "ridgeWidth %.3f", w)) }
+        parts += input.obstacles.map { o in
+            String(format: "%@ %.2f %.2f %.2f %.2f %.2f %@", o.kind.rawValue, o.x, o.y, o.w, o.h, o.heightOrDefault, o.coverable ? "c" : "")
+        }
+        let e = JSONEncoder()
+        e.outputFormatting = .sortedKeys
+        parts.append((try? e.encode(c.standardOrDefault)).map { String(decoding: $0, as: UTF8.self) } ?? "")
+        // FNV-1a, 64 bit
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in parts.joined(separator: "\n").utf8 { h ^= UInt64(b); h = h &* 0x100000001b3 }
+        return String(h, radix: 16)
+    }
+
+    /// The layout as the job keeps it: the stored placements while the inputs are the ones they were found for, else
+    /// the best layout. `fresh` is true when the search ran (the caller stores its placements with `remember`).
+    public static func layout(_ v: Values, latitude: Double?, longitude: Double? = nil) -> (layout: RoofMountLayout, fresh: Bool) {
+        let input = input(v, latitude: latitude, longitude: longitude), c = choice(v)
+        if !c.placements.isEmpty, c.digest == digest(input, choice: c) {
+            return (RoofMountLayout.compute(input, standard: c.standardOrDefault, options: c.options(tile: input.tileRoof),
+                                            placements: c.placements), false)
+        }
+        return (RoofMountLayout.best(input, standard: c.standardOrDefault, options: c.options(tile: input.tileRoof)), true)
+    }
+
+    /// Keeps a freshly searched layout's placements with the inputs they belong to; removed slots are cleared, since
+    /// the slots have moved. Returns true when there were removed slots to clear.
+    @discardableResult
+    public static func remember(_ layout: RoofMountLayout, in v: inout Values, latitude: Double?) -> Bool {
+        var c = choice(v)
+        let cleared = !c.removed.isEmpty
+        c.placements = layout.placements
+        c.removed = []
+        c.digest = digest(input(v, latitude: latitude), choice: c)
+        setChoice(&v, c)
+        return cleared
+    }
+
+    /// One module and rail direction the most-modules search tried, and the modules its best layout holds.
+    public struct Arrangement: Sendable, Equatable {
+        public var landscape: Bool, railsAcross: Bool, modules: Int
+        public var label: String {
+            (landscape ? "ด้านยาวตามแป" : "ด้านยาวตัดแป") + (railsAcross ? " | รางตัดแป" : " | รางตามแป")
+        }
+    }
+
+    /// `หาผังที่ได้แผงมากที่สุด`: the best layout of every module direction and, with L-feet on purlins, every rail direction
+    /// (รางตัดแป frees the rows from the purlins), keeping the one with the most modules. A tie keeps the current
+    /// directions. The choice comes back with its placements and digest, the removed slots cleared; `tried` adds up the
+    /// placements every direction's search tried.
+    public static func mostModules(_ v: Values, latitude: Double?, longitude: Double? = nil)
+        -> (choice: Choice, layout: RoofMountLayout, arrangements: [Arrangement], tried: Int) {
+        let input = input(v, latitude: latitude, longitude: longitude), base = choice(v), std = base.standardOrDefault
+        let onPurlins = !input.tileRoof && !base.ribClamp
+        var combos: [(landscape: Bool, railsAcross: Bool)] = onPurlins
+            ? [(false, false), (true, true), (false, true), (true, false)]
+            : [(false, base.railsAcross), (true, base.railsAcross)]
+        // landscape on rails along the purlins needs two purlins in the short side's clamping zone
+        if onPurlins, !RoofMountLayout.purlinsHoldLandscape(std, purlinSpacing: input.purlinSpacing) {
+            combos.removeAll { $0.landscape && !$0.railsAcross }
+        }
+        // the current directions first, so they win a tie
+        let current = (landscape: base.landscape, railsAcross: base.railsAcross)
+        if let i = combos.firstIndex(where: { $0 == current }) { combos.insert(combos.remove(at: i), at: 0) }
+
+        var best: (choice: Choice, layout: RoofMountLayout)?
+        var arrangements: [Arrangement] = [], tried = 0
+        for combo in combos {
+            var c = base
+            c.landscape = combo.landscape; c.railsAcross = combo.railsAcross
+            c.placements = [:]; c.removed = []
+            let layout = RoofMountLayout.best(input, standard: std, options: c.options(tile: input.tileRoof))
+            let n = layout.quantities.modules
+            tried += layout.faces.map(\.tried).reduce(0, +)
+            arrangements.append(Arrangement(landscape: combo.landscape, railsAcross: onPurlins && combo.railsAcross, modules: n))
+            if n > best?.layout.quantities.modules ?? -1 { best = (c, layout) }
+        }
+        var (c, layout) = best!
+        c.placements = layout.placements
+        c.digest = digest(input, choice: c)
+        return (c, layout, arrangements, tried)
+    }
+
+    // MARK: - Report lines (docs/specs/roof-pv-layout.md §7)
+
+    /// `ผังแผงอัตโนมัติ 216 แผง | 129.6 kWp | 191.1 MWh/ปี | ลาด 15° | แป @1.20 ม. | 4 แถว`. `energy` (MWh) is the
+    /// energy card's figure (`RoofMountYield.estimate`), so the report prints what the page shows; nil adds up the faces.
+    public static func summaryLine(_ m: RoofMountLayout, energy: Double? = nil) -> String {
+        let q = m.quantities, rows = m.faces.filter(\.used).map(\.rows.count).max() ?? 0
+        let fixing = m.options.tileHooks ? "ขอเกี่ยวกระเบื้อง" : m.options.ribClamp ? "จับสันลอน" : String(format: "แป @%.2f ม.", m.purlins.count > 1 ? m.purlins[1] - m.purlins[0] : 0)
+        return "ผังแผงอัตโนมัติ \(q.modules) แผง | " + String(format: "%.1f kWp | %.1f MWh/ปี | ลาด %.0f° | ", q.kWp, energy ?? q.energy, m.roof.tilt * 180 / .pi)
+            + fixing + (m.options.landscape || m.options.acrossPurlins ? " | " + arrangement(m.options) : "") + " | \(rows) แถว"
+    }
+
+    /// `แผงด้านยาวตัดแป | รางตามแป`: how the modules and rails lie on the purlins.
+    public static func arrangement(_ o: RoofMountLayout.Options) -> String {
+        (o.landscape ? "แผงด้านยาวตามแป" : "แผงด้านยาวตัดแป") + " | " + (o.acrossPurlins ? "รางตัดแป" : "รางตามแป")
+    }
+
+    /// `BOQ: ราง 502.2 ม. | ต่อราง 80 | L-foot 496 | ตัวจับกลาง 364 | ตัวจับปลาย 136 | 34 ชุดราง`
+    public static func boqLine(_ q: RoofMountQuantities) -> String {
+        String(format: "BOQ: ราง %.1f ม. | ต่อราง %d | %@ %d | ตัวจับกลาง %d | ตัวจับปลาย %d | %d ชุดราง", q.railLength, q.splices,
+               footName(q), q.feet, q.midClamps, q.endClamps, q.runs) + (q.cuts > 0 ? " | ตัดแผง \(q.cuts)" : "")
+    }
+
+    /// `ทางเดิน 3 แนว 38.2 ม. | ตะแกรง HDG 0.30×2.40 17 แผ่น | รางขวาง 32 | L-feet ทางเดิน 64 | สลิงกันตก 38.2 ม. เสารับ
+    /// 17 | รางเคเบิล + ท่อ PPR 38.2 ม. | บันไดลิงพร้อมกรงและชานพัก 1`; empty without walkways.
+    public static func walkwayLine(_ q: RoofMountQuantities) -> String {
+        let w = q.walkway
+        guard w.walkways > 0 else { return "" }
+        var parts = [String(format: "ทางเดิน %d แนว %.1f ม.", w.walkways, w.length), "ตะแกรง HDG 0.30×2.40 \(w.gratings) แผ่น",
+                     "รางขวาง \(w.crossRails)", "L-feet ทางเดิน \(w.lFeet)", String(format: "สลิงกันตก %.1f ม. เสารับ %d", w.lifeline, w.supports),
+                     String(format: "รางเคเบิล + ท่อ PPR %.1f ม.", w.tray)]
+        if w.cagedLadders > 0 { parts.append("บันไดลิงพร้อมกรงและชานพัก \(w.cagedLadders)") }
+        if w.ladders > w.cagedLadders { parts.append("บันไดลิง \(w.ladders - w.cagedLadders)") }
+        return parts.joined(separator: " | ")
+    }
+
+    /// `L-foot`, or `ขอเกี่ยวกระเบื้อง` on a tile roof.
+    public static func footName(_ q: RoofMountQuantities) -> String { q.hooks ? "ขอเกี่ยวกระเบื้อง" : "L-foot" }
+
+    /// `น้ำหนักเพิ่ม 13.4 กก./ม² (เกณฑ์ 15)`, with a warning above the standard's limit.
+    public static func loadLine(_ q: RoofMountQuantities) -> String {
+        String(format: "น้ำหนักแผงและราง %.1f กก./ม² (เกณฑ์ %.0f)", q.load, q.loadLimit)
+            + (q.overLoad ? " | เกินเกณฑ์ ตรวจโครงหลังคากับวิศวกรโครงสร้าง" : "")
+    }
+
+    /// Whether the job has a roof PV layout to print: a supported shape and spans.
+    public static func printable(_ v: Values) -> Bool {
+        shape(v) != nil && !v.text(Roof.Key.spansX).isEmpty && !v.text(Roof.Key.spansY).isEmpty
+    }
+
+    /// What the layout assumed (ค่าสมมติ), for the line under the plan and the report.
+    public static func assumptions(_ v: Values, latitude: Double?) -> [String] {
+        var out: [String] = []
+        if latitude == nil { out.append("ละติจูด \(Int(defaultLatitude))° (ยังไม่มีพิกัด A1)") }
+        if bearing(v) == nil { out.append("ขอบบนแปลนหันทิศเหนือ (ยังไม่ระบุทิศ)") }
+        if v.number(Roof.Key.purlin) == nil && !tileRoof(v) && !choice(v).ribClamp { out.append("ระยะแป 1.00 ม.") }
+        let defaulted = Roof.areas(v).filter { a in
+            guard a.height == nil, let k = RoofObstacleKind(rawValue: a.kind), k.defaultHeight > 0 else { return false }
+            return true
+        }
+        if !defaulted.isEmpty { out.append("ความสูงสิ่งกีดขวาง \(defaulted.count) จุดตามชนิด") }
+        if shape(v) == nil { out.append("หลังคานี้คิดเป็นทรงจั่ว") }
+        return out
+    }
+}

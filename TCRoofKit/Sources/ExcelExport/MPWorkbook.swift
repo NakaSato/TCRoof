@@ -47,6 +47,14 @@ public enum MPWorkbook {
         public var coverage: MasterSchedule.Actual.Coverage
         /// The progress the file held when the app last exported it (`Snapshot`); nil for a file the app never wrote.
         public var base: MasterSchedule.Actual?
+        /// The team template's work breakdown (`แผนโครงการ` sheet), every row in the sheet's order; empty for a file
+        /// without one. Export writes only its ticks (`wbsDone`).
+        public var wbs: [MasterSchedule.WorkItem] = []
+        /// The rows the sheet marks done (`เสร็จ (Y)` = Y) and their `เสร็จ` dates where it has them.
+        public var wbsDone: Set<String> = []
+        public var wbsDoneDates: [String: Date] = [:]
+        /// The rows ticked when the app last exported the file; nil for a file the app never wrote ticks into.
+        public var wbsBase: Set<String>?
     }
 
     /// The plan sheet's formulas worked out on the untouched file and compared with the results Excel saved in it.
@@ -119,13 +127,21 @@ public enum MPWorkbook {
         input.fixed = fixed
 
         let weekDates = layout.weeks.map(\.date)
-        return Imported(input: input, actual: actual, project: layout.project, owner: layout.owner,
+        var imported = Imported(input: input, actual: actual, project: layout.project, owner: layout.owner,
                         tasks: layout.rows.map(\.task),
                         weeks: weekDates.min().flatMap { a in weekDates.max().map { a...$0 } },
                         formulas: check(sheet, cal),
                         coverage: .init(tasks: Set(layout.rows.filter { $0.actual != nil }.map(\.task.rawValue)),
                                         weeks: Set(layout.weeks.map(\.key))),
-                        base: Snapshot.read(book.zip))
+                        base: Snapshot.read(book.zip),
+                        wbs: book.detail.map { siteSpecific(wbs($0, cal), sheet: $0) } ?? [])
+        if let detail = book.detail, let h = wbsHeader(detail) {
+            let done = wbsDone(detail, h, cal)
+            imported.wbsDone = done.codes
+            imported.wbsDoneDates = done.dates
+            imported.wbsBase = Snapshot.readTicks(book.zip)
+        }
+        return imported
     }
 
     /// The Actual rows' start, finish and weekly points as the sheet holds them.
@@ -146,7 +162,10 @@ public enum MPWorkbook {
 
     // MARK: export
 
+    /// `ticks`: the job's WBS ticks, written into a template file's `แผนโครงการ` sheet (`เสร็จ (Y)` and its `เสร็จ`
+    /// date, docs/specs/project-plan-wbs.md step 3); nil leaves that sheet as it is.
     public static func export(_ original: Data, input: MasterSchedule.Input, actual: MasterSchedule.Actual,
+                              ticks: [String: MasterSchedule.WBSTick]? = nil,
                               calendar cal: Calendar = MasterSchedule.calendar) throws -> Export {
         let book = try Book(original)
         let layout = book.layout
@@ -233,15 +252,48 @@ public enum MPWorkbook {
             for (k, v) in points where v > 0 && columns[k] == nil { outside.insert(k) }
         }
 
+        // the WBS ticks: each row's `เสร็จ (Y)` and `เสร็จ` date as the app has them; a formula cell is left alone
+        var detail = book.detail, tickedRows: Set<String>?, detailChanged = 0
+        if let ticks, var d = detail, let h = wbsHeader(d), let mark = h.doneMark {
+            var rows = Set<String>()
+            // a row without the cell (the Inverter station table's steps) keeps its tick in the app only, and stays out
+            // of the record so a later import doesn't read it as unticked in Excel
+            for r in codeRows(d, h) where d.cell(Sheet.ref(mark, r.row)) != nil {
+                let tick = ticks[r.code]
+                if tick != nil { rows.insert(r.code) }
+                let markRef = Sheet.ref(mark, r.row)
+                let marked = d.text(mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y"
+                if let cell = d.cell(markRef), !cell.formula, marked != (tick != nil) {
+                    d.cells.set(markRef, tick != nil ? .inline("Y") : .empty)
+                    detailChanged += 1
+                }
+                // `เสร็จ / นัด` also holds appointment dates: cleared only along with a Y the app takes away
+                if let col = h.doneDate, let cell = d.cell(Sheet.ref(col, r.row)), !cell.formula, tick != nil || marked {
+                    let want = tick.map { Sheet.serial(cal.startOfDay(for: $0.at), cal) }
+                    if !close(cell.number, want), want != nil || cell.number != nil {
+                        d.cells.set(Sheet.ref(col, r.row), want.map { .number($0) } ?? .empty)
+                        detailChanged += 1
+                    }
+                }
+            }
+            detail = d
+            tickedRows = rows
+        }
+        let keptTicks = Snapshot.readTicks(book.zip)
+        let ticksMoved = tickedRows.map { rows in keptTicks.map { $0 != rows } ?? false } ?? false
+
         // the progress as the file now holds it, kept in the file so a later import can tell what was changed in Excel;
         // an unchanged file with no record, or an up-to-date one, comes back as it was
         let held = progress(Sheet(sheet.cells.xml, shared: []), layout, cal)
         let kept = Snapshot.read(book.zip)
-        guard changed > 0 || (kept != nil && kept != held) else {
+        guard changed > 0 || detailChanged > 0 || ticksMoved || (kept != nil && kept != held) else {
             return Export(data: original, changedCells: 0, weeksOutside: outside.sorted())
         }
         var zip = book.zip
         Snapshot.write(held, into: &zip)
+        if let tickedRows { Snapshot.writeTicks(tickedRows, into: &zip) }
+        if detailChanged > 0, let detail, let path = book.detailPath { zip.set(path, detail.cells.xml) }
+        changed += detailChanged
 
         // the formulas' results from the new values, so a viewer that doesn't recalculate shows them too; not when the
         // app works out the untouched file differently from Excel, as it would write wrong numbers
@@ -371,22 +423,31 @@ public enum MPWorkbook {
         let sheetName: String
         let sheet: Sheet
         let layout: Layout
+        /// The team template's `แผนโครงการ` sheet (its header has `WBS`), when the file has one, and its part.
+        let detail: Sheet?
+        let detailPath: String?
 
         init(_ data: Data) throws {
             guard let zip = try? ZipArchive(data), let wb = zip.string("xl/workbook.xml") else { throw Failure.notWorkbook }
             self.zip = zip
             let shared = Sheet.sharedStrings(zip.string("xl/sharedStrings.xml") ?? "")
             let rels = zip.string("xl/_rels/workbook.xml.rels") ?? ""
-            var noTasks = false
+            // only a file whose strings have `WBS` is looked through for the detail sheet, so other plans read as before
+            var lookForDetail = shared.contains("WBS")
+            var noTasks = false, found: (path: String, name: String, sheet: Sheet, layout: Layout)?, detail: Sheet?, detailPath: String?
             for (name, id) in Self.sheetIDs(wb) {
                 guard let path = Self.target(id, rels), let xml = zip.string(path) else { continue }
                 let sheet = Sheet(xml, shared: shared)
-                guard let layout = Layout(sheet) else { continue }
-                if layout.rows.isEmpty { noTasks = true; continue }
-                sheetPath = path; sheetName = name; self.sheet = sheet; self.layout = layout
-                return
+                if lookForDetail, MPWorkbook.wbsHeader(sheet) != nil { detail = sheet; detailPath = path; lookForDetail = false; continue }
+                if found == nil, let layout = Layout(sheet) {
+                    if layout.rows.isEmpty { noTasks = true } else { found = (path, name, sheet, layout) }
+                }
+                if found != nil && !lookForDetail { break }
             }
-            throw noTasks ? Failure.noTasks : Failure.noPlanSheet
+            guard let found else { throw noTasks ? Failure.noTasks : Failure.noPlanSheet }
+            sheetPath = found.path; sheetName = found.name; sheet = found.sheet; layout = found.layout
+            self.detail = detail
+            self.detailPath = detailPath
         }
 
         /// The sheets' names and relationship ids in tab order.
@@ -529,6 +590,13 @@ public enum MPWorkbook {
                 guard let v = c.number, let (col, r) = Self.split(ref), r == row else { return nil }
                 return (col, v)
             }.sorted { $0.col < $1.col }
+        }
+
+        func numbers(col: Int) -> [(row: Int, value: Double)] {
+            byRef.compactMap { ref, c in
+                guard let v = c.number, let (cl, r) = Self.split(ref), cl == col else { return nil }
+                return (r, v)
+            }.sorted { $0.row < $1.row }
         }
 
         func texts(col: Int) -> [(row: Int, text: String)] {

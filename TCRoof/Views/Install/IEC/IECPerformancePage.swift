@@ -157,7 +157,10 @@ struct IECConditionsPage: View {
             IECNumberField(title: "อุณหภูมิอากาศ", unit: "°C", value: c.ambientC) { v in var n = c; n.ambientC = v; set(n) }
             IECNumberField(title: "ความเข้มแสง", unit: "W/m²", value: c.irradianceWm2) { v in var n = c; n.irradianceWm2 = v; set(n) }
             IECTextField(title: "เวลาทดสอบ", text: c.time ?? "", placeholder: "13:00") { t in var n = c; n.time = t.isEmpty ? nil : t; set(n) }
-            if gridOn != .distantPast { gridOnRow(gridOn) }
+            if gridOn != .distantPast { gridOnRow(gridOn) } else {
+                // the before phase only: the string test's module temperature (no Excel cell)
+                IECNumberField(title: "อุณหภูมิแผง (ไม่ใส่ = ประมาณจาก NMOT)", unit: "°C", value: c.moduleTempC) { v in var n = c; n.moduleTempC = v; set(n) }
+            }
         }
         .padding(18).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -172,7 +175,7 @@ struct IECConditionsPage: View {
                 DatePicker("ออนระบบเมื่อ", selection: Binding(get: { at }, set: { d in job.updateIEC(context) { $0.gridOnAt = d } }))
                     .labelsHidden().environment(\.locale, Locale(identifier: "th_TH")).frame(minHeight: 50)
             } else {
-                Button { job.updateIEC(context) { $0.gridOnAt = .now } } label: { Label("ออนระบบแล้ว · บันทึกเวลานี้", systemImage: "bolt.fill") }
+                Button { job.updateIEC(context) { $0.gridOnAt = .now } } label: { Label("ออนระบบแล้ว | บันทึกเวลานี้", systemImage: "bolt.fill") }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).frame(minHeight: 50)
             }
         }
@@ -234,7 +237,7 @@ struct IECStationPhotosPage: View {
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             VStack(alignment: .leading, spacing: 12) {
-                Text("ภาพถ่ายความร้อน · \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("ภาพถ่ายความร้อน | \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                     ForEach(r.thermalPhotos, id: \.self) { id in
                         VStack(spacing: 6) {

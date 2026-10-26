@@ -28,6 +28,8 @@ struct JobDetailView: View {
                     customerCard
                     scheduleCard
                 }
+                // ถึง / ออก and the travel cost (docs/specs/calendar-travel-expenses-swift.md §B2): the team's own log
+                if permissions.role != .external { TravelJobCard(job: job) }
                 if job.kind == .pwa {
                     MPScheduleCard(job: job)
                     RoutineReportCard(job: job)
@@ -169,7 +171,7 @@ struct JobDetailView: View {
             if permissions.can(.jobEdit), job.hasSurveyAppointment { AppointmentCalendarControl(job: job) }
             InfoRow(title: "เริ่มติดตั้ง", value: job.shown(job.installStart, none: "ยังไม่กำหนด (ตั้งในแผน MP)"))
             InfoRow(title: "ติดตั้งเสร็จ", value: job.shown(job.installEnd, none: "ยังไม่กำหนด"))
-            InfoRow(title: "ระยะเวลา", value: "\(job.installDays) วัน · ทีม \(job.team.rawValue)")
+            InfoRow(title: "ระยะเวลา", value: "\(job.installDays) วัน | ทีม \(job.team.rawValue)")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
@@ -185,7 +187,14 @@ struct JobDetailView: View {
                 action("ICL ตรวจหน้างาน (กปภ.)", "checklist.checked", siteICLStatus) { SiteICLScreen(job: job) }
             }
             if job.kind == .home {
-                action("งานบ้าน ครบวงจร", "house", "สำรวจ · ขออนุญาต PEA · ติดตั้ง · ขนานไฟ") { HomeWorkView(job: job) }
+                action("งานบ้าน ครบวงจร", "house", "สำรวจ | ขออนุญาต PEA | ติดตั้ง | ขนานไฟ") { HomeWorkView(job: job) }
+            }
+            // IEC 62446 | 9: on iPhone the only way to it; the iPad also has it in the IEC string table's side list
+            if job.kind == .pwa, permissions.can(.iecFillSubmit, on: job.access) {
+                let t = (job.iecReport ?? job.newIECReport).installTally
+                action("ภาพถ่ายติดตั้งระบบ", "photo.on.rectangle.angled", "IEC 62446 | 9 | ถ่ายแล้ว \(t.done)/\(t.total) รูป") {
+                    IECInstallPhotosScreen(job: job)
+                }
             }
         }
     }
@@ -230,7 +239,7 @@ struct JobDetailView: View {
             }
             if job.surveyDraft != nil {
                 NavigationLink { SurveyFormView(job: job) } label: {
-                    Label("มีร่างแบบสำรวจที่ยังไม่บันทึก · แตะเพื่อทำต่อ", systemImage: "pencil.and.list.clipboard")
+                    Label("มีร่างแบบสำรวจที่ยังไม่บันทึก | แตะเพื่อทำต่อ", systemImage: "pencil.and.list.clipboard")
                         .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.pending)
                 }
                 .buttonStyle(.plain)
@@ -239,7 +248,7 @@ struct JobDetailView: View {
                 NavigationLink { SurveyDetailView(survey: survey) } label: {
                     HStack {
                         Image(systemName: "doc.text").foregroundStyle(Theme.primary)
-                        Text("\(survey.createdAt.thaiLong) · \(survey.roofType) · เสนอ \(survey.recommendedKW.kw)")
+                        Text("\(survey.createdAt.thaiLong) | \(survey.roofType) | เสนอ \(survey.recommendedKW.kw)")
                         Spacer()
                         Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
                     }
@@ -279,7 +288,7 @@ struct JobDetailView: View {
                                 .foregroundStyle(Theme.primary)
                             VStack(alignment: .leading) {
                                 Text(doc.name).lineLimit(1)
-                                Text("\(doc.addedAt.thaiLong) · \(ByteCountFormatter.string(fromByteCount: Int64(doc.data.count), countStyle: .file))")
+                                Text("\(doc.addedAt.thaiLong) | \(ByteCountFormatter.string(fromByteCount: Int64(doc.data.count), countStyle: .file))")
                                     .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             }
                         }
@@ -311,10 +320,10 @@ struct JobDetailView: View {
 
     /// Where the upload goes (`DriveRoute`), and what an account signed in before full Drive has to do.
     private var driveDestination: String {
-        if permissions.role == .external { return "ไป Drive ของคุณ (TCRoof Projects) · ทีมเปิดดูได้" }
-        guard DriveConfig.centerFolderID != nil else { return "ไป Drive ของคุณ (TCRoof Projects) · ยังไม่ได้ตั้ง Drive กลาง" }
-        return session.survey.google.hasFullDrive ? "ไป Drive กลาง: 1. เอกสารส่งมอบ · 2. เอกสารระหว่างก่อสร้าง"
-            : "ยังไป Drive ของคุณ · ออกจากระบบแล้วลงชื่อเข้าใช้ใหม่เพื่ออัปโหลดเข้า Drive กลาง"
+        if permissions.role == .external { return "ไป Drive ของคุณ (TCRoof Projects) | ทีมเปิดดูได้" }
+        guard DriveConfig.centerFolderID != nil else { return "ไป Drive ของคุณ (TCRoof Projects) | ยังไม่ได้ตั้ง Drive กลาง" }
+        return session.survey.google.hasFullDrive ? "ไป Drive กลาง: 1. เอกสารส่งมอบ | 2. เอกสารระหว่างก่อสร้าง"
+            : "ยังไป Drive ของคุณ | ออกจากระบบแล้วลงชื่อเข้าใช้ใหม่เพื่ออัปโหลดเข้า Drive กลาง"
     }
 
     @ViewBuilder private var driveButtons: some View {

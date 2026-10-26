@@ -26,7 +26,7 @@ public enum GPSGrade: String, Codable, Sendable {
     public static func note(accuracy: Double) -> String {
         let m = Int(accuracy.rounded())
         return GPSGrade(accuracy: accuracy) == .approximate
-            ? "ความแม่นยำ ± \(m) ม. (เครื่องไม่มี GPS) · ตรวจในแผนที่ หรือวางลิงก์ Google Maps แทน"
+            ? "ความแม่นยำ ± \(m) ม. (เครื่องไม่มี GPS) | ตรวจในแผนที่ หรือวางลิงก์ Google Maps แทน"
             : "ความแม่นยำ ± \(m) ม."
     }
 
@@ -36,7 +36,7 @@ public enum GPSGrade: String, Codable, Sendable {
         case .unknown: return "ตรวจเมื่อกดตำแหน่งปัจจุบันครั้งแรก"
         case .gps: return "GPS ในเครื่อง"
         case .rough: return "ความแม่นยำปานกลาง"
-        case .approximate: return "ประมาณการ (ไม่มี GPS) · แนะนำเครื่องรับ GNSS บลูทูธ"
+        case .approximate: return "ประมาณการ (ไม่มี GPS) | แนะนำเครื่องรับ GNSS บลูทูธ"
         }
     }
 }

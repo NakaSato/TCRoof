@@ -242,3 +242,81 @@ final class StepLog: @unchecked Sendable {
     func add(_ s: DriveSync.Step) { if case .photos(_, let t) = s { totals.append(t) } }
     var lastTotal: Int? { totals.last }
 }
+
+/// Stands in for the app's background session: holds each upload until it is waited for, then sends it to `FakeDrive`.
+final class FakeTransfer: DriveTransfer, @unchecked Sendable {
+    let session: URLSession
+    private let lock = NSLock()
+    private var queued: [Int: URLRequest] = [:]
+    private(set) var count = 0
+    private(set) var authorization: String?
+    init(session: URLSession) { self.session = session }
+
+    func enqueue(_ request: URLRequest, body: Data) throws -> Int {
+        var r = request
+        r.httpBody = body
+        lock.lock(); defer { lock.unlock() }
+        count += 1
+        queued[count] = r
+        authorization = request.value(forHTTPHeaderField: "Authorization")
+        return count
+    }
+
+    func result(_ id: Int) async throws -> (data: Data, status: Int) {
+        lock.lock(); let r = queued.removeValue(forKey: id); lock.unlock()
+        let (data, response) = try await session.data(for: try XCTUnwrap(r))
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+    }
+}
+
+/// Remembers how long each asked-for token had to last.
+final class AskedToken: DriveTokenProvider, @unchecked Sendable {
+    private let lock = NSLock()
+    private(set) var asked: [TimeInterval] = []
+    func accessToken() async throws -> String { try await accessToken(validFor: 60) }
+    func accessToken(validFor seconds: TimeInterval) async throws -> String {
+        lock.lock(); asked.append(seconds); lock.unlock()
+        return "t"
+    }
+}
+
+extension DriveSyncTests {
+    /// With the app's background transfer, an upload is handed over before anything waits on it, and one that landed
+    /// while nothing waited (the app was closed) is found by the next pass, not sent again.
+    func testUploadsGoThroughTheTransferOnce() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [FakeDrive.self]
+        let session = URLSession(configuration: cfg)
+        let transfer = FakeTransfer(session: session)
+        let tokens = AskedToken()
+        let client = DriveClient(tokens: tokens, session: session, transfer: transfer)
+        let folder = try await client.ensureFolder("เบื้องหลัง", parent: "root")
+        let pdf = Data("pdf-1".utf8)
+
+        let wait = try await client.startUploadOnce(pdf, name: "a.pdf", mimeType: "application/pdf", parent: folder.id)
+        XCTAssertEqual(transfer.count, 1, "handed over before anything waits")
+        XCTAssertEqual(transfer.authorization, "Bearer t")
+        XCTAssertTrue(tokens.asked.contains { $0 >= 1800 }, "a token that lasts until iOS starts the upload")
+        let file = try await wait.value
+        XCTAssertEqual(file.name, "a.pdf")
+
+        let again = try await client.startUploadOnce(pdf, name: "a.pdf", mimeType: "application/pdf", parent: folder.id).value
+        XCTAssertEqual(again.id, file.id)
+        XCTAssertEqual(transfer.count, 1, "found on Drive, nothing handed over")
+
+        // a plain upload (the survey's own save) goes through it too
+        let other = try await client.upload(Data("pdf-2".utf8), name: "b.pdf", mimeType: "application/pdf", parent: folder.id)
+        XCTAssertEqual(transfer.count, 2)
+        XCTAssertEqual(other.name, "b.pdf")
+    }
+
+    /// Without a transfer (the tests, macOS), uploads are sent while the caller waits, as before.
+    func testWithoutATransferUploadsAreSentDirectly() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [FakeDrive.self]
+        let client = DriveClient(tokens: FixedToken(), session: URLSession(configuration: cfg), transfer: nil)
+        let folder = try await client.ensureFolder("ตรง", parent: "root")
+        let file = try await client.startUploadOnce(Data("x".utf8), name: "c.jpg", mimeType: "image/jpeg", parent: folder.id).value
+        XCTAssertEqual(file.name, "c.jpg")
+    }
+}

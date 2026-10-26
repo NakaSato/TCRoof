@@ -14,7 +14,7 @@ public enum InstallNotification {
     /// `ติดตั้ง Day 2/5`, 30 min before that day's start.
     public static func day(jobKey: String, name: String, team: String, day n: Int, of total: Int, start: Date) -> NotificationPlan {
         NotificationPlan(id: id(jobKey: jobKey, day: start), type: .install, title: "ติดตั้ง Day \(n)/\(total)", body: name,
-                         sub: [team.isEmpty ? "" : "ทีม \(team)", "เริ่ม \(ThaiDate.time(start))"].filter { !$0.isEmpty }.joined(separator: " · "),
+                         sub: [team.isEmpty ? "" : "ทีม \(team)", "เริ่ม \(ThaiDate.time(start))"].filter { !$0.isEmpty }.joined(separator: " | "),
                          fire: .at(start.addingTimeInterval(-lead)), info: [NotificationInfo.job: jobKey])
     }
 
@@ -25,7 +25,7 @@ public enum InstallNotification {
               let at = cal.date(bySettingHour: 18, minute: 0, second: 0, of: before) else { return nil }
         let sub = [team.isEmpty ? "" : "ทีม \(team)", "\(max(days, 1)) วัน", "เริ่ม \(ThaiDate.time(start))"].filter { !$0.isEmpty }
         return NotificationPlan(id: "install-eve-\(jobKey)-\(ISODate.string(start))", type: .install, title: "เริ่มติดตั้งพรุ่งนี้", body: name,
-                                sub: sub.joined(separator: " · "), fire: .at(at), info: [NotificationInfo.job: jobKey])
+                                sub: sub.joined(separator: " | "), fire: .at(at), info: [NotificationInfo.job: jobKey])
     }
 
     /// The eve reminder and the install days whose reminder is still ahead and fires before the end of tomorrow.
@@ -55,7 +55,7 @@ public enum MPNotification {
            let at = cal.date(bySettingHour: 17, minute: 0, second: 0, of: today), at > now {
             let starting = plan.filter { $0.start.map { cal.isDate($0, inSameDayAs: tomorrow) } ?? false }
             if !starting.isEmpty {
-                let names = starting.prefix(2).map { "\($0.task.code) \($0.task.title)" }.joined(separator: " · ")
+                let names = starting.prefix(2).map { "\($0.task.code) \($0.task.title)" }.joined(separator: " | ")
                 out.append(NotificationPlan(id: "mp-start-\(jobKey)-\(MasterSchedule.Actual.key(tomorrow, calendar: cal))-\(starting[0].task.rawValue)",
                                             type: .mp, title: "เริ่มงานพรุ่งนี้ตามแผน MP", body: station,
                                             sub: names + (starting.count > 2 ? " +\(starting.count - 2)" : ""), fire: .at(at),
@@ -69,7 +69,7 @@ public enum MPNotification {
            let at = cal.date(bySettingHour: 8, minute: 0, second: 0, of: monday) {
             out.append(NotificationPlan(id: "mp-behind-\(jobKey)-\(MasterSchedule.Actual.key(week, calendar: cal))", type: .mp,
                                         title: "ช้ากว่าแผน MP \(RoutineReport.percent(-status.variance))", body: station,
-                                        sub: "จริง \(RoutineReport.percent(status.actual)) / แผน \(RoutineReport.percent(status.planned)) · แตะเพื่อบันทึกความก้าวหน้า",
+                                        sub: "จริง \(RoutineReport.percent(status.actual)) / แผน \(RoutineReport.percent(status.planned)) | แตะเพื่อบันทึกความก้าวหน้า",
                                         fire: .at(at), info: [NotificationInfo.job: jobKey]))
         }
         return out
@@ -94,7 +94,7 @@ public enum ERCNotification {
         var out: [NotificationPlan] = []
         for wait in ERCFlow.waits(record, context, today: now) {
             let working = wait.step.limit?.working == true
-            let sub = "\(wait.step.party.title) · ลำดับ กกพ. ข้อ \(wait.step.number ?? 0) · ครบกำหนด \(ERCFlow.date(wait.due).map(RoutineReport.thaiDate) ?? wait.due)"
+            let sub = "\(wait.step.party.title) | ลำดับ กกพ. ข้อ \(wait.number ?? 0) | ครบกำหนด \(ERCFlow.date(wait.due).map(RoutineReport.thaiDate) ?? wait.due)"
             if let at = at8(ERCFlow.day(wait.due, before: lead, working: working, context)), at > now {
                 out.append(NotificationPlan(id: "erc-soon-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
                                             title: "\(wait.title) เหลือ \(lead) \(wait.unit)", body: station, sub: sub,
@@ -102,7 +102,7 @@ public enum ERCNotification {
             }
             if let at = at8(wait.due, plus: 1), at > now {
                 out.append(NotificationPlan(id: "erc-over-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
-                                            title: "\(wait.title) เกินกำหนดแล้ว", body: station, sub: sub + " · ติดตามกับ\(wait.step.party.title)",
+                                            title: "\(wait.title) เกินกำหนดแล้ว", body: station, sub: sub + " | ติดตามกับ\(wait.step.party.title)",
                                             fire: .at(at), info: [NotificationInfo.job: jobKey]))
             }
         }

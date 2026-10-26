@@ -5,7 +5,7 @@ import XCTest
 /// On the demo feed: a filter chip narrows the posts, `รับทราบ` adds the viewer to the count and takes them off again,
 /// `แก้แล้ว` and `เปิดอีกครั้ง` swap, the `เอกสาร` tab opens the PWA papers, and the modules that left the dock
 /// are behind the settings sheet's `เครื่องมือวัด` row. Pull to refresh brings a new post, and one that arrives while
-/// the feed is scrolled down shows `มีโพสต์ใหม่`.
+/// the feed is scrolled down shows `มีโพสต์ใหม่`. The daily summary shows its `สรุปโดย AI` box.
 final class PhoneHomeFeedUITests: XCTestCase {
     let slow: TimeInterval = 90
 
@@ -42,6 +42,14 @@ final class PhoneHomeFeedUITests: XCTestCase {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: pill)
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed, "back at the top, seen")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "รายงานใหม่ 1")).firstMatch.isHittable)
+    }
+
+    /// The daily summary carries `สรุปโดย AI` (the demo's example text; a real one is asked once a day on the device).
+    func testTheSummaryHasTheAIDigest() {
+        let app = launch()
+        let box = app.descendants(matching: .any)["feedDigest"].firstMatch
+        XCTAssertTrue(box.waitForExistence(timeout: slow), "the AI box on the summary")
+        XCTAssertTrue(box.label.contains("สรุปโดย AI"))
     }
 
     func testAcknowledgeTogglesTheCount() {

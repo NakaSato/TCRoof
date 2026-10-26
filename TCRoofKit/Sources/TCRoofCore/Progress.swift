@@ -31,7 +31,7 @@ public extension SurveyModule {
     /// B4 also counts `photoDetail`, which the schema leaves optional for old jobs (`ZeroExport`).
     var completion: Completion { spec.completion(values) + (type == .backfeed ? ZeroExport.extraCompletion(values) : Completion()) }
     /// "ตู้ไฟฟ้า โรงสูบน้ำ"
-    var title: String { name.isEmpty ? spec.short : spec.short + " · " + name }
+    var title: String { name.isEmpty ? spec.short : spec.short + " | " + name }
 }
 
 public extension Job {
@@ -46,7 +46,7 @@ public extension Job {
         let d = m.values
         func o(_ id: String) -> String { d.choice(id) == "อื่นๆ" ? (d.other(id).isEmpty ? "อื่นๆ" : d.other(id)) : (d.choice(id) ?? "") }
         func t(_ id: String) -> String { d.text(id).trimmingCharacters(in: .whitespaces) }
-        func j(_ parts: String?...) -> String { parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ") }
+        func j(_ parts: String?...) -> String { parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " | ") }
         func span(_ id: String) -> Double { parseSpans(d.text(id)).reduce(0, +) }
         let size: String? = span("spansX") > 0 && span("spansY") > 0 ? "\(fmt(span("spansX"))) x \(fmt(span("spansY"))) ม." : nil
         switch m.type {
@@ -62,7 +62,8 @@ public extension Job {
         case .fts: return j(d.photo("photoEmg") != nil ? "มีภาพปุ่ม Emergency" : nil, t("emgPlace").isEmpty ? nil : t("emgPlace"),
                             d.photo("photoFTS") != nil ? "มีภาพตู้ FTS" : nil)
         case .roof: return j(o("roofShape"), o("roofMaterial"), o("roofStructure"), t("panelsBefore").isEmpty ? nil : "แผง \(t("panelsBefore"))" + (t("panelsCut").isEmpty ? "" : " (ตัด \(t("panelsCut")))"), size)
-        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"), size, d.obstacles("obst").filter { !$0.isAbsent }.isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").filter { !$0.isAbsent }.count) จุด", Schema.shadeText(d))
+        case .tank: return j(Schema.tankKind(d), t("tankHeight").isEmpty ? nil : "สูง \(t("tankHeight")) ม.", t("surface"),
+                             Tank.isRound(d) ? Tank.diameter(d).map(Tank.diameterText) : size, d.obstacles("obst").filter { !$0.isAbsent }.isEmpty ? nil : "สิ่งกีดขวาง \(d.obstacles("obst").filter { !$0.isAbsent }.count) จุด", Schema.shadeText(d))
         case .sed: return j(t("distA").isEmpty || t("distB").isEmpty ? nil : "บ่อ \(t("distA")) x \(t("distB")) ซม.")
         case .house: return j(o("buildingType"), o("roofShape"), o("roofMaterial"), t("mainBreaker").isEmpty ? nil : "เมน \(t("mainBreaker")) A", o("facing").isEmpty ? nil : "หันทิศ" + o("facing"))
         case .roofForm: return j(o("roofShape"), o("roofMaterial"), o("facing").isEmpty ? nil : "หันทิศ" + o("facing"),
@@ -152,7 +153,7 @@ public struct NumberedSection: Identifiable, Sendable {
     public let number: String
     public let module: SurveyModule
     public var id: UUID { module.id }
-    /// "C1.2 หลังคา · 2 โรงสูบ"
+    /// "C1.2 หลังคา | 2 โรงสูบ"
     public var title: String { number + " " + module.title }
 }
 public struct SectionGroup: Identifiable, Sendable {
@@ -192,7 +193,16 @@ public extension FieldSpec {
 
 /// "1.5,4,4" → [1.5, 4, 4]; "4ม., ๔" and "4 m" read too.
 public func parseSpans(_ s: String) -> [Double] {
-    s.split { ",/ \t".contains($0) }.compactMap { NumberInput.value(String($0)) }.filter { $0 > 0 }
+    // "n@d" (the กปภ. sheets' "16@4", sixteen 4 m bays) is read before the plain number: `NumberInput` would read
+    // "16@4" as 164. Spaces around the @ are allowed; n is a whole number 1…500.
+    let t = s.contains("@") ? s.replacingOccurrences(of: #"\s*@\s*"#, with: "@", options: .regularExpression) : s
+    return t.split { ",/ \t".contains($0) }.flatMap { tok -> [Double] in
+        let part = String(tok)
+        guard let at = part.firstIndex(of: "@") else { return NumberInput.value(part).map { [$0] } ?? [] }
+        guard let n = NumberInput.value(String(part[..<at])), n >= 1, n <= 500, n == n.rounded(),
+              let d = NumberInput.value(String(part[part.index(after: at)...])) else { return [] }
+        return Array(repeating: d, count: Int(n))
+    }.filter { $0 > 0 }
 }
 
 /// Number formatting as on the forms: no trailing ".0".

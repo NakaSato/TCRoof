@@ -23,7 +23,7 @@ extension SurveyHomeView {
         projectGroups
         reportGroups
         dataGroups
-        Text("TCRoof \(appVersion) · ใช้กับงานของ กปภ. เท่านั้น งานอื่นไม่เปลี่ยน")
+        Text("TCRoof \(appVersion) | ใช้กับงานของ กปภ. เท่านั้น งานอื่นไม่เปลี่ยน")
             .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
             .frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 2)
     }
@@ -36,11 +36,11 @@ extension SurveyHomeView {
         let stations = installStations
         let teams = InstallOverview.contractors(stations, threshold: model.settings.behindThreshold)
         TCSettingsGroup("โครงการ") {
-            TCSettingsRow(title, detail: "\(stations.count + maintenanceStations.count) สถานี · ผู้ว่าจ้าง \(subtitle)")
-            TCSettingsRow("สัญญาและระยะเวลา", detail: "เลขที่สัญญา · วันเริ่ม–วันสิ้นสุด")
+            TCSettingsRow(title, detail: "\(stations.count + maintenanceStations.count) สถานี | ผู้ว่าจ้าง \(subtitle)")
+            TCSettingsRow("สัญญาและระยะเวลา", detail: "เลขที่สัญญา | วันเริ่ม–วันสิ้นสุด")
         }
         TCSettingsGroup("ทีมงาน") {
-            TCSettingsRow("ผู้รับเหมา", detail: teams.isEmpty ? "ยังไม่มีผู้รับเหมาในงานติดตั้ง" : "\(teams.count) ทีม · " + teams.map(\.name).joined(separator: ", "))
+            TCSettingsRow("ผู้รับเหมา", detail: teams.isEmpty ? "ยังไม่มีผู้รับเหมาในงานติดตั้ง" : "\(teams.count) ทีม | " + teams.map(\.name).joined(separator: ", "))
             TCSettingsRow("ทีมควบคุมงาน TC", detail: "ผู้ควบคุมงาน และวิศวกร")
         }
         TCSettingsGroup("แผน MP") {
@@ -70,7 +70,7 @@ extension SurveyHomeView {
             TCSettingsRow("ผู้ตรวจงานเริ่มต้น", detail: "ผู้แทนของแต่ละสถานี")
         }
         TCSettingsGroup("เอกสารและซิงก์") {
-            TCSettingsRow("แม่แบบรายงาน", detail: "รายงานประจำวัน · คำขอรายสัปดาห์ · ผลทดสอบ")
+            TCSettingsRow("แม่แบบรายงาน", detail: "รายงานประจำวัน | คำขอรายสัปดาห์ | ผลทดสอบ")
             TCSettingsRow("ซิงก์รูปขึ้น Google Drive อัตโนมัติ", detail: "ส่งรูปใหม่ขึ้น Drive เบื้องหลัง") {
                 toggle(\.autoUploadPhotos, "ซิงก์รูปขึ้น Google Drive อัตโนมัติ")
             }
@@ -97,7 +97,9 @@ extension SurveyHomeView {
             action("สำรองข้อมูลทุกงาน", disabled: model.jobs.isEmpty) {
                 do { share = try model.exportBackup() } catch { self.error = error.localizedDescription }
             }
-            action("ตั้งค่าแอป", detail: "วิศวกร · แผนที่ · Google Drive · เครื่องนี้") { showSettings = true }
+            action("คลังแบบมาตรฐาน", detail: "แบบถังน้ำใส กปภ. | แบบที่ทีมบันทึก") { showLibrary = true }
+            action("มาตรฐานโครงสร้างแผงบนถัง", detail: TankStandard.Store.shared.current.summary) { showTankStandard = true }
+            action("ตั้งค่าแอป", detail: "วิศวกร | แผนที่ | Google Drive | เครื่องนี้") { showSettings = true }
         }
     }
 }

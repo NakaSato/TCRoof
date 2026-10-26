@@ -40,7 +40,8 @@ public struct ExcelExporter {
 
     /// - Parameters:
     ///   - photoData: bytes of a stored photo (JPEG or PNG).
-    ///   - planImage: rendered plan (PNG) for a roof or tank section without a hand-drawn plan photo.
+    ///   - planImage: rendered plan (PNG) for a roof or tank section without a hand-drawn plan photo; the app draws its
+    ///     sections under it (`Drawings.planWithSections`).
     ///   - siteMapImage: the site picture with its symbols drawn in (made by the app); nil uses the plain photo.
     public func export(_ job: Job, photoData: @escaping (Photo) -> Data?, planImage: (SurveyModule) -> ExcelImage? = { _ in nil },
                        siteMapImage: ExcelImage? = nil) throws -> Result {
@@ -136,7 +137,7 @@ struct Fill {
             if InverterStation.isDesigned(d) {
                 // same cell, with the B2 page's catalog equipment and minimum room / wall
                 let s = InverterStation(d)
-                l.insert("อินเวอร์เตอร์ \(s.sizesText) · CB \(s.breakerSummary) · \(s.minimumText) · \(s.site.label)", at: 0)
+                l.insert("อินเวอร์เตอร์ \(s.sizesText) | CB \(s.breakerSummary) | \(s.minimumText) | \(s.site.label)", at: 0)
             } else if let n = d.number("inverterCount"), n > 0 { l.insert("อินเวอร์เตอร์ \(fmt(n)) เครื่อง ต้องการพื้นที่ \(String(format: "%.2f", 1.5 * n + 1.5)) x 2.00 ม.", at: 0) }
             detail("R\(h + 13)", "R\(h + 14)", l)
         }
@@ -241,6 +242,16 @@ struct Fill {
         a.radio(d.choice("roofShape"), Options.roofShape, ["F30", "K30", "Q30", "F32", "K32", "Q32"])
         a.radio(d.choice("roofMaterial"), Options.roofMaterial, ["F34", "K34", "Q34", "U34"])
         a.radio(d.choice("roofStructure"), Options.structure, ["F36", "K36"])
+        // NO.224 has no cells for the roof PV layout (docs/specs/roof-pv-layout.md §7): its figures and BOQ go into the
+        // blank rows 38–39 under the roof's options, as the tank sheet does with its extras
+        if RoofMount.printable(d) {
+            let (layout, energy) = RoofMount.printed(d, job: job)
+            if layout.quantities.modules > 0 {
+                a.raw("A38", RoofMount.summaryLine(layout, energy: energy.mwh))
+                let walk = RoofMount.walkwayLine(layout.quantities)
+                a.raw("A39", RoofMount.boqLine(layout.quantities) + " | " + RoofMount.loadLine(layout.quantities) + (walk.isEmpty ? "" : " | " + walk))
+            }
+        }
         let top = [d.photo("aerialPhoto")] + d.photos("generalPhotos").map { Optional($0) }, st = d.photos("structPhotos")
         for (i, q) in ["A41:M47", "N41:Z47", "A48:M54", "N48:Z54"].enumerated() { a.pic(q, img(top[safe: i] ?? nil)) }
         for (i, q) in ["A56:M62", "N56:Z62", "A63:M69", "N63:Z69"].enumerated() { a.pic(q, img(st[safe: i])) }
@@ -257,7 +268,13 @@ struct Fill {
         if let k = Schema.tankKind(d) { a.raw("R16", k) }
         if let sh = Schema.shadeText(d) { a.raw("R17", sh) }
         // and the standard design the points came from, beside the obstacle heading (docs/specs/standard-designs.md §6)
-        if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) · " + sum.counts) }
+        if let from = TankDesign.current(d), let sum = TankDesign.summary(d) { a.raw("N19", "แบบ กปภ. \(from.design.size) | " + sum.counts) }
+        // the stored panel layout in the blank rows 37–38 above the photo pages (docs/specs/tank-drawing-swift.md §5)
+        if let l = TankLayout.current(d), l.count > 0 {
+            let (lat, lon) = RoofMount.site(job)
+            a.raw("A37", l.summaryLine(latitude: lat ?? RoofMount.defaultLatitude, longitude: lon, facing: TankLayout.facing(d)))
+            a.raw("A38", l.boqLine)
+        }
         let ob = d.photos("obstPhotos"); a.pic("A20:Z32", img(ob.first))
         let top = [d.photo("aerialPhoto")] + d.photos("sidePhotos").map { Optional($0) }
         for (i, q) in ["A41:M47", "N41:Z47", "A48:M54", "N48:Z54"].enumerated() { a.pic(q, img(top[safe: i] ?? nil)) }

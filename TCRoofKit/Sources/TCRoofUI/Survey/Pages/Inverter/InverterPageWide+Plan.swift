@@ -105,7 +105,7 @@ extension InverterPageWide {
         return HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("\(title) \(value) มม.").font(.sarabunFixed(14, .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                Text(value > min ? "ขั้นต่ำ \(min) · ปรับเพิ่มเอง" : "ขั้นต่ำตามคำนวณ").font(.sarabunFixed(12)).foregroundStyle(value > min ? Theme.pending : Theme.inkMuted)
+                Text(value > min ? "ขั้นต่ำ \(min) | ปรับเพิ่มเอง" : "ขั้นต่ำตามคำนวณ").font(.sarabunFixed(12)).foregroundStyle(value > min ? Theme.pending : Theme.inkMuted)
             }
             Spacer(minLength: 4)
             boxButton("minus", enabled: down != nil) { if let down { set(down) } }
@@ -182,7 +182,7 @@ extension InverterPageWide {
             if s.sizesAssumed && values.number(InverterStation.Key.count) != nil {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.pending)
-                    Text("ขนาดยังเป็นค่าสมมติจากจำนวนเครื่องเดิม · เลือก kW ให้ตรงหน้างาน").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.pending)
+                    Text("ขนาดยังเป็นค่าสมมติจากจำนวนเครื่องเดิม | เลือก kW ให้ตรงหน้างาน").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.pending)
                     Spacer(minLength: 4)
                     Button("ยืนยัน") { update { $0.sizesAssumed = false } }.font(.sarabunFixed(13, .bold)).frame(minHeight: 44)
                 }
@@ -207,7 +207,7 @@ extension InverterPageWide {
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(inv.model).font(.sarabunFixed(14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                Text("CB \(cb.at)AT · \(s.cable(kw: kw).label)").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
+                Text("CB \(cb.at)AT | \(s.cable(kw: kw).label)").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer(minLength: 4)
             Button { update { $0.sizes.remove(at: i); $0.sizesAssumed = false } } label: {

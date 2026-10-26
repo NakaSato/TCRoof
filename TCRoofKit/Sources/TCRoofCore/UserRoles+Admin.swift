@@ -89,9 +89,9 @@ public extension Capability {
     /// test, daily reports, scans and surveys), deleting a job, the customers' contacts, ICLs, signing daily reports,
     /// closing the IEC test and the member list.
     static let enforcedByRules: Set<Capability> = [
-        .jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .moveToInstall,
+        .jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .mpWBSTick, .moveToInstall,
         .surveyEdit, .customerPersonalDocs, .permitPPIM, .ercFlow, .stationDocsDrafts,
-        .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .iclSiteFill, .iclSiteSign, .usersManage,
+        .dailyFill, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .iclSiteFill, .iclSiteSign, .usersManage, .designLibrary, .tankStandard,
     ]
 
     /// The Maintainer's own capabilities.
@@ -103,8 +103,8 @@ public extension Capability {
         if access(role) == .disabled { return "BOQ ปิดใช้งานทุกบทบาท" }
         if Self.maintainerOnly.contains(self) { return self == .usersSuspend ? "ปิดบัญชีได้เฉพาะ Maintainer" : "เฉพาะ Maintainer" }
         if self == .usersManage, role == .manager { return "ผู้จัดการต้องจัดการผู้ใช้ได้เสมอ" }
-        if self == .assistantUse { return "บังคับในฟังก์ชันผู้ช่วย · แก้ใน functions/" }
-        if Self.enforcedByRules.contains(self) { return "บังคับใน rules · แก้ใน firestore.rules" }
+        if self == .assistantUse { return "บังคับในฟังก์ชันผู้ช่วย | แก้ใน functions/" }
+        if Self.enforcedByRules.contains(self) { return "บังคับใน rules | แก้ใน firestore.rules" }
         return nil
     }
 

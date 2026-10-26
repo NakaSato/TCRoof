@@ -98,7 +98,7 @@ struct PowerOfAttorneyView: View {
     }
 
     private var powersCard: some View {
-        PermitSection(title: "อำนาจที่มอบ", subtitle: "✓ ให้ดำเนินการ · – ไม่ให้ดำเนินการ (หมายเหตุข้อ 3 ของแบบฟอร์ม)") {
+        PermitSection(title: "อำนาจที่มอบ", subtitle: "✓ ให้ดำเนินการ | – ไม่ให้ดำเนินการ (หมายเหตุข้อ 3 ของแบบฟอร์ม)") {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Space.s) { presetButtons }
                 VStack(alignment: .leading, spacing: Space.s) { presetButtons }

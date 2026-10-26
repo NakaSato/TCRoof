@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import UniformTypeIdentifiers
 import TCRoofUI
 import TCRoofCore
@@ -39,7 +40,15 @@ enum ProjectDriveUpload {
                 return (p, RoutineReport.photoFolder(date: log.date), "\(day) ลายเซ็น \(role).png")
             }
         }
-        return daily + pendingICLPhotos(job) + pendingSiteICLPhotos(job) + pendingIECPhotos(job)
+        // the station's uploaded key plan, beside the daily reports
+        let keyPlan = job.uploadedKeyPlan.flatMap { p -> (PhotoAsset, [String], String)? in
+            p.driveFileID == nil && !p.data.isEmpty ? (p, ["Key Plan"], "Key Plan \(job.stationName).jpg") : nil
+        }
+        // each week's request signature, beside the request's PDF
+        let signatures = job.requestSignatures.compactMap { r, p -> (PhotoAsset, [String], String)? in
+            p.driveFileID == nil ? (p, RoutineReport.folder(.request, date: r.weekStart), "\(r.id) ลายเซ็น Site Engineer.png") : nil
+        }
+        return daily + (keyPlan.map { [$0] } ?? []) + signatures + pendingICLPhotos(job) + pendingSiteICLPhotos(job) + pendingIECPhotos(job)
     }
 
     /// The ICL's step photos (`ICL รูปถ่าย/โครงสร้าง 1.jpg`).
@@ -90,6 +99,14 @@ enum ProjectDriveUpload {
 
     /// Records each file's Drive id as soon as it lands, so a failure part-way doesn't re-upload finished files.
     static func run(_ job: Job, session: GoogleSession, progress: (Int, Int) -> Void) async throws {
+        try await run(job, survey: session.survey, progress: progress)
+    }
+
+    /// Hands every pending file to the background transfer first, then records each one's Drive id as it lands: iOS
+    /// goes on sending them when the person leaves the app, or after the system ends it (`DriveBackground`). The job is
+    /// remembered until a run ends with nothing left, and `resumeRequested` runs it again when sync next starts; a
+    /// file that landed while the app was closed is found on Drive then, not sent twice.
+    static func run(_ job: Job, survey: SurveyModel, progress: (Int, Int) -> Void) async throws {
         // one Drive writer: a background photo upload finishes first, so no photo is sent twice
         await PhotoSync.shared.pause()
         defer { PhotoSync.shared.resume() }
@@ -97,47 +114,126 @@ enum ProjectDriveUpload {
         let inspection = pendingInspection(job)
         let photos = pendingPhotos(job)
         let total = docs.count + (inspection == nil ? 0 : 1) + photos.count
-        guard total > 0 else { return }
+        guard total > 0 else { forget(job); return }
+        remember(job)
+        // time to look up the folders and hand the files over if the person leaves the app now
+        let time = BackgroundTime("Drive upload \(job.code)")
+        defer { time.end() }
 
         progress(0, total)
-        let route = DriveRoute(survey: session.survey)
+        let route = DriveRoute(survey: survey)
         let folder = try await route.jobFolder(job)
         job.driveFolderURL = folder.url.absoluteString
 
-        var done = 0
         var subfolders: [String: String] = [:]
         func target(_ path: [String]) async throws -> String {
             guard !path.isEmpty else { return folder.id }
             let key = path.joined(separator: "/")
             if let id = subfolders[key] { return id }
-            let id = try await session.survey.driveSubfolder(path, under: folder.id)
+            let id = try await survey.driveSubfolder(path, under: folder.id)
             subfolders[key] = id
             return id
         }
-        for doc in docs {
-            // a paper in two hand-over folders goes into both; the record keeps the first copy's id
-            var first: String?
-            for place in route.places(doc, in: job) {
-                let file = DriveUpload(name: place.name, data: doc.data, mimeType: mimeType(for: doc.name))
-                let id = try await session.survey.driveUpload(file, to: try await target(place.folder))
-                if first == nil { first = id }
+
+        // 1. every file handed over; a failure here (offline) still records what was handed over before it
+        var waits: [(record: Landing, wait: Task<String, Error>)] = []
+        var failure: Error?
+        do {
+            for doc in docs {
+                // a paper in two hand-over folders goes into both; the record keeps the first copy's id
+                for (i, place) in route.places(doc, in: job).enumerated() {
+                    let file = DriveUpload(name: place.name, data: doc.data, mimeType: mimeType(for: doc.name))
+                    waits.append((.document(doc, counts: i == 0), try await survey.driveStartUpload(file, to: try await target(place.folder))))
+                }
             }
-            doc.driveFileID = first
-            done += 1
-            progress(done, total)
+            for p in photos {
+                let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: "image/jpeg")
+                waits.append((.photo(p.photo), try await survey.driveStartUpload(file, to: try await target(route.construction(p.folder)))))
+            }
+            if let inspection, let url = InspectionReport.renderPDF(inspection) {
+                let data = try Data(contentsOf: url)
+                let file = DriveUpload(name: url.lastPathComponent, data: data, mimeType: "application/pdf")
+                waits.append((.inspection(inspection), try await survey.driveStartUpload(file, to: try await target(route.construction([])))))
+            }
+        } catch { failure = error }
+
+        // 2. each one recorded as it lands
+        var done = 0
+        for w in waits {
+            do {
+                let id = try await w.wait.value
+                switch w.record {
+                case .document(let doc, let counts):
+                    guard counts else { continue }
+                    if !doc.isDeleted, doc.driveFileID == nil { doc.driveFileID = id }
+                case .photo(let photo):
+                    if !photo.isDeleted { photo.driveFileID = id }
+                case .inspection(let inspection):
+                    if !inspection.isDeleted { inspection.driveFileID = id }
+                }
+                done += 1
+                progress(done, total)
+            } catch { failure = failure ?? error }
         }
-        for p in photos {
-            let file = DriveUpload(name: p.name, data: p.photo.data, mimeType: "image/jpeg")
-            p.photo.driveFileID = try await session.survey.driveUpload(file, to: try await target(route.construction(p.folder)))
-            done += 1
-            progress(done, total)
+        if let failure { throw failure }
+        if pendingCount(job) == 0 { forget(job) }
+    }
+
+    /// What a landed upload records its id on.
+    private enum Landing {
+        /// `counts`: the paper's first place, whose id the record keeps.
+        case document(DocumentAsset, counts: Bool)
+        case photo(PhotoAsset)
+        case inspection(Inspection)
+    }
+
+    // MARK: Resume
+
+    /// Jobs whose upload was started and hasn't finished (`job.syncID ?? job.code`), kept on the device.
+    static let resumeKey = "drive.resumeJobs"
+    private static func key(_ job: Job) -> String { job.syncID ?? job.code }
+
+    private static func remember(_ job: Job) {
+        var keys = Set(UserDefaults.standard.stringArray(forKey: resumeKey) ?? [])
+        if keys.insert(key(job)).inserted { UserDefaults.standard.set(keys.sorted(), forKey: resumeKey) }
+    }
+
+    private static func forget(_ job: Job) {
+        var keys = Set(UserDefaults.standard.stringArray(forKey: resumeKey) ?? [])
+        if keys.remove(key(job)) != nil { UserDefaults.standard.set(keys.sorted(), forKey: resumeKey) }
+    }
+
+    /// A job upload was started and hasn't finished.
+    static var hasRequested: Bool { !(UserDefaults.standard.stringArray(forKey: resumeKey) ?? []).isEmpty }
+
+    /// Runs again, quietly, the uploads that were started and didn't finish (left mid-way, offline, the app closed):
+    /// when sync starts (`PhotoSync.start`), then a minute after each failure while the app is open. A job gone from
+    /// the device is forgotten.
+    static func resumeRequested(context: ModelContext, survey: SurveyModel) {
+        guard hasRequested, survey.google.isSignedIn else { return }
+        Task {
+            let ok = await resumeNow(context: context, survey: survey)
+            guard !ok else { return }
+            try? await Task.sleep(for: .seconds(60))
+            resumeRequested(context: context, survey: survey)
         }
-        if let inspection, let url = InspectionReport.renderPDF(inspection) {
-            let data = try Data(contentsOf: url)
-            let file = DriveUpload(name: url.lastPathComponent, data: data, mimeType: "application/pdf")
-            inspection.driveFileID = try await session.survey.driveUpload(file, to: try await target(route.construction([])))
-            progress(total, total)
+    }
+
+    /// One pass over the started uploads; false when one failed. Also iOS's background task's (`DriveBackgroundWork`).
+    static func resumeNow(context: ModelContext, survey: SurveyModel) async -> Bool {
+        let keys = Set(UserDefaults.standard.stringArray(forKey: resumeKey) ?? [])
+        guard !keys.isEmpty, survey.google.isSignedIn else { return true }
+        let jobs = ((try? context.fetch(FetchDescriptor<Job>())) ?? []).filter { keys.contains(key($0)) }
+        let found = Set(jobs.map(key))
+        if found != keys { UserDefaults.standard.set(found.sorted(), forKey: resumeKey) }
+        var ok = true
+        for job in jobs {
+            do { try await run(job, survey: survey) { _, _ in } } catch {
+                ok = false
+                print("Drive: resume \(job.code): \(error.localizedDescription)")
+            }
         }
+        return ok
     }
 
     static func mimeType(for name: String) -> String {

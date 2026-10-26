@@ -1,0 +1,161 @@
+{
+ "version": "ZN-QES-III033A-A",
+ "profiles": [
+  {
+   "method": "bolt",
+   "holeSpec": "กลาง 4 จาก 8 รู φ9×14",
+   "bolt": "M8",
+   "torqueNm": [
+    16,
+    20
+   ],
+   "washerMinThicknessMm": 1.8,
+   "washerOdMm": [
+    20,
+    24
+   ],
+   "loads": [
+    {
+     "cellCounts": [
+      60,
+      66,
+      72,
+      78,
+      120,
+      132,
+      144
+     ],
+     "pushPa": 3600,
+     "pullPa": 1600
+    },
+    {
+     "cellCounts": [
+      156
+     ],
+     "pushPa": 2400,
+     "pullPa": 1600
+    }
+   ]
+  },
+  {
+   "method": "tracker1P",
+   "holeSpec": "4 รู φ7×10",
+   "bolt": "M6",
+   "torqueNm": [
+    16,
+    20
+   ],
+   "washerMinThicknessMm": 1.5,
+   "washerOdMm": [
+    16,
+    20
+   ],
+   "loads": [
+    {
+     "cellCounts": [
+      60,
+      66,
+      72,
+      78,
+      120,
+      132,
+      144,
+      156
+     ],
+     "pushPa": 1436,
+     "pullPa": 1436
+    },
+    {
+     "cellCounts": [
+      60,
+      66,
+      72,
+      120,
+      132,
+      144
+     ],
+     "pushPa": 1600,
+     "pullPa": 1600,
+     "note": "holes at L/2, 400 mm apart"
+    }
+   ]
+  },
+  {
+   "method": "tracker2V",
+   "holeSpec": "2 รู φ7×10 + 2 รู φ9×14",
+   "bolt": "M6 / M8",
+   "torqueNm": [
+    16,
+    20
+   ],
+   "washerMinThicknessMm": 1.5,
+   "washerOdMm": [
+    16,
+    24
+   ],
+   "loads": [
+    {
+     "cellCounts": [
+      60,
+      66,
+      72,
+      120,
+      132,
+      144
+     ],
+     "pushPa": 1600,
+     "pullPa": 1600
+    }
+   ]
+  },
+  {
+   "method": "clamp",
+   "holeSpec": "ไม่ใช้รู",
+   "bolt": "M8 ขึ้นไป",
+   "torqueNm": [
+    16,
+    20
+   ],
+   "washerMinThicknessMm": 0,
+   "washerOdMm": [
+    0,
+    0
+   ],
+   "loads": [
+    {
+     "cellCounts": [
+      60,
+      66,
+      72,
+      78,
+      120,
+      132,
+      144
+     ],
+     "clampSide": "long",
+     "pushPa": 3600,
+     "pullPa": 1600
+    },
+    {
+     "cellCounts": [
+      156
+     ],
+     "clampSide": "long",
+     "pushPa": 2400,
+     "pullPa": 1600
+    },
+    {
+     "cellCounts": [
+      60,
+      66,
+      120,
+      132
+     ],
+     "clampSide": "short",
+     "pushPa": 1050,
+     "pullPa": 1050
+    }
+   ]
+  }
+ ]
+}

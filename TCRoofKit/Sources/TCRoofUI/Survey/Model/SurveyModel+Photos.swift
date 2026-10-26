@@ -136,8 +136,13 @@ extension SurveyModel {
             }
             keepLink(link, for: id)
             photoUpload[id] = nil
+            // everyone who can open the job reads its photos (its folder is in this account's Drive)
+            if let folder = link.folderID, let readers = driveReaders?(job) { await shareJobFolder(folder, with: readers) }
         } catch {
-            if let e = error as? DriveSync.Interrupted { keepLink(e.link, for: id) }
+            if let e = error as? DriveSync.Interrupted {
+                keepLink(e.link, for: id)
+                if let folder = e.link.folderID, let readers = driveReaders?(job) { await shareJobFolder(folder, with: readers) }
+            }
             photoUpload[id]?.error = error.localizedDescription
             // offline or a Drive hiccup: try again in a minute (a folder this account can't reach won't fix itself)
             if !(error is DriveSync.FolderUnreachable) { autoUploadPhotos(id, after: 60) }

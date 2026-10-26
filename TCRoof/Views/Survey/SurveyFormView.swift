@@ -3,6 +3,7 @@ import TCRoofUI
 import SwiftData
 import CoreLocation
 import TCRoofCore
+import ModuleRules
 
 // MARK: - Survey form
 
@@ -132,6 +133,7 @@ struct SurveyEditor: View {
     @State var locating = false
     @State var locationError: String?
     @State private var showMissing = false
+    @State private var showInstallStops = false
     @State private var confirmDiscard = false
 
     var missing: [String] { SurveyOptions.missing(form) }
@@ -159,6 +161,12 @@ struct SurveyEditor: View {
                 TCButton(form.isDraft ? "บันทึก" : "เสร็จ", action: finish)
             }
         }
+        .alert("ยังบันทึกไม่ได้ตามคู่มือติดตั้งแผง", isPresented: $showInstallStops) {
+            Button("แก้ไขต่อ", role: .cancel) {}
+            if form.isDraft { Button("เก็บเป็นร่างไว้ก่อน") { dismiss() } }
+        } message: {
+            Text(installStops.joined(separator: "\n"))
+        }
         .alert("ยังกรอกไม่ครบ", isPresented: $showMissing) {
             Button("กรอกต่อ", role: .cancel) {}
             Button(form.isDraft ? "เก็บเป็นร่างไว้ก่อน" : "ปิดไปก่อน") { dismiss() }
@@ -171,6 +179,18 @@ struct SurveyEditor: View {
         .task {
             if form.isDraft && form.latitude == nil { locate() }
         }
+        #if DEBUG
+        // `-installCheckDemo YES`: example answers for the installation checks (Bangkok, a 5° plan, near the sea)
+        .task {
+            guard UserDefaults.standard.bool(forKey: "installCheckDemo") else { return }
+            form.latitude = form.latitude ?? 13.7563; form.longitude = form.longitude ?? 100.5018
+            var c = SiteInstallCheck()
+            c.plannedTiltDeg = 5; c.altitudeM = 12; c.seaDistance = .to1km; c.humidityPct = 80; c.monthlyMinC = 21; c.monthlyMaxC = 36
+            c.tMinC = 15; c.roofFireproof = false; c.rearClearanceMm = 100; c.edgeSafeZoneM = 0.6; c.highWind = true
+            c.shadingSources = ["ต้นไม้"]; c.reasons = ["ZN-73b": "ใช้แผงกันเกลือและอุปกรณ์สแตนเลส"]
+            installCheck = c
+        }
+        #endif
     }
 
     // MARK: iPhone
@@ -193,6 +213,7 @@ struct SurveyEditor: View {
             roofSection
             electricalSection
             sizingSection
+            installSection
             photoSections
 
             PadSection("หมายเหตุ") {
@@ -311,7 +332,7 @@ struct SurveyEditor: View {
                     .bold()
             }
         } footer: {
-            Text("ใช้หน่วย kWh ถ้ากรอก ไม่เช่นนั้นคิดจากค่าไฟ 4.5 บาท/หน่วย · ใช้ไฟกลางวัน 60% · แดดเฉลี่ย 4 ชม./วัน · เว้นว่างเพื่อใช้ค่าที่คำนวณ")
+            Text("ใช้หน่วย kWh ถ้ากรอก ไม่เช่นนั้นคิดจากค่าไฟ 4.5 บาท/หน่วย | ใช้ไฟกลางวัน 60% | แดดเฉลี่ย 4 ชม./วัน | เว้นว่างเพื่อใช้ค่าที่คำนวณ")
         }
     }
 
@@ -362,6 +383,10 @@ struct SurveyEditor: View {
             case .success(let location):
                 form.latitude = location.coordinate.latitude
                 form.longitude = location.coordinate.longitude
+                // the altitude comes with the fix, when GPS has one and the check has none
+                if location.verticalAccuracy >= 0, installCheck.altitudeM == nil {
+                    var c = installCheck; c.altitudeM = (location.altitude).rounded(); installCheck = c
+                }
                 try? context.save()
             case .failure(let error):
                 locationError = error.localizedDescription
@@ -371,6 +396,9 @@ struct SurveyEditor: View {
 
     private func finish() {
         guard missing.isEmpty else { showMissing = true; return }
+        // ZNSHINE's manual: a block stops the save, a warn needs the engineer's reason
+        guard installStops.isEmpty else { showInstallStops = true; return }
+        stampInstallCheck()
         if form.recommendedKW <= 0 { form.recommendedKW = SurveyOptions.autoKW(form) }
         if form.isDraft {
             form.isDraft = false

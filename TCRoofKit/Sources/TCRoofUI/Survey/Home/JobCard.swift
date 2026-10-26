@@ -192,7 +192,7 @@ struct JobCard: View {
         }
     }
 
-    /// `แผน p% · จริง a%`, `ส่งมอบ dd/mm` and the contractor.
+    /// `แผน p% | จริง a%`, `ส่งมอบ dd/mm` and the contractor.
     private func phaseChips(_ s: InstallStationSummary) -> some View {
         let actual = "จริง \(Int(s.actual.rounded()))%"
         let due = s.dueDate.map { d -> String in
@@ -200,7 +200,7 @@ struct JobCard: View {
             return String(format: "ส่งมอบ %02d/%02d", c.day ?? 0, c.month ?? 0)
         }
         return FlowLayout(spacing: 4, lineSpacing: 4) {
-            phaseChip(s.plan.map { "แผน \(Int($0.rounded()))% · " + actual } ?? actual, ink: Theme.navy)
+            phaseChip(s.plan.map { "แผน \(Int($0.rounded()))% | " + actual } ?? actual, ink: Theme.navy)
             if let due { phaseChip(due, ink: Theme.inkMuted) }
             if !s.contractor.isEmpty { phaseChip(s.contractor, ink: Theme.inkMuted) }
         }
@@ -240,13 +240,13 @@ struct JobCard: View {
         guard !job.projectName.isEmpty else { return "แตะเพื่อกรอกข้อมูลโครงการใน A1" }
         let kw = job.values.text("capacity").trimmingCharacters(in: .whitespaces)
         let parts = [job.values.text("address").trimmingCharacters(in: .whitespacesAndNewlines), kw.isEmpty ? "" : kw + " kWp"].filter { !$0.isEmpty }
-        return parts.isEmpty ? "—" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "—" : parts.joined(separator: " | ")
     }
 
     var dateLine: String {
         let d = job.values.text("date")
         let time = job.updated.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
-        return d.isEmpty ? time : ISODate.thai(d) + " · " + time
+        return d.isEmpty ? time : ISODate.thai(d) + " | " + time
     }
 
     func color(_ s: SurveyStep.Status) -> Color {

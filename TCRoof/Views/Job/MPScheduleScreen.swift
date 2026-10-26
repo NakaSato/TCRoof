@@ -40,7 +40,7 @@ struct MPScheduleScreen: View {
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
-        .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""))
+        .navigationTitle("แผนงาน MP" + (job.mpNumber.map { " | MP \($0)" } ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if permissions.can(.assistantUse), job.scheduleInput != nil {
@@ -62,7 +62,7 @@ struct MPScheduleScreen: View {
                 }
             }
         }
-        .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " · MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
+        .tcPadNavBar("แผนงาน MP" + (job.mpNumber.map { " | MP \($0)" } ?? ""), trail: ["หน้าหลัก", job.code], current: "แผนงาน MP") {
             HStack(spacing: 12) {
                 if permissions.can(.assistantUse), job.scheduleInput != nil {
                     TCButton("ผู้ช่วย", systemImage: "sparkles", kind: .secondary) { assistant = true }
@@ -111,7 +111,7 @@ struct MPScheduleScreen: View {
                 workbook.apply(.init(data: data, name: "mp-import.xlsx", imported: imported), to: job, context: context)
             }
             if mode == "export", let original = job.scheduleWorkbook, let input = job.scheduleInput,
-               let out = try? MPWorkbook.export(original, input: input, actual: job.scheduleActual) {
+               let out = try? MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks) {
                 try? out.data.write(to: docs.appendingPathComponent("mp-export.xlsx"))
             }
         }
@@ -123,7 +123,7 @@ struct MPScheduleScreen: View {
             VStack(spacing: 16) {
                 topBar(m)
                 HStack(alignment: .top, spacing: 16) {
-                    MPGantt(model: m, onRow: { showProgress = true }).cardStyle(padding: 0)
+                    MPGantt(model: m, onRow: { if permissions.can(.mpProgress, on: job.access) { showProgress = true } }).cardStyle(padding: 0)
                     ScrollView { report(m) }.frame(width: 380)
                 }
             }
@@ -133,7 +133,7 @@ struct MPScheduleScreen: View {
                 VStack(spacing: 16) {
                     topBar(m)
                     report(m)
-                    MPGantt(model: m, onRow: { showProgress = true }).frame(height: 760).cardStyle(padding: 0)
+                    MPGantt(model: m, onRow: { if permissions.can(.mpProgress, on: job.access) { showProgress = true } }).frame(height: 760).cardStyle(padding: 0)
                 }
                 .padding(16)
             }
@@ -435,7 +435,7 @@ struct MPWeeklyReport: View {
     var body: some View {
         let st = model.status
         VStack(alignment: .leading, spacing: 12) {
-            Text("Weekly Update · ถึงสัปดาห์ \(model.week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            Text("Weekly Update | ถึงสัปดาห์ \(model.week.thaiShort)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมทั้งสถานี", planned: st.planned, actual: st.actual, bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: st.plannedByPart[p] ?? 0, actual: st.actualByPart[p] ?? 0)
@@ -461,7 +461,7 @@ struct MPMonthlyReport: View {
         let c = cal.dateComponents([.year, .month], from: monday)
         let m = MasterSchedule.month(plan: model.plan, actual: model.actual, year: c.year ?? 0, month: c.month ?? 0)
         VStack(alignment: .leading, spacing: 12) {
-            Text("Monthly Update · \(monday.thaiMonthYear)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
+            Text("Monthly Update | \(monday.thaiMonthYear)").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
             MPReportRow(title: "รวมเดือนนี้", planned: m.planned.values.reduce(0, +), actual: m.actual.values.reduce(0, +), bold: true)
             ForEach(MasterSchedule.Part.allCases, id: \.self) { p in
                 MPReportRow(title: p.reportTitle, planned: m.planned[p] ?? 0, actual: m.actual[p] ?? 0)
@@ -507,7 +507,10 @@ struct MPProgressSheet: View {
     let week: Date
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @State private var percent: [MasterSchedule.Task: Double] = [:]
+    /// Construction tasks this save brings to 100 % without their install photos, asked about before saving.
+    @State private var missingPhotos: [MPMissingPhotos] = []
     @State private var started: [MasterSchedule.Task: Date] = [:]
     @State private var finished: [MasterSchedule.Task: Date] = [:]
     /// Finishes this sheet filled in at 100%, taken off again if the task drops below it.
@@ -544,19 +547,22 @@ struct MPProgressSheet: View {
     var body: some View {
         NavigationStack {
             PadForm(maxWidth: 720) {
-                PadSection("สัปดาห์ \(week.thaiShort) · % สะสมของแต่ละงาน") {
+                PadSection("สัปดาห์ \(week.thaiShort) | % สะสมของแต่ละงาน") {
                     if tasks.isEmpty { Text("ไม่มีงานตามแผนหรืองานค้างในสัปดาห์นี้").foregroundStyle(Theme.muted) }
                     ForEach(tasks) { t in row(t) }
                 } footer: {
-                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้ · วันเริ่มจริงและวันเสร็จจริงใส่หรือไม่ใส่ก็ได้")
+                    Text("ส่วนที่เพิ่มหรือลดจะบันทึกลงสัปดาห์นี้ | วันเริ่มจริงและวันเสร็จจริงใส่หรือไม่ใส่ก็ได้")
                 }
             }
             .navigationTitle("บันทึกความก้าวหน้า")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("บันทึก", action: save) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("บันทึก", action: trySave).disabled(!permissions.can(.mpProgress, on: job.access))
+                }
             }
+            .mpMissingPhotos($missingPhotos, onSave: save)
         }
     }
 
@@ -576,6 +582,7 @@ struct MPProgressSheet: View {
                 Text("แผน \(s.thaiShort) – \(e.thaiShort)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
             }
             if let c = job.scheduleActual.lastConfirmation(t.task) { MPAssistantMark(confirmation: c) }
+            if let day = job.scheduleActual.fromDocuments[t.task.rawValue] { MPDocumentsMark(day: day) }
             dates(t)
         }
         .padding(.vertical, 4)
@@ -619,7 +626,16 @@ struct MPProgressSheet: View {
         }
     }
 
+    /// Saves, unless a construction task reaches 100 % here while its install photos are missing: then the warning asks
+    /// first (`บันทึกทั้งที่ยังไม่มีรูป` saves anyway).
+    private func trySave() {
+        let raised = tasks.filter { (percent[$0.task] ?? 0) >= 99.95 && (start[$0.task] ?? 0) < 99.95 }.map(\.task)
+        missingPhotos = MPMissingPhotos.list(raised, job: job)
+        if missingPhotos.isEmpty { save() }
+    }
+
     private func save() {
+        guard permissions.can(.mpProgress, on: job.access) else { return }
         var a = job.scheduleActual
         let cal = MasterSchedule.calendar
         func same(_ x: Date?, _ y: Date?) -> Bool { x.map { cal.startOfDay(for: $0) } == y.map { cal.startOfDay(for: $0) } }

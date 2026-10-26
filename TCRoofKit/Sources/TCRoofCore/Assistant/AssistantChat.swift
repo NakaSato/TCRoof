@@ -27,6 +27,9 @@ public enum Assistant {
         public var content: String?
         public var toolCalls: [ToolCall]?
         public var toolCallID: String?
+        /// The provider's own content blocks of an assistant reply, sent back as they came (Claude's `thinking` blocks
+        /// must be). Kept on the device only: never encoded, so OpenAI-style bodies and the function never see it.
+        public var providerBlocks: JSONValue? = nil
 
         enum CodingKeys: String, CodingKey {
             case role, content
@@ -57,13 +60,22 @@ public enum Assistant {
         public var messages: [Message]
         public var tools: [JSONValue]
         public init(messages: [Message], tools: [JSONValue]) { self.messages = messages; self.tools = tools }
+
+        /// It starts a new question (ends with the person's message), not a tool round of one: what the daily limit
+        /// counts.
+        public var isNewQuestion: Bool { messages.last?.role == .user }
     }
 
     /// What the function returns: the model's message and the person's requests left today.
     public struct Reply: Codable, Equatable, Sendable {
         public var message: Message
         public var remainingToday: Int?
-        public init(message: Message, remainingToday: Int? = nil) { self.message = message; self.remainingToday = remainingToday }
+        /// Who answered, `Claude (Anthropic) | claude-opus-5-5`, with ` | สำรอง` when the backup provider did; nil
+        /// from the Cloud Function.
+        public var servedBy: String?
+        public init(message: Message, remainingToday: Int? = nil, servedBy: String? = nil) {
+            self.message = message; self.remainingToday = remainingToday; self.servedBy = servedBy
+        }
     }
 
     /// Sends one request; the app's is the Cloud Function, tests stub it.

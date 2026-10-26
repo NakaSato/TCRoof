@@ -1,13 +1,13 @@
 # D1 ถังน้ำใส — tank drawing and survey flow, Swift feature spec (iPad + iPhone)
 
-**Status:** Partly built (2026-10-17). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังแผงมากสุด`, panel edits, three checks), the plan in the PDF and the Excel plan frame, and `ส่งออก DXF`. Not built: the shade simulation (old step 4), the designed photo step (sub-step 4 still shows the form's photo group), undo, the tank sections (รูปตัด), the layout and table section in the PDF, and the interaction draft's tool modes (§4.3).
+**Status:** Mostly built (2026-10-19; round tanks 2026-10-21, §1a). Built: the D1 page with four sub-steps, sub-step 1 `ขนาดถัง` (presets, span editor, round tanks by diameter, compass sheet), sub-step 2 `สิ่งกีดขวาง · เงาบัง` (standard points checked on site, drag, distances, add, row, bulk confirm, `เริ่มจากแบบมาตรฐาน กปภ.`, the shading questions with the object's height and distance), sub-step 3 `จัดแผง` (`TankLayout`, offsets, `หาผังที่ได้พลังงานมากที่สุด`, panel edits, three checks, the energy tiles, the shade simulation `TankShade`, the true-south comparison), sub-step 4's designed photo groups (`บังคับ {k}/5`), undo (`TankUndo`: `↶` / `↷`, ⌘Z), the tank sections and the row section (`TankDrawings`, also in the B1-C3 sheet), the layout, shade and sections in the PDF, the layout lines in Excel, and `ส่งออก DXF`. Not built: `บันทึกจาก GPS`, iPhone shake to undo, the drag loupe, the interaction draft's tool modes (§4.3), and in the layout the inverter / DC-AC line, roof load and walkway checks and generated notes. The web backup still writes obstacles as label / x / y / w / h only. Decided 2026-10-19: the roof photos (overview and surface, `minPhotos: 2`) and the cable route are required (5 required fields with the aerial, walls and obstacles; old jobs without them show the missing photos), the four wall slots stay, the shade photo stays optional; the shade recommendation goes to E1 when objects cost 1 % or more.
 **Design:** the TCRoof canvas D1 pages (`iPadD1` ขนาดถัง, `iPadD1Obs` สิ่งกีดขวาง, `iPadD1Layout` จัดแผง, `iPadD1Shade` เงาบัง, `iPadD1Photo` ภาพถ่าย) and the folders [`docs/ui/survey-d1-size`](../ui/survey-d1-size) (iPad), [`survey-d1-size-iphone`](../ui/survey-d1-size-iphone), [`survey-d1-obstacles-iphone`](../ui/survey-d1-obstacles-iphone), [`survey-d1-layout-iphone`](../ui/survey-d1-layout-iphone). The app follows the folders where they differ from the canvas.
 **Design rules and drawing standard:** [`auto-drawing.md`](auto-drawing.md) §5–§7
 **Types and code detail of the first draft:** [`auto-drawing.md`](auto-drawing.md) §8 Tank, §9 UI, §10 PDF, §11 tests (the app did not build those types; see §2)
 **Mounting layout algorithm (sub-step 3):** [`tank-mounting-layout.md`](tank-mounting-layout.md). This spec gives only the D1 behaviour.
 **Standard designs:** [`standard-designs.md`](standard-designs.md) (`TCRoofCore/TankDesign.swift`)
 **Older visual reference:** `img/tank_pwa.png` (64 × 40), `img/tank_40x40.png` (40 × 40), [`prototype/tank-layout.html`](prototype/tank-layout.html) (the interaction prototype; demo `img/tank_demo.mp4`, 24 steps, regenerated with `node prototype/tank-demo.js <outDir>` in Playwright). Still valid for the plan's drawing style.
-**Code:** `TCRoofCore/Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`, `TankLayout.swift`, `TankDXF.swift`; `TCRoofUI/Survey/Pages/Tank/`
+**Code:** `TCRoofCore/Tank.swift`, `TankPlan.swift`, `TankPoints.swift`, `TankDesign.swift`, `TankStandard.swift`, `TankLayout.swift`, `TankLayout+Energy.swift`, `TankLayout+TrueSouth.swift`, `TankShade.swift`, `TankDrawings.swift`, `TankPhotos.swift`, `TankDXF.swift`; `TCRoofUI/Survey/Pages/Tank/`
 **Targets:** `TCRoofKit` in the TCRoof app, iOS 17+, iPad and iPhone
 **New dependencies:** none
 
@@ -16,7 +16,7 @@
 | Draft | Now (D1 as built) |
 |---|---|
 | tank size from `spansX` / `spansY` typed as `16@4` | pick a **preset** (40 × 40, 64 × 40, 30 × 30, 20 × 20), which writes the spans, or **`+ กำหนดขนาดเอง`**, which opens the span editor on the plan. The spans stay the only stored size. |
-| round tank (`tankDiameter`) in the form | not in D1 |
+| round tank (`tankDiameter`) in the form | in D1 since 2026-10-21: `รูปทรงถัง` สี่เหลี่ยม / ทรงกลม in sub-step 1 (§1a) |
 | `tankType` (ชนิดถัง) | still asked and required: completion, the PDF and Excel read it |
 | `tankAboveGround` always asked | `tankExposed` (`ส่วนพ้นดิน`), typed only when `tankPos` = กึ่งฝัง; บนดิน = height, ฝังดิน = 0 |
 | `surface` free text | `surface` picked from คอนกรีต / คอนกรีตเคลือบกันซึม / ดินปลูกหญ้า / หินกรวด, or `อื่นๆ` typed |
@@ -93,7 +93,7 @@ The plan card switches between `บนหลังคา · {n} จุด` and `
 - **Seeding:** on first open, a tank with a size and no obstacles gets the generic standard layout scaled to its size: V1–V10 and H1–H5, unchecked (`TankPoints.layout`, `seed`).
 - **Standard designs:** `เริ่มจากแบบมาตรฐาน กปภ.` (or `เปลี่ยนแบบมาตรฐาน กปภ.`) lists the designs, closest to the measured size first, and replaces the spans and every point with the chosen sheet's vents, hatches, ladders and pipes (`แทนขนาดช่วงเสาและจุดบนหลังคาทั้งหมดด้วยแบบที่เลือก จุดที่ตรวจแล้วต้องตรวจใหม่`). The card then shows `แบบ: {design}` and how the site differs. See [`standard-designs.md`](standard-designs.md).
 - **Status:** `""` ยังไม่ยืนยัน (drawn dashed blue), `ok` มีตรงแบบ, `absent` ไม่มีจริง (dashed red on the card's plan; left out of the drawings, the layout and the overlap check). `ย้ายแล้ว` is derived: a standard point away from its standard position.
-- **Sizes on the plans:** vent 0.60 m, hatch 0.80 m (`ventSize`, `hatchSize`; open question 3).
+- **Sizes on the plans:** vent 1.45 m, hatch 1.15 m, as the กปภ. sheets (`ventSize`, `hatchSize`; open question 3, answered 2026-10-20). Points keep the size they were made with.
 - **Legend:** ยังไม่ยืนยัน / ยืนยันแล้ว / ไม่มีจริง / จุดที่เลือก (orange 3 pt border).
 
 Card for the selected point (`จุด {label} · {kind}`, chip `ตามแบบ` / `ย้ายแล้ว` / `เพิ่มหน้างาน`):
@@ -108,7 +108,7 @@ Card for the selected point (`จุด {label} · {kind}`, chip `ตามแ�
   - `ลบจุดนี้`: only points added on site; a standard point is marked `ไม่มีจริง` instead.
 - `ยืนยันที่เหลือ {n} จุดว่าตรงแบบ`: marks every unchecked point `ok` together, after a question. They are kept apart as `bulk`, and the report prints them as `ยืนยันแบบรวม`.
 
-**Shading.** The `เงาบัง` view shows the section's form questions: `shade` (ไม่มี / มี), and when shaded `shadeFrom`, `shadeDir` and `shadeNote`. The design's simulation is not built (§1 old step 4 below).
+**Shading.** The `เงาบัง` view shows the section's form questions: `shade` (ไม่มี / มี), and when shaded `shadeFrom`, `shadeDir` and `shadeNote`. The simulation itself is sub-step 3's card 4, `เงาบัง · จำลองทั้งปี` (`TankShade`, `TankPageWide+Layout.swift`; §1 old step 4 below).
 
 ### Sub-step 3 — จัดแผง
 
@@ -116,7 +116,7 @@ The sub-step places the PV structure on the roof automatically (`TankLayout`). T
 
 | Rule | Value |
 |---|---|
-| module | 2.278 × 1.134 m, 550 W (the catalogue's default), portrait, 2 up the slope, 0.02 m gaps |
+| module | 2.279 × 1.134 m, 570 W (p570, the catalogue default, through the team standard `TankStandard.builtIn`), portrait, 2 up the slope, 0.02 m gaps |
 | posts | front 1.00 m and back 2.00 m high, 2.80 m apart; pairs 2.70 m along the table; 0.40 m rail overhang |
 | row pitch | 5.50 m (2.70 m from a back post to the next front post) |
 | edge setback | 1.00 m |
@@ -125,37 +125,77 @@ The sub-step places the PV structure on the roof automatically (`TankLayout`). T
 | tables | each run of ≥ 2 free columns |
 | facing | rows face the wall nearest to south, from `tankAzimuth` (the bottom wall without one) |
 
-- **Cards:** `การวางผังแผง` (aside `ตามแบบ B1-C3 · เอียง {tilt}°`) with `จัดแผงใหม่` and `หาผังแผงมากสุด`; `สรุป · วัสดุโครงสร้าง` (panels, kWp, rows · tables, posts, footings, rails ×4, braces…); `ตรวจสอบก่อนไปต่อ`: `ใต้คานเหนือปล่อง (แผงทับได้)`, `ขอบถังถึงขอบแผง ≥ 1.00 ม.`, `ขาโครงสร้างไม่ชนสิ่งกีดขวาง`.
-- **Modes on the plan:** `เลื่อนผัง` drags the whole layout (5 cm snap, setback kept); `แก้แผง` taps a panel on or off and long-presses a table to remove it.
-- `หาผังแผงมากสุด` tries every offset on the 5 cm grid: stage 1 counts modules without posts, stage 2 lays out the ten best with posts. The most modules wins, then the smallest offset. It runs off the main actor with a spinner.
-- `จัดแผงใหม่` and `หาผังแผงมากสุด` ask first (`ล้างการแก้แผงที่ทำไว้?`) when panels were edited by hand.
-- The offsets, the turn and the panels switched off are stored (`tankPvOrient`, `tankPvOffX`, `tankPvOffY`, `tankPvOff`), and `panelsBefore` follows the panel count.
-- `ดูแบบ B1-C3` opens a placeholder: `ยังไม่มีไฟล์แบบในแอป`.
-- Not built from the design: energy per year, kWh/kWp, front-row shade %, the inverter / DC-AC line, roof load and walkway checks, generated notes, the table section drawing.
+- **Cards:** 1 `การวางผังแผง` (aside `ตามแบบ B1-C3 · เอียง {tilt}°`) with `จัดแผงใหม่` and `หาผังที่ได้พลังงานมากที่สุด`; 2 `สรุป · วัสดุโครงสร้าง` (panels, kWp, rows · tables, `ระยะห่างแถว`, posts, footings, rails ×4, braces…, and the tiles `MWh/ปี` · `kWh/kWp·ปี` · `เงาแถวหน้า`); 3 `ตรวจสอบก่อนไปต่อ`: `ใต้คานเหนือปล่อง (แผงทับได้)`, `ขอบถังถึงขอบแผง ≥ 1.00 ม.`, `ขาโครงสร้างไม่ชนสิ่งกีดขวาง`; 4 `เงาบัง · จำลองทั้งปี` (`TankShade`).
+- **Modes on the plan:** `เลื่อนผัง` drags the whole layout (2.5 cm snap, `TankPoints.grid`, setback kept); `แก้แผง` taps a panel on or off and long-presses a table to remove it.
+- `หาผังที่ได้พลังงานมากที่สุด` runs `TankLayout.bestEnergy` (`TankLayout+Energy.swift`): it tries row gaps from the standard 2.70 m up to 4.70 m in 0.20 m steps; per gap `best` finds the offsets with the most modules on the 2.5 cm grid (stage 1 counts modules without posts, stage 2 lays out the ten best with posts; then the smallest offset); then the gap with the most MWh a year after the shade of the row in front and of the objects wins (a tie keeps the narrower gap). It runs off the main actor with a spinner.
+- `จัดแผงใหม่` and `หาผังที่ได้พลังงานมากที่สุด` ask first (`ล้างการแก้แผงที่ทำไว้?`) when panels were edited by hand.
+- The offsets, the turn, the panels switched off, the row gap and the standard's copy are stored (`tankPvOrient`, `tankPvOffX`, `tankPvOffY`, `tankPvOff`, `tankPvGap`, `tankPvStd`), and `panelsBefore` follows the panel count.
+- `ดูแบบ B1-C3` opens `drawingSheet`: the table's side section (`TankDrawings.tableSection`), its front elevation (`tableFront`) and the tank sections 1–1 / 2–2 (`section`).
+- Not built from the design: the inverter / DC-AC line, roof load and walkway checks, generated notes.
 
 ### Sub-step 4 — ภาพถ่าย
 
-Built: the form's `ภาพถ่าย` group: `obstPhotos` (max 5; the first goes in the report's size frame), `aerialPhoto`, `sidePhotos` (max 3). All three are required, so the tab reads `บังคับ {k}/3`.
+Built: the form's `ภาพถ่าย` group: `obstPhotos` (max 5; the first goes in the report's size frame), `aerialPhoto`, `sidePhotos` (max 4), `roofPhotos` (`minPhotos: 2`), `cablePhoto`, and the optional `shadePhoto`. Five are required, so the tab reads `บังคับ {k}/5` (`Schema.swift`).
 
-Designed, not built: the photo groups below, with `บังคับ {k}/9` and a red frame on an empty required slot.
+Built 2026-10-19: the groups below in this order, each titled with บังคับ / ไม่บังคับ; `sidePhotos` takes 4; of the three new fields `roofPhotos` and `cablePhoto` are required and `shadePhoto` is the only optional one; the PDF prints them after the side photos. A tap on a photo opens `ภาพที่เลือก` (`PhotoDetailSheet`, through the `photoDetails` environment): when, where (with a small map) and the camera's facing, `หมายเหตุ`, `ถ่ายใหม่`, `ลบภาพ`, and for obstacle photos `ผูกกับจุด` (the tank's points not marked absent, `บันได`, or a typed range of one kind such as `V1–V10`: `TankPoints.tag`). The tag and note (`Photo.tag`, `Photo.note`, optional) show on the photo and under it in the PDF.
 
 | Group | Slots | Field |
 |---|---|---|
 | ภาพมุมสูง (โดรน หรือ Google Maps) | 1 required | `aerialPhoto` (existing) |
-| ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) | 4 required: N / S / E / W | `sidePhotos` (existing, max to be raised from 3 to 4, labelled by direction) |
+| ผนังถัง 4 ทิศ (ใช้วางแนวรางสายไฟ) | 4 required: N / S / E / W | `sidePhotos` (existing, max 4, labelled by direction) |
 | หลังคาถัง (ภาพรวม + ผิวหลังคา) | 2 required | `roofPhotos` (new) |
-| เงาบัง (ถ่ายจากกลางหลังคา) | 1 required | `shadePhoto` (new) |
+| เงาบัง (ถ่ายจากกลางหลังคา) | 1 optional | `shadePhoto` (new) |
 | ทางเดินสายไฟ (จากถังถึงห้อง Inverter) | 1 required | `cablePhoto` (new) |
 | สิ่งกีดขวาง (ไม่บังคับ · ผูกรหัสได้) | any | `obstPhotos` (existing). Each photo can be tagged with an opening ID (`V9`, `H1`, a range `V1–V10`, or บันได). |
 
-- **Selecting a photo** shows `ภาพที่เลือก`: name, time and GPS, `หมายเหตุ`, `ถ่ายใหม่`, `ลบภาพ`, and `จุดถ่ายภาพ` (small map from the photo's GPS, `บันทึกจาก GPS`).
-- The new photo fields stay optional until the team agrees to make them required (open question 4).
+- **Selecting a photo** shows `ภาพที่เลือก`: name, time and GPS, `หมายเหตุ`, `ถ่ายใหม่`, `ลบภาพ`, and `จุดถ่ายภาพ` (small map from the photo's GPS; `บันทึกจาก GPS` is not built).
+- Decided 2026-10-19: the roof and cable photos are required, the shade photo optional (open question 4).
 
-### Old step 4 — เงาบัง simulation (designed, not built)
+### Old step 4 — เงาบัง simulation (built 2026-10-19 in sub-step 3)
+
+Built as sub-step 3's card `เงาบัง · จำลองทั้งปี` and the PDF's `เงาบัง (จำลองทั้งปี)` (`TCRoofCore/TankShade.swift`,
+`TankDrawings.heatMap`): over `SolarModel`'s clear-sky year, a panel of the stored layout loses its direct sun (diffuse
+kept) to the row in front (tank-mounting-layout.md §3a step 4 with the portrait-2 rule; the front row never) or to the
+objects beside the tank: each direction in `shadeDir` is a long object (the whole side, ค่าสมมติ) `shadeHeight` above the
+ground (new, optional) and `shadeDistance` from the wall (new, optional), taken against each panel's centre height
+above the roof plus the tank's exposed part. The card shows `เงาแถวหน้า %`, `เงาสิ่งบัง %`, `สูญเสียรวม %` and
+`MWh/ปี` lost to the objects, one recommendation (the height to cut to for under 1 % loss, in 0.5 m steps), a moment
+on the plan (21 มี.ค. / มิ.ย. / ธ.ค. at 09:00 and 15:00, the shaded panels orange) and the month × hour map. The design below is the reference.
 
 **Left: `จำลองเงาบัง`.** Shadow snapshots on the plan for 21 มี.ค., 21 มิ.ย. and 21 ธ.ค. at two times each, and a heat map `สัดส่วนแผงที่โดนเงา รายเดือน × รายชั่วโมง` (legend ไม่มีเงา / เงา 25% / ≥ 50% / กลางคืน).
 
+**E1 (built 2026-10-19):** `RemarkSuggestions.shade` quotes the simulation (`ตัดแต่งต้นไม้ด้านใต้ ถังน้ำใส 1 ให้สูงไม่เกิน 6 ม. (เงาทำให้เสีย 3.2%, 4.1 MWh/ปี)`) when a layout and the object's height are there and the objects cost 1 % or more, and leaves the line out below that; without them it keeps the older line.
+
 **Right: `สิ่งที่บังแดด`.** The existing `shade`, `shadeFrom`, `shadeDir`, plus new `shadeHeight` and `shadeDistance` (`ห่างผนังถัง (ม.) *`) when shaded. Results: `เงาแถวหน้า %`, `เงาต้นไม้ %`, `สูญเสียรวม %`, `MWh/ปี ที่เสียจากต้นไม้`, and one recommendation line recorded as a proposal for E1. `shadeNote` stays; old jobs show their note until height and distance are entered.
+
+## 1a. Round tanks (first version, built 2026-10-21)
+
+- **Data:** `tankShape` = `round` and `tankDiameter` (m, at least 2 m), both optional and hidden; absent `tankShape` is
+  the rectangle, so every older job reads as before. `Tank.setDiameter` writes the legacy spans as one span of D each way
+  (the circle's bounding square), so the schema's completion, `Progress`, the site plan and every reader of the spans keep
+  working; `Tank.spans` takes the diameter whatever is stored. `tankHeight` and the setting fields are unchanged.
+- **Sub-step 1:** `รูปทรงถัง` สี่เหลี่ยม / ทรงกลม (iPad: two buttons as the position row; iPhone: a segmented track).
+  Round shows `เส้นผ่านศูนย์กลาง (ม.)` (a stepper, 0.50 m steps) instead of the size menu; the presets stay rectangular.
+  Going round takes the rectangle's narrower side the first time and drops a standard design; points that were only
+  seeded are cleared so sub-step 2 seeds the round layout. Size label and caption `Ø 30 ม.` (`Tank.sizeText`).
+- **Summary:** `πD²/4` and `πD²/4·H`, e.g. `Ø 10.00 × 5.00 ม. · หลังคา 79 ม² · ปริมาตรภายนอกโดยประมาณ 393 ม³`.
+- **Plan** (`TankPlan+Round`): a double rim, the two centre lines, `Ø 30.00` under the circle, the level tags, the
+  openings, ladders and pipes outside the rim on their radius, the N arrow and `แปลนหลังคาถังน้ำใสทรงกลม Ø 30 ม.`; the
+  printed plan adds the section marks on the centre lines, the summary and the note (no beams). The frame is the bounding
+  square, so the PDF, Excel's picture (`Drawings.plan`), the DXF (the rim as `CIRCLE`s on `OUTLINE`) and the layout use the
+  same tank metres. The iPhone plan is the rim, centre lines and diameter.
+- **Openings:** seeded V1 at the centre, V2–V7 on a ring at 0.55 R every 60°, H1–H3 at 0.85 R at 30° / 150° / 270°
+  (`TankPoints.roundLayout`), pulled inside on a small tank. Moves, drops, adds and rows keep every opening inside the
+  circle (`TankPoints.Circle`); ladders and pipes go to the rim and slide along it. The live check's `อยู่นอกถัง` tests the
+  circle. The distances read `ห่างขอบซ้ายสุด` / `ห่างขอบบนสุด` (from the bounding square). `เริ่มจากแบบมาตรฐาน กปภ.`
+  and `บันทึกเป็นแบบมาตรฐาน` are hidden.
+- **Sections:** 1–1 and 2–2 cut through the centre across D (`ตัดผ่านศูนย์กลาง · Ø 24 ม.`), with no inner columns.
+- **Layout:** `TankLayout.circle`: a module column is placed only when both its modules are inside the circle less the
+  1.00 m setback, footings stay inside the circle, and the edge check measures to the rim. Rows, posts, hatches, vents,
+  `หาผังแผงมากสุด` (with the rows' offset over a whole pitch), the energy search, the shade (objects beside the rim) and the
+  true-south comparison all run on it. Rows still follow the plan's sides facing the one nearest south.
+- **Excel:** NO.224 has no size cell, so nothing changes there besides the plan picture; the one-page summary's line
+  reads `Ø 30 ม.`.
 
 ## 2. Pipeline (TCRoofCore, no UIKit)
 
@@ -171,7 +211,7 @@ Drawings.plan(tank: true) ─► TankPlan.sketch, for the PDF and the Excel plan
 
 - A drawing is `nil` without spans; the plan card then shows an empty frame and `เลือกขนาดถัง`.
 - `TankLayout.current` caches its last answer, as one render asks for it from several cards.
-- The first draft's `TankInput` / `TankGeometry` / `TankDrawings` / `MountLayout` / `ShadeModel` (`auto-drawing.md` §8) were not built.
+- `TankDrawings` exists with its own API (`layoutPlan`, `tableSection`, `tableFront`, `section(_:across:)`, `heatMap`, `assumptions`), not the draft's. The first draft's `TankInput` / `TankGeometry` / `MountLayout` / `ShadeModel` (`auto-drawing.md` §8) were not built.
 
 ## 3. iPhone (compact width)
 
@@ -186,7 +226,7 @@ Drawings.plan(tank: true) ─► TankPlan.sketch, for the PDF and the Excel plan
 
 - **Tap** a point (44 pt target on its 12 pt symbol) to select it.
 - **Drag** moves it after 4 pt of travel (`TankPoints.drop`):
-  - The top-left corner snaps to 0.05 m and stays inside the tank.
+  - The top-left corner snaps to 0.025 m (`TankPoints.grid`) and stays inside the tank.
   - Within 0.30 m of another point's column or row (centre line), it takes it; a teal guide shows that line.
   - A ladder or a pipe slides along its wall only.
   - While a point is selected or dragged, a teal guide shows the points on its row / column and a tag its distance from the left wall.
@@ -195,7 +235,7 @@ Drawings.plan(tank: true) ─► TankPlan.sketch, for the PDF and the Excel plan
 
 ### 4.2 Layout plan (sub-step 3, built)
 
-- `เลื่อนผัง`: drag the whole layout; the offset snaps to 5 cm and keeps the setback.
+- `เลื่อนผัง`: drag the whole layout; the offset snaps to 2.5 cm and keeps the setback.
 - `แก้แผง`: tap toggles the panel under the finger (or the nearest within 10 pt); a long press removes its table.
 
 ### 4.3 From the interaction draft (prototype, not built)
@@ -206,27 +246,28 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 |---|---|---|---|
 | ![](img/tank_demo_002.png) | ![](img/tank_demo_008.png) | ![](img/tank_demo_011.png) | ![](img/tank_demo_022.png) |
 
-- **Undo** (designed in D1 too: `↶ เลิกทำ`, last 30 steps): `UndoManager` with snapshots of the module's values. A whole drag is **one** step (keep the values at touch-down; register only if it moved). Typing a number is one step per field focus. Undo clears the selection. iPad ⌘Z / ⇧⌘Z; iPhone shake.
-- **Loupe** (D1 design): while dragging, a loupe follows the finger with `ซ้าย 16.80 · บน 16.40 ม.`; on iPhone it sits above the finger. The app shows the guide and distance tag instead (§4.1).
+- **Undo** (built as `TankUndo`, `TankPageWide+Undo.swift`: `↶ เลิกทำ` / `↷ ทำซ้ำ`): snapshots of the tank's values, the last 30; changes under 0.8 s apart are one step, so a drag or a run of typing undoes at once. Undo clears the selection. iPad ⌘Z / ⇧⌘Z; no redo button on iPhone. iPhone shake is not built.
+- **Loupe** (D1 design, not built): while dragging, a loupe follows the finger with `ซ้าย 16.80 · บน 16.40 ม.`; on iPhone it sits above the finger. The app shows the guide and distance tag instead (§4.1).
 - **Vent by bay:** a tap finds the bay **from the coordinates** (binary search over the span edges), never by hit-testing drawn shapes: leader lines and symbols lie on top of bays and blocked taps in the first prototype. A bay under 28 pt on screen zooms in first, to at least 32 pt, with a one-time hint `ช่องเล็กเกินไปสำหรับนิ้ว จึงซูมเข้าให้ก่อน แตะอีกครั้งเพื่อวางช่องระบาย`.
 - **Wall tap:** accept a tap within 18 pt of the nearest wall (up to twice that just outside it); `along` is rounded to 0.05 m; a menu titled `ผนังบน · ระยะ 10.15 ม.` offers `+ ช่องลงถัง`, `+ บันไดขึ้นถัง`, `+ ท่อผ่านผนัง`, `ยกเลิก`.
 - **Zoom about the finger:** new scroll = (old scroll + p) × new / old − p. Double tap toggles fit ↔ 2×. iPad keys: ⌫ deletes the selection, Esc closes the menu then clears the selection, ⌘+ / ⌘− / ⌘0.
-- **Sections:** 1–1 cuts at half of Σ spansX and shows the tank across Σ spansY; 2–2 cuts at half of Σ spansY across Σ spansX. Ground line: at the base above ground; at the roof plus 0.50 m soil cover (assumed) when buried; in between at H − exposed with a `พ้นดิน x.xx` dimension. Wall and slab 0.30 m (assumed), columns at inner grid lines, soil hatched. Footer `ปริมาตรภายนอกโดยประมาณ … ม³`. No height: `ใส่ความสูงถังเพื่อวาดรูปตัด`.
+- **Sections** (built: `TankDrawings.section(values, across:)`, in the B1-C3 sheet and the PDF): 1–1 cuts at half of Σ spansX and shows the tank across Σ spansY; 2–2 cuts at half of Σ spansY across Σ spansX. Ground line: at the base above ground; at the roof plus 0.50 m soil cover (assumed) when buried; in between at H − exposed with a `พ้นดิน x.xx` dimension. Wall and slab 0.30 m (assumed), columns at inner grid lines, soil hatched. Footer `ปริมาตรภายนอกโดยประมาณ … ม³`. No height: `ใส่ความสูงถังเพื่อวาดรูปตัด`.
 - **Plan labels on the กปภ. sheet:** right-side labels stack in a column 80 pt right of the wall, left-side ones 70 pt left, at least 17 pt apart; the same text within 16 pt shares one label with two leaders; one leader per row of vents; bays drawn as dashed rectangles inset by half a beam (0.15 m).
 - **Messages are never modal:** red for warnings, blue for one-time hints (4 s).
 
 ## 5. Report and export
 
 - **PDF (`ReportLayout.planSection`):** `แปลนหลังคาถังน้ำใส` from `TankPlan` (a hand sketch `planPhoto` replaces it), `จำนวนแผงก่อนเข้าสำรวจ` (`panelsBefore`) and `ที่ตัดออก`, the tank fields (height, surface, soil, type, position, shade), the obstacle table (`ไม่มีจริง` rows), the standard design's summary when the points came from one, then the aerial, obstacle and side photos. The drawing is scaled to the content width and never split across pages.
-- **Not in the PDF yet:** `รูปตัดถัง`, `ผังจัดแผง` with its summary, `ภาพตัดโต๊ะแผง`, the shade heat map and losses, and the footer `สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง`.
-- **Excel (NO.224, sheet `บ่อน้ำใส`):** the plan image in `C3:X15` (or `planPhoto`), height, surface, soil, type and shade in the existing cells and the blank tail of rows 16/17, the standard design's counts in `N19`, the photos.
+- **Layout and sections (built 2026-10-19, `TankDrawings`, `ReportLayout.tankLayoutUnits`):** `ผังจัดแผงบนหลังคาถัง` (the plan with the stored layout: panels, switched-off panels dashed, cut columns red, footings, the slope tag), its summary line (panels, kWp, MWh/ปี from `SolarModel` at the panels' tilt and facing and A1's latitude, tables, rows, tilt), the BOQ line, the three checks, the ค่าสมมติ line and the footer; `ภาพตัดโต๊ะแผง` (the standard two-row side section) and the table's front elevation (`tableFront`); `รูปตัดถัง 1–1` and `2–2` (§4.3's rule: ground by position, walls and slabs 0.30 m and 0.50 m soil over a buried tank assumed, the external volume).
+- **Shade (built 2026-10-19):** `เงาบัง (จำลองทั้งปี)` after the layout: the losses, the recommendation, the month × hour map and the plan on 21 ธ.ค. at 09:00 and 15:00.
+- **Excel (NO.224, sheet `บ่อน้ำใส`):** the plan image in `C3:X15` (or `planPhoto`), height, surface, soil, type and shade in the existing cells and the blank tail of rows 16/17, the standard design's counts in `N19`, the layout's summary and BOQ lines in the blank rows `A37` / `A38`, the photos.
 - **DXF (`ส่งออก DXF`, `TankDXF`):** the plan at real scale in mm from the top-left corner, Y up, layers GRID, OUTLINE, DIM, OBSTACLE, NORTH, TEXT, plus PV and PV_GROUP for the stored layout.
 
 ## 6. Data compatibility
 
 - New fields are optional and hidden, so the section's completion counts as before:
   - `tankExposed`, `tankAzimuth`, `tankAzimuthAt`, `tankAzimuthSrc`, `tankAzimuthAcc` (in the schema, hidden)
-  - `ventHeight`, `tankDesign` (`TankDesign.id`, `@r` when turned), `tankPvOrient`, `tankPvOffX`, `tankPvOffY`, `tankPvOff` (not in the schema)
+  - `ventHeight`, `tankDesign` (`TankDesign.id`, `@r` when turned), `tankDesignSnapshot`, `tankPvOrient`, `tankPvOffX`, `tankPvOffY`, `tankPvOff`, `tankPvGap`, `tankPvStd` (not in the schema)
 - `Obstacle` gains the optional `kind` (`vent` / `hatch` / `ladder` / `pipe`), `status`, `origin` (`standard` / `added`), `stdX`, `stdY`, `note`, `bulk`. Old rows read as `kind` "", `status` "" (unchecked), `origin` "", and draw as before; only standard points count toward the sub-step's done state.
 - `tankType` and `surface` keep their ids, labels and Excel cells.
 - `WebBackup` writes only schema fields, and obstacles only as label / x / y / w / h, so the new obstacle fields and the non-schema keys are lost on a web round-trip (open question 8).
@@ -241,30 +282,30 @@ The 2026-09-29 draft and `prototype/tank-layout.html` worked out an editor with 
 | Unit | layout: setback, openings, post clearance, cut columns, ≥ 2 columns per table, best offsets | `TankLayoutTests` |
 | Unit | DXF layers and scale | `TankDXFTests` |
 | Snapshot | the plan for 40 × 40 with its points, and for 64 × 40 | not yet |
-| Performance | layout < 30 ms per run on iPhone 12; `หาผังแผงมากสุด` < 3 s and cancellable | not yet |
-| Manual (iPad + iPhone) | the `-surveyD1` states (CLAUDE.md); a 40 × 40 job through all four sub-steps; confirm, move, add and repeat points; `หาผังแผงมากสุด`; measure direction on a device; export PDF and DXF | |
+| Performance | layout < 30 ms per run on iPhone 12; `หาผังที่ได้พลังงานมากที่สุด` < 3 s and cancellable | not yet |
+| Manual (iPad + iPhone) | the `-surveyD1` states (CLAUDE.md); a 40 × 40 job through all four sub-steps; confirm, move, add and repeat points; `หาผังที่ได้พลังงานมากที่สุด`; measure direction on a device; export PDF and DXF | |
 
 ## 8. Done when
 
 - [x] Picking `40 × 40 ม.` draws the plan with V1–V10 and H1–H5 unchecked, and the N arrow follows `tankAzimuth`.
-- [x] Every point can be confirmed, marked absent, dragged (0.05 m snap) or moved by distance.
-- [ ] Every change can be undone; a drag is one undo step.
+- [x] Every point can be confirmed, marked absent, dragged (0.025 m snap) or moved by distance.
+- [x] Every change can be undone; a drag is one undo step (changes under 0.8 s apart are one step; `TankUndoUITests`).
 - [x] Sub-step 3 never puts a footing on an opening, and columns that cannot be saved are cut.
-- [x] `หาผังแผงมากสุด` never returns fewer panels than the automatic layout.
-- [ ] Sub-step 4 counts `บังคับ {k}/9`, and the bottom bar lists what is missing.
+- [x] `หาผังที่ได้พลังงานมากที่สุด` never returns fewer panels than the automatic layout.
+- [x] Sub-step 4 counts `บังคับ {k}/5`; the bar says how many required photos are missing.
 - [x] Old tank jobs open unchanged.
 - [ ] The web backup keeps the new keys.
-- [ ] The PDF shows plan, section, layout and shade with the summary and the ค่าสมมติ line.
+- [x] The PDF shows plan, section, layout and shade with the summary and the ค่าสมมติ line.
 
 ## 9. Open questions
 
 1. Confirm the 30 × 30 and 20 × 20 presets (size, column grid) against กปภ. drawings, and whether more sizes are needed.
 2. Opening positions: the 40 × 40 and 64 × 40 sheets are in `TankDesign`; other sizes get the generic layout scaled to the tank. Who supplies the sheets for 30 × 30 and 20 × 20?
-3. Opening sizes: the app draws vents 0.60 m and hatches 0.80 m; the design notes vents 1.45 m and hatches 1.15 m. Which, and fixed per design or measured per tank?
-4. Should the new photo slots (roof, shade, cable route, fourth wall) become required? This changes D1 completion for old jobs.
+3. ~~Opening sizes: the app draws vents 0.60 m and hatches 0.80 m; the design notes vents 1.45 m and hatches 1.15 m. Which, and fixed per design or measured per tank?~~ The กปภ. sheets only: vents 1.45 m, hatches 1.15 m, fixed (2026-10-20).
+4. ~~Should the new photo slots (roof, shade, cable route, fourth wall) become required? This changes D1 completion for old jobs.~~ Roof and cable route required, shade optional, the four wall slots stay (2026-10-19).
 5. Excel NO.224 has the plan in `C3:X15`: should the panel layout go there too, or somewhere else?
-6. Energy per kWp (1,452 kWh/kWp in the design): which source (PVGIS, the team's yield table)? Sub-step 3 shows no energy yet.
-7. Round tanks: still needed? If yes, the size picker needs a `ถังกลม · เส้นผ่านศูนย์กลาง` option.
+6. Energy per kWp (1,452 kWh/kWp in the design): which source (PVGIS, the team's yield table)? Sub-step 3 shows a clear-sky estimate (`SolarModel`); calibrating it is still open.
+7. ~~Round tanks: still needed? If yes, the size picker needs a `ถังกลม · เส้นผ่านศูนย์กลาง` option.~~ A first version is built (§1a, 2026-10-21). Still open: should a round tank's rows face true south (a circle has no walls, so the team rule of rows on the walls doesn't apply), and which standard openings does a กปภ. round tank have?
 8. `WebBackup`: should it carry the obstacle status fields and the D1 keys that are not in the schema?
-9. Undo and the drag loupe are in the design but not built: still wanted, or are the guide, the distance fields and `ไม่มีจริง` enough?
-10. Tank sections (รูปตัด) from the draft: still wanted in the PDF?
+9. Undo is built (`TankUndo`). The drag loupe is in the design but not built: still wanted, or are the guide and the distance fields enough?
+10. ~~Tank sections (รูปตัด) from the draft: still wanted in the PDF?~~ Yes: the PDF prints `รูปตัดถัง 1–1` and `2–2`.

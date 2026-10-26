@@ -56,7 +56,7 @@ extension PWADocsPadView {
         return HStack(spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("ตามสถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text("ชุด " + PWADocs.steps.map(\.title).joined(separator: " · ")).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ชุด " + PWADocs.steps.map(\.title).joined(separator: " | ")).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     .lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
@@ -144,12 +144,12 @@ extension PWADocsPadView {
         .accessibilityIdentifier("pwaDocs.station.\(r.station.mpNumber.map(String.init) ?? r.id)")
     }
 
-    /// `ส่งมอบ 6/10 · ผู้รับเหมา A · ขาด 3`, `ขาด n` in amber.
+    /// `ส่งมอบ 6/10 | ผู้รับเหมา A | ขาด 3`, `ขาด n` in amber.
     private func stationFacts(_ r: PWADocs.StationRow, missing: Int) -> some View {
         let parts = [r.handover.map { "ส่งมอบ " + PWAPlanFormat.numeric.string(from: $0) },
                      r.station.contractor.isEmpty ? nil : PWAPlan.contractorTitle(r.station.contractor)].compactMap { $0 }
-        var text = Text(parts.joined(separator: " · ")).foregroundColor(Theme.inkMuted)
-        if missing > 0 { text = text + Text((parts.isEmpty ? "" : " · ") + "ขาด \(missing)").bold().foregroundColor(Theme.warningText) }
+        var text = Text(parts.joined(separator: " | ")).foregroundColor(Theme.inkMuted)
+        if missing > 0 { text = text + Text((parts.isEmpty ? "" : " | ") + "ขาด \(missing)").bold().foregroundColor(Theme.warningText) }
         return text.font(.sarabunFixed(12)).lineLimit(1)
     }
 
@@ -175,7 +175,7 @@ extension PWADocsPadView {
                                                        to: Calendar.current.startOfDay(for: due)).day ?? 0
             parts.append(days < 0 ? "เลยกำหนด \(-days) วัน" : days == 0 ? "วันนี้" : "กำหนด " + PWAPlanFormat.numeric.string(from: due))
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: " | ")
     }
 
     private var emptyList: some View {
@@ -247,11 +247,11 @@ struct PWADocsStationPanel: View {
         }
     }
 
-    /// `90 kWp · ผู้รับเหมา A · ส่งมอบ 6/10`.
+    /// `90 kWp | ผู้รับเหมา A | ส่งมอบ 6/10`.
     private var facts: String {
         [st.kWp > 0 ? PWADocsHomeView.kWp(st.kWp) + " kWp" : nil,
          st.contractor.isEmpty ? nil : PWAPlan.contractorTitle(st.contractor),
-         row.handover.map { "ส่งมอบ " + PWAPlanFormat.numeric.string(from: $0) }].compactMap { $0 }.joined(separator: " · ")
+         row.handover.map { "ส่งมอบ " + PWAPlanFormat.numeric.string(from: $0) }].compactMap { $0 }.joined(separator: " | ")
     }
 
     @ViewBuilder private var overview: some View {
@@ -266,7 +266,7 @@ struct PWADocsStationPanel: View {
             if let next = row.next { page.paper = .init(stationID: st.id, kindID: next.id) }
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.state == .ours ? "ถัดไป" : "ถัดไป · " + row.tag).font(.sarabunFixed(12, .semibold))
+                Text(row.state == .ours ? "ถัดไป" : "ถัดไป | " + row.tag).font(.sarabunFixed(12, .semibold))
                     .foregroundStyle(late ? Theme.dangerText : Theme.inkMuted)
                 Text(page.nextText(row)).font(.sarabunFixed(15, .bold)).foregroundStyle(late ? Theme.dangerText : Theme.navy)
                     .multilineTextAlignment(.leading)
@@ -322,7 +322,7 @@ struct PWADocsStationPanel: View {
                     Circle().fill(item.state.status.isReady ? Theme.success : Theme.primary).frame(width: 8, height: 8).padding(.top, 6)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(item.kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                        Text(item.state.status.title + (item.state.updatedAt.map { " · " + Self.relative($0) } ?? ""))
+                        Text(item.state.status.title + (item.state.updatedAt.map { " | " + Self.relative($0) } ?? ""))
                             .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     }
                 }
@@ -407,7 +407,7 @@ struct PWADocsPackagePapers: View {
                 Text("\(c.done)/\(c.total)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
             }
             ProgressBar(value: c.total == 0 ? 1 : Double(c.done) / Double(c.total), color: c.done == c.total ? Theme.success : Theme.primary)
-            Text(package == .pk2 ? "Check list ของ กกพ. 23 ข้อ · ข้อที่ไม่เข้าเงื่อนไขนับว่าครบ" : package.padNote)
+            Text(package == .pk2 ? "Check list ของ กกพ. 23 ข้อ | ข้อที่ไม่เข้าเงื่อนไขนับว่าครบ" : package.padNote)
                 .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
         }
         .accessibilityElement(children: .combine)
@@ -416,7 +416,7 @@ struct PWADocsPackagePapers: View {
     private var ercLink: some View {
         Button { page.ercJob = page.job(station.id) } label: {
             HStack {
-                Text("ลำดับ กกพ. · ยื่น พค.1 → ตรวจสถานที่ → พค.2").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.outside)
+                Text("ลำดับ กกพ. | ยื่น พค.1 → ตรวจสถานที่ → พค.2").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.outside)
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.outside)
             }
@@ -504,11 +504,11 @@ struct PWADocsPaperRow: View {
                 PWADocsStatusMark(status: state.status, origin: kind.origin).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.leading)
-                    Text(Self.origin(kind) + (PWADocs.isIDCard(kind) ? " · ต้องปิดข้อมูลบนบัตร" : ""))
+                    Text(Self.origin(kind) + (PWADocs.isIDCard(kind) ? " | ต้องปิดข้อมูลบนบัตร" : ""))
                         .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     let others = kind.packages.filter { $0 != package }
                     if !others.isEmpty {
-                        Text("⇄ " + others.map { PWADocs.stepTitle($0) }.joined(separator: " · "))
+                        Text("⇄ " + others.map { PWADocs.stepTitle($0) }.joined(separator: " | "))
                             .font(.sarabunFixed(12, .semibold)).foregroundStyle(Theme.dockTeal)
                     }
                 }
@@ -522,11 +522,11 @@ struct PWADocsPaperRow: View {
         .accessibilityIdentifier("pwaDocs.paper.\(kind.id)")
     }
 
-    /// `เราร่าง → กปภ. ลงนาม · ผจก. กปภ.สาขา`, `ขอจาก กปภ.สาขา`, `ทีมเราทำ · วิศวกรไฟฟ้า`.
+    /// `เราร่าง → กปภ. ลงนาม | ผจก. กปภ.สาขา`, `ขอจาก กปภ.สาขา`, `ทีมเราทำ | วิศวกรไฟฟ้า`.
     static func origin(_ kind: StationDocs.Kind) -> String {
         switch kind.origin {
-        case .internalDoc: (["ทีมเราทำ"] + [kind.signBy].compactMap { $0 }).joined(separator: " · ")
-        case .signoff: (["เราร่าง → กปภ. ลงนาม"] + [kind.signBy].compactMap { $0 }).joined(separator: " · ")
+        case .internalDoc: (["ทีมเราทำ"] + [kind.signBy].compactMap { $0 }).joined(separator: " | ")
+        case .signoff: (["เราร่าง → กปภ. ลงนาม"] + [kind.signBy].compactMap { $0 }).joined(separator: " | ")
         case .external: "ขอจาก " + (kind.obtainFrom ?? "หน่วยงานนอก")
         }
     }
@@ -589,25 +589,36 @@ struct ProgressBar: View {
 // MARK: - words and colours
 
 extension StationDocs.Package {
-    /// The iPad panel's package titles, numbered as the hand-over folders (`4.1`, `4.2`, `4.3`).
-    var padTitle: String {
+    /// The section number of the hand-over folders (`4.1`, `4.2`, `4.3`); the test and the hand-over have none.
+    var section: String? {
         switch self {
-        case .building: "4.1 ใบอนุญาต อ.1 / แจ้งเทศบาล"
-        case .gridConnection: "4.2 ขออนุญาตขนานไฟ (กฟภ.)"
-        case .pk2: "4.3 พค.2 · ยกเว้นใบอนุญาต กกพ."
+        case .building: "4.1"
+        case .gridConnection: "4.2"
+        case .pk2: "4.3"
+        case .commissioning, .handover: nil
+        }
+    }
+
+    /// The iPad panel's package titles, numbered by `section`.
+    var padTitle: String {
+        let name = switch self {
+        case .building: "ใบอนุญาต อ.1 / แจ้งเทศบาล"
+        case .gridConnection: "ขออนุญาตขนานไฟ (กฟภ.)"
+        case .pk2: "พค.2 | ยกเว้นใบอนุญาต กกพ."
         case .commissioning: "ทดสอบระบบ"
         case .handover: "ส่งมอบงาน"
         }
+        return [section, name].compactMap { $0 }.joined(separator: " ")
     }
 
     /// What goes in, short.
     var padNote: String {
         switch self {
-        case .building: "แบบแปลน · ใบ กว. · หนังสือแจ้งเทศบาล · สำเนาโฉนด"
-        case .gridConnection: "คำขอ · SLD · Datasheet · ผลทดสอบ · หนังสือมอบอำนาจ"
-        case .pk2: "แบบตรวจสอบ 23 ข้อ · ภาพถ่าย · IEC Test (อินเวอร์เตอร์ ≥ 200 kVA)"
-        case .commissioning: "IEC 62446 · ภาพถ่ายความร้อน"
-        case .handover: "As-Built · IEC 62446 · คู่มือ O&M · ใบรับประกัน"
+        case .building: "แบบแปลน | ใบ กว. | หนังสือแจ้งเทศบาล | สำเนาโฉนด"
+        case .gridConnection: "คำขอ | SLD | Datasheet | ผลทดสอบ | หนังสือมอบอำนาจ"
+        case .pk2: "แบบตรวจสอบ 23 ข้อ | ภาพถ่าย | IEC Test (อินเวอร์เตอร์ ≥ 200 kVA)"
+        case .commissioning: "IEC 62446 | ภาพถ่ายความร้อน"
+        case .handover: "As-Built | IEC 62446 | คู่มือ O&M | ใบรับประกัน"
         }
     }
 }

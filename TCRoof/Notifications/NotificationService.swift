@@ -179,18 +179,24 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     // MARK: delegate
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
-        -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    // The completion-handler forms, each handler called on the main thread: with the async forms the system's
+    // completion ran on a background thread after a tap, and UIKit aborted the app on its main-thread check
+    // (`_performBlockAfterCATransactionCommitSynchronizes`).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let request = response.notification.request
         let info = request.content.userInfo.compactMapValues { $0 as? String }.reduce(into: [String: String]()) { $0[String(describing: $1.key)] = $1.value }
-        let action = response.actionIdentifier
-        let category = request.content.categoryIdentifier
-        let content = request.content
-        await MainActor.run { handle(id: request.identifier, category: category, action: action, info: info, content: content) }
+        let action = response.actionIdentifier, category = request.content.categoryIdentifier, id = request.identifier
+        nonisolated(unsafe) let content = request.content
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { self.handle(id: id, category: category, action: action, info: info, content: content) }
+            completionHandler()
+        }
     }
 
     private func handle(id: String, category: String, action: String, info: [String: String], content: UNNotificationContent) {
@@ -256,14 +262,14 @@ extension NotificationService {
         let soon = { (s: TimeInterval) in NotificationPlan.Fire.after(s) }
         var plans: [NotificationPlan] = [
             NotificationPlan(id: "demo-done", type: .done, title: "บันทึกขึ้น Drive แล้ว",
-                             body: "NO.224 แบบสำรวจ · 4 ไฟล์ (PDF · Excel · CAD · รูป)", sub: "โฟลเดอร์ TCRoof/2569/NO.224", fire: soon(2),
+                             body: "NO.224 แบบสำรวจ | 4 ไฟล์ (PDF | Excel | CAD | รูป)", sub: "โฟลเดอร์ TCRoof/2569/NO.224", fire: soon(2),
                              info: [NotificationInfo.url: "https://drive.google.com/drive/folders/demo"]),
             NotificationPlan(id: "demo-sync", type: .sync, title: "รอซิงก์ 2 งาน", body: "ยังไม่ได้บันทึกขึ้น Google Drive",
-                             sub: "NO.224 · NO.221 · จะซิงก์เองเมื่อมีสัญญาณ", fire: soon(3)),
+                             sub: "NO.224 | NO.221 | จะซิงก์เองเมื่อมีสัญญาณ", fire: soon(3)),
             ToolNotification.calibration(toolID: "fluke1587", tool: "Fluke 1587 FC", kind: "เครื่องวัดฉนวน",
                                          due: now.adding(days: 30), at: now.addingTimeInterval(4)),
             NotificationPlan(id: "demo-survey", type: .survey, title: "นัดสำรวจในอีก 1 ชั่วโมง", body: "NO.224 กปภ. สาขาตัวอย่าง สถานีผลิตน้ำ 1",
-                             sub: "ต.หนองบัว อ.เมือง · 10:30", fire: soon(5)),
+                             sub: "ต.หนองบัว อ.เมือง | 10:30", fire: soon(5)),
             ToolNotification.notifyQueueReached(toolID: "mavic3t", tool: "DJI Mavic 3T", from: "สมชาย", place: "ห้องเก็บเครื่องมือ",
                                                 job: "NO.230", until: now.adding(days: 5)),
         ]
@@ -287,9 +293,9 @@ extension NotificationService {
             InstallNotification.day(jobKey: job, name: "TC-0012 บ้านตัวอย่าง", team: "TCR01", day: 1, of: 5, start: start),
             NotificationPlan(id: "demo-mp", type: .mp, title: "เริ่มงานพรุ่งนี้ตามแผน MP", body: "ทุ่งน้อย", sub: "2.3 ติดตั้งแผง", fire: .after(1),
                              info: [NotificationInfo.job: job]),
-            post("demo-progress", .progress, "MP 189 ทุ่งน้อย · 2.3 ติดตั้งแผง", "ติดตั้งแผง 38%", .dailyReport(project: job, day: now)),
-            post("demo-inspect", .waitingInspector, "MP 154 แพรกหนามแดง · 2.5 Inverter", "Inverter 100%", .dailyReport(project: job, day: now)),
-            post("demo-issue", .issue, "TC-0012 · ติดตั้ง Day 2/5", "พบรอยรั่วที่ครอบหลังคาจุด B3", .punch(project: job, id: "demo")),
+            post("demo-progress", .progress, "MP 189 ทุ่งน้อย | 2.3 ติดตั้งแผง", "ติดตั้งแผง 38%", .dailyReport(project: job, day: now)),
+            post("demo-inspect", .waitingInspector, "MP 154 แพรกหนามแดง | 2.5 Inverter", "Inverter 100%", .dailyReport(project: job, day: now)),
+            post("demo-issue", .issue, "TC-0012 | ติดตั้ง Day 2/5", "พบรอยรั่วที่ครอบหลังคาจุด B3", .punch(project: job, id: "demo")),
             post("demo-summary", .summary, "", "สรุปวันที่ 13 ต.ค. — ส่งรายงานแล้ว 8/12 สถานี กปภ. ความคืบหน้ารวม +2%", .summary(day: now)),
         ].compactMap { $0 }
         for i in plans.indices { plans[i].fire = .after(Double(4 + 8 * i)) }

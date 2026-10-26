@@ -12,10 +12,14 @@ public extension Assistant {
         /// Proposed changes not yet confirmed or dismissed, oldest first.
         public private(set) var proposals: [PendingAction] = []
         public private(set) var remainingToday: Int?
+        /// Who answered the last request (`Reply.servedBy`).
+        public private(set) var servedBy: String?
 
         @ObservationIgnored private let transport: Transport
         @ObservationIgnored private let jobs: @MainActor () -> [Job]
         @ObservationIgnored private let now: () -> Date
+        /// Builds `get_project`'s facts of one station, on demand (the app reads them from its models).
+        @ObservationIgnored private let project: @MainActor (Job) -> ProjectFacts?
         @ObservationIgnored public var maxRounds = 5
         /// Messages kept after the system prompt; older turns are dropped whole.
         @ObservationIgnored public var historyLimit = 30
@@ -25,10 +29,13 @@ public extension Assistant {
         /// - Parameters:
         ///   - focus: the job the chat was opened from, if any.
         ///   - jobs: the stations the person may see, read fresh for every tool call.
+        ///   - project: the rest of a station's project for `get_project`; by default the job's own `project`.
         public init(transport: Transport, focus: Job? = nil, jobs: @escaping @MainActor () -> [Job],
+                    project: @escaping @MainActor (Job) -> ProjectFacts? = { $0.project },
                     now: @escaping () -> Date = Date.init) {
             self.transport = transport
             self.jobs = jobs
+            self.project = project
             self.now = now
             messages = [.system(Self.systemPrompt(today: now(), focus: focus))]
         }
@@ -40,6 +47,7 @@ public extension Assistant {
             for _ in 0..<maxRounds {
                 let reply = try await transport.complete(Request(messages: trimmed(), tools: Toolbox.definitions))
                 remainingToday = reply.remainingToday ?? remainingToday
+                servedBy = reply.servedBy ?? servedBy
                 let m = reply.message
                 messages.append(m)
                 guard let calls = m.toolCalls, !calls.isEmpty else {
@@ -48,7 +56,9 @@ public extension Assistant {
                 }
                 let box = Toolbox(jobs: jobs(), today: now())
                 for call in calls {
-                    let outcome = box.run(call.function.name, arguments: call.function.arguments)
+                    let outcome = call.function.name == "get_project"
+                        ? projectFacts(box, arguments: call.function.arguments)
+                        : box.run(call.function.name, arguments: call.function.arguments)
                     if case .proposal(let a, _) = outcome {
                         proposals.removeAll { $0.jobID == a.jobID && ($0.task == a.task || a.isReplan) && Self.sameKind($0.change, a.change) }
                         proposals.append(a)
@@ -59,18 +69,34 @@ public extension Assistant {
             throw Failure.tooManyRounds
         }
 
+        /// `get_project`, with the facts built here only for the station asked.
+        private func projectFacts(_ box: Toolbox, arguments: String) -> Toolbox.Outcome {
+            let args = JSONValue.parse(arguments.isEmpty ? "{}" : arguments) ?? .object([:])
+            switch box.single(args["job"]?.string ?? "") {
+            case .failure(let e): return e
+            case .found(let job):
+                guard let f = project(job) else { return box.error("ไม่มีข้อมูลโครงการของ \(job.station)") }
+                return .result(f.json(ProjectFacts.Section.parse(args["sections"]), papersPackage: ProjectFacts.package(args["package"])))
+            }
+        }
+
         /// Takes a proposal off the list (confirmed and saved by the app, or dismissed) and tells the model.
         public func resolve(_ id: String, confirmed: Bool) {
             guard let a = proposals.first(where: { $0.id == id }) else { return }
             proposals.removeAll { $0.id == id }
             let what = confirmed ? "ผู้ใช้ยืนยันและบันทึกแล้ว" : "ผู้ใช้ยกเลิก ไม่ได้บันทึก"
-            messages.append(.user("[ระบบ] \(a.station) · \(a.title): \(a.after) — \(what)"))
+            messages.append(.user("[ระบบ] \(a.station) | \(a.title): \(a.after) — \(what)"))
         }
 
         /// The system prompt and the latest `historyLimit` messages, starting at a person's message so a tool answer
         /// never loses the call it answers.
         func trimmed() -> [Message] {
             let rest = messages.dropFirst()
+            // the latest turn is sent whole; tool results of earlier questions go as a short note (the model's answer
+            // carries what it took from them, and it can call again)
+            let last = rest.lastIndex { $0.role == .user } ?? rest.endIndex
+            let sent = rest.indices.map { $0 < last ? Self.compacted(rest[$0]) : rest[$0] }
+            func at(_ i: Int) -> Message { sent[i - rest.startIndex] }
             var start = max(rest.startIndex, rest.endIndex - historyLimit)
             func nextTurn(from i: Int) -> Int {
                 var i = i
@@ -79,15 +105,24 @@ public extension Assistant {
             }
             start = nextTurn(from: start)
             func size(_ m: Message) -> Int { (m.content?.count ?? 0) + (m.toolCalls ?? []).reduce(0) { $0 + $1.function.arguments.count + 64 } + 32 }
-            var total = size(messages[0]) + rest[start...].reduce(0) { $0 + size($1) }
+            var total = size(messages[0]) + (start..<rest.endIndex).reduce(0) { $0 + size(at($1)) }
             // keep at least the latest turn, even when it alone is long
-            let last = rest.lastIndex { $0.role == .user } ?? start
             while total > charLimit, start < last {
                 let next = nextTurn(from: start + 1)
-                total -= rest[start..<next].reduce(0) { $0 + size($1) }
+                total -= (start..<next).reduce(0) { $0 + size(at($1)) }
                 start = next
             }
-            return [messages[0]] + rest[start...]
+            return [messages[0]] + (start..<rest.endIndex).map(at)
+        }
+
+        /// What an earlier question's tool result is sent as: a short note in place of a long result.
+        static let droppedResult = #"{"note":"result of an earlier question, dropped to save tokens; call the tool again if needed"}"#
+
+        static func compacted(_ m: Message) -> Message {
+            guard m.role == .tool, (m.content?.count ?? 0) > droppedResult.count else { return m }
+            var c = m
+            c.content = droppedResult
+            return c
         }
 
         private static func sameKind(_ a: PendingAction.Change, _ b: PendingAction.Change) -> Bool {
@@ -97,40 +132,39 @@ public extension Assistant {
             }
         }
 
+        /// In English, which takes far fewer tokens than Thai; the model is told to answer in Thai.
         static func systemPrompt(today: Date, focus: Job?) -> String {
             let day = ScheduleBrief.day(today, calendar: MasterSchedule.calendar)
             var s = """
-            คุณคือผู้ช่วยโครงการก่อสร้างของ TC Renewable Energy ช่วยทีมรักษาแผนงาน MP ของสถานีโซลาร์ กปภ. ให้ตรงเวลา
-            วันนี้คือ \(day) (เวลาไทย สัปดาห์เริ่มวันอาทิตย์)
-
-            กติกา:
-            - ตอบเป็นภาษาไทย สั้น ตรงประเด็น ใช้รายการเมื่อมีหลายข้อ
-            - ตัวเลขทุกตัว (%, คะแนน, วันที่, จำนวนวันที่ช้า) ต้องมาจากผลของเครื่องมือเท่านั้น ห้ามคำนวณหรือเดาเอง
-            - ข้อมูลที่ไม่มีในเครื่องมือ ให้บอกว่าไม่มีข้อมูล
-            - งานแต่ละงานมีน้ำหนักเป็นคะแนน (รวมทั้งสถานี 100) neededPointsPerWeek คือคะแนนต่อสัปดาห์ที่ต้องทำเพื่อให้เสร็จตามแผน (งานที่เลยกำหนดแล้วคือคะแนนที่เหลือทั้งหมด)
-              pacePointsPerWeek คืออัตราที่ทำได้จริง slipDays คือจำนวนวันที่คาดว่าจะเสร็จช้ากว่าแผน
-            - วันส่งมอบที่คาดของสถานี ให้อ้าง handoverForecast และ handoverSlipDays (ตรงกับ "คาดส่งมอบ" ในหน้าติดตามงาน คิดจาก SPI)
-              ส่วน projectedFinish และผลของ what_if คิดรายงานตามอัตราของแต่ละงาน ใช้เทียบทางเลือกและบอกว่าได้คืนกี่วัน
-              ถ้าสองค่าต่างกัน ให้บอกว่าแบบรายงานละเอียดกว่า และระบุทั้งสองค่า
-            - สถานีที่เคยปรับแผนแล้วมี originalInstallEnd และ originalPlannedPercent ของแผนเดิม % แผนอื่นทุกตัวเทียบกับแผนใหม่
-              เมื่อถูกถามเทียบกับแผนเดิม ให้อ้างสองค่านี้
-            - เมื่อแนะนำการเร่งงาน ให้เรียงตามงานที่กระทบวันจบมากที่สุด และอ้างรายงานประจำวัน (คน ฝน ปัญหา) ถ้ามี
-            - การบันทึกทุกอย่างทำผ่านเครื่องมือ propose_* เท่านั้น ซึ่งยังไม่บันทึกจนกว่าผู้ใช้จะกดยืนยันในการ์ด
-              ห้ามบอกว่าบันทึกแล้วจนกว่าจะได้ข้อความ [ระบบ] ว่าผู้ใช้ยืนยัน
-            - เสนอบันทึกเฉพาะเมื่อผู้ใช้ขอ หรือเมื่อรายงานประจำวันระบุ % ชัดเจน และบอกที่มาของตัวเลข
-
-            การวางกลยุทธ์ (ตัวเลขมาจากเครื่องมือเสมอ คุณเป็นผู้อธิบายและแนะนำ):
-            - สถานีช้า ให้ใช้ what_if เทียบทางเลือก (เพิ่มคน เพิ่มวันทำงาน เริ่มงานคู่ขนาน) แล้วแนะนำทางที่ได้วันคืนมากที่สุดต่อแรงที่เพิ่ม
-              บอก toFinishOnTime (คน/วันทำงานที่ต้องใช้ และงานคอขวด) และบอกข้อสมมติใน note
-            - ภาพรวมหลายสถานี ให้ใช้ station_priorities เรียงตาม riskScore ชี้สัปดาห์ที่ overloaded และเสนอย้ายคนตาม moves
-            - แผนล่วงหน้าหรือเตรียมประชุม ให้ใช้ look_ahead ระบุงานที่รองานก่อนหน้า (waitingFor) นัดตรวจ กำหนดส่งเอกสาร และความเสี่ยงฝน
-            - ถ้าเร่งแล้วยังไม่ทัน ให้ใช้ suggest_replan แล้วเสนอ propose_replan ด้วยวันที่จากผลนั้นเท่านั้น
-              และบอกว่าแผนเดิมจะถูกแทนที่ ต้องให้ผู้มีสิทธิ์ตั้งค่าแผนยืนยัน
-            - คำแนะนำแต่ละข้อให้ระบุ ทำอะไร ที่สถานีไหน ภายในวันไหน และได้ผลกี่วัน
+            You are TC Renewable Energy's construction assistant for PWA (กปภ.) solar stations, keeping each station's MP plan on time.
+            Today is \(day) (Thai time; weeks start Sunday).
+            How to answer:
+            - Talk like an experienced Thai site engineer to the team: plain everyday Thai in full sentences, short, a list only for several separate items.
+            - Never show field names, JSON or code (say "ต้องทำสัปดาห์ละ 8 คะแนน", not neededPointsPerWeek); explain a technical term in a few words the first time.
+            - Reason as an engineer: what the numbers show → why (cause: crew, weather, material, a task waiting on another, a paper or test) → what it affects (critical path, handover) → what to do. Say what you assume.
+            - Follow the dependencies: floatDays 0 is the critical path, where a late task moves the finish; a task with float can slip that many working days. Count limits honestly: crew per work face, working days, rain, inspection and utility dates.
+            - Never trade safety or quality for speed: tests (IEC 62446, IR, torque), the module manufacturer's installation rules, permits and the utility's steps come first; say so when a shortcut would skip one.
+            - Give the main point first, then the reasons and the steps.
+            Rules:
+            - Every number (%, points, dates, days late) must come from a tool result. Never compute or guess. If no tool has it, say there is no data.
+            - Tasks carry weight in points (100 per station). neededPointsPerWeek = points per week to finish on plan (overdue: all remaining); pacePointsPerWeek = actual pace; slipDays = expected days late.
+            - A station's expected handover: quote handoverForecast and handoverSlipDays (the tracking page's "คาดส่งมอบ", from SPI). projectedFinish and what_if are task by task: use them to compare options and days gained. If they differ, say the task-by-task one is more detailed and give both.
+            - A re-planned station has originalInstallEnd and originalPlannedPercent (every other planned % is against the new plan); quote them when asked about the original plan.
+            - When advising how to speed up, rank by impact on the finish date and cite daily reports (crew, rain, problems) when present.
+            - Other project topics (survey, station papers, ERC flow, IEC test, weekly requests, ICL, devices, inspections): call get_project with only the sections needed (a part missing from its answer means there is none; papers.moreOpen counts open papers not listed: ask again with package to list them). When advising on the plan, check for papers or tests that would block handover.
+            - Saving only goes through propose_* tools, which save nothing until the user confirms the card. Never say it is saved before a [ระบบ] message says the user confirmed.
+            - Propose only when asked, or when a daily report states a clear %; say where the number came from.
+            - Results of earlier questions are dropped from the history; call the tool again when you need them.
+            Strategy (numbers always from tools; you explain and recommend):
+            - Late station: what_if to compare options (more crew, more working days, start tasks in parallel); recommend the most days gained per extra effort; give toFinishOnTime (crew / working days needed, bottleneck task) and the assumptions in note.
+            - All stations: station_priorities ranked by riskScore; point out overloaded weeks; suggest crew moves from moves.
+            - Look-ahead or meeting prep: look_ahead; name tasks waiting on earlier ones (waitingFor), inspections, paper deadlines, rain risk.
+            - If speeding up can't make it: suggest_replan, then propose_replan with its dates only; say the old plan is replaced and someone allowed to set up the plan must confirm.
+            - Each recommendation: what, at which station, by when, and how many days it gains.
             """
             if let focus {
-                s += "\n\nผู้ใช้เปิดผู้ช่วยจากสถานี \(focus.station) (job: \(focus.id)"
-                    + (focus.mpNumber.map { ", MP \($0)" } ?? "") + ") ถ้าไม่ระบุสถานี ให้หมายถึงสถานีนี้"
+                s += "\nThe user opened the assistant from station \(focus.station) (job: \(focus.id)"
+                    + (focus.mpNumber.map { ", MP \($0)" } ?? "") + "). When no station is named, it means this one."
             }
             return s
         }

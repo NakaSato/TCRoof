@@ -228,6 +228,12 @@ public enum RoofDXF {
             }
             dxf.options.fixedTextHeight = Self.dimText
             dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
+            // the team's north arrow right of the plan, over where the member table starts (lx + 4, from the top),
+            // turned to the top edge's bearing
+            if let b = RoofMount.bearing(v) {
+                let r = NorthArrow.paperRadius / 1000 * dxf.plotScale
+                NorthArrow.place(&dxf, at: (L.lx + 4 + 1.8 * r, L.ly + 2.2 * r), north: b, radius: r)
+            }
             TEXT("TEXT", (0, -1.2 - drop), th * 1.4, "แปลนโครงหลังคา | " + f.label + " | " + fmt(xs.reduce(0, +)) + " × " + fmt(ys.reduce(0, +))
                  + " ม. | แป @" + String(format: "%.2f", Roof.purlinSpacing(v)), mid: false)
         }

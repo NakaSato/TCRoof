@@ -22,7 +22,12 @@ public enum TankDXF {
         var dxf = SketchDXF(options: o)
         let tf: (Pt) -> (Double, Double) = { p in ((p.x - f.ox) / f.k, TH - (p.y - f.oy) / f.k) }
         // the span chains are DIMENSIONs, not their lines and texts
-        let drawnDims: Set<String> = plan.dimensions.isEmpty ? [] : ["dim", "dimtxt"]
+        var drawnDims: Set<String> = plan.dimensions.isEmpty ? [] : ["dim", "dimtxt"]
+        // the team's north arrow block where the sketch draws its own, at the same size
+        if NorthArrow.shared != nil, let az = Tank.azimuth(v) {
+            drawnDims.insert("north")
+            NorthArrow.place(&dxf, at: tf(Pt(plan.sketch.width - 24, 36)), north: Double(az), radius: 12 / f.k)
+        }
         dxf.add(plan.sketch.ops, layer: { i, _ in plan.tags[i].flatMap { drawnDims.contains($0) ? nil : layers[$0] } }, transform: tf, pointsPerMetre: f.k)
         dxf.add(plan.dimensions, layer: layers["dim"]!, transform: tf, pointsPerMetre: f.k)
 

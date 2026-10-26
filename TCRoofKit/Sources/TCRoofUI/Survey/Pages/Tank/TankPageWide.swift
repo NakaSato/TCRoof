@@ -67,6 +67,21 @@ struct TankPageWide: View {
     @State var repeatOpen = false
     @State var repeatDown = false
     @State var obsNotice: String?
+    /// iPad sub-step 2's `เงาบัง` (docs/ui/survey-d1-obstacles-ipad Part B): the moment shown (month 0–11, solar hours),
+    /// plan or 3D, the 3D view's side (0–7, 45° steps), the selected object, the day playing, full screen, and the kind
+    /// being added (its height and width asked first).
+    @State var shadeMonth = 11
+    @State var shadeTime = 15.5
+    @State var shade3D = false
+    @State var shadeTurn = 6
+    @State var shadeSel: String?
+    @State var shadePlaying = false
+    @State var shadeFullScreen = false
+    @State var shadeAdding: TankShade.Item.Kind?
+    @State var shadeAddAsk = false
+    @State var shadeAddHeight = ""
+    @State var shadeAddWidth = ""
+    @State var shadeFormOpen = false
     @State var deleteAsk = false
     /// `เริ่มจากแบบมาตรฐาน กปภ.`: the designs, closest to the measured size first.
     @State var designAsk = false
@@ -432,7 +447,8 @@ extension TankPageWide {
             tab = 2
             try? await Task.sleep(nanoseconds: 600_000_000)
             designAsk = true
-        case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete", "obstmoverow", "obstmovecol", "obstrepeat":
+        case "obst", "obstbottom", "obstshade", "obstrow", "obstfull", "obstadded", "obstdelete", "obstmoverow", "obstmovecol", "obstrepeat",
+             "shade3d", "shadeplan", "shadejune", "shadeselect":
             // docs/ui/survey-d1-obstacles-iphone: 8 of 15 checked, V6 absent, V9 moved and selected
             update { v in
                 v[Roof.Key.obstacles] = nil
@@ -458,6 +474,7 @@ extension TankPageWide {
                 let v10 = TankPoints.points(values)[safe: 9]?.id
                 if let v10 { update { TankPoints.setStatus(&$0, v10, TankPoints.ok) } }
                 pointSel = v10; movingID = v10; groupMode = .column
+            case "shade3d", "shadeplan", "shadejune", "shadeselect": seedShadeDemo(state)
             case "obstrepeat": rowCount = 3; rowSpacing = TankPoints.rowSpacing(values); repeatDown = false; repeatOpen = true
             default: break
             }

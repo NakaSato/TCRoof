@@ -375,7 +375,8 @@ extension TankPageWide {
         let l = TankLayout.current(values)
         return [String(l?.count ?? 0), values.text(TankLayout.Key.offX), values.text(TankLayout.Key.offY), values.text(TankLayout.Key.off),
                 values.choice("shade") ?? "", values.multi("shadeDir").joined(), values.text(TankShade.Key.height),
-                values.text(TankShade.Key.distance), values.text(Tank.Key.azimuth), String(Tank.exposed(values) ?? 0), job.values.text("gps")]
+                values.text(TankShade.Key.distance), values.text(Tank.Key.azimuth), String(Tank.exposed(values) ?? 0), job.values.text("gps"),
+                values.text(TankShade.ItemKey.items)]
             .joined(separator: "|")
     }
 

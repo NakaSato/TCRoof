@@ -34,6 +34,10 @@ public struct TankShade: Sendable {
     public var objects: [Object] = []
     /// The height the objects would have to be cut to for less than 1 % loss (nil: not needed, or no cut helps).
     public var cutTo: Double?
+    /// The objects placed one by one (`shadeItems`), when the job has them, and each one's yearly loss (a spot shaded by
+    /// several counts against the first in the list that blocks it, so they add up to `objectLoss`).
+    public var items: [Item] = []
+    public var itemLoss: [String: Double] = [:]
 
     // MARK: inputs
 
@@ -51,19 +55,23 @@ public struct TankShade: Sendable {
     /// The shade on the stored layout; nil without one.
     public init?(_ v: Values, latitude: Double, longitude: Double? = nil) {
         guard let l = TankLayout.current(v), l.count > 0 else { return nil }
-        self.init(layout: l, objects: Self.objects(v), azimuth: Tank.azimuth(v).map(Double.init), exposed: Tank.exposed(v) ?? 0,
-                  latitude: latitude, longitude: longitude)
+        let items = Self.items(v)
+        self.init(layout: l, objects: items.isEmpty ? Self.objects(v) : [], azimuth: Tank.azimuth(v).map(Double.init), exposed: Tank.exposed(v) ?? 0,
+                  latitude: latitude, longitude: longitude, items: items)
     }
 
     /// One panel as the simulation sees it: its centre on the plan, its height above the roof, its row and whether a
     /// row stands in front of it, and its place on the slope (0 the upper module, 1 the lower).
     struct Spot { var key: String; var x, y, z: Double; var lower: Bool; var behindRow: Bool }
 
-    public init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double, latitude lat: Double, longitude: Double? = nil) {
+    public init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double, latitude lat: Double, longitude: Double? = nil,
+                items: [Item] = []) {
         self.objects = objects
-        let sim = Sim(layout: l, objects: objects, azimuth: azimuth, exposed: exposed)
+        self.items = items
+        let sim = Sim(layout: l, objects: objects, azimuth: azimuth, exposed: exposed, items: items)
         let r = sim.run(latitude: lat, dayStep: SolarModel.dayStep, minutes: SolarModel.stepMinutes)
         rowLoss = r.rowLoss; objectLoss = r.objectLoss
+        for (k, i) in items.enumerated() { itemLoss[i.id] = r.itemLoss[safe: k] ?? 0 }
         energy = l.kWp * l.yield(latitude: lat, longitude: longitude, facing: sim.facing) / 1000
         objectMWh = energy * objectLoss
         heat = r.heat
@@ -76,13 +84,21 @@ public struct TankShade: Sendable {
             return Snapshot(title: m.title, shaded: Set(sim.shaded(s.altitude, s.azimuth).map { sim.spots[$0].key }))
         }
         // how low the objects would have to be for under 1 % loss, in 0.5 m steps (on fewer samples)
-        if objectLoss >= 0.01, let top = objects.map(\.height).max() {
-            var h = top - 0.5
-            while h > exposed {
+        if objectLoss >= 0.01, let top = (objects.map(\.height) + items.map(\.height)).max() {
+            // the highest of top − 0.5, top − 1, … (above the roof) that gets under 1 %: lower is never worse, so a
+            // binary search over that grid finds the same height as walking down it
+            func ok(_ k: Int) -> Bool {
+                let h = top - 0.5 * Double(k)
                 let lower = objects.map { o -> Object in var o = o; o.height = min(o.height, h); return o }
-                let trial = Sim(layout: l, objects: lower, azimuth: azimuth, exposed: exposed).run(latitude: lat, dayStep: 9, minutes: 30)
-                if trial.objectLoss < 0.01 { cutTo = h; break }
-                h -= 0.5
+                let lowerItems = items.map { i -> Item in var i = i; i.height = min(i.height, h); return i }
+                return Sim(layout: l, objects: lower, azimuth: azimuth, exposed: exposed, items: lowerItems)
+                    .run(latitude: lat, dayStep: 9, minutes: 30).objectLoss < 0.01
+            }
+            let last = Int(((top - exposed) / 0.5).rounded(.up)) - 1   // the lowest step still above the roof
+            if last >= 1, ok(last) {
+                var lo = 1, hi = last
+                while lo < hi { let mid = (lo + hi) / 2; if ok(mid) { hi = mid } else { lo = mid + 1 } }
+                cutTo = top - 0.5 * Double(lo)
             }
         }
     }
@@ -92,12 +108,29 @@ public struct TankShade: Sendable {
         struct Line { var ux, uy, s0, h: Double }
         let spots: [Spot], lines: [Line]
         let az, facing, gp, beta, slope, pitch: Double
+        /// The objects placed one by one, and the roof's height above the ground they stand on.
+        var items: [Item] = []
+        var ground = 0.0
 
-        init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double) {
+        init(layout l: TankLayout, objects: [Object], azimuth: Double?, exposed: Double, items: [Item] = []) {
             // the panels face the wall they slope down to
             let facing = ((azimuth ?? 0) + [180.0, 90, 0, 270][l.turn]).truncatingRemainder(dividingBy: 360)
             self.init(spots: TankShade.spots(l), facing: facing, params: l.params, size: l.size, objects: objects, azimuth: azimuth, exposed: exposed,
                       circle: l.circle)
+            self.items = items
+            ground = exposed
+        }
+
+        /// Each spot shaded by an item at this sun, with the first item (in list order) that blocks it.
+        func itemHits(_ alt: Double, _ sAz: Double) -> [Int: Int] {
+            guard !items.isEmpty, alt > 0 else { return [:] }
+            let d = TankShade.toward(alt, sAz, planAzimuth: az)
+            var out: [Int: Int] = [:]
+            for (i, s) in spots.enumerated() {
+                let o = (s.x, s.y, ground + s.z)
+                if let k = items.firstIndex(where: { $0.blocks(o, d) }) { out[i] = k }
+            }
+            return out
         }
 
         /// Any panels on the plan facing `facing` (compass), such as the true-south comparison's. A round tank's
@@ -123,7 +156,7 @@ public struct TankShade: Sendable {
 
         /// The panels without direct sun with the sun at `alt`, `sAz` (from south, + west): to the row in front
         /// (row) and to the objects (object).
-        func shadedSplit(_ alt: Double, _ sAz: Double) -> (row: Set<Int>, object: Set<Int>) {
+        func shadedSplit(_ alt: Double, _ sAz: Double, itemHits known: [Int: Int]? = nil) -> (row: Set<Int>, object: Set<Int>) {
             let a = SolarModel.rad(alt), rel = SolarModel.rad(sAz - gp)
             var row = Set<Int>(), obj = Set<Int>()
             if cos(rel) > 1e-6 {
@@ -144,13 +177,15 @@ public struct TankShade: Sendable {
                     }
                 }
             }
+            if !items.isEmpty { obj.formUnion((known ?? itemHits(alt, sAz)).keys) }
             return (row, obj)
         }
         func shaded(_ alt: Double, _ sAz: Double) -> Set<Int> { let h = shadedSplit(alt, sAz); return h.row.union(h.object) }
 
         /// The year: losses as shares of the unshaded energy, and the heat map.
-        func run(latitude lat: Double, dayStep: Int, minutes: Double) -> (rowLoss: Double, objectLoss: Double, heat: [[Double?]]) {
+        func run(latitude lat: Double, dayStep: Int, minutes: Double) -> (rowLoss: Double, objectLoss: Double, heat: [[Double?]], itemLoss: [Double]) {
             var unshaded = 0.0, rowOnly = 0.0, both = 0.0
+            var perItem = Array(repeating: 0.0, count: items.count)
             var sum = Array(repeating: Array(repeating: 0.0, count: 24), count: 12), cnt = Array(repeating: Array(repeating: 0, count: 24), count: 12)
             let k = Double(spots.count)
             var n = 1
@@ -163,8 +198,11 @@ public struct TankShade: Sendable {
                         let a = SolarModel.rad(s.altitude), rel = SolarModel.rad(s.azimuth - gp)
                         let beam = irr.dni * max(0, cos(beta) * sin(a) + sin(beta) * cos(a) * cos(rel))
                         let diffuse = irr.dhi * (1 + cos(beta)) / 2 + irr.ghi * SolarModel.albedo * (1 - cos(beta)) / 2
-                        let hit = shadedSplit(s.altitude, s.azimuth)
+                        let hits = items.isEmpty ? [:] : itemHits(s.altitude, s.azimuth)
+                        let hit = shadedSplit(s.altitude, s.azimuth, itemHits: hits)
                         let rowLost = Double(hit.row.count), anyLost = Double(hit.row.union(hit.object).count)
+                        // an item's share: the spots it shades that the rows don't already
+                        for (spot, k) in hits where !hit.row.contains(spot) { perItem[k] += beam }
                         unshaded += (beam + diffuse) * k
                         rowOnly += beam * (k - rowLost) + diffuse * k
                         both += beam * (k - anyLost) + diffuse * k
@@ -176,8 +214,8 @@ public struct TankShade: Sendable {
             }
             var heat: [[Double?]] = Array(repeating: Array(repeating: nil, count: 24), count: 12)
             for m in 0..<12 { for h in 0..<24 where cnt[m][h] > 0 { heat[m][h] = sum[m][h] / Double(cnt[m][h]) } }
-            guard unshaded > 0 else { return (0, 0, heat) }
-            return ((unshaded - rowOnly) / unshaded, (rowOnly - both) / unshaded, heat)
+            guard unshaded > 0 else { return (0, 0, heat, perItem.map { _ in 0 }) }
+            return ((unshaded - rowOnly) / unshaded, (rowOnly - both) / unshaded, heat, perItem.map { $0 / unshaded })
         }
     }
 

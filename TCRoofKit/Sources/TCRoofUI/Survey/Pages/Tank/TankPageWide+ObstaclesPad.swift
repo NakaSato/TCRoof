@@ -10,24 +10,24 @@ import TCRoofCore
 extension TankPageWide {
     // MARK: left | plan
 
-    var padObstaclePlanCard: some View {
+    @ViewBuilder var padObstaclePlanCard: some View {
+        if obsShade { AnyView(padShadeCard) } else { AnyView(padPointsPlanCard) }
+    }
+
+    var padPointsPlanCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if obsShade {
-                AnyView(shadeFields)
+            if TankDesign.current(values) != nil { AnyView(compareSegment) }
+            if stacked {
+                AnyView(padPlan)
+                AnyView(padLegend)
             } else {
-                if TankDesign.current(values) != nil { AnyView(compareSegment) }
-                if stacked {
+                HStack(alignment: .bottom, spacing: 16) {
                     AnyView(padPlan)
-                    AnyView(padLegend)
-                } else {
-                    HStack(alignment: .bottom, spacing: 16) {
-                        AnyView(padPlan)
-                        AnyView(padLegend).frame(width: 210)
-                    }
+                    AnyView(padLegend).frame(width: 210)
                 }
-                if obsCompare && TankDesign.current(values) != nil { AnyView(differenceList) }
-                AnyView(designRow)
             }
+            if obsCompare && TankDesign.current(values) != nil { AnyView(differenceList) }
+            AnyView(designRow)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -133,7 +133,7 @@ extension TankPageWide {
     var padPointColumn: some View {
         VStack(alignment: .leading, spacing: 12) {
             AnyView(obstacleSegment)
-            if !obsShade { AnyView(padPointCard) }
+            if obsShade { AnyView(padShadeColumn) } else { AnyView(padPointCard) }
         }
         .padding(16)
         .tcCard()

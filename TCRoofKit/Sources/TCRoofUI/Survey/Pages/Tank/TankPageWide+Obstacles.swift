@@ -182,7 +182,7 @@ extension TankPageWide {
     /// `บนหลังคา | 15 จุด` / `เงาบัง | <answer>`
     var obstacleSegment: some View {
         let n = TankPoints.points(values).count, shade = values.choice("shade")
-        let items = [(false, "บนหลังคา | \(n) จุด"), (true, "เงาบัง" + (shade.map { " | " + $0 } ?? ""))]
+        let items = [(false, "บนหลังคา | \(n) จุด"), (true, shadeSegmentText ?? "เงาบัง" + (shade.map { " | " + $0 } ?? ""))]
         return HStack(spacing: 3) {
             ForEach(items, id: \.0) { item in
                 let on = obsShade == item.0

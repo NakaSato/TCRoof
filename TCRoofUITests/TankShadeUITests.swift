@@ -38,4 +38,37 @@ final class TankShadeUITests: XCTestCase {
         wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", before3), object: v3)], timeout: 10)
         XCTAssertEqual(v10.value as? String, before10)
     }
+
+    /// `เงาบัง` on `shadeplan`: plan ↔ 3D, a time step changes the caption, a chip selects its object, `+ ต้นไม้` adds one.
+    func testShadeSimulation() throws {
+        let app = launch("shadeplan")
+        try XCTSkipIf(UIDevice.current.userInterfaceIdiom != .pad, "the shade simulation is iPad only")
+        let caption = app.staticTexts["shadeCaption"]
+        XCTAssertTrue(caption.waitForExistence(timeout: slow))
+        app.buttons["3 มิติ"].firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ภาพ 3 มิติ")).firstMatch.waitForExistence(timeout: 10))
+        app.buttons["แปลน"].firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["shadeItem-T1"].waitForExistence(timeout: 10))
+
+        let before = caption.label
+        app.buttons["shadeTime+"].tap()
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", before), object: caption)], timeout: 10)
+
+        let b1 = app.buttons["shadeChip-B1"]
+        b1.tap()
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: b1)], timeout: 10)
+
+        let chips = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'shadeChip-'"))
+        let n = chips.count
+        app.buttons["shadeAdd-tree"].tap()
+        let height = app.alerts.textFields.element(boundBy: 0)
+        XCTAssertTrue(height.waitForExistence(timeout: 10))
+        height.tap(); height.typeText("8")
+        let width = app.alerts.textFields.element(boundBy: 1)
+        width.tap(); width.typeText("5")
+        // the number pad's popover takes the first tap on iPad
+        app.alerts.buttons["เพิ่ม"].tap()
+        if app.alerts.firstMatch.waitForExistence(timeout: 1) { app.alerts.buttons["เพิ่ม"].tap() }
+        wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == %d", n + 1), object: chips)], timeout: 10)
+    }
 }

@@ -1,0 +1,282 @@
+{
+  "_note": "Example values from the board iPadWeeklyMap.dc.html ('iPad · คำขอรายสัปดาห์'). The app reads RoutineReport.WeeklyRequest, the MP plan's tasks for the week (with their locations), the station's routine settings, its key plan and the team directory. Never hard-code these.",
+  "station": "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย (ตัวอย่าง)",
+  "weeks": [
+    {
+      "no": 31,
+      "th": "28 ก.ค. – 3 ส.ค. 2568",
+      "en": "28 July – 03 August 2025",
+      "status": "approved",
+      "footer": "อนุมัติแล้ว 25 ก.ค. 2568 โดย วนิดา ศรีสุข (ดูอย่างเดียว)"
+    },
+    {
+      "no": 32,
+      "th": "4 – 10 ส.ค. 2568",
+      "en": "04–10 August 2025",
+      "status": "draft"
+    },
+    {
+      "no": 33,
+      "th": "11 – 17 ส.ค. 2568",
+      "en": "11–17 August 2025",
+      "status": "not started"
+    }
+  ],
+  "weekStatusChips": {
+    "approved": "อนุมัติแล้ว",
+    "sent": "ส่งแล้ว รออนุมัติ",
+    "draft": "ร่าง",
+    "not started": "ยังไม่เริ่ม"
+  },
+  "dayNames": [
+    "จ",
+    "อ",
+    "พ",
+    "พฤ",
+    "ศ",
+    "ส"
+  ],
+  "mpLinesWeek32": [
+    {
+      "code": "2.4",
+      "task": "ติดตั้งรางเก็บสายไฟกระแสตรง",
+      "location": "หลังคา 1",
+      "plannedDays": [
+        "จ",
+        "อ",
+        "พ"
+      ],
+      "inRequest": true
+    },
+    {
+      "code": "2.5",
+      "task": "ติดตั้งรางเก็บสายไฟกระแสสลับ",
+      "location": "ห้องอินเวอร์เตอร์",
+      "plannedDays": [
+        "พ",
+        "พฤ"
+      ],
+      "inRequest": true
+    },
+    {
+      "code": "2.6",
+      "task": "ติดตั้งตู้ Fire Fighter Switch",
+      "location": "ถังน้ำใส 1",
+      "plannedDays": [
+        "พฤ",
+        "ศ",
+        "ส"
+      ],
+      "inRequest": true
+    },
+    {
+      "code": "2.4",
+      "task": "ติดตั้งรางเก็บสายไฟกระแสตรง",
+      "location": "หลังคา 2",
+      "plannedDays": [
+        "พฤ",
+        "ศ"
+      ],
+      "inRequest": false
+    },
+    {
+      "code": "2.4",
+      "task": "ติดตั้งรางเก็บสายไฟกระแสตรง",
+      "location": "หลังคา 3",
+      "plannedDays": [
+        "ศ",
+        "ส"
+      ],
+      "inRequest": false
+    }
+  ],
+  "lineColours": {
+    "_note": "Pin / card colour by line order, cycling",
+    "list": [
+      "#1F6FB5",
+      "#D9822B",
+      "#2E9E5B",
+      "#8E44AD",
+      "#C0392B"
+    ]
+  },
+  "crewWeek32": [
+    {
+      "role": "ผู้ควบคุมงาน",
+      "count": 1
+    },
+    {
+      "role": "หัวหน้างาน",
+      "count": 1
+    },
+    {
+      "role": "ผู้ปฏิบัติงาน",
+      "count": 5
+    }
+  ],
+  "toolsWeek32": [
+    {
+      "name": "สว่านไร้สาย",
+      "count": 1
+    },
+    {
+      "name": "สว่านไฟฟ้า",
+      "count": 1
+    },
+    {
+      "name": "เครื่องมือช่าง",
+      "count": 1
+    }
+  ],
+  "labourTiles": [
+    {
+      "k": "แรงงานทั้งสัปดาห์",
+      "v": "42 คน·วัน",
+      "s": "7 คน × 6 วัน"
+    },
+    {
+      "k": "วันที่มีงาน",
+      "v": "6 วัน",
+      "s": "จ อ พ พฤ ศ ส"
+    }
+  ],
+  "workTime": {
+    "presets": [
+      "08:00–17:00",
+      "08:00–18:00",
+      "07:00–16:00"
+    ],
+    "value": "08:00–18:00",
+    "startRange": "06:00–10:00",
+    "endRange": "15:00–20:00",
+    "minHours": 4,
+    "summary": "ทำงาน 10 ชม. ต่อวัน",
+    "pdfLine": "Working Time: 08.00 AM - 18.00 PM"
+  },
+  "riskMatrix": {
+    "_note": "5 × 5 likelihood × severity. Bands: 1–4 ต่ำ, 5–9 ปานกลาง, 10–16 สูง, 20–25 สูงมาก.",
+    "likelihood": [
+      "แทบไม่เกิด",
+      "ไม่น่าเกิด",
+      "อาจเกิด",
+      "น่าจะเกิด",
+      "เกิดแน่นอน"
+    ],
+    "severity": [
+      "เล็กน้อย",
+      "ปฐมพยาบาล",
+      "ต้องรักษา",
+      "บาดเจ็บสาหัส",
+      "เสียชีวิต"
+    ],
+    "bands": [
+      {
+        "max": 4,
+        "t": "ต่ำ",
+        "colour": "#2E9E5B"
+      },
+      {
+        "max": 9,
+        "t": "ปานกลาง",
+        "colour": "#F08C00"
+      },
+      {
+        "max": 16,
+        "t": "สูง",
+        "colour": "#D9453B"
+      },
+      {
+        "max": 25,
+        "t": "สูงมาก",
+        "colour": "#8E1B12"
+      }
+    ]
+  },
+  "hazards": {
+    "_note": "The board's hazard list: name, controls (hierarchy of controls), the board's default likelihood / severity and when it applies to a line. To be reviewed by the team's safety officer before shipping (§7 Q3).",
+    "list": [
+      {
+        "t": "การทำงานบนที่สูง (Working at height)",
+        "controls": [
+          "ติดตั้ง Lifeline / ราวกันตกก่อนขึ้นหลังคา",
+          "ใบอนุญาตทำงานบนที่สูงและผู้เฝ้าระวัง",
+          "Full Body Harness + Double lanyard เกี่ยวตลอดเวลา (100% tie-off)"
+        ],
+        "L": 3,
+        "S": 5,
+        "appliesWhen": "location is a roof (หลังคา) or a tank (ถัง)"
+      },
+      {
+        "t": "ไฟฟ้าช็อต / อาร์กแฟลช (Electric shock / Arc flash)",
+        "controls": [
+          "ตัดแยกแหล่งจ่ายและทำ LOTO",
+          "วัดยืนยันไม่มีแรงดันก่อนสัมผัส (Test before touch)",
+          "ด้าน DC เปิด DC isolator และห้ามปลดขั้วต่อขณะมีกระแส",
+          "ถุงมือฉนวนและชุด Arc-rated ตามระดับแรงดัน"
+        ],
+        "L": 2,
+        "S": 5,
+        "appliesWhen": "task names cables (สายไฟ), a cabinet (ตู้) or the inverter (อินเวอร์เตอร์)"
+      },
+      {
+        "t": "วัตถุตกหล่น (Dropped objects)",
+        "controls": [
+          "กั้นเขตอันตรายด้านล่าง (Exclusion zone) และติดป้าย",
+          "Toe board และผูกเครื่องมือ (Tool lanyard)",
+          "หมวกนิรภัยมีสายรัดคาง"
+        ],
+        "L": 3,
+        "S": 3,
+        "appliesWhen": "task names modules (แผง) or trays (ราง) on a roof"
+      },
+      {
+        "t": "ความเครียดจากความร้อน (Heat stress)",
+        "controls": [
+          "ประเมินดัชนี WBGT ทุกวัน",
+          "จัดรอบพักตามค่าความร้อน",
+          "น้ำดื่มและที่พักในร่ม"
+        ],
+        "L": 3,
+        "S": 2,
+        "appliesWhen": "never automatically (added by hand)"
+      },
+      {
+        "t": "ฟ้าผ่า (Lightning)",
+        "controls": [
+          "หยุดงานบนหลังคาและงานไฟฟ้ากลางแจ้งตามกฎ 30/30",
+          "กลับมาทำต่อเมื่อพ้น 30 นาทีหลังฟ้าร้องครั้งสุดท้าย"
+        ],
+        "L": 2,
+        "S": 5,
+        "appliesWhen": "never automatically (added by hand)"
+      }
+    ]
+  },
+  "signature": {
+    "title": "ลงนามผู้รายงาน",
+    "role": "SITE ENGINEER",
+    "name": "นายสมชาย ใจดี",
+    "signedAt": "17:40"
+  },
+  "footer": {
+    "blocked": [
+      "ยังไม่มีงาน แตะ + บนผังเพื่อเพิ่มงานตามแผน MP",
+      "งาน n ยังไม่เลือกวัน",
+      "ยังไม่มีทีมงาน",
+      "งาน n ยังไม่ประเมินความเสี่ยง",
+      "ผู้รายงานยังไม่ได้เซ็น"
+    ],
+    "ready": "ครบทุกส่วนแล้ว พร้อมส่งขออนุมัติ",
+    "sent": "ส่งขออนุมัติแล้ว รอทีมภายในตรวจ แก้ไขได้เมื่อถูกส่งกลับ",
+    "buttons": {
+      "save": "บันทึกร่างตอนนี้",
+      "preview": "PDF 1 หน้า / ดูตัวอย่างคำขอ",
+      "send": "ส่งขออนุมัติ",
+      "withdraw": "ถอนกลับมาแก้",
+      "approved": "อนุมัติแล้ว"
+    }
+  },
+  "assets": {
+    "keyplan-example.jpg": "Example station picture (โชคชัย) the board's key plan uses; the app uses the station's own key plan (Job.keyPlanTag photo, else the survey's A2 picture)."
+  }
+}

@@ -394,8 +394,11 @@ struct DailyWorkTimePopover: View {
     @Binding var report: RoutineReport.Daily
     let date: Date
     let close: () -> Void
-    /// Opens the weather editor (the 15-hour strip has no room here).
-    let weather: () -> Void
+    /// Opens the weather editor (the 15-hour strip has no room here); nil hides the row (the weekly request has none).
+    let weather: (() -> Void)?
+    /// The title after `เวลาทำงาน | ` (the day's date by default) and the line under the steppers, for the weekly request.
+    var title: String? = nil
+    var summary: String? = nil
 
     private typealias W = RoutineReport.WorkHours
     private var start: Int { RoutineReport.hour(report.workStart) ?? 8 }
@@ -404,7 +407,7 @@ struct DailyWorkTimePopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("เวลาทำงาน | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("เวลาทำงาน | " + (title ?? RoutineReport.thaiWeekdayDate(date))).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Button(action: close) {
@@ -417,9 +420,9 @@ struct DailyWorkTimePopover: View {
             presets
             stepper("เริ่มงาน", hour: start, moveEnd: false, id: "workStart")
             stepper("เลิกงาน", hour: end, moveEnd: true, id: "workEnd")
-            weatherRow
+            if weather != nil { weatherRow }
             HStack(spacing: 12) {
-                Text("ทำงาน \(max(end - start, 0)) ชม. | ใช้คำนวณ คน·ชม. และชั่วโมงฝนในเวลางาน")
+                Text(summary ?? "ทำงาน \(max(end - start, 0)) ชม. | ใช้คำนวณ คน·ชม. และชั่วโมงฝนในเวลางาน")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Button(action: close) { Text("เสร็จ").font(.sarabunFixed(16, .bold)).frame(width: 76, height: 44) }
@@ -486,7 +489,7 @@ struct DailyWorkTimePopover: View {
     }
 
     private var weatherRow: some View {
-        Button(action: weather) {
+        Button { weather?() } label: {
             HStack(spacing: 8) {
                 Image(systemName: report.rainHours > 0 ? "cloud.rain" : "sun.max").font(.system(size: 15)).foregroundStyle(Theme.primary)
                 Text("สภาพอากาศ").font(.sarabunFixed(15)).foregroundStyle(Theme.navy)

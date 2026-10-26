@@ -3,7 +3,7 @@ import Compression
 
 /// WBS ticks into the plan file (docs/specs/project-plan-wbs.md, step 3), on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/MPWBSTicksUITests -derivedDataPath <scratch>`.
-/// The first job starts from template P9-012 (`-mpClear YES -mpTemplate P9-012`) with 2.1.1 and 2.1.3 ticked (`-mpTickWBS`);
+/// The first job starts from template P3-028 (`-mpClear YES -mpTemplate P3-028`) with 2.1.1 and 2.1.3 ticked (`-mpTickWBS`);
 /// the Excel menu's export, copied by `-mpExportFile`, must carry the tick: `Y` in the `แผนโครงการ` sheet and the
 /// export's record of ticked rows. The first job keeps that plan and tick.
 final class MPWBSTicksUITests: XCTestCase {
@@ -15,7 +15,7 @@ final class MPWBSTicksUITests: XCTestCase {
     func testATickGoesIntoTheExportedFile() throws {
         try? FileManager.default.removeItem(at: exported)
         let app = XCUIApplication()
-        app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpTemplate", "P9-012", "-mpTickWBS", "2.1.1,2.1.3",
+        app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpTemplate", "P3-028", "-mpTickWBS", "2.1.1,2.1.3",
                                "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
         app.launch()
 

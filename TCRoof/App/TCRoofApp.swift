@@ -257,7 +257,7 @@ struct DebugScreen: View {
         case "log": if let log = job?.logs.first { InstallLogDetailView(log: log) }
         case "icl": if let job { InspectionView(job: job) }
         // `-mpClear YES` opens it on the job with no plan, no progress, no WBS and no plan file instead; then
-        // `-mpTemplate P9-012` starts it from that template case and `-mpTickWBS 2.1.1,2.1.2` ticks those WBS rows today
+        // `-mpTemplate P3-028` starts it from that station's plan file (moved to today) and `-mpTickWBS 2.1.1,2.1.2` ticks those WBS rows today
         case "mp": if let job = Self.mpJob.flatMap({ id in jobs.first { $0.syncID == id } }) ?? job {
             MPScheduleScreen(job: job).onAppear {
                 guard Self.mpJob == nil else { return }

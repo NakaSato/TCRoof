@@ -1,15 +1,20 @@
 import Foundation
 import TCRoofCore
 
-/// The team's install templates (`Project_Plan_TCRoof`, docs in its `อ่านก่อน.txt`): one plan workbook per case, site
-/// type × กันย้อน HV / LV × inverter under / from 200 kVA, bundled as `PlanTemplates` (a link to the import files, so a
-/// regenerated set ships as it is). A station's plan starts from one: the case's plan moved to the station's kickoff,
-/// written into a copy of its file, which the station keeps as its own plan workbook (`Job.scheduleWorkbook`).
+/// The team's station plans (`Project_Plan_TCRoof/2_แผนนำเข้า TCRoof (102 สถานี)`): one plan workbook per PWA station,
+/// bundled as `PlanTemplates` (a link to the import files, so a regenerated set ships as it is). A station's plan starts
+/// from one, normally its own: the plan moved to the station's kickoff, written into a copy of its file, which the
+/// station keeps as its own plan workbook (`Job.scheduleWorkbook`). An older example set's files (`แม่แบบ <site> · กันย้อน
+/// HV · Inverter < 200 kVA`) still read, with their site type.
 public enum MPTemplates {
     public struct Case: Identifiable, Hashable, Sendable {
-        /// `P9-001`: the file name's code.
+        /// `P3-001`: the file name's code.
         public let id: String
-        /// `หลังคาลอนคู่`, `ถังน้ำใส`, `Carport` …, as the file's title names it.
+        /// The station, `สถานีผลิตจ่ายน้ำแม่ข่ายชัยบาดาล`; an example file's case title.
+        public let name: String
+        /// The file's second line: สาขา, region, กฟภ., inverter, zero export, request, people.
+        public let detail: String
+        /// `หลังคาลอนคู่`, `ถังน้ำใส` … for an example file; empty for a station's (its file doesn't say).
         public let site: String
         /// `HV` or `LV`.
         public let backfeed: String
@@ -17,25 +22,70 @@ public enum MPTemplates {
         public let kWp: Double?
         public let url: URL
 
-        public var title: String { "\(site) | กันย้อน \(backfeed) | Inverter \(over200kVA ? "≥" : "<") 200 kVA" }
+        public var title: String { site.isEmpty ? name : "\(site) | กันย้อน \(backfeed) | Inverter \(over200kVA ? "≥" : "<") 200 kVA" }
+        /// `กปภ.สาขาชัยบาดาล`
+        public var branch: String { detail.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? "" }
+
+        /// Search by code, station, สาขา or anything on its second line.
+        public func matches(_ query: String) -> Bool {
+            let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+            return q.isEmpty || [id, name, detail].contains { $0.lowercased().contains(q) }
+        }
     }
 
     /// The bundled templates' folder.
     public static var bundled: URL? { Bundle.module.url(forResource: "PlanTemplates", withExtension: nil) }
 
-    /// Every case in `folder`, by code; a file whose title doesn't name its case is left out. Reads only each file's
-    /// shared strings for its title (`แผนโครงการ P9-001 – แม่แบบ … 150.48 kWp`), not its sheets.
+    /// Every file in `folder` whose title names its station or case, by code. Reads only each file's shared strings,
+    /// not its sheets.
     public static func cases(in folder: URL? = bundled) -> [Case] {
         guard let folder, let urls = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
         else { return [] }
         return urls.filter { $0.pathExtension == "xlsx" }.compactMap { url -> Case? in
-            guard let data = try? Data(contentsOf: url), let strings = (try? ZipArchive(data))?.string("xl/sharedStrings.xml"),
-                  let title = title(in: strings), let c = parse(title) else { return nil }
-            let name = url.lastPathComponent
-            return Case(id: String(name.prefix { $0 != " " }), site: c.site, backfeed: c.backfeed, over200kVA: c.over200kVA,
-                        kWp: MPWorkbook.station(project: title, fileName: name).kWp, url: url)
+            guard let data = try? Data(contentsOf: url), let strings = (try? ZipArchive(data))?.string("xl/sharedStrings.xml")
+            else { return nil }
+            let name = url.lastPathComponent, code = String(name.prefix { $0 != " " })
+            if let title = title(in: strings), let c = parse(title) {
+                return Case(id: code, name: c.site, detail: "", site: c.site, backfeed: c.backfeed, over200kVA: c.over200kVA,
+                            kWp: MPWorkbook.station(project: title, fileName: name).kWp, url: url)
+            }
+            guard let s = station(in: strings) else { return nil }
+            return Case(id: code, name: s.name, detail: s.detail, site: "", backfeed: s.backfeed, over200kVA: s.over200kVA,
+                        kWp: s.kWp, url: url)
         }
         .sorted { $0.id < $1.id }
+    }
+
+    /// A station file's first two shared strings: `แผนโครงการ P3-001 – <station> 163.02 kWp`, then `กปภ.สาขา…, Inverter 160 kW
+    /// (ไม่ต้อง พค.2), Zero export HV, …`.
+    static func station(in sharedStrings: String) -> (name: String, kWp: Double?, detail: String, backfeed: String, over200kVA: Bool)? {
+        let items = sharedStrings.components(separatedBy: "<si>").dropFirst().prefix(4).map { item -> String in
+            let text = item.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+            return SharedStrings.unescape(text).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard let title = items.first(where: { $0.hasPrefix("แผนโครงการ ") }), let dash = title.range(of: " – "),
+              let detail = items.first(where: { $0.contains("Zero export") }) else { return nil }
+        var name = String(title[dash.upperBound...])
+        var kWp: Double?
+        if let k = name.range(of: #"\s*[\d,]+(\.\d+)?\s*kWp$"#, options: .regularExpression) {
+            kWp = Double(name[k].replacingOccurrences(of: "kWp", with: "").replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces))
+            name = String(name[..<k.lowerBound])
+        }
+        guard let ze = detail.range(of: #"Zero export (HV|LV)"#, options: .regularExpression) else { return nil }
+        let backfeed = String(detail[ze].suffix(2))
+        // พค.2 is the ≥ 200 kVA case's paper
+        let over = detail.contains("ต้องยื่น พค.2")
+        return (name.trimmingCharacters(in: .whitespaces), kWp, detail, backfeed, over)
+    }
+
+    /// The station's own file: its code (`P3-001`) in the job's code or name, else the same station name
+    /// (`MPWorkbook.stationKey`).
+    public static func best(for stationName: String, code: String, in cases: [Case]) -> Case? {
+        let text = (code + " " + stationName).uppercased()
+        if let c = cases.first(where: { text.contains($0.id.uppercased()) }) { return c }
+        let key = MPWorkbook.stationKey(stationName)
+        guard !key.isEmpty else { return nil }
+        return cases.first { !$0.site.isEmpty ? false : MPWorkbook.stationKey($0.name) == key }
     }
 
     /// The first shared string naming a template's case.
@@ -61,10 +111,12 @@ public enum MPTemplates {
 
     /// The case's file with its plan moved so the kickoff falls on `kickoff`, and that file read back: what a station
     /// takes, as an import of the file would give it. No progress.
-    public static func plan(_ c: Case, kickoff: Date, calendar cal: Calendar = MasterSchedule.calendar) throws
+    /// `kickoff` nil keeps the file's own dates and progress: a station taking its own plan, as importing its file would.
+    public static func plan(_ c: Case, kickoff: Date?, calendar cal: Calendar = MasterSchedule.calendar) throws
         -> (data: Data, imported: MPWorkbook.Imported) {
         let original = try Data(contentsOf: c.url)
         let template = try MPWorkbook.read(original, calendar: cal)
+        guard let kickoff else { return (original, template) }
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: template.input.kickoff), to: cal.startOfDay(for: kickoff)).day ?? 0
         guard days != 0 else { return (original, template) }
         let out = try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),

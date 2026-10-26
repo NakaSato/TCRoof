@@ -9,15 +9,25 @@ final class WBSTicksExcelTests: XCTestCase {
     let cal = MasterSchedule.calendar
     func day(_ d: Int) -> Date { cal.date(from: DateComponents(year: 2026, month: 12, day: d))! }
 
+    /// P3-001's file with its rows unticked: the station files carry their progress (`Y` on 15 rows).
     func template() throws -> Data {
-        try Data(contentsOf: XCTUnwrap(MPTemplates.cases().first { $0.id == "P9-001" }).url)
+        let real = try Data(contentsOf: XCTUnwrap(MPTemplates.cases().first { $0.id == "P3-001" }).url)
+        let file = try MPWorkbook.read(real)
+        return try MPWorkbook.export(real, input: file.input, actual: file.actual, ticks: [:]).data
+    }
+
+    func testAStationFileCarriesItsTicks() throws {
+        let real = try Data(contentsOf: XCTUnwrap(MPTemplates.cases().first { $0.id == "P3-001" }).url)
+        let file = try MPWorkbook.read(real)
+        XCTAssertTrue(file.wbsDone.contains("1.1"), "Kick Off is done")
+        XCTAssertEqual(file.wbsDone.count, 15)
     }
 
     func testTicksGoIntoTheSheetAndComeBack() throws {
         let original = try template()
         let file = try MPWorkbook.read(original)
         XCTAssertEqual(file.wbsDone, [])
-        XCTAssertNil(file.wbsBase)
+        XCTAssertEqual(file.wbsBase ?? [], [], "nothing ticked at the clearing export")
 
         // the Inverter station table's rows have no เสร็จ cells: 2.5.1.2's tick stays in the app, out of the record
         let ticks = ["2.1.1": MasterSchedule.WBSTick(by: "a@tcroof.test", at: day(7)),

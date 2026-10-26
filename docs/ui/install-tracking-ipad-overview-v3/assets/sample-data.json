@@ -1,0 +1,61 @@
+{
+  "_note": "Example values from the board (iPadInstall.dc.html, menu \"ov\"). For -installDemo YES screenshots only. Never hard-code them in the page.",
+  "header": {
+    "title": "การประปาบ้านโป่ง (ตัวอย่าง)",
+    "subtitle": "งานติดตั้ง 90 kWp | ทีม TCR02 | เริ่ม 24/9/2569 | ส่งมอบ 6/10/2569",
+    "buttons": ["ผู้ช่วย AI", "รายงานสำรวจ"]
+  },
+  "kpi": {
+    "actions": { "value": "5 เรื่อง", "detail": "ตู้ AC | WR-02 | RFI-03", "rule": "documents due + open problems (same formula as today: nDue + 1)" }
+  },
+  "documentTiles": [
+    { "id": "daily", "title": "Daily Report", "status": "ok", "chip": "วันนี้ส่งแล้ว" },
+    { "id": "weekly", "title": "Weekly Report", "status": "due", "chip": "W40 ครบ 4/10" },
+    { "id": "permits", "title": "Work Permit", "status": "ok", "chip": "ใช้งาน 2" },
+    { "id": "mom", "title": "MOM", "status": "ok", "chip": "2 ฉบับ" },
+    { "id": "rfi", "title": "RFI ขอตรวจงาน", "status": "due", "chip": "รอยื่น 1" },
+    { "id": "material", "title": "Material Approval", "status": "wait", "chip": "อนุมัติ 4/5" },
+    { "id": "ncr", "title": "NCR งานไม่ตรงสเปก", "status": "ok", "chip": "เปิด 0" },
+    { "id": "co", "title": "Change Order", "status": "ok", "chip": "1 รายการ" },
+    { "id": "commissioning", "title": "Test & Commissioning", "status": "none", "chip": "3/10" },
+    { "id": "punch", "title": "Punch List", "status": "none", "chip": "หลังทดสอบ" },
+    { "id": "grid", "title": "4.2 ขนานไฟ (กฟภ.)", "status": "ok", "chip": "ครบ 11/11",
+      "about": "ชุดยื่น กปภ. ของสถานีนี้ | ยื่นครบแล้ว รอ กฟภ. นัดตรวจ",
+      "papers": [
+        ["4.2-01", "คำขออนุญาตขนานไฟ (กฟภ.)", "ทีมเราทำ | แอปสร้างได้", "อนุมัติแล้ว"],
+        ["4.2-02", "Single Line Diagram | วิศวกรรับรอง", "ทีมเราทำ | วิศวกรไฟฟ้า", "อนุมัติแล้ว"],
+        ["4.2-03", "Datasheet แผง + Inverter", "ดึงจากคลังกลาง", "อนุมัติแล้ว"],
+        ["4.2-04", "ใบ กว. + ตพค. วิศวกรไฟฟ้า", "ดึงจากคลังกลาง", "อนุมัติแล้ว"],
+        ["4.2-05", "พ.ร.บ.การประปาส่วนภูมิภาค", "ดึงจากคลังกลาง", "อนุมัติแล้ว"],
+        ["4.2-06", "ใบแจ้งค่าไฟ 3 เดือน", "ขอจาก กปภ.สาขา", "อนุมัติแล้ว"],
+        ["4.2-07", "แผนที่ตั้ง (Google Map)", "ทีมเราทำ", "อนุมัติแล้ว"],
+        ["4.2-08", "ภาพถ่ายการติดตั้ง", "ทีมเราทำ | ผู้ควบคุมงาน", "อนุมัติแล้ว"],
+        ["4.2-09", "ใบรับรอง Inverter (ผู้ผลิต)", "ขอจากผู้ผลิต", "อนุมัติแล้ว"],
+        ["4.2-10", "สำเนาบัตรผู้มอบ / ผู้รับมอบ", "ขอจาก กปภ.สาขา | ปิดข้อมูลบนบัตรแล้ว", "อนุมัติแล้ว"],
+        ["4.2-11", "หนังสือมอบอำนาจ (ติดอากร)", "เราร่าง → ผจก.สาขาลงนาม", "อนุมัติแล้ว"]
+      ] },
+    { "id": "devices", "title": "อุปกรณ์ที่ติดตั้ง", "status": "due", "chip": "S/N ขาด 14",
+      "about": "ทะเบียนอุปกรณ์ที่ติดตั้งจริง พร้อม Serial No. และภาพป้ายข้อมูล | ใช้ทำใบรับประกันและ As-built",
+      "rows": [
+        ["EQ-PV", "แผงโซลาร์ (PV) | 570 W", "ติดตั้ง 164/164 แผง | S/N 158/164 | สำรอง 2 แผง", "due", "ขาด S/N 6"],
+        ["EQ-INV", "อินเวอร์เตอร์ | 60 + 30 kW", "ติดตั้ง 0/2 (ขั้น 5 | 2/10) | S/N 2/2 บันทึกตอนรับของ", "wait", "รอติดตั้ง"],
+        ["EQ-MTR", "มิเตอร์ | Smart meter กันย้อน + มิเตอร์ กฟภ.", "ติดตั้ง 0/2 | มิเตอร์ กฟภ. บันทึกหลังขนานไฟ", "none", "ยังไม่ถึง"],
+        ["EQ-RSD", "Rapid shutdown | 1 ตัวต่อ 2 แผง", "ติดตั้ง 82/82 | S/N 76/82 | ตัวส่งสัญญาณ 2 ชุด", "due", "ขาด S/N 6"]
+      ],
+      "rowButton": "เปิดบันทึก ›" },
+    { "id": "handover", "title": "ส่งมอบงาน", "status": "due", "chip": "1/4 ฉบับ",
+      "about": "ชุดส่งมอบ กปภ. ของสถานีนี้ | กำหนดส่งมอบ 6/10/2569",
+      "papers": [
+        ["HO-01", "As-Built Drawing", "ทีมเราทำ | วิศวกรไฟฟ้า | ครบกำหนด 6/10", "due", "ร่าง"],
+        ["HO-02", "รายงาน IEC 62446", "ทีมเราทำ | จากแท็บทดสอบ IEC 62446 | ทดสอบ 3/10", "none", "ยังไม่มี"],
+        ["HO-03", "คู่มือ O&M รายภาค", "ดึงจากคลังกลาง", "ok", "อนุมัติแล้ว"],
+        ["HO-04", "ใบรับประกันอุปกรณ์", "ขอจากผู้ผลิต | ใช้ S/N จากอุปกรณ์ที่ติดตั้ง", "none", "ยังไม่มี"]
+      ] }
+  ],
+  "statusColours": {
+    "ok":   { "dot": "#2E9E5B", "pill": "background:#E8F5EE;color:#1F6B43", "theme": "Theme.success / successSoft" },
+    "wait": { "dot": "#6B4FBB", "pill": "background:#EFEBFA;color:#6B4FBB", "theme": "Theme.planInspect / planInspectSoft" },
+    "due":  { "dot": "#F08C00", "pill": "background:#FFF3E6;color:#9A4A06", "theme": "Theme.warningInk / warningSoft" },
+    "none": { "dot": "#C9D3E0", "pill": "background:#F1F4F8;color:#5B6B82", "theme": "Theme.inkMuted / hairline" }
+  }
+}

@@ -45,6 +45,25 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(dim.allSatisfy { $0.first?.1 == "DIMENSION" })
     }
 
+    /// The plan's slope arrows reach the file, and every arrow carries its slope, not only the first pair.
+    func testSlopeArrowsAreNumbered() throws {
+        let v = roof(), t = SketchDXFTests(), plan = RoofDXF.build(v, parts: [.plan]).data
+        let ents = t.entities(plan)
+        let slope = String(data: RoofDXF.tis620("ลาด"), encoding: .isoLatin1)!
+        let labels = ents.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }
+        // a gable roof: two arrows down each face, four in all, each labelled
+        XCTAssertEqual(labels.count, 4)
+        XCTAssertTrue(labels.allSatisfy { t.value($0, "8") == "G-ANNO-TEXT" })
+        // the arrows: a shaft per arrow, at the plan's arrow length, on the text layer with their labels
+        let p = RoofPlan(v), shafts = zip(p.sketch.ops, p.tags).filter { $0.1 == "slope" }
+        XCTAssertEqual(shafts.count, 8, "4 shafts and 4 heads")
+        XCTAssertEqual(p.layout.slopeLabels.count, 2)
+        // a shed roof: two arrows, both labelled
+        var shed = v; shed[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let s = t.entities(RoofDXF.build(shed, parts: [.plan]).data)
+        XCTAssertEqual(s.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }.count, 2)
+    }
+
     func testUnitsAndPV() {
         let mm = RoofDXF.build(roof(), parts: [.plan], millimetres: true), m = RoofDXF.build(roof(), parts: [.plan])
         XCTAssertEqual(mm.entities, m.entities)

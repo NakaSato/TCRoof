@@ -45,6 +45,45 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertTrue(dim.allSatisfy { $0.first?.1 == "DIMENSION" })
     }
 
+    /// The plan's slope arrows reach the file, and every arrow carries its slope, not only the first pair.
+    func testSlopeArrowsAreNumbered() throws {
+        let v = roof(), t = SketchDXFTests(), plan = RoofDXF.build(v, parts: [.plan]).data
+        let ents = t.entities(plan)
+        let slope = String(data: RoofDXF.tis620("ลาด"), encoding: .isoLatin1)!
+        let labels = ents.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }
+        // a gable roof: two arrows down each face, four in all, each labelled
+        XCTAssertEqual(labels.count, 4)
+        XCTAssertTrue(labels.allSatisfy { t.value($0, "8") == "G-ANNO-TEXT" })
+        // the arrows: a shaft per arrow, at the plan's arrow length, on the text layer with their labels
+        let p = RoofPlan(v), shafts = zip(p.sketch.ops, p.tags).filter { $0.1 == "slope" }
+        XCTAssertEqual(shafts.count, 8, "4 shafts and 4 heads")
+        XCTAssertEqual(p.layout.slopeLabels.count, 2)
+        // a shed roof: two arrows, both labelled
+        var shed = v; shed[Roof.Key.shape] = .choice("หลังคาเพิงหมาแหงน", other: "")
+        let s = t.entities(RoofDXF.build(shed, parts: [.plan]).data)
+        XCTAssertEqual(s.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }.count, 2)
+    }
+
+    /// The purlins are steel: a thin C-100x50x20x2.3 wall, one closed polyline filled solid, in the block and on screen.
+    func testPurlinsAreSteel() throws {
+        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.section]).data
+        // the block's definition, from its name to its ENDBLK
+        let l = lines(d), start = try XCTUnwrap(l.indices.first { l[$0] == "RF_PURLIN_C" && l[$0 - 1] == "2" && l[$0 - 2] == "AcDbBlockBegin" })
+        let block = Array(l[start..<(l[start...].firstIndex(of: "ENDBLK") ?? l.endIndex)])
+        XCTAssertTrue(block.contains("HATCH") && block.contains("SOLID"))
+        XCTAssertTrue(block.contains("LWPOLYLINE"))
+        XCTAssertFalse(block.contains("LINE"), "no loose lines left from the reference's thick C")
+        XCTAssertGreaterThan(t.rawEntities(d).filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "RF_PURLIN_C" }.count, 0)
+        // the wall's inside is 2.3 mm in from the outside
+        let c = StructureSection.Cut(.init(.channel(lip: 0.02), h: 0.1, b: 0.05, t: 0.0023), at: Pt(0, 0))
+        let w = c.wall
+        XCTAssertEqual(w.count, 12)
+        XCTAssertEqual(w[9].x - w[2].x, 0.0023, accuracy: 1e-9)
+        XCTAssertEqual(w[9].y, 0.0023, accuracy: 1e-9)
+        // the size's own wall is read
+        XCTAssertEqual(StructureSection.Size.read("C-125x50x20x3.2")?.profile.t ?? 0, 0.0032, accuracy: 1e-9)
+    }
+
     func testUnitsAndPV() {
         let mm = RoofDXF.build(roof(), parts: [.plan], millimetres: true), m = RoofDXF.build(roof(), parts: [.plan])
         XCTAssertEqual(mm.entities, m.entities)

@@ -23,6 +23,8 @@ public struct RoofPlan: Sendable {
         public var slots: [(ref: RoofMountLayout.SlotRef, outline: [Pt], module: Bool)] = []
         /// A shed roof's low-side arrow on the sketch, for a tap that turns it.
         public var shedArrow: Box?
+        /// The slope of each arrow the sketch leaves unlabelled (only the first pair carries `ลาด n°`), for the DXF.
+        public var slopeLabels: [(text: String, at: Pt)] = []
         /// Metres → sketch point, and back.
         public var origin = Pt(0, 0), k = 1.0, lx = 0.0, ly = 0.0
         public func point(x: Double, y: Double) -> Pt { Pt(origin.x + x * k, origin.y + y * k) }
@@ -314,7 +316,7 @@ private struct Drawer {
         }
     }
 
-    /// Slope arrows down both faces, labelled on the first pair.
+    /// Slope arrows down both faces, tagged `slope`, labelled on the first pair (the rest in `Layout.slopeLabels`).
     mutating func slopeArrows() {
         func head(_ tip: Pt, _ dx: Double, _ dy: Double) -> DrawOp {
             // a 10-wide, 10-long triangle pointing from (tip - d) to tip
@@ -322,20 +324,23 @@ private struct Drawer {
             return .polygon([tip, Pt(b.x + n.x, b.y + n.y), Pt(b.x - n.x, b.y - n.y)], stroke: nil, fill: RoofPlan.navy)
         }
         let slope = "ลาด \(fmt(ang))°"
+        func label(_ n: Int, _ x: Double, _ y: Double) {
+            if n == 0 { notes.append((slope, x, y)) } else { L.slopeLabels.append((slope, P(x, y))) }
+        }
         if shed {
             // one face: arrows from the high edge to the low eave
             let s = lowAtStart ? -1.0 : 1.0
             if hor {
                 let from = lowAtStart ? y0 + H - 30 : y0 + 30, to = lowAtStart ? y0 + 30 : y0 + H - 30
                 for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
-                    line(x, from, x, to, 1.2, RoofPlan.navy); add(head(P(x, to + s * 8), 0, s), nil)
-                    if n == 0 { notes.append((slope, x, y0 + H / 2)) }
+                    line(x, from, x, to, 1.2, RoofPlan.navy, "slope"); add(head(P(x, to + s * 8), 0, s), "slope")
+                    label(n, x, y0 + H / 2)
                 }
             } else {
                 let from = lowAtStart ? x0 + W - 30 : x0 + 30, to = lowAtStart ? x0 + 30 : x0 + W - 30
                 for (n, y) in [y0 + H * 0.2, y0 + H * 0.8].enumerated() {
-                    line(from, y, to, y, 1.2, RoofPlan.navy); add(head(P(to + s * 8, y), s, 0), nil)
-                    if n == 0 { notes.append((slope, x0 + W / 2, y - 12)) }
+                    line(from, y, to, y, 1.2, RoofPlan.navy, "slope"); add(head(P(to + s * 8, y), s, 0), "slope")
+                    label(n, x0 + W / 2, y - 12)
                 }
             }
             return
@@ -343,16 +348,16 @@ private struct Drawer {
         if hor {
             for (n, x) in [x0 + W * 0.18, x0 + W * 0.82].enumerated() {
                 let m = y0 + H / 2
-                line(x, m - 12, x, y0 + 30, 1.2, RoofPlan.navy); add(head(P(x, y0 + 22), 0, -1), nil)
-                line(x, m + 12, x, y0 + H - 30, 1.2, RoofPlan.navy); add(head(P(x, y0 + H - 22), 0, 1), nil)
-                if n == 0 { notes.append((slope, x, m - 36)); notes.append((slope, x, m + 36)) }
+                line(x, m - 12, x, y0 + 30, 1.2, RoofPlan.navy, "slope"); add(head(P(x, y0 + 22), 0, -1), "slope")
+                line(x, m + 12, x, y0 + H - 30, 1.2, RoofPlan.navy, "slope"); add(head(P(x, y0 + H - 22), 0, 1), "slope")
+                label(n, x, m - 36); label(n, x, m + 36)
             }
         } else {
             for (n, y) in [y0 + H * 0.2, y0 + H * 0.8].enumerated() {
                 let m = x0 + W / 2
-                line(m - 12, y, x0 + 30, y, 1.2, RoofPlan.navy); add(head(P(x0 + 22, y), -1, 0), nil)
-                line(m + 12, y, x0 + W - 30, y, 1.2, RoofPlan.navy); add(head(P(x0 + W - 22, y), 1, 0), nil)
-                if n == 0 { notes.append((slope, m - 44, y - 12)); notes.append((slope, m + 44, y - 12)) }
+                line(m - 12, y, x0 + 30, y, 1.2, RoofPlan.navy, "slope"); add(head(P(x0 + 22, y), -1, 0), "slope")
+                line(m + 12, y, x0 + W - 30, y, 1.2, RoofPlan.navy, "slope"); add(head(P(x0 + W - 22, y), 1, 0), "slope")
+                label(n, m - 44, y - 12); label(n, m + 44, y - 12)
             }
         }
     }

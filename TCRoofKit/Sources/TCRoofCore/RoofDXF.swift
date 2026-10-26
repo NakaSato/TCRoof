@@ -30,7 +30,7 @@ public enum RoofDXF {
                                                "truss": "TRUSS", "t2": "TRUSS", "raft": "TRUSS", "eave": "TRUSS", "post": "POST",
                                                "purl": "PURLIN", "sky": "SKYLIGHT", "obst": "OBSTACLE", "sec": "SECTION_MARK", "dim": "DIM",
                                                "txt": "TEXT", "dimtxt": "DIM",
-                                               "note": "TEXT", "callout": "TEXT"]
+                                               "note": "TEXT", "callout": "TEXT", "slope": "TEXT"]
     static let pvLayers: [String: String] = ["pv": "PV", "rail": "PV_RAIL", "foot": "PV_FOOT", "cut": "PV_CUT", "kz": "KEEPOUT"]
 
     /// One walkway band on plan (metres, y up from the plan's bottom edge `ly`) as the team's top view draws it: the cross
@@ -226,6 +226,8 @@ public enum RoofDXF {
                 guard let tag, let l = planLayers[tag], L.dimensions.isEmpty || (tag != "dim" && tag != "dimtxt") else { continue }
                 write(op, l, tp, L.k, text: tag == "dimtxt" ? Self.dimText : th)
             }
+            // every slope arrow carries its slope, not only the first pair the sketch labels
+            for l in L.slopeLabels { TEXT("TEXT", tp(l.at), th, l.text, mid: true) }
             dxf.options.fixedTextHeight = Self.dimText
             dxf.add(L.dimensions, layer: layer("DIM"), transform: tp, pointsPerMetre: L.k)
             // the team's north arrow right of the plan, over where the member table starts (lx + 4, from the top),

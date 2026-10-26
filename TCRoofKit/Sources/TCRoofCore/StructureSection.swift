@@ -16,7 +16,9 @@ public struct StructureSection: Sendable {
         public var kind: Kind
         /// Height and width (m).
         public var h, b: Double
-        public init(_ kind: Kind, h: Double, b: Double) { self.kind = kind; self.h = h; self.b = b }
+        /// A C's wall (m): the size's last figure ("C-100x50x20x2.3"), 2.3 mm when it doesn't give one.
+        public var t: Double
+        public init(_ kind: Kind, h: Double, b: Double, t: Double = 0.0023) { self.kind = kind; self.h = h; self.b = b; self.t = t }
     }
 
     /// A member size read from what was entered ("C-100x50x20x3.2", "ไม้ 1\"x8\"", "ค.ส.ล 0.20x0.40", C2's "C 10x5x2").
@@ -58,9 +60,9 @@ public struct StructureSection: Sendable {
             }
             if let st = SteelSection.parse(s) {
                 switch st.shape {
-                case let .lippedC(h, b, lip, _, double):
+                case let .lippedC(h, b, lip, t, double):
                     return Size(depth: h / 1000, width: (double ? 2 * b : b) / 1000, material: .steel,
-                                profile: Profile(.channel(lip: lip / 1000), h: h / 1000, b: b / 1000))
+                                profile: Profile(.channel(lip: lip / 1000), h: h / 1000, b: b / 1000, t: t > 0 ? t / 1000 : 0.0023))
                 case let .tube(h, b, _): return box(h / 1000, b / 1000, .steel)
                 case let .pipe(d, _): return box(d / 1000, d / 1000, .steel)
                 case let .h(h, b, _, _, _): return box(h / 1000, b / 1000, .steel)
@@ -198,6 +200,16 @@ public struct StructureSection: Sendable {
                 return [P(-b / 2, 0), P(b / 2, 0), P(b / 2, h), P(-b / 2, h)]
             }
         }
+        /// A C as its steel: one closed loop round the wall (`profile.t` thick), outside then inside, to fill solid as a
+        /// cut cold-formed section is drawn; a box or a concrete block as `outline`.
+        public var wall: [Pt] {
+            guard case let .channel(lip) = profile.kind else { return outline }
+            let u = Pt(up.y, -up.x), h = profile.h, b = profile.b, t = min(profile.t, b / 4, lip / 2, h / 4)
+            func P(_ s: Double, _ v: Double) -> Pt { Pt(at.x + s * u.x + v * up.x, at.y + s * u.y + v * up.y) }
+            let o = opens, s0 = -o * b / 2, s1 = o * b / 2, i0 = s0 + o * t, i1 = s1 - o * t
+            return [P(s1, lip), P(s1, 0), P(s0, 0), P(s0, h), P(s1, h), P(s1, h - lip),
+                    P(i1, h - lip), P(i1, h - t), P(i0, h - t), P(i0, t), P(i1, t), P(i1, lip)]
+        }
         public var centre: Pt { Pt(at.x + up.x * profile.h / 2, at.y + up.y * profile.h / 2) }
     }
 
@@ -311,7 +323,8 @@ public struct StructureSection: Sendable {
             let o = c.outline.map(P), tag = c.row == 1 ? "PURLIN" : "SECTION"
             switch c.profile.kind {
             case .channel:
-                d.add(.polyline(o, width: 0.9, color: Self.ink), tag)
+                // cold-formed steel: the thin wall filled solid, as the team's sections cut a C
+                d.add(.polygon(c.wall.map(P), stroke: Self.ink, fill: Self.ink, width: 0.5), tag)
             case .box:
                 d.add(.polygon(o, stroke: Self.ink, fill: .white, width: 0.9), tag)
             case .concrete:

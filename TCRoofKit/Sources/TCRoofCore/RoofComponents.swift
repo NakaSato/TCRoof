@@ -34,6 +34,20 @@ public struct RoofComponents: Decodable, Sendable {
                 for s in c.lines where s.count >= 4 { d.line(l, (s[0], s[1]), (s[2], s[3])) }
             }
         }
-        return (block("purlin_c", "RF_PURLIN_C", CADLayers.roofPurlin), block("ridge_cap", "RF_RIDGE_CAP", CADLayers.roofSection))
+        return (purlinBlock(&dxf), block("ridge_cap", "RF_RIDGE_CAP", CADLayers.roofSection))
     }
+
+    /// The purlin as steel: a C-100x50x20x2.3 at the drawing's size, its wall one closed polyline filled with a SOLID
+    /// hatch (the reference drawing's C has a 10 mm wall and reads as a bracket, not a cold-formed section).
+    func purlinBlock(_ dxf: inout SketchDXF) -> String? {
+        guard let size = components["purlin_c"]?.size, size.count == 2 else { return nil }
+        let c = StructureSection.Cut(.init(.channel(lip: Self.purlinLip), h: size[0], b: size[1], t: Self.purlinWall), at: Pt(0, 0))
+        let loop = c.wall.map { ($0.x, $0.y) }
+        return dxf.block("RF_PURLIN_C") { d in
+            d.solid(CADLayers.roofPurlin, loop)
+            d.polyline(CADLayers.roofPurlin, loop, closed: true)
+        }
+    }
+    /// The purlin's lip and wall (m), C-100x50x20x2.3.
+    public static let purlinLip = 0.02, purlinWall = 0.0023
 }

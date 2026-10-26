@@ -64,6 +64,26 @@ final class RoofDXFTests: XCTestCase {
         XCTAssertEqual(s.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }.count, 2)
     }
 
+    /// The purlins are steel: a thin C-100x50x20x2.3 wall, one closed polyline filled solid, in the block and on screen.
+    func testPurlinsAreSteel() throws {
+        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.section]).data
+        // the block's definition, from its name to its ENDBLK
+        let l = lines(d), start = try XCTUnwrap(l.indices.first { l[$0] == "RF_PURLIN_C" && l[$0 - 1] == "2" && l[$0 - 2] == "AcDbBlockBegin" })
+        let block = Array(l[start..<(l[start...].firstIndex(of: "ENDBLK") ?? l.endIndex)])
+        XCTAssertTrue(block.contains("HATCH") && block.contains("SOLID"))
+        XCTAssertTrue(block.contains("LWPOLYLINE"))
+        XCTAssertFalse(block.contains("LINE"), "no loose lines left from the reference's thick C")
+        XCTAssertGreaterThan(t.rawEntities(d).filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "RF_PURLIN_C" }.count, 0)
+        // the wall's inside is 2.3 mm in from the outside
+        let c = StructureSection.Cut(.init(.channel(lip: 0.02), h: 0.1, b: 0.05, t: 0.0023), at: Pt(0, 0))
+        let w = c.wall
+        XCTAssertEqual(w.count, 12)
+        XCTAssertEqual(w[9].x - w[2].x, 0.0023, accuracy: 1e-9)
+        XCTAssertEqual(w[9].y, 0.0023, accuracy: 1e-9)
+        // the size's own wall is read
+        XCTAssertEqual(StructureSection.Size.read("C-125x50x20x3.2")?.profile.t ?? 0, 0.0032, accuracy: 1e-9)
+    }
+
     func testUnitsAndPV() {
         let mm = RoofDXF.build(roof(), parts: [.plan], millimetres: true), m = RoofDXF.build(roof(), parts: [.plan])
         XCTAssertEqual(mm.entities, m.entities)

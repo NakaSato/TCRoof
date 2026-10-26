@@ -127,6 +127,25 @@ public extension MasterSchedule {
         }
     }
 
+    /// The ticks a plan file brings (its `แผนโครงการ` sheet's `เสร็จ (Y)` column, docs/specs/project-plan-wbs.md step
+    /// 3): only rows ticked or unticked in the file since `base` (the rows it was exported with, else the file the job
+    /// keeps) change, so a tick made in the app after the export stays. A row ticked in the file takes its `เสร็จ` date,
+    /// else `today`, in the name of who imports it. Returns the ticks and how many rows changed.
+    static func mergingTicks(_ local: [String: WBSTick], fileDone: Set<String>, dates: [String: Date], base: Set<String>?,
+                        by: String, today: Date) -> (ticks: [String: WBSTick], changed: Int) {
+        let base = base ?? []
+        var out = local, changed = 0
+        for code in fileDone.subtracting(base).sorted() where out[code] == nil {
+            out[code] = WBSTick(by: by, at: dates[code] ?? today)
+            changed += 1
+        }
+        for code in base.subtracting(fileDone).sorted() where out[code] != nil {
+            out[code] = nil
+            changed += 1
+        }
+        return (out, changed)
+    }
+
     /// What `bookWBS` booked for one ticked row, so taking the tick back takes exactly that away.
     struct WBSBooking: Codable, Equatable, Sendable {
         /// Task raw value and week key (`Actual.key`).

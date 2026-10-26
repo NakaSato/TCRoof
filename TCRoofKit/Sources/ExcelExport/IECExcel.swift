@@ -391,7 +391,8 @@ final class SharedStrings {
 /// One sheet's XML with its `<c>` elements indexed once; cells are replaced in place, from the end, so the rest of the
 /// sheet (rows, merges, print set-up) stays byte for byte.
 struct SheetCells {
-    enum Value: Equatable { case number(Double), string(Int), empty }
+    /// `inline` writes the text in the cell itself (`t="inlineStr"`), for a sheet whose shared strings aren't rewritten.
+    enum Value: Equatable { case number(Double), string(Int), inline(String), empty }
     enum Cached { case number(Double), string(String) }
 
     private(set) var source: String
@@ -436,6 +437,7 @@ struct SheetCells {
         case .empty: changes[ref] = #"<c r="\#(ref)"\#(s)/>"#
         case .number(let n): changes[ref] = #"<c r="\#(ref)"\#(s)><v>\#(IECExcel.number(n))</v></c>"#
         case .string(let i): changes[ref] = #"<c r="\#(ref)"\#(s) t="s"><v>\#(i)</v></c>"#
+        case .inline(let t): changes[ref] = #"<c r="\#(ref)"\#(s) t="inlineStr"><is><t>\#(SharedStrings.escape(t))</t></is></c>"#
         }
     }
 

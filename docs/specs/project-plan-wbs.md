@@ -74,11 +74,20 @@ about 35 KB to every job, and a device on an older build that saves ตั้ง
 `config/app.minSyncVersion` to 6 before anyone ticks: an older build saving the progress drops `fromWBS`, and the ticks
 would then book again.
 
-## Step 3: ticks back to Excel
+## Step 3: ticks back to Excel (built)
 
-Export writes each ticked sub-task into the `แผนโครงการ` sheet and `รับเฉพาะความก้าวหน้า` takes the ticks changed in
-Excel, as it does for the weekly points. Which column takes the tick has to be settled with the template's author:
-column M is a reference into `อัปเดตงาน WBS`, a sheet the import files leave out.
+The full workbook already says where a tick goes: in a station's sheet, `เสร็จ / นัด` (L, under `จริง / นัด`) takes the
+finish date and `เสร็จ (Y · S)` (M) takes `Y`, both by formula from `อัปเดตงาน WBS`. The import files keep them as empty
+cells, so the app fills them.
+
+- Export (`MPWorkbook.export(…, ticks:)`, the plan screen's and the install page's Excel menu) writes `Y` (an inline
+  string) and the tick's day into each ticked row and clears both on a row the app unticked; a row that wasn't ticked
+  keeps whatever L has (an appointment date). Formula cells are left alone. The rows it wrote are kept in the file as a
+  custom XML part of their own (`urn:tcroof:wbs-ticks`, next to the progress record).
+- Import (a whole plan or `รับเฉพาะความก้าวหน้า`) reads the `Y` rows and their dates (`Imported.wbsDone`) and takes only
+  the rows ticked or unticked in Excel since that record (else since the file the job keeps), in the importer's name
+  (`MasterSchedule.mergingTicks`, `MPWorkbookFlow.takeTicks`); a tick made in the app after the export stays.
+- The Inverter station table's steps have no such cells, so their ticks stay in the app and out of the record.
 
 ## Step 4: the rest
 
@@ -113,4 +122,4 @@ column M is a reference into `อัปเดตงาน WBS`, a sheet the impo
 3. Ticks sync both ways with the contractor's devices: a Firestore rule for the contractor's push (as the weekly
    request's, signed with its email), `AppCompat.syncVersion` raised, `config/app.minSyncVersion` set once every device
    runs it.
-4. Step 3's tick column is decided later, with the template's author.
+4. Step 3's tick column: L and M, as the full workbook's own formulas fill them (2026-10-26).

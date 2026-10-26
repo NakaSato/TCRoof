@@ -111,7 +111,7 @@ struct MPScheduleScreen: View {
                 workbook.apply(.init(data: data, name: "mp-import.xlsx", imported: imported), to: job, context: context)
             }
             if mode == "export", let original = job.scheduleWorkbook, let input = job.scheduleInput,
-               let out = try? MPWorkbook.export(original, input: input, actual: job.scheduleActual) {
+               let out = try? MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks) {
                 try? out.data.write(to: docs.appendingPathComponent("mp-export.xlsx"))
             }
         }

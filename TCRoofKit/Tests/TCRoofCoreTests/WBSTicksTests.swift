@@ -77,6 +77,27 @@ final class WBSTicksTests: XCTestCase {
         XCTAssertNil(a.fromWBS["2.1.2"])
     }
 
+    /// A plan file's ticks (step 3): only what was ticked or unticked in the file since the export changes the job.
+    func testTicksFromAFileTakeOnlyWhatChangedThere() {
+        let local = ["2.1.1": tick(7), "2.1.3": tick(9, "sub@contractor.test")]
+        // exported with 2.1.1 and 2.1.3; in Excel 2.1.2 was ticked (with a date) and 2.1.1 unticked; 2.1.3 left
+        let r = MasterSchedule.mergingTicks(local, fileDone: ["2.1.2", "2.1.3"], dates: ["2.1.2": day(12)],
+                                            base: ["2.1.1", "2.1.3"], by: "pm@tcroof.test", today: day(20))
+        XCTAssertEqual(Set(r.ticks.keys), ["2.1.2", "2.1.3"])
+        XCTAssertEqual(r.ticks["2.1.2"], .init(by: "pm@tcroof.test", at: day(12)))
+        XCTAssertEqual(r.ticks["2.1.3"], local["2.1.3"], "a tick the file didn't change keeps who made it")
+        XCTAssertEqual(r.changed, 2)
+
+        // a tick made in the app after the export stays, though the file never had it
+        let later = MasterSchedule.mergingTicks(local, fileDone: ["2.1.3"], dates: [:], base: ["2.1.3"], by: "pm@tcroof.test", today: day(20))
+        XCTAssertEqual(later.ticks, local)
+        XCTAssertEqual(later.changed, 0)
+
+        // a file the app never wrote: its Y rows are added, dated today without a date, and nothing is taken away
+        let first = MasterSchedule.mergingTicks([:], fileDone: ["2.1.1"], dates: [:], base: nil, by: "pm@tcroof.test", today: day(20))
+        XCTAssertEqual(first.ticks["2.1.1"]?.at, day(20))
+    }
+
     func testRowsThatWeighNothingBookNothing() {
         var a = MasterSchedule.Actual()
         XCTAssertFalse(MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.3": tick(7), "0.1.1": tick(7), "2.1": tick(7)], input: input))

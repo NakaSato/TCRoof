@@ -7,7 +7,8 @@ git checkout design/survey-c1-ipad-shade && git checkout -b feat/survey-c1-ipad-
 
 Follow docs/ui/survey-c1-ipad-shade/CLAUDE_CODE_TASK.md.
 
-Scope: only the shade card under the plan in C1's PV mode (แผงบนหลังคา) on iPad, and the core it needs.
+Scope: only the shade card under the plan in C1's PV mode (แผงบนหลังคา) on iPad, the shaded modules on the plan, and
+the core it needs. Ignore the board's right column (trimmed in another review).
 Work through change list items 1–5 in order, and nothing else:
 1. obstacles shade the modules: PVYield Face.beamShadeHourly (nil = today), TCRoofCore projects each obstacle with a
    height (Roof.Area.height, kind default) onto the face's modules per hour; RoofMountYield.estimate uses it; tests
@@ -17,13 +18,15 @@ Work through change list items 1–5 in order, and nothing else:
    the reason when there's no GPS or no hourly weather near the site; RoofShadeTests
 3. RoofPageWide+Shade.swift: the card เงาบังแผง | Shade in place of rowSectionCard in PV mode: face tabs,
    the 8-column metrics row, Sun-path (with obstacle silhouettes) / Monthly / Hour-Month charts as Sketch, the source line
+   3b. the plan shows the modules in shadow at a picked moment (chip ☀ <date time> | เงา n แผง ›, 21 ธ.ค. 09/12/15,
+   21 มิ.ย. 09/16), the obstacles' shadow polygons, two legend rows; one projection shared with item 1
 4. PDF: one shade page per face after พลังงานไฟฟ้าโดยประมาณ, the same Sketches
 5. DEBUG -surveyC1 pvshade | pvshadenorth, one CLAUDE.md sentence, RoofShadeUITests
 
 Leave alone, with no refactors or renames outside the list:
 - the structure section card
 - the right column
-- the plan and its legend
+- the plan and its legend, beyond item 3b
 - field ids and Excel cells
 - the Excel layout
 - PVYield's golden fixtures (the new input defaults to nil)

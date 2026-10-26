@@ -4,7 +4,8 @@
 > `Follow docs/ui/survey-c1-ipad-shade/CLAUDE_CODE_TASK.md`
 
 - **Board:** `iPadC1.dc.html` (1366 × 1024), the design canvas's "iPad · ขั้น 10/13 C1 แปลน + โครงสร้าง".
-  - Read it as text and search for `เงาบังแผง`, `shFace`, `shSam` and `Sun-path`.
+  - Read it as text and search for `เงาบังแผง`, `shFace`, `shSam`, `Sun-path`, `shMNext` and `P.shd`.
+  - **Ignore the board's right column.** It was trimmed in a separate review (count and `วิธียึด` only) that is not part of this task; the app's right column stays as it is.
   - Its script is a toy for the states only. **Don't port it.** Its sun-path curves are real geometry for 13.75° N; the app draws them for A1's GPS.
 - **Everything on the board is example data** (`assets/sample-data.json`). Never hard-code it.
 
@@ -46,6 +47,8 @@ In the PV mode of C1 (`แผงบนหลังคา`), the card under the p
 | `states/02-shade-north.png` | `ด้านเหนือ` |
 | `states/03-shade-whole-roof.png` | `รวมทั้งหลังคา` |
 | `states/04-shade-card-crop.png` | The card alone, @2x |
+| `states/05-plan-shade-dec-0900.png` | The plan in PV mode with the shaded modules at 21 ธ.ค. 09:00 (orange), the obstacle's shadow and the moment chip |
+| `states/06-plan-shade-dec-1500.png` | The same at 21 ธ.ค. 15:00 |
 | `iPadC1.dc.html`, `grf.css`, `assets/sample-data.json` | Design source and example values |
 | `screenshots/` | Empty. Put your simulator screenshots here, named like `states/` |
 
@@ -102,6 +105,17 @@ Replaces `rowSectionCard` in PV mode; `sectionHeight` gives it the structure sec
 - While computing: `กำลังคำนวณเงา…` in the tiles. With no layout: `ยังไม่มีผังแผง`.
 - Colours from `Theme`, hit areas ≥ 44 pt, `TCButtonStyle`, `RoofSegments`. Split each chart into its own view.
 
+### 3b. Shaded modules on the plan (`states/05`, `06`; asked 26 ต.ค.)
+While PV mode shows the shade card, the plan shows which modules are in shadow at a moment:
+- **Moment chip** in the plan's footer, after `แปลนโครงหลังคา`: `☀ <date time> | เงา <n> แผง ›`, 44 pt, a tap steps through the moments. Moments: 21 ธ.ค. 09:00, 12:00 and 15:00, then 21 มิ.ย. 09:00 and 16:00 (a `TankShade`-style snapshot list, so the PDF can reuse it).
+- **On the plan** (`RoofPlan`, ops tagged `shade` so the PDF and DXF can leave them out):
+  - modules in shadow at that moment filled `Theme.warning` (orange) over the module fill
+  - each obstacle's shadow as a translucent dashed polygon: the hull of its base and its base moved by `height / tan(altitude)` away from the sun, in plan axes, with the plan's bearing (`RoofMount.bearing`) and the face slope applied
+- **Legend:** `แผงที่โดนเงา (เวลาที่เลือก)` and `เงาสิ่งกีดขวาง`, only in PV mode.
+- **Shared code:** the module test is the same projection as item 1 (one function in `TCRoofCore`, used for the hourly fractions and for the moment), so the plan and the figures agree.
+- **No sample objects in the app.** The board's `ปล่อง 2.00 ม. (ตัวอย่าง)` exists only to show the state. The DEBUG state `pvshade` (item 5) adds a real stack to the demo job.
+- **Test:** for the same stack and moment, the modules the plan marks are those whose hourly fraction is > 0 at that hour.
+
 ### 4. PDF: one shade page per face (decided: open question 1)
 After `พลังงานไฟฟ้าโดยประมาณ` (`ReportLayout+Sections.swift`, `roofEnergyUnit`), add `เงาบังแผง` for each face in use (and none for a roof without a layout or without RoofShade):
 - the same figures as the card's metrics row, as a table
@@ -124,7 +138,7 @@ After `พลังงานไฟฟ้าโดยประมาณ` (`Report
 - [ ] `-surveyRoofPDF YES -surveyC1 pvshade` writes `Documents/survey.pdf` with a shade page per face; its pages are in `screenshots/pdf-shade-*.png`.
 - [ ] The xcodebuild app build passes, with your own `-derivedDataPath`, in the background.
 - [ ] `RoofShadeUITests`, `RoofRulesUITests` and `RoofDesignDragUITests` pass on an iPad simulator.
-- [ ] iPad screenshots `01`–`03` in `screenshots/`, taken with `-screen pwa -surveyDemo YES -surveyDemoSection YES -surveyWideA1 YES -surveyPage roof -surveyC1 pvshade` (and `pvshadenorth`; `รวม` by a tap).
+- [ ] iPad screenshots `01`–`03`, `05` and `06` in `screenshots/`, taken with `-screen pwa -surveyDemo YES -surveyDemoSection YES -surveyWideA1 YES -surveyPage roof -surveyC1 pvshade` (and `pvshadenorth`; `รวม` by a tap).
 
 ## Decided (26 ต.ค. 2569)
 - **PDF:** yes, one shade page per face after `พลังงานไฟฟ้าโดยประมาณ` (item 4).

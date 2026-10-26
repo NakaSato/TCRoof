@@ -2,7 +2,7 @@ import XCTest
 
 /// A task sheet's `งานย่อย WBS` (docs/specs/project-plan-wbs.md, step 2), on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/WBSChecklistUITests -derivedDataPath <scratch>`.
-/// `-installWBS YES` gives the first installing station the P9-001 template's rows with no ticks; `-installStage 1` opens
+/// `-installWBS YES` gives the first installing station the first plan file's (P3-001) rows with no ticks; `-installStage 1` opens
 /// its first task's sheet. A sub-task is ticked and taken back, so the station ends with no ticks.
 final class WBSChecklistUITests: XCTestCase {
     let slow: TimeInterval = 90

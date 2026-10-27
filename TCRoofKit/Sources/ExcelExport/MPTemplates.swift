@@ -4,8 +4,12 @@ import TCRoofCore
 /// The team's station plans (`Project_Plan_TCRoof/2_แผนนำเข้า TCRoof (102 สถานี)`): one plan workbook per PWA station,
 /// bundled as `PlanTemplates` (a link to the import files, so a regenerated set ships as it is). A station's plan starts
 /// from one, normally its own: the plan moved to the station's kickoff, written into a copy of its file, which the
-/// station keeps as its own plan workbook (`Job.scheduleWorkbook`). An older example set's files (`แม่แบบ <site> · กันย้อน
-/// HV · Inverter < 200 kVA`) still read, with their site type.
+/// station keeps as its own plan workbook (`Job.scheduleWorkbook`).
+///
+/// The 20 install cases (`Project_Plan_TCRoof/3_แม่แบบ 20 กรณี`, bundled as `CaseTemplates`, P9-001…020) are the plan for a
+/// station without a file of its own: 5 site types × กันย้อน HV / LV × Inverter < / ≥ 200 kVA, titled `แม่แบบ <site>,
+/// กันย้อน HV, Inverter < 200 kVA` (an older set wrote `·` between the parts, which still reads). They differ in the
+/// permits (≥ 200 kVA weighs พค.2, LV marks the 22 kV rows not for the station) and, through `applySite`, in 2.1's steps.
 public enum MPTemplates {
     public struct Case: Identifiable, Hashable, Sendable {
         /// `P3-001`: the file name's code.
@@ -35,11 +39,45 @@ public enum MPTemplates {
 
     /// The bundled templates' folder.
     public static var bundled: URL? { Bundle.module.url(forResource: "PlanTemplates", withExtension: nil) }
+    /// The bundled install cases' folder.
+    public static var bundledCases: URL? { Bundle.module.url(forResource: "CaseTemplates", withExtension: nil) }
+
+    /// The 20 install cases (`site` set on each), by code.
+    public static func installCases(in folder: URL? = bundledCases) -> [Case] { cases(in: folder).filter { !$0.site.isEmpty } }
+
+    /// The case for a station: the one of its size (พค.2 or not), where its zero export sits and its main site type;
+    /// when no case has all three, the site type gives way first, then the zero export. Nil only without any case of
+    /// the station's size.
+    public static func suggest(site: String?, backfeed: String?, over200kVA: Bool, among cases: [Case]) -> Case? {
+        let sized = cases.filter { !$0.site.isEmpty && $0.over200kVA == over200kVA }
+        func fits(_ c: Case, site s: String?, backfeed b: String?) -> Bool {
+            (s.map { c.site == $0 } ?? true) && (b.map { c.backfeed == $0 } ?? true)
+        }
+        return sized.first { fits($0, site: site, backfeed: backfeed) }
+            ?? sized.first { fits($0, site: nil, backfeed: backfeed) }
+            ?? sized.first
+    }
+
+    /// A station's main site type: the one with the most kWp in its installation points (`ProjectSetup.points`), else
+    /// the one most of its daily-report locations name (`หลังคาลอนคู่ 2` → `หลังคาลอนคู่`). Only the case files' types count.
+    public static func mainSite(points: [ProjectSetup.Point], locations: [String], among types: [String]) -> String? {
+        let known = Set(types)
+        if let p = points.filter({ known.contains($0.type) && $0.count > 0 })
+            .max(by: { ($0.kWp, $0.count) < ($1.kWp, $1.count) }) { return p.type }
+        var counts: [String: Int] = [:]
+        for l in locations {
+            // the longest type a location starts with: `หลังคาลอนคู่ 1` is a ลอนคู่ roof, not `หลังคา`
+            if let t = known.filter({ l.hasPrefix($0) }).max(by: { $0.count < $1.count }) { counts[t, default: 0] += 1 }
+        }
+        return counts.max { ($0.value, $1.key) < ($1.value, $0.key) }?.key
+    }
 
     /// Every file in `folder` whose title names its station or case, by code. Reads only each file's shared strings,
     /// not its sheets.
     public static func cases(in folder: URL? = bundled) -> [Case] {
-        guard let folder, let urls = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+        // resolved first: Linux Foundation lists nothing in a folder reached through a link (its test bundle keeps one)
+        guard let folder = folder?.resolvingSymlinksInPath(),
+              let urls = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
         else { return [] }
         return urls.filter { $0.pathExtension == "xlsx" }.compactMap { url -> Case? in
             guard let data = try? Data(contentsOf: url), let strings = (try? ZipArchive(data))?.string("xl/sharedStrings.xml")
@@ -88,21 +126,26 @@ public enum MPTemplates {
         return cases.first { !$0.site.isEmpty ? false : MPWorkbook.stationKey($0.name) == key }
     }
 
-    /// The first shared string naming a template's case.
+    /// The first shared string naming a template's case (other texts of the file may say แม่แบบ too).
     static func title(in sharedStrings: String) -> String? {
-        guard let mark = sharedStrings.range(of: "แม่แบบ ") else { return nil }
-        let start = sharedStrings[..<mark.lowerBound].range(of: ">", options: .backwards)?.upperBound ?? mark.lowerBound
-        let end = sharedStrings[mark.upperBound...].range(of: "<")?.lowerBound ?? sharedStrings.endIndex
-        return SharedStrings.unescape(String(sharedStrings[start..<end]))
+        var at = sharedStrings.startIndex
+        while let mark = sharedStrings.range(of: "แม่แบบ ", range: at..<sharedStrings.endIndex) {
+            let start = sharedStrings[..<mark.lowerBound].range(of: ">", options: .backwards)?.upperBound ?? mark.lowerBound
+            let end = sharedStrings[mark.upperBound...].range(of: "<")?.lowerBound ?? sharedStrings.endIndex
+            let text = SharedStrings.unescape(String(sharedStrings[start..<end]))
+            if parse(text) != nil { return text }
+            at = mark.upperBound
+        }
+        return nil
     }
 
-    /// `… แม่แบบ ถังน้ำใส · กันย้อน LV · Inverter ≥ 200 kVA …`: the case a template's title names.
+    /// `… แม่แบบ ถังน้ำใส, กันย้อน LV, Inverter ≥ 200 kVA …` (or `·` between the parts): the case a template's title names.
     static func parse(_ title: String) -> (site: String, backfeed: String, over200kVA: Bool)? {
-        guard let a = title.range(of: "แม่แบบ "), let b = title.range(of: " · กันย้อน ", range: a.upperBound..<title.endIndex)
+        guard let a = title.range(of: "แม่แบบ "), let b = title.range(of: "กันย้อน ", range: a.upperBound..<title.endIndex)
         else { return nil }
-        let site = String(title[a.upperBound..<b.lowerBound]).trimmingCharacters(in: .whitespaces)
+        let site = String(title[a.upperBound..<b.lowerBound]).trimmingCharacters(in: CharacterSet(charactersIn: " ·,"))
         let rest = title[b.upperBound...]
-        let backfeed = String(rest.prefix { !$0.isWhitespace })
+        let backfeed = String(rest.prefix { !$0.isWhitespace && $0 != "," && $0 != "·" })
         guard !site.isEmpty, ["HV", "LV"].contains(backfeed), let inv = rest.range(of: "Inverter ") else { return nil }
         let over = rest[inv.upperBound...].hasPrefix("≥")
         guard over || rest[inv.upperBound...].hasPrefix("<") else { return nil }
@@ -112,18 +155,25 @@ public enum MPTemplates {
     /// The case's file with its plan moved so the kickoff falls on `kickoff`, and that file read back: what a station
     /// takes, as an import of the file would give it. No progress.
     /// `kickoff` nil keeps the file's own dates and progress: a station taking its own plan, as importing its file would.
-    public static func plan(_ c: Case, kickoff: Date?, calendar cal: Calendar = MasterSchedule.calendar) throws
-        -> (data: Data, imported: MPWorkbook.Imported) {
+    /// A moved plan's rows name `people` (the station's own, `ProjectSetup(_:)`), else the roles, in `ผู้รับผิดชอบ`
+    /// (`withPeople`): the file's are another station's.
+    public static func plan(_ c: Case, kickoff: Date?, people: ProjectSetup = ProjectSetup(),
+                            calendar cal: Calendar = MasterSchedule.calendar) throws -> (data: Data, imported: MPWorkbook.Imported) {
         let original = try Data(contentsOf: c.url)
         let template = try MPWorkbook.read(original, calendar: cal)
         guard let kickoff else { return (original, template) }
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: template.input.kickoff), to: cal.startOfDay(for: kickoff)).day ?? 0
-        guard days != 0 else { return (original, template) }
-        let out = try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),
-                                        actual: MasterSchedule.Actual(), calendar: cal)
+        let data = days == 0 ? original
+            : try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),
+                                    actual: MasterSchedule.Actual(), calendar: cal).data
         // export writes the MP plan only: the WBS sheet keeps the template's dates, so its rows move here
-        var moved = try MPWorkbook.read(out.data, calendar: cal)
-        moved.wbs = moved.wbs.map { $0.shifted(days: days, calendar: cal) }
-        return (out.data, moved)
+        var moved = days == 0 ? template : try MPWorkbook.read(data, calendar: cal)
+        moved.wbs = withPeople(moved.wbs.map { $0.shifted(days: days, calendar: cal) }, people)
+        // no progress: the rows that station marked done are its own, not ticks for the station taking the plan (an
+        // empty base also keeps the import from taking back that station's earlier ticks); its export clears their Y
+        moved.wbsDone = []
+        moved.wbsDoneDates = [:]
+        moved.wbsBase = []
+        return (data, moved)
     }
 }

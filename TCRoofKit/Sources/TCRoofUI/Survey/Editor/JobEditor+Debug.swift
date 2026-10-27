@@ -85,7 +85,12 @@ extension JobEditorView {
             select(.electrical); showSLD = true
             // `-surveySLDDXF YES` also writes the diagram's DXF to Documents/sld.dxf
             if UserDefaults.standard.bool(forKey: "surveySLDDXF") { writeDebugFile("sld.dxf", SingleLineDXF.build(job).data) }
-        case "inverter": if let p = first(.inverter) { select(p) }
+        case "inverter":
+            if let p = first(.inverter) { select(p) }
+            // `-surveyInverterDXF YES` also writes B2's DXF (top, front and side views) to Documents/inverter.dxf
+            if UserDefaults.standard.bool(forKey: "surveyInverterDXF"), let m = job.modules.first(where: { $0.type == .inverter }) {
+                writeDebugFile("inverter.dxf", InverterStationDXF.build(m.values).data)
+            }
         case "panels": if let p = first(.panel) { select(p) }
         case "flood": select(.flood)
         case "water": if let p = first(.water) { select(p) }

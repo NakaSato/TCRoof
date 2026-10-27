@@ -15,6 +15,11 @@ struct DailyOnePage: View {
         var saveDraft: () -> Void
         var sign: () -> Void
         var clearSignature: () -> Void
+        /// The TC view (docs/ui/daily-report-ipad-v4): opens the inspector's acknowledgement sheet, takes the
+        /// acknowledgement off (never the reporter's signature), and sends the report back with a reason.
+        var acknowledge: () -> Void
+        var clearAck: () -> Void
+        var sendBack: (String) -> Void
         var preview: () -> Void
         var send: () -> Void
         /// Moves to the previous (-1) or next (+1) report day; nil when there is none that way.
@@ -32,6 +37,9 @@ struct DailyOnePage: View {
     let others: [RoutineReport.Daily]
     let log: InstallLog?
     let dirty: Bool
+    /// The TC team's view of a sent report (docs/ui/daily-report-ipad-v4 §2): the sign card becomes `ลงนามรับทราบ`,
+    /// the bar acknowledges or sends back, and the work and team cards are read only (`readOnly`).
+    let acknowledging: Bool
     let actions: Actions
 
     @State var selected: UUID?
@@ -42,7 +50,13 @@ struct DailyOnePage: View {
     #if DEBUG
     /// `-routineDailyState signedcard`: a signed card with a drawn example signature, not saved.
     @State var demoSign: (at: Date, drawn: Data)?
+    /// `-routineDailyState acked`: the inspector's acknowledgement with a drawn signature, not saved.
+    @State var demoAck: (at: Date, drawn: Data)?
     #endif
+    @State var askSendBack = false
+    @State var sendBackReason = ""
+    /// A line's photos full screen (the TC view opens them in place of retaking).
+    @State var viewing: ViewedPhotos?
     // the key plan (v2 §3): its picture, decoded once per change, and the upload menu's pickers
     @State var keyPlanImage: UIImage?
     @State var keyPlanVersion = 0
@@ -64,6 +78,9 @@ struct DailyOnePage: View {
     @Environment(\.dismiss) private var dismiss
 
     var settings: RoutineReport.Settings { job.routineSettings }
+    /// The one edit gate of the TC view: no quick picks, steppers, photo capture, adds, removes or upload; the key
+    /// plan, the photos and full screen still open.
+    var readOnly: Bool { acknowledging }
     /// The task's weight in this station's plan (an imported workbook has its own).
     func weight(_ task: MasterSchedule.Task) -> Double { job.scheduleInput?.weight(task) ?? task.weight(over200kVA: false) }
     var plan: [MasterSchedule.PlannedTask] { job.scheduleInput.map { MasterSchedule.plan($0) } ?? [] }
@@ -88,6 +105,14 @@ struct DailyOnePage: View {
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapFull) { fullPlan }
         .sheet(isPresented: $showWeather) { DailyWeatherSheet(report: $report) }
+        .fullScreenCover(item: $viewing) { v in PhotoViewer(images: v.images, start: v.start) }
+        .alert("ส่งกลับให้แก้", isPresented: $askSendBack) {
+            TextField("เหตุผลที่ส่งกลับ (ต้องใส่)", text: $sendBackReason)
+            Button("ส่งกลับ") { sendBack() }
+            Button("ยกเลิก", role: .cancel) { sendBackReason = "" }
+        } message: {
+            Text("ผู้รับเหมาจะเห็นเหตุผลนี้ในปัญหาของรายงาน แล้วแก้และเซ็นส่งใหม่")
+        }
         .fullScreenCover(item: $cameraShot) { s in StampedCamera { took(s, $0) } }
         .photosPicker(isPresented: $showShotLibrary, selection: $shotItem, matching: .images)
         .onChange(of: shotItem) { _, item in
@@ -123,7 +148,7 @@ struct DailyOnePage: View {
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text("รายงานประจำวัน | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(20, .bold)).lineLimit(1)
+                Text("รายงานประจำวันที่ " + RoutineReport.thaiDateFullWeekday(date)).font(.sarabunFixed(20, .bold)).lineLimit(1)
                 Text(job.stationName).font(.sarabunFixed(14)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -168,9 +193,50 @@ struct DailyOnePage: View {
         return nil
     }
 
+    // MARK: acknowledgement (v4)
+
+    /// The inspector's acknowledgement on screen.
+    var ackAt: Date? {
+        #if DEBUG
+        if Debug.ackDemo { return demoAck?.at }
+        #endif
+        return log?.inspectorAckAt
+    }
+
+    var ackDrawn: Data? {
+        #if DEBUG
+        if Debug.ackDemo { return demoAck?.drawn }
+        #endif
+        return log?.signature(InstallLog.inspectorSignatureTag)?.data
+    }
+
+    func clearAck() {
+        #if DEBUG
+        if Debug.ackDemo { demoAck = nil; return }
+        #endif
+        actions.clearAck()
+    }
+
+    func sendBack() {
+        let reason = sendBackReason.trimmingCharacters(in: .whitespacesAndNewlines)
+        sendBackReason = ""
+        guard !reason.isEmpty else { return actions.toast("ใส่เหตุผลที่ส่งกลับก่อน") }
+        actions.sendBack(reason)
+    }
+
+    /// The acknowledgement is saved by the sheet already, so this only closes the page.
+    func confirmAck() {
+        actions.toast("รับทราบรายงานแล้ว")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { dismiss() }
+    }
+
     // MARK: bottom bar
 
-    private var bottomBar: some View {
+    @ViewBuilder private var bottomBar: some View {
+        if acknowledging { DailyAckBar(page: self) } else { contractorBar }
+    }
+
+    private var contractorBar: some View {
         let why = blocker
         return HStack(spacing: 12) {
             Image(systemName: why == nil ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy))
@@ -221,6 +287,9 @@ struct DailyOnePage: View {
         static let state = ""
         #endif
         static var tools: Bool { state == "tools" }
+        /// `ack`, `acked` (docs/ui/daily-report-ipad-v4): today's report signed by the example engineer, seen by the TC
+        /// team (with `-role internal`), not saved; `acked` also has a drawn inspector signature.
+        static var ackDemo: Bool { state == "ack" || state == "acked" }
         /// `saving`, `saved`, `clean`: the save button in that state (v2 states 04–06).
         static var savePhase: TCSaveButton.Phase? {
             switch state {
@@ -307,6 +376,12 @@ struct DailyOnePage: View {
         case "signedcard":
             let at = RoutineReport.calendar.date(bySettingHour: 17, minute: 40, second: 0, of: date) ?? date
             demoSign = (at, Self.demoSignature())
+        case "ack", "acked":
+            let at = RoutineReport.calendar.date(bySettingHour: 17, minute: 40, second: 0, of: date) ?? date
+            demoSign = (at, Self.demoSignature())
+            if Debug.state == "acked" {
+                demoAck = (RoutineReport.calendar.date(bySettingHour: 18, minute: 5, second: 0, of: date) ?? date, Self.demoSignature())
+            }
         case "material":
             if let line = report.progress.first(where: { $0.id == selected }) {
                 report.materials.append(.init(name: "รางอะลูมิเนียม", location: line.location, qty: 12, unit: "เส้น"))
@@ -326,7 +401,7 @@ extension DailyOnePage {
             AnyView(daySwitcher)
             AnyView(teamCard)
             AnyView(DailyModuleCard(report: $report, photos: $photos, compact: true).dailyCard())
-            AnyView(signCard)
+            acknowledging ? AnyView(DailyAckCard(page: self)) : AnyView(signCard)
         }
     }
 
@@ -343,7 +418,7 @@ extension DailyOnePage {
             }
             TCCountSegments([.init("คน", count: report.crewTotal), .init("เครื่องมือ", count: report.tools.reduce(0) { $0 + $1.count })],
                             selection: $teamTab, fontSize: 14, countSize: 13)
-            if teamTab == 0 && !report.crewConfirmed {
+            if teamTab == 0 && !report.crewConfirmed && !readOnly {
                 Button { report.crewConfirmed = true } label: {
                     Label("ใช้ค่าเมื่อวาน | แตะยืนยันกำลังคนวันนี้", systemImage: "exclamationmark.circle")
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.warningText)
@@ -360,6 +435,7 @@ extension DailyOnePage {
                     DailyCountRows(counts: $report.tools, catalogue: settings.tools, unit: "ชิ้น", addTitle: "+ เพิ่มเครื่องมือ")
                 }
             }
+            .allowsHitTesting(!readOnly)
         }
         .padding(16)
         .frame(maxHeight: .infinity, alignment: .top)

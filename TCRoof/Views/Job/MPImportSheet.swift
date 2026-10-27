@@ -16,6 +16,13 @@ struct MPImportSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var progressOnly = false
+    /// The file's project facts to take with the plan (`ProjectSetup`): those that fill an empty field start ticked.
+    @State private var setupPicked: Set<ProjectSetup.Field> = []
+
+    /// The facts the file has that the station doesn't, for a file of this station only.
+    private var setupChanges: [ProjectSetup.Change] {
+        otherStation == nil ? job.setupChanges(pending.imported.setup) : []
+    }
 
     private struct Change: Identifiable {
         let id: String
@@ -63,6 +70,7 @@ struct MPImportSheet: View {
                           + ThaiFormat.numericDate.string(from: r.input.installEnd))
                     if let note = MPWorkbookFlow.formulaNote(r.formulas) { check(false, "สูตรที่แอปคำนวณเองไม่ได้", note) }
                     if job.scheduleInput != nil { changesCard(c) }
+                    if !progressOnly, !setupChanges.isEmpty { setupCard }
                     if job.scheduleInput != nil {
                         mode(false, "นำเข้าแผนทั้งหมด", "แทนแผนในแอปด้วยไฟล์" + (r.actual.points.isEmpty ? " | ความก้าวหน้าที่บันทึกไว้ยังอยู่" : " | ใช้ความก้าวหน้าตามไฟล์"))
                         let n = MPWorkbookFlow.merged(r, into: job).changed
@@ -85,6 +93,7 @@ struct MPImportSheet: View {
                 .padding(16)
                 .background(Theme.phonePage)
             }
+            .onAppear { setupPicked = ProjectSetup.defaultFields(setupChanges) }
             .navigationTitle("นำเข้าไฟล์แผน Excel")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -167,6 +176,22 @@ struct MPImportSheet: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
+    /// `ตั้งค่าโครงการจากไฟล์`: the file's facts to take with the plan.
+    private var setupCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("ตั้งค่าโครงการจากไฟล์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Spacer()
+                Text("เลือก \(setupPicked.count) จาก \(setupChanges.count)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            }
+            .padding(.bottom, 6)
+            ProjectSetupList(changes: setupChanges, picked: $setupPicked)
+        }
+        .padding(14)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
+    }
+
     private func mode(_ only: Bool, _ title: String, _ note: String) -> some View {
         let on = progressOnly == only
         return Button { progressOnly = only } label: {
@@ -200,7 +225,11 @@ struct MPImportSheet: View {
     private func run() {
         let p = pending
         flow.pending = nil
-        if progressOnly && job.scheduleInput != nil { flow.takeProgress(p, on: job, context: context) } else { flow.apply(p, to: job, context: context) }
+        if progressOnly && job.scheduleInput != nil {
+            flow.takeProgress(p, on: job, context: context)
+        } else {
+            flow.apply(p, to: job, context: context, setup: otherStation == nil ? setupPicked : [])
+        }
         dismiss()
     }
 }

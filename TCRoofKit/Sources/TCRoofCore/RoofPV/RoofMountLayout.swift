@@ -394,7 +394,8 @@ public struct RoofMountLayout: Sendable {
             let dx = standard.footSpacing, c = standard.footCantilever, mn = standard.footMinBay
             let lr = xb - xa
             let m = max(1, Int(((lr - 0.4) / dx).rounded(.up)))
-            let equal = lr > 0.4 ? (0...m).map { xa + 0.2 + Double($0) * (lr - 0.4) / Double(m) } : [(xa + xb) / 2]
+            let run: Double = lr - 0.4
+            let equal: [Double] = lr > 0.4 ? (0...m).map { (i: Int) -> Double in xa + 0.2 + Double(i) * run / Double(m) } : [(xa + xb) / 2]
             if equal.allSatisfy(ok) { return (equal, 0, false) }
             // descending from hi in 5 cm steps
             func grid(_ lo: Double, _ hi: Double) -> [Double] {

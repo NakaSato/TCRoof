@@ -124,7 +124,8 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
                             floatDays: float[p.task.rawValue])
         }
         let tracking = InstallTracking(actual: status.actual, planned: status.planned, start: input.installStart,
-                                       due: input.installEnd, today: today)
+                                       due: input.installEnd, today: today,
+                                       earned: InstallTracking.earnedDate(plan: plan, actual: actual, done: status.actual, start: input.installStart, calendar: cal))
         spi = tracking.spi.map { (($0 * 100).rounded()) / 100 }
         handoverForecast = day(tracking.forecastEnd(calendar: cal))
         handoverSlipDays = -tracking.slackDays(calendar: cal)

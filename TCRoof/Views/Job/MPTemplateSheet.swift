@@ -10,6 +10,11 @@ import ExcelExport
 /// (`ใช้วันและความคืบหน้าตามไฟล์`), or moved to a kickoff with no progress; booked progress stays under the new weights, and the
 /// file becomes the station's plan workbook for export. The station's own file also fills the project facts it leaves
 /// empty (`ProjectSetup`: สาขา, Inverter, กันย้อน, PPIM, วิศวกร, ผรม. …); another station's gives none.
+///
+/// `แม่แบบตามกรณี`: a station without a file of its own starts from one of the 20 install cases (`MPTemplates.installCases`),
+/// picked by its main site type (`MPTemplates.mainSite`: the daily reports' locations), where its zero export sits and its
+/// inverter size (`MPTemplates.suggest`), moved to the kickoff, with that site type's 2.1 steps and none of the case's example
+/// figures.
 struct MPTemplateSheet: View {
     @Bindable var job: Job
     /// The kickoff and size the setup sheet has so far.
@@ -19,6 +24,11 @@ struct MPTemplateSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @State private var cases: [MPTemplates.Case] = []
+    /// The 20 install cases, and the case the station's facts point to.
+    @State private var installCases: [MPTemplates.Case] = []
+    @State private var caseSite = ""
+    @State private var caseBackfeed = "HV"
+    @State private var caseBig = false
     @State private var loaded = false
     @State private var own: String?
     @State private var pickedID: String?
@@ -37,7 +47,17 @@ struct MPTemplateSheet: View {
         _kickoff = State(initialValue: MasterSchedule.calendar.startOfDay(for: input.kickoff))
     }
 
-    private var picked: MPTemplates.Case? { cases.first { $0.id == pickedID } }
+    private var picked: MPTemplates.Case? { (cases + installCases).first { $0.id == pickedID } }
+
+    /// The site types of the cases, in the files' order.
+    private var caseSites: [String] {
+        var seen = Set<String>()
+        return installCases.map(\.site).filter { seen.insert($0).inserted }
+    }
+
+    private var suggestedCase: MPTemplates.Case? {
+        MPTemplates.suggest(site: caseSite, backfeed: caseBackfeed, over200kVA: caseBig, among: installCases)
+    }
 
     private var shown: [MPTemplates.Case] {
         cases.filter { c in
@@ -56,6 +76,7 @@ struct MPTemplateSheet: View {
                     if let o = cases.first(where: { $0.id == own }) {
                         PadSection("สถานีของงานนี้") { row(o) }
                     }
+                    if !installCases.isEmpty { caseSection }
                     PadSection("เลือกจากทุกสถานี (\(cases.count))") {
                         TextField("ค้นหารหัส ชื่อสถานี หรือสาขา", text: $search)
                             .textInputAutocapitalization(.never)
@@ -77,6 +98,7 @@ struct MPTemplateSheet: View {
                     }
                     PadSection("วันของแผน") {
                         Toggle("ใช้วันและความคืบหน้าตามไฟล์", isOn: $keepFile).tint(Theme.primary)
+                            .disabled(picked?.site.isEmpty == false)
                             .accessibilityIdentifier("mpTemplate.keepFile")
                         if !keepFile { DatePicker("Kick off", selection: $kickoff, displayedComponents: .date) }
                     } footer: {
@@ -116,6 +138,33 @@ struct MPTemplateSheet: View {
         }
     }
 
+    /// `แม่แบบตามกรณี`: the case for the site type, zero export and size picked, which start from the station's facts.
+    private var caseSection: some View {
+        PadSection("แม่แบบตามกรณี (\(installCases.count))") {
+            Picker("ประเภทหน้างาน", selection: $caseSite) {
+                ForEach(caseSites, id: \.self) { Text($0).tag($0) }
+            }
+            .accessibilityIdentifier("mpTemplate.caseSite")
+            Picker("กันย้อน", selection: $caseBackfeed) {
+                Text("กันย้อน HV").tag("HV"); Text("กันย้อน LV").tag("LV")
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("mpTemplate.caseBackfeed")
+            Picker("Inverter", selection: $caseBig) {
+                Text("ต่ำกว่า 200 kVA").tag(false); Text("ตั้งแต่ 200 kVA (พค.2)").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("mpTemplate.caseSize")
+            if let c = suggestedCase { row(c) } else { Text("ไม่มีแม่แบบของกรณีนี้").foregroundStyle(Theme.inkMuted) }
+        } footer: {
+            Text("สำหรับสถานีที่ยังไม่มีไฟล์ของตัวเอง: ทุกงานเลื่อนตามวัน Kick off งาน 2.1 ตามประเภทหน้างาน ใบอนุญาตตามกันย้อนและขนาด Inverter ไม่เอาข้อมูลตัวอย่างในไฟล์")
+        }
+        .onChange(of: [caseSite, caseBackfeed, caseBig ? "1" : "0"]) {
+            // a case already picked follows the pickers
+            if picked?.site.isEmpty == false { pickedID = suggestedCase?.id }
+        }
+    }
+
     /// A station: code, name, kWp and its line; a tap picks it.
     private func row(_ c: MPTemplates.Case) -> some View {
         let on = c.id == pickedID
@@ -131,9 +180,10 @@ struct MPTemplateSheet: View {
                     HStack(spacing: 6) {
                         Text(c.id).font(.sarabun(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
                         Text(c.title).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.navy)
-                        if let k = c.kWp { Text("\(k.formatted()) kWp").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted) }
+                        // a case's kWp is its example's
+                        if let k = c.kWp, c.site.isEmpty { Text("\(k.formatted()) kWp").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted) }
                     }
-                    Text([c.branch, "กันย้อน " + c.backfeed, c.over200kVA ? "ต้องยื่น พค.2" : "ไม่ต้อง พค.2"].filter { !$0.isEmpty }.joined(separator: " · "))
+                    Text([c.site.isEmpty ? c.branch : "แม่แบบ", "กันย้อน " + c.backfeed, c.over200kVA ? "ต้องยื่น พค.2" : "ไม่ต้อง พค.2"].filter { !$0.isEmpty }.joined(separator: " · "))
                         .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
@@ -148,9 +198,16 @@ struct MPTemplateSheet: View {
 
     private func load() async {
         cases = await Task.detached { MPTemplates.cases() }.value
-        own = MPTemplates.best(for: job.stationName, code: job.code, in: cases)?.id
-        pickedID = own
-        // no file of its own: another station's plan, moved to this one's kickoff
+        installCases = await Task.detached { MPTemplates.installCases() }.value
+        // the case from the station's facts: its main site type, its zero export and its size
+        let station = job.stationDocs
+        caseSite = MPTemplates.mainSite(points: [], locations: job.routineSettings.locations, among: caseSites) ?? caseSites.first ?? ""
+        caseBackfeed = station.zeroExport == "LV" ? "LV" : "HV"
+        caseBig = input.over200kVA
+        // the station's own file first (by its code in the 102-station list, else by name)
+        own = MPTemplates.best(for: job.stationName, code: [job.code, station.code ?? ""].joined(separator: " "), in: cases)?.id
+        pickedID = own ?? suggestedCase?.id
+        // no file of its own: a case (or another station's plan), moved to this one's kickoff
         if own == nil { keepFile = false }
         loaded = true
     }
@@ -158,7 +215,8 @@ struct MPTemplateSheet: View {
     private func apply() {
         guard let c = picked else { return }
         working = true
-        let kickoff = kickoff, keep = keepFile
+        // a case's own dates are its example's: it always moves to the kickoff
+        let kickoff = kickoff, keep = keepFile && c.site.isEmpty
         Task {
             defer { working = false }
             do {

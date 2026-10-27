@@ -47,6 +47,9 @@ public struct ProjectSetup: Equatable, Sendable {
     /// The Inverter station's type (`สร้างใหม่ (E09)`) and its detail (`80+80 kW, โรงเรือน 9.00 × 2.50 ม., …`).
     public var inverterStation: String?
     public var inverterStationDetail: String?
+    /// The file is one of the install cases (`แผนโครงการ P9-001 – แม่แบบ หลังคาลอนคู่, กันย้อน HV, …`), not a station's:
+    /// its figures are examples, so the reader gives none of them.
+    public var isTemplate = false
 
     public init() {}
 
@@ -78,7 +81,17 @@ public struct ProjectSetup: Equatable, Sendable {
             rest = String(rest[..<k.lowerBound])
         }
         let name = Self.clean(rest)
+        // an install case: its title names the case, and its code and kWp are the example's
+        if name.hasPrefix("แม่แบบ ") { isTemplate = true; code = nil; kWp = nil; return }
         if !name.isEmpty { stationName = name }
+    }
+
+    /// An example's value rather than a station's: `กปภ.สาขา (ตัวอย่าง)`, `ตัวอย่าง`, `กฟภ. เขต ตย.01`, `คำขอ -`, and the
+    /// install cases' roles in place of people (`วิศวกร วศ.01`, `Admin Admin`, `ผรม. 01`).
+    static func isPlaceholder(_ v: String) -> Bool {
+        let t = clean(v)
+        return t.isEmpty || t == "-" || t == "–" || t == "ตัวอย่าง" || t.contains("(ตัวอย่าง)") || t.contains("ตย.")
+            || t == "Admin" || t.range(of: #"^(วศ\.?\s*)?\d+$"#, options: .regularExpression) != nil
     }
 
     /// The comma-separated set-up line; a part this doesn't know is skipped.
@@ -87,6 +100,7 @@ public struct ProjectSetup: Equatable, Sendable {
             let p = Self.clean(raw)
             guard let kind = Part(p) else { continue }
             let value = kind.value(of: p)
+            if kind != .inverter, Self.isPlaceholder(value) { continue }
             switch kind {
             case .branch: branch = value
             case .area: area = value
@@ -110,7 +124,7 @@ public struct ProjectSetup: Equatable, Sendable {
             var p = Self.clean(raw)
             if p.hasPrefix(":") { p = Self.clean(String(p.dropFirst())) }
             if code == nil, p.range(of: #"^P\d+-\d+$"#, options: .regularExpression) != nil { code = p; continue }
-            guard let kind = Part(p) else { continue }
+            guard let kind = Part(p), !Self.isPlaceholder(kind.value(of: p)) else { continue }
             if kind == .contractor, contractor == nil { contractor = kind.value(of: p) }
             if kind == .engineer, engineer == nil { engineer = kind.value(of: p) }
         }
@@ -174,6 +188,11 @@ public struct ProjectSetup: Equatable, Sendable {
         var old = ProjectSetup()
         old.readTitle(title)
         guard Self.clean(title).hasPrefix("แผนโครงการ ") else { return title }
+        // a case's title becomes the station's only with the station's name; its example code stays out
+        if old.isTemplate {
+            guard stationName != nil else { return title }
+            old.code = nil
+        }
         let c = code ?? old.code, n = stationName ?? old.stationName, k = kWp ?? old.kWp
         var t = "แผนโครงการ"
         if let c { t += " " + c + " –" }

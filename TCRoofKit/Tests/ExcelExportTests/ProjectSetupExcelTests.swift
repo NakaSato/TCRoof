@@ -39,13 +39,13 @@ final class ProjectSetupExcelTests: XCTestCase {
     /// Every station file gives every part of its set-up line, and the part agrees with what the template list reads.
     func testEveryStationFileGivesItsWholeSetUp() throws {
         let cases = Dictionary(uniqueKeysWithValues: MPTemplates.cases(in: ProjectPlanTemplateTests.folder).map { ($0.id, $0) })
-        var pk2 = 0
+        var pk2 = 0, noRequest: [String] = []
         for url in try files() {
             let code = String(url.lastPathComponent.prefix(6))
             let s = try MPWorkbook.read(Data(contentsOf: url)).setup
             XCTAssertEqual(s.code, code)
             for (name, value) in [("name", s.stationName), ("branch", s.branch), ("area", s.area), ("pea", s.peaZone),
-                                  ("zero", s.zeroExport), ("ppim", s.ppimRequest), ("engineer", s.engineer),
+                                  ("zero", s.zeroExport), ("engineer", s.engineer),
                                   ("admin", s.admin), ("contractor", s.contractor), ("owner", s.owner)] {
                 XCTAssertFalse(value?.isEmpty ?? true, "\(code) \(name)")
             }
@@ -57,11 +57,14 @@ final class ProjectSetupExcelTests: XCTestCase {
             // the file's word on พค.2 is the inverter size's
             XCTAssertEqual(s.needsPK2, (s.inverterKW ?? 0) >= 200, code)
             if s.needsPK2 == true { pk2 += 1 }
+            // `คำขอ -`: no PPIM request yet, which reads as none
+            if s.ppimRequest == nil { noRequest.append(code) }
             XCTAssertTrue(["HV", "LV"].contains(s.zeroExport ?? ""), code)
             XCTAssertTrue(s.area?.hasPrefix("ภาค") == true, code)
             XCTAssertTrue(s.peaZone?.hasPrefix("กฟภ. เขต") == true, code)
         }
         XCTAssertEqual(pk2, 42)
+        XCTAssertEqual(noRequest, ["P3-039", "P3-040", "P4-051", "P4-053"])
     }
 
     /// A Master Plan Weekly without the `แผนโครงการ` sheet gives what its `PROJECT` and `OWNER` lines say.

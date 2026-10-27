@@ -20,6 +20,8 @@ struct PWARoot: View {
     @State private var showNotifications = false
     private var bell = PWABell()
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// Each station's summary, rebuilt only when what it reads changes (`InstallSummaryCache`).
+    @State private var summaryCache = InstallSummaryCache()
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
@@ -97,7 +99,7 @@ struct PWARoot: View {
     private var overview: PWAOverviewHost {
         let installing = jobs.pwaInstalling, stations = jobs.pwaStations
         return PWAOverviewHost(
-            installStations: installing.map(\.installSummary),
+            installStations: summaryCache.summaries(installing),
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },

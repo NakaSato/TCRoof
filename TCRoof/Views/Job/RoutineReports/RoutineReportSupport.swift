@@ -15,8 +15,10 @@ extension Job {
     var dailyReports: [RoutineReport.Daily] { dailyLogs.compactMap(\.report) }
 
     func dailyLog(on date: Date) -> InstallLog? {
-        let key = RoutineReport.dayKey(date)
-        return dailyLogs.first { RoutineReport.dayKey($0.date) == key }
+        // the earliest daily report of that day, as `dailyLogs.first` gives, without sorting every log or making a day key
+        // per log (the station list asks this of every station on each redraw)
+        let cal = RoutineReport.calendar
+        return logs.filter { cal.isDate($0.date, inSameDayAs: date) && $0.reportJSON != nil }.min { $0.date < $1.date }
     }
 
     /// The station name printed on reports and file names.

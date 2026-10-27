@@ -1,0 +1,80 @@
+{
+  "app-plan" : {
+    "finished" : {
+      "acSide" : "2026-10-11T17:00:00Z",
+      "controlCabinet" : "2026-10-11T17:00:00Z",
+      "dcSide" : "2026-10-11T17:00:00Z",
+      "fireSwitch" : "2026-10-11T17:00:00Z",
+      "gridConnection" : "2026-10-18T17:00:00Z",
+      "inverter" : "2026-10-11T17:00:00Z",
+      "monitoring" : "2026-10-19T17:00:00Z",
+      "panels" : "2026-10-11T17:00:00Z",
+      "structure" : "2026-10-11T17:00:00Z",
+      "zeroExport" : "2026-10-11T17:00:00Z"
+    },
+    "pct" : 90.5,
+    "points" : {
+      "1.1" : 0,
+      "1.2" : 0,
+      "1.3" : 0,
+      "1.4" : 0,
+      "1.5" : 0,
+      "1.6" : 0,
+      "1.7" : 0.5,
+      "2.1" : 20,
+      "2.2" : 10,
+      "2.3" : 20,
+      "2.4" : 2.5,
+      "2.5" : 15,
+      "2.6" : 10,
+      "2.7" : 5,
+      "2.8" : 5,
+      "2.9" : 2.5,
+      "3.1" : 0,
+      "3.2" : 0
+    },
+    "scheduleActual" : "{\"finished\":{\"structure\":813430800,\"controlCabinet\":813430800,\"inverter\":813430800,\"gridConnection\":814035600,\"monitoring\":814122000,\"acSide\":813430800,\"panels\":813430800,\"dcSide\":813430800,\"zeroExport\":813430800,\"fireSwitch\":813430800},\"points\":{\"inverter\":{\"2026-10-11\":15,\"2026-10-04\":9},\"monitoring\":{\"2026-10-11\":2.5,\"2026-10-04\":1.5},\"gridConnection\":{\"2026-10-18\":0.5},\"dcSide\":{\"2026-10-11\":10,\"2026-10-04\":6},\"controlCabinet\":{\"2026-10-11\":5,\"2026-10-04\":3},\"panels\":{\"2026-10-04\":12,\"2026-10-11\":20},\"acSide\":{\"2026-10-11\":10,\"2026-10-04\":6},\"structure\":{\"2026-10-11\":20,\"2026-10-04\":12},\"zeroExport\":{\"2026-10-04\":3,\"2026-10-11\":5},\"fireSwitch\":{\"2026-10-04\":1.5,\"2026-10-11\":2.5}},\"started\":{},\"lateCauses\":{}}",
+    "scheduleInput" : "{\"engineeringDays\":7,\"gridConnectionDays\":7,\"buildingPermitDays\":21,\"siteHandover\":809283600,\"pk2Days\":21,\"installEnd\":814986000,\"kickoff\":804531600,\"engineeringStart\":805136400,\"over200kVA\":true,\"installStart\":809888400}"
+  },
+  "P3-001" : {
+    "finished" : {
+      "acSide" : "2026-08-21T17:00:00Z",
+      "buildingPermit" : "2026-07-13T17:00:00Z",
+      "controlCabinet" : "2026-08-21T17:00:00Z",
+      "dcSide" : "2026-08-21T17:00:00Z",
+      "engineering" : "2026-07-09T17:00:00Z",
+      "fireSwitch" : "2026-08-19T17:00:00Z",
+      "inverter" : "2026-08-20T17:00:00Z",
+      "kickoff" : "2026-06-23T17:00:00Z",
+      "monitoring" : "2026-08-23T17:00:00Z",
+      "panels" : "2026-08-22T17:00:00Z",
+      "preCommissioning" : "2026-10-14T17:00:00Z",
+      "siteHandover" : "2026-07-20T17:00:00Z",
+      "structure" : "2026-08-12T17:00:00Z",
+      "zeroExport" : "2026-08-22T17:00:00Z"
+    },
+    "pct" : 97.5,
+    "points" : {
+      "1.1" : 0.5,
+      "1.2" : 1,
+      "1.3" : 0.5,
+      "1.4" : 1.5,
+      "1.5" : 0,
+      "1.6" : 0,
+      "1.7" : 1.5,
+      "2.1" : 20,
+      "2.2" : 10,
+      "2.3" : 20,
+      "2.4" : 2.5,
+      "2.5" : 15,
+      "2.6" : 10,
+      "2.7" : 5,
+      "2.8" : 5,
+      "2.9" : 2.5,
+      "3.1" : 2.5,
+      "3.2" : 0
+    },
+    "scheduleActual" : "{\"lateCauses\":{},\"points\":{\"kickoff\":{\"2026-06-21\":0.5},\"controlCabinet\":{\"2026-08-16\":5},\"dcSide\":{\"2026-08-16\":10},\"zeroExport\":{\"2026-08-16\":5},\"fireSwitch\":{\"2026-08-16\":2.5},\"engineering\":{\"2026-07-05\":0.5,\"2026-06-28\":0.5},\"siteHandover\":{\"2026-07-19\":0.5},\"gridConnection\":{\"2026-09-13\":0.25,\"2026-09-27\":0.25,\"2026-09-20\":0.25,\"2026-10-04\":0.25,\"2026-10-18\":0.25,\"2026-10-11\":0.25},\"inverter\":{\"2026-08-16\":15},\"structure\":{\"2026-08-09\":6.6667,\"2026-07-26\":6.6667,\"2026-08-02\":6.6667},\"acSide\":{\"2026-08-16\":10},\"monitoring\":{\"2026-08-16\":1.25,\"2026-08-23\":1.25},\"buildingPermit\":{\"2026-06-28\":0.5,\"2026-07-12\":0.5,\"2026-07-05\":0.5},\"preCommissioning\":{\"2026-10-11\":2.5},\"panels\":{\"2026-08-16\":20}},\"finished\":{\"buildingPermit\":805654800,\"siteHandover\":806259600,\"controlCabinet\":809024400,\"kickoff\":803926800,\"panels\":809110800,\"acSide\":809024400,\"dcSide\":809024400,\"monitoring\":809197200,\"engineering\":805309200,\"fireSwitch\":808851600,\"preCommissioning\":813690000,\"structure\":808246800,\"inverter\":808938000,\"zeroExport\":809110800},\"started\":{\"kickoff\":803926800,\"engineering\":804531600,\"buildingPermit\":804531600,\"dcSide\":808765200,\"acSide\":808765200,\"siteHandover\":806259600,\"structure\":806950800,\"monitoring\":809110800,\"fireSwitch\":808678800,\"preCommissioning\":813690000,\"zeroExport\":808938000,\"inverter\":808678800,\"gridConnection\":811098000,\"controlCabinet\":808851600,\"panels\":808592400}}",
+    "scheduleInput" : "{\"over200kVA\":false,\"buildingPermitDays\":13,\"siteHandover\":806518800,\"engineeringDays\":9,\"engineeringStart\":804531600,\"fixed\":{\"panels\":{\"start\":808333200,\"weight\":20,\"end\":809110800},\"cop\":{\"weight\":0},\"kickoff\":{\"start\":803926800,\"weight\":0.5,\"end\":803926800},\"controlCabinet\":{\"start\":808506000,\"weight\":5,\"end\":809024400},\"dcSide\":{\"start\":808333200,\"weight\":10,\"end\":809110800},\"zeroExport\":{\"start\":808678800,\"weight\":5,\"end\":809110800},\"fireSwitch\":{\"start\":808592400,\"weight\":2.5,\"end\":808851600},\"engineering\":{\"start\":804531600,\"weight\":1,\"end\":805309200},\"siteHandover\":{\"start\":806518800,\"weight\":0.5,\"end\":806518800},\"gridConnection\":{\"start\":809370000,\"weight\":1.5,\"end\":813258000},\"inverter\":{\"start\":808246800,\"weight\":15,\"end\":808938000},\"structure\":{\"start\":806778000,\"weight\":20,\"end\":808246800},\"acSide\":{\"start\":808246800,\"weight\":10,\"end\":809024400},\"monitoring\":{\"start\":808851600,\"weight\":2.5,\"end\":809197200},\"buildingPermit\":{\"start\":804531600,\"weight\":1.5,\"end\":805654800},\"training\":{\"start\":813603600,\"weight\":2.5,\"end\":814726800},\"preCommissioning\":{\"start\":809370000,\"weight\":2.5,\"end\":809542800},\"pk2\":{\"weight\":0}},\"installEnd\":814726800,\"kickoff\":803926800,\"pk2Days\":21,\"installStart\":806778000,\"gridConnectionDays\":45}"
+  }
+}

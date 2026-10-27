@@ -7,7 +7,8 @@ import PDFReport
 
 /// A4 (docs/ui/survey-a4): a live water-level cross-section, the equipment height check and flood photos on the left;
 /// the flood questions, the GISTDA lookup and the note on the right. Landscape puts them side by side, portrait and iPhone stack them and scroll.
-/// Field ids are unchanged; the new answers are optional, so completion is too.
+/// Field ids are unchanged; the new answers are optional, so completion is too. docs/ui/survey-a4-ipad-v2 puts the right column in
+/// cards (`FloodPageWide+Cards.swift`) and draws the screen's section in its own style (`FloodSection.Style.screen`).
 struct FloodPageWide: View {
     @Binding var job: Job
     /// Width of the page's content.
@@ -52,6 +53,9 @@ struct FloodPageWide: View {
         .onChange(of: check.minCm) { _, n in if state == .flooded { job.values["equipHeight"] = .text(String(n)) } }
         .photoSources(picker: $showPicker, camera: $showCamera, onPick: addPhoto)
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: "หลักฐานน้ำท่วม") } }
+        #if DEBUG
+        .task { await applyA4Debug() }
+        #endif
     }
 
     // MARK: bindings
@@ -65,7 +69,8 @@ struct FloodPageWide: View {
 
     var leftColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            A1Card(title: "ภาพตัดระดับน้ำ", trailing: "อัปเดตตามข้อมูลด้านขวา | ใช้ในรายงาน PDF", spacing: 10) {
+            // no "ใช้ในรายงาน PDF" aside: the report keeps its own drawing (`FloodSection.Style.report`)
+            A1Card(title: "ภาพตัดระดับน้ำ", spacing: 10) {
                 sectionDrawing
                 // the GISTDA box covers the whole drawing on an iPhone, so it goes under it
                 if narrow && state == .unknownEmpty { fetchBox }
@@ -76,7 +81,7 @@ struct FloodPageWide: View {
     }
 
     var sectionDrawing: some View {
-        let sketch = FloodSection.sketch(job), k = FloodSection.scale(job)
+        let sketch = FloodSection.sketch(job, style: .screen), k = FloodSection.scale(job, style: .screen)
         let jobID = job.id
         return GeometryReader { geo in
             let s = geo.size.width / CGFloat(FloodSection.width)
@@ -89,15 +94,7 @@ struct FloodPageWide: View {
                 }
                 .background(Theme.paper)
                 .accessibilityElement().accessibilityLabel(FloodSection.accessibilityLabel(job))
-                if state == .flooded {
-                    let wy = (FloodSection.groundY - check.level * k) * s
-                    Label("ลากเส้นน้ำเพื่อปรับระดับ", systemImage: "arrow.up.and.down")
-                        .font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.primary)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Theme.surface).overlay(Rectangle().stroke(Theme.primary))
-                        .position(x: 375 * s, y: min(wy + 26 * s, (FloodSection.groundY - 14) * s))
-                        .allowsHitTesting(false)
-                }
+                // the water tag's grip (in the drawing) shows the line can be dragged
                 if state == .unknownEmpty && !narrow { fetchOverlay }
                 if state == .unknownFetched, let g = values.gistda {
                     Text(g.banner).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.pending)
@@ -111,9 +108,10 @@ struct FloodPageWide: View {
                 guard state == .flooded else { return }
                 let wy = (FloodSection.groundY - check.level * k) * s
                 if !dragging { guard abs(d.startLocation.y - wy) < 36 else { return }; dragging = true }
-                let cm = FloodSection.cm(atY: d.location.y / s, scale: k)
-                let stepped = Int((min(max(cm, 0), 300) / 10).rounded()) * 10
-                if Double(stepped) != check.level { job.values["floodDepth"] = .text(String(stepped)) }
+                // 5 cm steps within the stepper's range, as the stepper and the slider
+                let cm = FloodSection.cm(atY: d.location.y / s, scale: k), r = FloodCheck.levelRange, step = FloodCheck.levelStep
+                let stepped = (min(max(cm, r.lowerBound), r.upperBound) / step).rounded() * step
+                if stepped != check.level { setLevel(stepped) }
             }.onEnded { _ in dragging = false })
         }
         .aspectRatio(CGFloat(FloodSection.width / FloodSection.height), contentMode: .fit)
@@ -244,12 +242,13 @@ struct FloodPageWide: View {
 
     // MARK: right column
 
+    /// docs/ui/survey-a4-ipad-v2 §1.1: `ประวัติน้ำท่วม`, then `ความถี่ | สาเหตุ` and `จุดที่ได้รับผลกระทบ` while `เคย`;
+    /// the note (`ไม่เคย`) or the GISTDA card (`ไม่ทราบ`) otherwise; `หมายเหตุ` last.
     var rightColumn: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            label("พื้นที่เคยมีน้ำท่วมหรือไม่", required: true)
-            choiceRow(Schema.flood.fields[0].choiceOptions, id: "floodHistory")
+        VStack(alignment: .leading, spacing: 12) {
+            historyCard
             switch state {
-            case .flooded: floodedForm
+            case .flooded: frequencyCauseCard; hitsCard
             case .unknownEmpty, .unknownFetched: gistdaCard
             case .never: neverNote
             }
@@ -274,95 +273,41 @@ struct FloodPageWide: View {
     }
 
     /// Large choice buttons in a row; wraps to more rows when there are more than `perRow`.
-    func choiceRow(_ options: [String], id: String, perRow: Int = 3, height: CGFloat = 52) -> some View {
+    /// `short`: display-only labels (docs/ui/survey-a4-ipad-v2 §4.3); tapping still writes the full option.
+    func choiceRow(_ options: [String], id: String, perRow: Int = 3, height: CGFloat = 52, fontSize: CGFloat = 16,
+                   short: [String: String] = [:]) -> some View {
         let rows = stride(from: 0, to: options.count, by: perRow).map { Array(options[$0..<min($0 + perRow, options.count)]) }
         return VStack(spacing: 8) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: 8) {
-                    ForEach(row, id: \.self) { o in choiceButton(o, id: id, height: height) }
+                    ForEach(row, id: \.self) { o in choiceButton(o, id: id, height: height, fontSize: fontSize, title: short[o] ?? o) }
                     if row.count < perRow { ForEach(0..<(perRow - row.count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, minHeight: 1) } }
                 }
             }
         }
     }
-    func choiceButton(_ o: String, id: String, height: CGFloat) -> some View {
+    func choiceButton(_ o: String, id: String, height: CGFloat, fontSize: CGFloat = 16, title: String? = nil) -> some View {
         let on = values.choice(id) == o
         return Button { choose(id, o) } label: {
-            Text(o).font(.sarabunFixed(16, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(title ?? o).font(.sarabunFixed(fontSize, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                .padding(.horizontal, 4)
                 .frame(maxWidth: .infinity, minHeight: height)
                 .background(on ? Theme.mint : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(on ? Theme.teal : Theme.navy.opacity(0.5), lineWidth: on ? 1.5 : 1))
         }
-        .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
+        .buttonStyle(.plain).accessibilityLabel(title ?? o).accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    func numberBox(_ title: String, id: String, unit: String, required: Bool = false, keyboard: UIKeyboardType = .numberPad) -> some View {
+    func numberBox(_ title: String, id: String, unit: String, required: Bool = false, keyboard: UIKeyboardType = .numberPad,
+                   height: CGFloat = 52) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             label(title, required: required)
             HStack(spacing: 6) {
                 TextField("", text: text(id)).keyboardType(keyboard).font(.sarabunFixed(20, .bold))
                 if !unit.isEmpty { Text(unit).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted) }
             }
-            .inputBox(minHeight: 52)
+            .inputBox(minHeight: height)
         }
-    }
-
-    var floodedForm: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            RatioRow(weights: [1, 1, 1]) {
-                numberBox("ปีล่าสุด (พ.ศ.)", id: "floodYear", unit: "", required: true)
-                numberBox("ระดับน้ำสูงสุด", id: "floodDepth", unit: "ซม.", required: true, keyboard: .decimalPad)
-                numberBox("ท่วมขัง", id: "floodDays", unit: "วัน")
-            }
-            let pair = narrow ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14)) : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
-            pair {
-                VStack(alignment: .leading, spacing: 6) { label("วัดความสูงจาก", required: true); choiceRow(Schema.floodRefs, id: "floodRef", height: 44) }
-                VStack(alignment: .leading, spacing: 6) {
-                    label("ที่มาข้อมูล", required: true)
-                    choiceRow(Schema.floodInfoSources, id: "floodInfoSource", height: 44)
-                }
-            }
-            VStack(alignment: .leading, spacing: 6) { label("ความถี่"); choiceRow(["ทุกปี", "2–5 ปีครั้ง", "นานกว่า 5 ปี"], id: "floodFreq") }
-            VStack(alignment: .leading, spacing: 6) {
-                label("สาเหตุ", aside: "เลือกได้ 1")
-                choiceRow(Schema.floodSources, id: "floodSource", height: 48)
-                if values.choice("floodSource") == "อื่นๆ" {
-                    TextField("ระบุสาเหตุ", text: Binding(get: { values.other("floodSource") },
-                                                         set: { job.values["floodSource"] = .choice("อื่นๆ", other: $0) })).inputBox()
-                }
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                label("จุดที่เคยได้รับผลกระทบ", aside: "แสดงบนภาพ A2")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .leading), count: narrow ? 2 : 3), alignment: .leading, spacing: 4) {
-                    ForEach(Schema.floodHits, id: \.self) { h in hitBox(h) }
-                }
-            }
-        }
-    }
-    func hitBox(_ h: String) -> some View {
-        let on = values.multi("floodHit").contains(h)
-        return Button {
-            var a = values.multi("floodHit")
-            if on { a.removeAll { $0 == h } } else { a.append(h) }
-            job.values["floodHit"] = .multi(a)
-        } label: {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 22)).foregroundStyle(on ? Theme.primary : Theme.navy.opacity(0.5))
-                Text(h).font(.sarabunFixed(14)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
-    }
-
-    var neverNote: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label("ไม่เคยท่วม | ข้ามรายละเอียดได้", systemImage: "checkmark.circle.fill").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.success)
-            Text("ระดับติดตั้งอุปกรณ์ใช้แค่ระยะเผื่อจากพื้น").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-        }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.okSoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.success.opacity(0.4)))
     }
 
     // MARK: GISTDA

@@ -117,7 +117,12 @@ public extension Values {
 
 /// Water level, minimum install level and the equipment height check of A4.
 public enum FloodCheck {
-    public static let freeboardCm = 50.0
+    /// The freeboard when the job sets none (`floodFreeboard`), so jobs saved before it compute as before.
+    public static let defaultFreeboardCm = 50.0
+    /// The wide page's freeboard stepper (docs/ui/survey-a4-ipad-v2).
+    public static let freeboardRange = 0.0...150.0, freeboardStep = 10.0
+    /// The wide page's water level stepper, slider and drag.
+    public static let levelRange = 5.0...200.0, levelStep = 5.0
     public static let defaultFloorCm = 0.0, defaultMountCm = 100.0, defaultEmergencyCm = 140.0
 
     public enum State: Sendable { case never, flooded, unknownEmpty, unknownFetched }
@@ -136,10 +141,22 @@ public enum FloodCheck {
         default: return 0
         }
     }
+    /// The freeboard over the water level in cm: the job's answer (`floodFreeboard`), else 50.
+    public static func freeboardCm(_ v: Values) -> Double { v.number("floodFreeboard").map { max(0, $0) } ?? defaultFreeboardCm }
+    /// level + freeboard, before rounding.
+    public static func rawMinCm(_ v: Values) -> Double { level(v) + freeboardCm(v) }
     /// (level + freeboard) rounded up to 10 cm; with no water it is just the freeboard from the reference level.
     public static func minCm(_ v: Values) -> Int {
-        let l = level(v)
-        return Int(((l + freeboardCm) / 10).rounded(.up) * 10)
+        Int((rawMinCm(v) / 10).rounded(.up) * 10)
+    }
+    /// The sum `minCm` was rounded up from (105 for 75 + 30), or nil when it needed no rounding.
+    public static func roundedFrom(_ v: Values) -> Double? {
+        let raw = rawMinCm(v)
+        return Double(minCm(v)) > raw + 1e-9 ? raw : nil
+    }
+    /// "105", "82.5": a cm figure without a needless ".0".
+    public static func cmText(_ x: Double) -> String {
+        x == x.rounded() ? String(Int(x)) : String(format: "%.1f", x)
     }
     public static func floorCm(_ v: Values) -> Double { v.number("invFloorCm") ?? defaultFloorCm }
     public static func mountCm(_ v: Values) -> Double { v.number("invMountCm") ?? defaultMountCm }
@@ -178,6 +195,8 @@ public enum FloodCheck {
     public struct Result: Sendable {
         public var state: State
         public var level: Double
+        /// The freeboard `minCm` adds to the level (`freeboardCm`).
+        public var freeboard: Double = FloodCheck.defaultFreeboardCm
         public var minCm: Int
         public var rows: [Row]
         public var mdbName: String
@@ -212,7 +231,7 @@ public enum FloodCheck {
             rows.append(Row(id: "mdb", name: "\(mdb) จุดเชื่อมต่อ (เดิม)", tag: "A3", height: "ฐาน 0 ซม.",
                             status: st == .flooded ? .floodedHere(Int(lvl.rounded())) : .nearFlood))
         }
-        return Result(state: st, level: lvl, minCm: min, rows: rows, mdbName: mdb)
+        return Result(state: st, level: lvl, freeboard: freeboardCm(v), minCm: min, rows: rows, mdbName: mdb)
     }
     private static func pass(_ h: Double, _ min: Int) -> Status { h >= Double(min) ? .pass : .fail(min - Int(h.rounded())) }
 
@@ -220,9 +239,15 @@ public enum FloodCheck {
     public static func requirement(_ v: Values) -> String {
         "ต้อง ≥ \(minCm(v)) ซม. จาก" + (v.choice("floodRef") ?? "ดินเดิม")
     }
-    /// The bottom-bar line of the wide page.
-    public static func statusLine(_ r: Result) -> String {
-        let head = r.fails > 0 ? "อุปกรณ์ต่ำกว่าเกณฑ์ \(r.fails) รายการ" : "ครบช่องบังคับแล้ว | อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ \(r.minCm) ซม."
+    /// The section numbers the minimum level checks ("B2", "B4", "B5"), in the table's order.
+    public static func checkedTags(_ r: Result) -> [String] {
+        r.rows.filter { $0.id != "mdb" }.map(\.tag).reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
+    }
+    /// The bottom-bar line of the wide page. `missing`: required fields still empty on the page; the line names them
+    /// in place of `ครบช่องบังคับแล้ว`.
+    public static func statusLine(_ r: Result, missing: Int = 0) -> String {
+        let done = missing > 0 ? "ยังขาด \(missing) ช่องบังคับ" : "ครบช่องบังคับแล้ว"
+        let head = r.fails > 0 ? "อุปกรณ์ต่ำกว่าเกณฑ์ \(r.fails) รายการ" : done + " | อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ \(r.minCm) ซม."
         switch r.state {
         case .flooded: return head + " | จุดต่อ \(r.mdbName) เคยน้ำท่วม"
         case .unknownFetched: return head + " | ระดับน้ำจาก GISTDA เป็นค่าประเมิน"

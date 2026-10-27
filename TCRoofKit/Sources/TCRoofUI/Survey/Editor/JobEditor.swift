@@ -425,10 +425,13 @@ struct JobEditorView: View {
         let after: Page? = last.map { steps[safe: $0 + 1].map { page(for: $0.page) } } ?? nextPage
         let status = cardElectrical ? electricalStatus : cardSite ? siteStatus : cardPanels.map(panelsStatus)
         let sub = tankSubSteps
+        // A4: the height check's line, naming the required fields still empty
+        let floodDone = cardFlood ? steps.first { $0.page == .flood }?.completion : nil
+        let floodLine = floodDone.map { c in FloodCheck.statusLine(job.floodCheck, missing: max(0, c.total - c.filled)) }
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: sub?.previous ?? (module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil),
                            next: sub?.next ?? go(after), status: status,
-                           statusText: station?.status ?? water ?? (cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
+                           statusText: station?.status ?? water ?? floodLine,
                            statusAlert: station.map { !$0.isOK } ?? ((cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,

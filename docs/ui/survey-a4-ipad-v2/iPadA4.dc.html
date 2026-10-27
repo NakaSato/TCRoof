@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ขั้น 4 — A4 น้ำท่วม (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="grf.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+a{color:#1F6FB5}a:hover{color:#16325C}
+.a4-sec{background:#FFFFFF;border:1px solid rgba(22,50,92,0.2);border-radius:12px;padding:12px 18px;display:flex;flex-direction:column;gap:12px}
+.a4-step{gap:4px;padding:0 4px !important;min-height:50px}.a4-step>span:first-child,.a4-step>span:last-child{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;color:#1F6FB5;font-size:20px;font-weight:700;cursor:pointer;flex:none}.a4-step b{margin-left:auto;font-size:18px}
+.g-input.focus.a4-step{padding:0 3px !important}
+.a4-lv{display:flex;align-items:center;gap:6px;min-height:50px;padding:3px;border-radius:12px;border:2px solid #1F6FB5;background:#fff;box-sizing:border-box}
+.a4-lvb{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none;background:#E3EEF8;color:#1F6FB5;font-size:22px;font-weight:700;cursor:pointer;user-select:none}
+.a4-lvf{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:4px;cursor:text}
+.a4-lvf input{width:64px;border:0;background:transparent;text-align:right;font-family:inherit;font-size:22px;font-weight:700;color:#16325C;padding:0;outline:none}
+.a4-lvf i{font-style:normal;font-size:15px;color:#5B6B82}
+.a4-lvr{width:100%;margin:2px 0 0;accent-color:#1F6FB5;height:28px;cursor:pointer}
+.a4-lvt{display:flex;justify-content:space-between;font-size:11px;color:#77889E;margin-top:-6px;padding:0 4px}
+.a4-eq{display:grid;grid-template-columns:minmax(0,0.8fr) 22px minmax(0,1.25fr) 22px minmax(0,1fr);align-items:stretch;gap:4px}
+.a4-eqt{display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:64px;padding:6px 12px;border-radius:12px;background:#F4F7FA;border:1px solid #DDE4ED;color:#16325C;min-width:0}
+.a4-eqt b{font-size:22px;line-height:26px;white-space:nowrap}.a4-eqt i{font-style:normal;font-size:14px;font-weight:400;color:#5B6B82;margin-left:3px}
+.a4-eql{font-size:12.5px;color:#5B6B82;white-space:nowrap}
+.a4-op{display:grid;place-items:center;font-size:20px;font-weight:700;color:#5B6B82}
+.a4-eqfb{background:#fff;border-color:rgba(22,50,92,0.45);padding:6px 4px}.a4-eqfb .a4-eql{padding-left:8px}
+.a4-eqs{display:flex;align-items:center}.a4-eqs b{flex-grow:1;text-align:center}
+.a4-eqs>span{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;color:#1F6FB5;font-size:22px;font-weight:700;cursor:pointer;flex:none;background:#E3EEF8}
+.a4-eqr{background:rgba(158,230,214,0.35);border-color:#1C8A7E}.a4-eqr b{color:#1C8A7E}
+.a4-eqm{font-size:12.5px;color:#1C8A7E;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+</style>
+</helmet>
+<div class="g" style="width: 1366px; height: 1024px; display: flex; flex-direction: column; overflow: hidden">
+<header class="g-head">
+<div><div class="t">A4 น้ำท่วม</div><div class="s">แบบสำรวจ NO.224 · GRF2567-23407</div></div>
+</header>
+
+<div style="display: flex; justify-content: center"><div class="g-prog" style="width: 1240px; padding-left: 0; padding-right: 0">
+<div class="row"><b>4/13</b><span>ประวัติน้ำท่วม</span></div>
+<div class="g-caps"><i class="ok"></i><i class="ok"></i><i class="cur"></i><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div></div>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center">
+<main style="width: 1240px; display: grid; grid-template-columns: 560px minmax(0, 1fr); gap: 28px; padding-bottom: 16px; align-items: stretch">
+<div style="display:flex;flex-direction:column;gap:14px;min-width:0"><div style="background:#fff;border:1px solid rgba(22,50,92,0.2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size: 17px; font-weight: 600">ภาพตัดระดับน้ำ</span></div>
+<div style="position:relative;border-radius:8px;overflow:hidden"><svg viewBox="0 100 540 420" style="width:100%;height:420px;display:block;font-family:Sarabun,sans-serif" role="img" aria-label="{{chartAria}}">
+<defs>
+<pattern id="hGround" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" fill="#EFEAE2"></rect><line x1="0" y1="0" x2="0" y2="10" stroke="#B9AB95" stroke-width="1.2"></line></pattern>
+<pattern id="hConc" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#F1F3F5"></rect><circle cx="2" cy="2" r="0.9" fill="#8E959B"></circle><circle cx="6" cy="6" r="0.7" fill="#8E959B"></circle></pattern>
+<pattern id="hFb" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#E6F4F1"></rect><line x1="0" y1="0" x2="0" y2="8" stroke="#B5DDD6" stroke-width="2"></line></pattern>
+<linearGradient id="gWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FB2E0" stop-opacity="0.55"></stop><stop offset="1" stop-color="#1F6FB5" stop-opacity="0.45"></stop></linearGradient>
+</defs>
+<rect x="0" y="100" width="540" height="420" fill="#fff"></rect>
+<text x="538" y="114" text-anchor="end" font-size="10.5" fill="#8A97A8">ระดับเป็นเมตร · มิติเป็น ซม.</text>
+<rect x="40" y="{{bandY}}" width="384" height="{{bandH}}" fill="url(#hFb)"></rect>
+<line x1="34" y1="124" x2="34" y2="484" stroke="#8A97A8" stroke-width="1"></line>
+<path d="{{rulerTicks}}" stroke="#8A97A8" stroke-width="1" fill="none"></path>
+<rect x="56" y="178" width="70" height="306" rx="2" fill="#fff" stroke="#3B4A60" stroke-width="1.4"></rect>
+<line x1="56" y1="210" x2="126" y2="210" stroke="#3B4A60" stroke-width="0.8"></line>
+<text x="91" y="193" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2E24">MDB 1</text><text x="91" y="205" text-anchor="middle" font-size="9.5" fill="#5B6B82">เดิม · A3</text>
+<path d="M66 222 h50 M66 232 h50 M66 242 h50" stroke="#DDE4ED" stroke-width="3"></path>
+<rect x="156" y="{{floorY}}" width="268" height="{{floorH}}" fill="url(#hConc)" stroke="#3B4A60" stroke-width="1.2"></rect>
+<path d="M164 {{floorY}} V120 H416 V{{floorY}}" fill="none" stroke="#3B4A60" stroke-width="2.4"></path>
+<text x="290" y="137" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2E24">ห้อง Inverter <tspan fill="#5B6B82" font-weight="400">B2</tspan></text>
+<rect x="196" y="{{invTop}}" width="60" height="104" rx="3" fill="#fff" stroke="#1F6FB5" stroke-width="1.8"></rect>
+<path d="M206 {{invG1}} h40 M206 {{invG2}} h40" stroke="#C8DAEE" stroke-width="2"></path>
+<text x="226" y="{{invLblY}}" text-anchor="middle" font-size="12" font-weight="700" fill="#1F6FB5">INV</text>
+<rect x="272" y="{{smdbTop}}" width="46" height="84" rx="3" fill="#fff" stroke="#1F6FB5" stroke-width="1.8"></rect>
+<text x="295" y="{{smdbLblY}}" text-anchor="middle" font-size="10" font-weight="700" fill="#1F6FB5">SMDB</text>
+<rect x="362" y="{{esTop}}" width="22" height="26" rx="3" fill="#fff" stroke="#1F6FB5" stroke-width="1.6"></rect><circle cx="373" cy="{{esCy}}" r="6" fill="#D9453B"></circle>
+<text x="366" y="{{esLblY}}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1F6FB5">E-stop</text>
+<g style="{{waterVis}}"><rect x="40" y="{{waterY}}" width="384" height="{{waterH}}" fill="url(#gWater)"></rect><path d="{{wave}}" fill="none" stroke="#1F6FB5" stroke-width="1.8" stroke-dasharray="{{waterDash}}"></path></g>
+<rect x="0" y="484" width="540" height="36" fill="url(#hGround)"></rect>
+<line x1="0" y1="484" x2="540" y2="484" stroke="#3B4A60" stroke-width="2"></line>
+<g font-size="10" fill="#8A97A8" text-anchor="end"><text x="24" y="480">0</text><text x="24" y="397">0.5</text><text x="24" y="307">1.0</text><text x="24" y="217">1.5</text><text x="24" y="127">2.0</text></g>
+<line x1="40" y1="{{minY}}" x2="424" y2="{{minY}}" stroke="#1C8A7E" stroke-width="1.8" stroke-dasharray="14 4 3 4"></line>
+<g stroke="#1F2E24" stroke-width="1" fill="none"><line x1="182" y1="{{floorY}}" x2="182" y2="{{mountY}}"></line><line x1="176" y1="{{mountY}}" x2="196" y2="{{mountY}}" stroke-dasharray="2 2"></line><path d="{{mDimTicks}}"></path></g>
+<text x="176" y="{{mountLblY}}" text-anchor="middle" transform="rotate(-90 176 {{mountLblY}})" font-size="10.5" fill="#1F2E24" style="paint-order:stroke;stroke:#fff;stroke-width:3px">{{mountCm}}</text>
+<g stroke="#1C8A7E" stroke-width="1.2" fill="none"><line x1="146" y1="{{baseY}}" x2="146" y2="{{minY}}"></line><path d="{{fbTicks}}"></path></g>
+<text x="137" y="{{fbY}}" text-anchor="middle" transform="rotate(-90 137 {{fbY}})" font-size="10.5" font-weight="700" fill="#1C8A7E" style="paint-order:stroke;stroke:#fff;stroke-width:3px">เผื่อ {{fb}}</text>
+<g font-size="10" font-weight="800" fill="#fff" text-anchor="middle"><circle cx="256" cy="{{invTop}}" r="9" fill="{{invBg}}" stroke="#fff" stroke-width="2"></circle><text x="256" y="{{invBy}}">{{invIc}}</text><circle cx="318" cy="{{smdbTop}}" r="9" fill="{{invBg}}" stroke="#fff" stroke-width="2"></circle><text x="318" y="{{smdbBy}}">{{invIc}}</text><circle cx="384" cy="{{esTop}}" r="9" fill="{{esBg}}" stroke="#fff" stroke-width="2"></circle><text x="384" y="{{esBy}}">{{esIc}}</text></g>
+<g font-size="11.5" font-weight="700">
+<line x1="424" y1="{{minY}}" x2="434" y2="{{minY}}" stroke="#1C8A7E" stroke-width="1.4"></line><rect x="434" y="{{minPy}}" width="58" height="20" rx="10" fill="#1C8A7E"></rect><text x="463" y="{{minTy}}" text-anchor="middle" fill="#fff">+{{minM}}</text><text x="434" y="{{minCy}}" font-size="10.5" font-weight="700" fill="#1C8A7E">ติดตั้งต่ำสุด</text>
+<g style="{{waterVis}}"><line x1="424" y1="{{waterY}}" x2="434" y2="{{waterY}}" stroke="#1F6FB5" stroke-width="1.4"></line><rect x="434" y="{{watPy}}" width="74" height="22" rx="11" fill="#1F6FB5" stroke="#fff" stroke-width="2" style="cursor:ns-resize"></rect><path d="{{gripD}}" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><text x="480" y="{{watTy}}" text-anchor="middle" fill="#fff">+{{lvlM}}</text><text x="434" y="{{watCy}}" font-size="10.5" font-weight="700" fill="#1F6FB5" style="paint-order:stroke;stroke:#fff;stroke-width:3px">{{waterCap}}</text></g>
+<line x1="424" y1="{{floorY}}" x2="434" y2="{{floorY}}" stroke="#3B4A60" stroke-width="1.4"></line><rect x="434" y="{{flPy}}" width="58" height="20" rx="10" fill="#fff" stroke="#3B4A60" stroke-width="1.2"></rect><text x="463" y="{{flTy}}" text-anchor="middle" fill="#1F2E24">+{{floorM}}</text><text x="434" y="{{flCy}}" font-size="10.5" font-weight="700" fill="#3B4A60" style="paint-order:stroke;stroke:#fff;stroke-width:3px">พื้นห้อง INV</text>
+<rect x="434" y="474" width="58" height="20" rx="10" fill="#3B4A60"></rect><text x="463" y="488" text-anchor="middle" fill="#fff">±0.00</text><text x="434" y="510" font-size="10.5" fill="#3B4A60" style="paint-order:stroke;stroke:#EFEAE2;stroke-width:3px">{{refTxt}}</text>
+</g>
+<g font-size="10.5" fill="#3B4A60"><rect x="44" y="{{lgY}}" width="10" height="10" fill="url(#hFb)" stroke="#1C8A7E" stroke-width="0.8"></rect><text x="58" y="{{lgTy}}">ระยะเผื่อ</text><rect x="112" y="{{lgY}}" width="10" height="10" fill="url(#gWater)" stroke="#1F6FB5" stroke-width="0.8" style="{{waterVis}}"></rect><text x="126" y="{{lgTy}}" style="{{waterVis}}">น้ำท่วม</text></g>
+</svg><sc-if value="{{needFetch}}" hint-placeholder-val="{{false}}"><div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:320px;background:#fff;border:1px solid #77889E;border-radius:12px;box-shadow:0 3px 8px rgba(22,50,92,0.12);padding:14px 16px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center"><b style="font-size:15px;color:#16325C">ยังไม่มีข้อมูลระดับน้ำ</b><span style="font-size:13px;color:#5B6B82;line-height:18px">ดึงประวัติน้ำท่วมจาก GISTDA ตามพิกัด A1</span><span onClick="{{fetchG}}" style="min-height:44px;padding:0 18px;border-radius:12px;background:#1F6FB5;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">ดึงข้อมูลจาก GISTDA</span></div></sc-if></div>
+<div style="display:flex;flex-direction:column"><div style="display:flex;align-items:baseline;gap:8px;padding:0 2px 4px"><b style="font-size:15px">ตรวจความสูงอุปกรณ์</b><span style="font-size:12px;color:#5B6B82">ต้อง ≥ {{minCm}} ซม. จาก{{refTxt}}</span></div><sc-for list="{{rows}}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:8px;min-height:28px;border-top:1px solid #DDE4ED;font-size:14px"><span style="flex-grow:1;min-width:0">{{r.n}} <span style="font-size:12px;color:#5B6B82">{{r.src}}</span></span><span style="width:96px;font-variant-numeric:tabular-nums;color:#16325C">{{r.hTxt}}</span><span style="{{r.badge}}">{{r.res}}</span></div></sc-for></div>
+</div><div class="g-field" style="gap:6px"><label class="g-label" style="font-size:16px">ภาพคราบระดับน้ำ / หลักฐานน้ำท่วม<span class="aside">ไม่บังคับ · แนะนำถ่ายคู่ตลับเมตร</span></label><div style="display:flex;gap:10px;align-items:center"><div style="position:relative;width:92px;height:60px;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,#C8CDC6 0 52%,#8C8A6E 52% 55%,#A9A58C 55%);flex:none"><span style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:grid;place-items:center"><svg class="ic" viewBox="0 0 24 24" style="width:11px;height:11px;stroke-width:3"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div><div style="position:relative;width:92px;height:60px;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,#D8DCDF 0 60%,#7F7B62 60% 63%,#B3AE95 63%);flex:none"><span style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:grid;place-items:center"><svg class="ic" viewBox="0 0 24 24" style="width:11px;height:11px;stroke-width:3"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div><span class="g-pbtn" style="min-height:60px;width:110px;flex-direction:row;gap:6px;font-size:14px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 15l5-4 4 3 3-2 6 4"></path></svg>อัปโหลด</span><span class="g-pbtn" style="min-height:60px;width:110px;flex-direction:row;gap:6px;font-size:14px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>กล้อง</span></div></div></div>
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+<section class="a4-sec">
+<div style="display:flex;align-items:baseline;gap:8px"><div class="g-label" style="font-size:18px">ประวัติน้ำท่วม</div><span style="margin-left:auto;font-size:13px;color:#5B6B82">มีผลกับระดับติดตั้ง B2 · B4 · B5</span></div>
+<div class="g-field" style="gap:6px"><label class="g-label">พื้นที่เคยมีน้ำท่วมหรือไม่ <span class="req">*</span></label><div class="g-choices" style="gap:10px"><span class="{{noSeg}}" onClick="{{setNo}}" style="min-height:50px;cursor:pointer">ไม่เคย</span><span class="{{yesSeg}}" onClick="{{setYes}}" style="min-height:50px;cursor:pointer">เคย</span><span class="{{unkSeg}}" onClick="{{setUnk}}" style="min-height:50px;cursor:pointer">ไม่ทราบ</span></div></div>
+<sc-if value="{{isFlood}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px">
+<div class="g-field" style="gap:6px"><label class="g-label">ระดับน้ำสูงสุด <span class="req">*</span></label><div class="a4-lv"><span class="a4-lvb" onClick="{{lvlDown}}" role="button" aria-label="ลด 5 ซม.">−</span><label class="a4-lvf"><input type="text" inputmode="numeric" value="{{lvl}}" onInput="{{lvlIn}}" aria-label="ระดับน้ำสูงสุด ซม."><i>ซม.</i></label><span class="a4-lvb" onClick="{{lvlUp}}" role="button" aria-label="เพิ่ม 5 ซม.">+</span></div><input class="a4-lvr" type="range" min="0" max="200" step="5" value="{{lvl}}" onInput="{{lvlIn}}" aria-label="ปรับระดับน้ำสูงสุด"><div class="a4-lvt"><span>0</span><span>50</span><span>100</span><span>150</span><span>200 ซม.</span></div></div>
+<div class="g-field" style="gap:6px"><label class="g-label">ปีล่าสุด (พ.ศ.) <span class="req">*</span></label><div class="g-input">2554</div></div>
+<div class="g-field" style="gap:6px"><label class="g-label">ท่วมขัง</label><div class="g-input">7<span class="unit" style="font-size:16px">วัน</span></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="g-field" style="gap:6px"><label class="g-label">วัดความสูงจาก <span class="req">*</span></label><div class="g-choices" style="gap:6px"><span class="{{r0}}" onClick="{{setR0}}" style="min-height:44px;font-size:15px;cursor:pointer">ดินเดิม</span><span class="{{r1}}" onClick="{{setR1}}" style="min-height:44px;font-size:15px;cursor:pointer">พื้นถนน</span><span class="{{r2}}" onClick="{{setR2}}" style="min-height:44px;font-size:15px;cursor:pointer">พื้น MDB</span></div></div>
+<div class="g-field" style="gap:6px"><label class="g-label">ที่มาข้อมูล <span class="req">*</span><span class="aside"><a href="https://flood.gistda.or.th" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">แผนที่ GISTDA ↗</a></span></label><div class="g-choices" style="gap:6px"><span class="{{s0}}" onClick="{{setS0}}" style="min-height:44px;font-size:15px;cursor:pointer">เจ้าหน้าที่</span><span class="{{s1}}" onClick="{{setS1}}" style="min-height:44px;font-size:15px;cursor:pointer">คราบน้ำ</span><span class="{{s2}}" onClick="{{setS2}}" style="min-height:44px;font-size:15px;cursor:pointer">GISTDA</span></div></div></div>
+<div class="g-field" style="gap:6px"><label class="g-label">ระดับติดตั้งต่ำสุด<span class="aside">วัดจาก{{refTxt}} · ใช้ตรวจ B2 · B4 · B5</span></label>
+<div class="a4-eq"><div class="a4-eqt"><span class="a4-eql">น้ำสูงสุด</span><b>{{lvl}}<i>ซม.</i></b></div><span class="a4-op">+</span><div class="a4-eqt a4-eqfb"><span class="a4-eql">เผื่อเหนือน้ำ</span><div class="a4-eqs"><span onClick="{{fbDown}}" aria-label="ลดระยะเผื่อ">−</span><b>{{fb}}<i>ซม.</i></b><span onClick="{{fbUp}}" aria-label="เพิ่มระยะเผื่อ">+</span></div></div><span class="a4-op">=</span><div class="a4-eqt a4-eqr"><span class="a4-eql">ติดตั้งต่ำสุด</span><b>{{minCm}}<i>ซม.</i></b><span class="a4-eqm">+{{minM}} ม.{{roundTxt}}</span></div></div></div>
+</div></sc-if>
+</section>
+<sc-if value="{{isFlood}}" hint-placeholder-val="{{true}}"><section class="a4-sec" style="gap:12px">
+<div class="g-label" style="font-size:18px">ความถี่ · สาเหตุ</div>
+<div class="g-choices" style="gap:10px"><sc-for list="{{freqs}}" as="f" hint-placeholder-count="3"><span class="{{f.st}}" onClick="{{f.go}}" style="min-height:44px;font-size:15px;cursor:pointer">{{f.t}}</span></sc-for></div>
+<div class="g-choices" style="gap:6px"><sc-for list="{{causes}}" as="c" hint-placeholder-count="5"><span class="{{c.st}}" onClick="{{c.go}}" style="min-height:44px;font-size:14px;padding:0 4px;cursor:pointer">{{c.t}}</span></sc-for></div>
+</section>
+<section class="a4-sec" style="gap:12px">
+<div style="display:flex;align-items:baseline;gap:8px"><div class="g-label" style="font-size:18px">จุดที่ได้รับผลกระทบ</div><span style="margin-left:auto;font-size:13px;color:#5B6B82">{{hitN}} จุด · แสดงบนภาพ A2</span></div>
+<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px"><sc-for list="{{hits}}" as="h" hint-placeholder-count="5"><span onClick="{{h.go}}" style="{{h.st}}"><span style="{{h.box}}">✓</span>{{h.t}}</span></sc-for></div>
+</section></sc-if>
+<sc-if value="{{notFlood}}" hint-placeholder-val="{{false}}"><div style="border-radius:10px;background:rgba(158,230,214,0.3);color:#16325C;padding:12px 14px;font-size:15px;line-height:21px"><b style="display:block">ไม่เคยท่วม · ข้ามรายละเอียดได้</b>ระดับติดตั้งใช้ระยะเผื่อจากพื้น {{fb}} ซม. → +{{minM}} ม.</div></sc-if>
+<sc-if value="{{isUnk}}" hint-placeholder-val="{{false}}"><div style="border:1px solid #DDE4ED;border-radius:12px;background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:16px;flex-grow:1">ข้อมูลน้ำท่วมจาก GISTDA</b><span style="font-size:12.5px;color:#5B6B82">ตามพิกัด A1 · 17.0062, 99.8235</span></div><sc-if value="{{needFetch}}" hint-placeholder-val="{{true}}"><div style="display:flex;align-items:center;gap:12px"><span style="flex-grow:1;font-size:14px;line-height:20px;color:#1F2E24">ยังไม่มีข้อมูลจากหน้างาน ดึงประวัติพื้นที่น้ำท่วมซ้ำซากจากภาพดาวเทียม GISTDA ได้ทันที</span><span onClick="{{fetchG}}" class="g-pbtn" style="min-height:48px;padding:0 16px;white-space:nowrap;cursor:pointer;background:#1F6FB5;color:#fff;border-color:#1F6FB5">ดึงข้อมูลจาก GISTDA</span></div></sc-if><sc-if value="{{gotShow}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;flex-direction:column;padding:2px 4px"><div style="display:flex;align-items:center;gap:10px;min-height:30px"><span style="width:24px;height:24px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:800;background:#E2EFDA;color:#3B7420">✓</span><span style="font-size:14px;color:#3B4A60;flex:1">ตรงจุดติดตั้ง (ปี 2554–2567)</span><b style="font-size:14px;color:#3B7420;white-space:nowrap">ไม่เคยท่วม</b></div><div style="display:flex;align-items:center;gap:10px;min-height:30px"><span style="width:24px;height:24px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:800;background:#FFF4E5;color:#B45309">!</span><span style="font-size:14px;color:#3B4A60;flex:1">รัศมี 1 กม. รอบสถานี</span><b style="font-size:14px;color:#B45309;white-space:nowrap">ท่วม 7 ใน 14 ปี</b></div><div style="display:flex;align-items:center;gap:10px;min-height:30px"><span style="width:24px;height:24px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:13px;font-weight:800;background:#E3EEF8;color:#1F4F8F">≈</span><span style="font-size:14px;color:#3B4A60;flex:1">ระดับน้ำที่ใช้ (GISTDA ไม่มีความลึก)</span><b style="font-size:14px;color:#1F4F8F;white-space:nowrap">50 ซม.</b></div></div></div><div style="display:flex;gap:12px;align-items:flex-start"><svg viewBox="0 0 220 220" style="width:220px;height:220px;flex:none;display:block;font-family:Sarabun,sans-serif" role="img" aria-label="แผนผังระยะ: จุดติดตั้งไม่อยู่ในพื้นที่ท่วม พื้นที่ท่วมใกล้สุดห่าง 550 เมตร น้ำท่วมใน 30 วันล่าสุดห่าง 950 เมตร"><rect width="220" height="220" rx="10" fill="#F7F9FC"></rect><ellipse cx="156.7" cy="77.3" rx="20" ry="14" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="177.8" cy="85.3" rx="24" ry="16" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="136.6" cy="36.8" rx="16" ry="12" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="185.8" cy="145.3" rx="22" ry="14" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="143.2" cy="167.6" rx="14" ry="10" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="36.0" cy="67.2" rx="18" ry="12" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><ellipse cx="79.6" cy="57.3" rx="12" ry="9" fill="#9FC3E4" fill-opacity="0.75" stroke="#1F6FB5" stroke-width="0.8"></ellipse><circle cx="110" cy="110" r="95" fill="none" stroke="#5B6B82" stroke-width="1" stroke-dasharray="4 3"></circle><circle cx="110" cy="110" r="47.5" fill="none" stroke="#5B6B82" stroke-width="1" stroke-dasharray="4 3"></circle><text x="114" y="13" font-size="10" fill="#5B6B82">1 กม.</text><text x="114" y="60" font-size="10" fill="#5B6B82">500 ม.</text><line x1="110" y1="110" x2="150.0" y2="76.4" stroke="#1F6FB5" stroke-width="1.6"></line><text x="134.0" y="105.2" font-size="11" font-weight="700" fill="#1F6FB5" style="paint-order:stroke;stroke:#F7F9FC;stroke-width:3px">550 ม.</text><circle cx="58.2" cy="183.9" r="6" fill="#E8851A" stroke="#fff" stroke-width="1.5"></circle><text x="67.2" y="187.9" font-size="10.5" font-weight="700" fill="#B45309" style="paint-order:stroke;stroke:#F7F9FC;stroke-width:3px">ก.ย. 69 · 950 ม.</text><path d="M110 111 m0 0 c-6 -8 -9 -12 -9 -16 a9 9 0 0 1 18 0 c0 4 -3 8 -9 16 z" fill="#16325C"></path><circle cx="110" cy="95" r="3.2" fill="#fff"></circle><text x="110" y="124" text-anchor="middle" font-size="10.5" font-weight="700" fill="#16325C" style="paint-order:stroke;stroke:#F7F9FC;stroke-width:3px">จุดติดตั้ง</text><path d="M204 10 l5 12 h-10 z" fill="#16325C"></path><text x="204" y="34" text-anchor="middle" font-size="10" font-weight="700" fill="#16325C">N</text></svg><div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px"><b style="font-size:14px">ปีที่พบน้ำท่วมในรัศมี 1 กม.</b><div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px"><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2554</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2555</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2556</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2557</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2558</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2559</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2560</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2561</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2562</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2563</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2564</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2565</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#EEF1F5;color:#8A97A8">2566</div><div style="height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#1F6FB5;color:#fff">2567</div></div><div style="display:flex;gap:12px;font-size:12px;color:#5B6B82"><span style="display:flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:2px;background:#1F6FB5;display:inline-block"></i>ท่วม</span><span style="display:flex;align-items:center;gap:4px"><i style="width:10px;height:10px;border-radius:2px;background:#EEF1F5;display:inline-block;border:1px solid #DDE4ED"></i>ไม่พบ</span></div><div style="font-size:13px;line-height:18px;color:#1F2E24;border-top:1px solid #DDE4ED;padding-top:6px"><b style="color:#1F6FB5">— พื้นที่ท่วมใกล้สุด</b> ห่าง 550 ม. ท่วมปี 2554 ครั้งเดียว<br><b style="color:#B45309">● 30 วันล่าสุด</b> พบน้ำท่วมห่าง ~950 ม. (1–28 ก.ย. 2569)</div></div></div><div style="font-size:12px;color:#5B6B82;padding-top:6px;border-top:1px solid #DDE4ED;line-height:17px">GISTDA flood-freq · flood/30days · ต.ยางซ้าย อ.เมืองสุโขทัย จ.สุโขทัย · ดึงเมื่อ 30/9/2569 10:37 · ตำแหน่งแปลงในแผนผังเป็นภาพแทน ระยะตามจริง · ควรยืนยันความลึกกับเจ้าหน้าที่สถานี</div></div></sc-if></div></sc-if><div class="g-field" style="gap:6px;flex-grow:1;min-height:0"><label class="g-label">หมายเหตุ</label><div class="g-input" style="flex-grow:1;min-height:60px;align-items:flex-start;font-size:16px">ปี 2554 น้ำเข้าห้อง MDB สูงประมาณครึ่งตู้ · ถนนทางเข้าถูกตัดขาด 5 วัน</div></div></div>
+</main>
+</div>
+
+<nav class="g-bar" style="justify-content: center; padding-bottom: 24px"><div style="width: 1240px; display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; min-width: 0">
+<span style="{{ftIcS}}">{{ftIc}}</span>
+<div><div style="font-size: 13px; color: {{statusColor}}">{{statusTxt}}</div></div>
+</div>
+<button class="g-save" style="flex-grow: 0; width: 170px; font-size: 16px; margin-right: 12px">บันทึกร่างตอนนี้</button>
+<button class="g-nav" style="order: 0; width: 230px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; background: #FFFFFF; color: #16325C; border: 1px solid rgba(22,50,92,0.6)"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M15 5l-7 7 7 7"></path></svg><span style="text-align: left; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; color: #5B6B82">ก่อนหน้า 3/13</span>A3 หม้อแปลง · MDB</span></button>
+<button class="g-nav" style="width: 230px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600"><span style="text-align: right; line-height: 18px"><span style="display: block; font-size: 12px; font-weight: 400; opacity: .9">ถัดไป 5/13</span>B1 ตู้พิจารณาเชื่อมต่อ</span><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px"><path d="M9 5l7 7-7 7"></path></svg></button>
+</div></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const fl = st.fl || 'yes', flood = fl === 'yes', unk = fl === 'unk', got = !!st.got;
+    const fb = st.fb === undefined ? 50 : st.fb;
+    const floor = st.floor === undefined ? 30 : st.floor;
+    const mountCm = 100;
+    const ref = st.ref || 0, src = st.src === undefined ? 0 : st.src;
+    const lvl = flood ? (st.lvl === undefined ? 80 : st.lvl) : (unk && got ? 50 : 0), wet = lvl > 0;
+    const base = lvl;
+    const minCm = Math.ceil((base + fb) / 10) * 10;
+    const y = cm => 484 - cm * 1.8;
+    const minY = y(minCm), baseY = y(base);
+    const refs = ['ดินเดิม', 'พื้นถนน', 'พื้นห้อง MDB'];
+    const ch = on => on ? 'g-choice on' : 'g-choice', seg = ch;
+    const ok = 'font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#E2EFDA;color:#3B7420';
+    const bad = 'font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#FDECEA;color:#B42318';
+    const warn = 'font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;background:#FFF4E5;color:#B45309';
+    const eq = [['อินเวอร์เตอร์ × 2', 'B2', floor + mountCm], ['ตู้ SMDB-PV · รีเลย์กันย้อน', 'B4', floor + mountCm], ['ปุ่ม Emergency', 'B5', 140]];
+    const rows = eq.map(([n, s2, h]) => {
+      const pass = h >= minCm;
+      return { n: n, src: s2, hTxt: h + ' ซม.', res: pass ? '✓ ผ่าน' : '✗ ต่ำกว่า ' + (minCm - h) + ' ซม.', badge: pass ? ok : bad };
+    });
+    let fails = rows.filter(r => r.badge === bad).length;
+    const floorLow = wet && floor < lvl;
+    rows.unshift({ n: 'พื้นห้อง Inverter', src: 'B2', hTxt: floor + ' ซม.', res: floorLow ? '! ต่ำกว่าน้ำ ' + (lvl - floor) + ' ซม.' : '✓ สูงกว่าน้ำ', badge: floorLow ? warn : ok });
+    if (wet) rows.push({ n: 'MDP-1 จุดเชื่อมต่อ (เดิม)', src: 'A3', hTxt: 'ฐาน 0 ซม.', res: flood ? '! น้ำเคยเข้า ' + lvl + ' ซม.' : '! ใกล้พื้นที่ท่วมซ้ำซาก', badge: warn });
+    const statusTxt = (fails ? 'อุปกรณ์ต่ำกว่าเกณฑ์ ' + fails + ' รายการ' : 'ครบช่องบังคับแล้ว · อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ ' + minCm + ' ซม.') + (flood ? ' · จุดต่อ MDP-1 เคยน้ำท่วม' : unk ? (got ? ' · ระดับน้ำจาก GISTDA เป็นค่าประเมิน' : ' · ยังไม่มีข้อมูลน้ำท่วม ดึงจาก GISTDA ได้') : '');
+    const inv = floor + mountCm >= minCm, es = 140 >= minCm;
+    const set = o => () => this.setState(o);
+    const freq = st.freq === undefined ? 2 : st.freq, cause = st.cause === undefined ? 1 : st.cause, hit = st.hit || [1, 0, 1, 0, 1];
+    const freqs = ['ทุกปี', '2–5 ปีครั้ง', 'นานกว่า 5 ปี'].map((t, i) => ({ t, st: ch(freq === i), go: set({ freq: i }) }));
+    const causes = ['ฝนตกหนัก', 'แม่น้ำล้นตลิ่ง', 'น้ำทะเลหนุน', 'น้ำป่าหลาก', 'อื่นๆ'].map((t, i) => ({ t, st: ch(cause === i), go: set({ cause: i }) }));
+    const hits = ['ห้อง MDB', 'หม้อแปลง', 'ห้องสูบน้ำ', 'พื้นที่ INV', 'ทางเข้า'].map((t, i) => ({ t, st: 'display:flex;align-items:center;gap:8px;min-height:48px;padding:0 10px;border-radius:12px;font-size:14px;white-space:nowrap;font-weight:600;line-height:17px;cursor:pointer;' + (hit[i] ? 'background:#E3EEF8;border:1px solid rgba(22,50,92,0.2)' : 'background:#fff;border:1px solid rgba(22,50,92,0.45)'), box: 'width:22px;height:22px;border-radius:3px;display:grid;place-items:center;flex:none;font-size:13px;' + (hit[i] ? 'background:#1F6FB5;color:#fff' : 'border:1.5px solid #77889E;color:transparent;background:#fff'), go: () => { const h2 = hit.slice(); h2[i] = h2[i] ? 0 : 1; this.setState({ hit: h2 }); } }));
+    return {
+      isFlood: flood, notFlood: fl === 'no',
+      noSeg: seg(fl === 'no'), yesSeg: seg(flood), freqs, causes, hits, hitN: hit.filter(Boolean).length, lvl,
+      lvlDown: set({ lvl: Math.max(5, lvl - 5) }), lvlUp: set({ lvl: Math.min(200, lvl + 5) }), lvlIn: e => { const v = parseInt(String(e.target.value).replace(/\D/g, ''), 10); if (!isNaN(v)) this.setState({ lvl: Math.max(5, Math.min(200, v)) }); }, fbDown: set({ fb: Math.max(0, fb - 10) }), fbUp: set({ fb: Math.min(150, fb + 10) }), setNo: set({ fl: 'no' }), setYes: set({ fl: 'yes' }),
+      r0: ch(ref === 0), r1: ch(ref === 1), r2: ch(ref === 2), setR0: set({ ref: 0 }), setR1: set({ ref: 1 }), setR2: set({ ref: 2 }),
+      s0: ch(src === 0), s1: ch(src === 1), s2: ch(src === 2), setS0: set({ src: 0 }), setS1: set({ src: 1 }), setS2: set({ src: 2 }),
+      refTxt: refs[ref], fb: fb, minCm: minCm, roundTxt: minCm > base + fb ? ' · ปัดขึ้นจาก ' + (base + fb) : '',
+      floor: floor, mountCm: mountCm, flDown: set({ floor: Math.max(0, floor - 10) }), flUp: set({ floor: Math.min(150, floor + 10) }),
+      floorY: y(floor), floorH: floor * 1.8,
+      invTop: y(floor + mountCm) - 104, invLblY: y(floor + mountCm) - 30, invG1: y(floor + mountCm) - 84, invG2: y(floor + mountCm) - 74,
+      smdbTop: y(floor + mountCm) - 84, smdbLblY: y(floor + mountCm) - 38,
+      esTop: y(140) - 13, esCy: y(140), esLblY: y(140) - 19,
+      mountY: y(floor + mountCm), mountLblY: (y(floor) + y(floor + mountCm)) / 2 + 4,
+      mDimTicks: [y(floor), y(floor + mountCm)].map(Y => 'M177 ' + (Y + 5) + ' L187 ' + (Y - 5)).join(' '),
+      minY: minY, baseY: baseY, fbY: (minY + baseY) / 2, bandY: minY, bandH: baseY - minY,
+      fbTicks: [baseY, minY].map(Y => 'M141 ' + (Y + 5) + ' L151 ' + (Y - 5)).join(' '),
+      rulerTicks: Array.from({ length: 21 }, (_, i) => 'M' + (i % 5 ? 30 : 27) + ' ' + y(i * 10) + ' H34').join(' '),
+      minM: (minCm / 100).toFixed(2), floorM: (floor / 100).toFixed(2), lvlM: (lvl / 100).toFixed(2),
+      minPy: minY - 10, minTy: minY + 4, minCy: minY - 14,
+      flPy: y(floor) - 10, flTy: y(floor) + 4, flCy: y(floor) + 24,
+      watPy: y(lvl) - 11, watTy: y(lvl) + 4, watCy: Math.abs(y(lvl) - y(floor)) < 46 ? y(lvl) - 16 : y(lvl) + 25,
+      gripD: 'M444 ' + (y(lvl) - 3) + ' l3 -3 l3 3 M444 ' + (y(lvl) + 3) + ' l3 3 l3 -3',
+      waterCap: flood ? 'น้ำสูงสุด 2554' : 'ประเมิน GISTDA',
+      wave: Array.from({ length: 48 }, (_, i) => (i ? '' : 'M40 ' + y(lvl)) + ' q4 ' + (i % 2 ? 3 : -3) + ' 8 0').join(''),
+      invBg: inv ? '#2E9E5B' : '#D9453B', invIc: inv ? '✓' : '✗', invBy: y(floor + mountCm) - 100, smdbBy: y(floor + mountCm) - 80,
+      esBg: es ? '#2E9E5B' : '#D9453B', esIc: es ? '✓' : '✗', esBy: y(140) - 9,
+      lgY: 110, lgTy: 119,
+      waterVis: wet ? '' : 'display:none',
+      waterY: y(lvl), waterH: 484 - y(lvl), waterDash: flood ? '' : '6 4',
+      isUnk: unk, needFetch: unk && !got, gotShow: unk && got, fetchG: set({ got: true }),
+      unkSeg: seg(unk), setUnk: set({ fl: 'unk' }),
+      chartAria: 'ภาพตัดระดับน้ำ' + (wet ? 'ท่วม ' + lvl + ' ซม. ' : ' ') + 'และระดับติดตั้งอุปกรณ์ ' + minCm + ' ซม.',
+      rows: rows, statusTxt: statusTxt, statusColor: fails ? '#D9453B' : '#5B6B82', ftIc: !fails ? '✓' : '!', ftIcS: 'width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:' + (!fails ? '#2E9E5B' : '#F08C00')
+    };
+  }
+}
+</script>
+</body>
+</html>

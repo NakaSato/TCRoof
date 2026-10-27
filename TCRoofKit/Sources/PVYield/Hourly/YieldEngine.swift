@@ -147,6 +147,7 @@ public enum YieldEngine {
                 if 90 - h.zenith <= hz.elevation(at: h.azimuth) { beam = 0 }
                 sky *= skyFactor
             }
+            if let bs = face.beamShadeHourly, k < bs.count { beam *= 1 - min(1, max(0, bs[k])) }
             var gShade: Double
             var rearRaw = 0.0
             if let sheds = rowSheds, let rows = system.rows {

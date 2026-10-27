@@ -407,7 +407,8 @@ struct InstallTrackingPage: View {
     func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
-         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
+         // pushes the one-page request (docs/ui/weekly-request-ipad-map); `Tab.request` stays, unused by the item
+         Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", route: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
@@ -477,7 +478,7 @@ struct InstallTrackingPage: View {
             }
             out.append(Cell(label: "กำหนดการ", value: title, ink: ink, note: (t.variance > 0 ? "+" : "") + "\(t.variance)%", weight: 0.85))
             let slack = t.slackDays()
-            out.append(Cell(label: "คาดส่งมอบ", value: ThaiFormat.dayMonth.string(from: t.forecastEnd()),
+            out.append(Cell(label: "คาดส่งมอบ", value: Self.forecastDay(t),
                             ink: slack < 0 ? Theme.dangerText : slack == 0 ? Theme.pending : Theme.navy,
                             note: slack < 0 ? "ช้า \(-slack) วัน" : slack == 0 ? "ตามกำหนดพอดี" : "ตามกำหนด เผื่อ \(slack) วัน", weight: 1.12))
             if let spi = t.spi {

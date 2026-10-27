@@ -33,6 +33,13 @@ public struct RoofPlan: Sendable {
         }
     }
 
+    /// The modules in shadow and the obstacles' shadows (plan metres) at one moment (`RoofObstacleShade.moment`).
+    public struct ShadeMoment: Sendable, Equatable {
+        public var slots: Set<RoofMountLayout.SlotRef>
+        public var shadows: [[Pt]]
+        public init(slots: Set<RoofMountLayout.SlotRef>, shadows: [[Pt]]) { self.slots = slots; self.shadows = shadows }
+    }
+
     public struct PV: Sendable {
         public var count = 0
         public var kWp = 0.0
@@ -90,9 +97,11 @@ public struct RoofPlan: Sendable {
     ///   - selected: slots drawn highlighted (a run of modules, or one slot).
     ///   - pairNumbers: number landscape pairs (`Options.pairs`) above the top row, tagged `pairs`; the page only, so the
     ///     report and the CAD file leave them out.
+    ///   - shade: the modules in shadow and the obstacles' shadows at the shade card's moment, tagged `shade`; the iPad
+    ///     page only.
     public init(_ v: Values, mode: Mode = .structure, chips: Bool = false, dragging: (Double, Double, Double, Double)? = nil,
                 highlight: Int? = nil, mount: RoofMountLayout? = nil, selected: Set<RoofMountLayout.SlotRef> = [],
-                pairNumbers: Bool = false) {
+                pairNumbers: Bool = false, shade: ShadeMoment? = nil) {
         var d = Drawer(v, pv: mode == .pv)
         d.background()
         if !d.pvMode { d.purlins() }
@@ -105,7 +114,11 @@ public struct RoofPlan: Sendable {
         if !d.pvMode { d.purlinCallout(); d.slopeArrows() }
         d.areas()
         if d.pvMode {
-            if let mount { d.pvMount(mount, selected: selected); if pairNumbers { d.pairNumbers(mount) } }
+            if let mount {
+                d.pvMount(mount, selected: selected)
+                if let shade { d.shadeMoment(mount, shade) }
+                if pairNumbers { d.pairNumbers(mount) }
+            }
             if let r = dragging { d.dragged(r, fill: RGBA(0.851, 0.271, 0.231, 0.12), line: Self.red, width: 1.4) }
             d.keepOutLabels()
         } else if let r = dragging {
@@ -454,6 +467,26 @@ private struct Drawer {
         let q = m.quantities
         pv.count = q.modules
         pv.kWp = q.kWp
+    }
+
+    /// The shade card's moment (docs/ui/survey-c1-ipad-shade 3b): the modules in shadow in `Theme.warning` over their
+    /// fill, and each obstacle's shadow as a translucent dashed polygon.
+    mutating func shadeMoment(_ m: RoofMountLayout, _ s: RoofPlan.ShadeMoment) {
+        let w = m.moduleAlong, l = m.moduleUp, orange = RGBA(hex: 0xF08C00), ink = RGBA(hex: 0x111827)
+        func P(_ f: RoofFace, _ u: Double, _ v: Double) -> Pt { let p = f.plan(u, v); return Pt(L.origin.x + p.x * k, L.origin.y + p.y * k) }
+        for f in m.faces where f.used {
+            for (r, row) in f.rows.enumerated() {
+                for (c, slot) in row.slots.enumerated() where slot.isModule && s.slots.contains(.init(face: f.face.id, row: r, column: c)) {
+                    let poly = [P(f.face, slot.u, row.v), P(f.face, slot.u + w, row.v), P(f.face, slot.u + w, row.v + l), P(f.face, slot.u, row.v + l)]
+                    add(.polygon(poly, stroke: .white, fill: orange.withAlpha(0.9), width: 0.5), "shade")
+                }
+            }
+        }
+        for h in s.shadows where h.count >= 3 {
+            let pts = h.map { L.point(x: $0.x, y: $0.y) }
+            add(.polygon(pts, stroke: nil, fill: ink.withAlpha(0.18)), "shade")
+            add(.polyline(pts + [pts[0]], width: 0.8, color: ink.withAlpha(0.45), dash: [3, 2]), "shade")
+        }
     }
 
     /// Landscape pairs numbered 1, 2, 3 … along the row, on a white chip just outside the row nearest the plan's top

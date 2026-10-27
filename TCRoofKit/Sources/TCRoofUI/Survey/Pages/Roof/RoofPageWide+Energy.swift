@@ -26,9 +26,15 @@ extension RoofPageWide {
         mountYieldBusy = true
         try? await Task.sleep(nanoseconds: 600_000_000)
         guard !Task.isCancelled else { return }
-        let estimate = await Task.detached(priority: .utility) { RoofMountYield.estimate(inputs) }.value
+        // iPad: the shade card's figures come from the same run
+        let shade = !narrow
+        let result: (estimate: RoofMountYield.Estimate, shade: RoofShade.Outcome?) = await Task.detached(priority: .utility) {
+            if shade { let r = RoofMountYield.estimateAndShade(inputs); return (r.estimate, r.shade) }
+            return (RoofMountYield.estimate(inputs), nil)
+        }.value
         guard !Task.isCancelled else { return }
-        mountYield = estimate
+        mountYield = result.estimate
+        mountShade = result.shade
         mountYieldFor = inputs
         mountYieldBusy = false
     }

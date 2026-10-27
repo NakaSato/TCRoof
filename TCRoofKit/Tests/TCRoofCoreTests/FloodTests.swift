@@ -122,6 +122,98 @@ final class FloodTests: XCTestCase {
         do { _ = try await FloodLookup(apiKey: " ").fetch(lat: 17, lon: 99.8); XCTFail() }
         catch { XCTAssertEqual(error as? FloodLookup.Failure, .noKey) }
     }
+
+    // MARK: freeboard (docs/ui/survey-a4-ipad-v2 §4.1)
+
+    func flooded(_ depth: String, freeboard: String? = nil) -> Values {
+        var v = Values()
+        v["floodHistory"] = .choice("เคย", other: ""); v["floodDepth"] = .text(depth)
+        if let freeboard { v["floodFreeboard"] = .text(freeboard) }
+        return v
+    }
+
+    /// A job with no freeboard answer computes as before the answer existed: level + 50, rounded up to 10.
+    func testNoFreeboardAnswerKeepsTodaysResult() {
+        for (depth, expected) in [("80", 130), ("75", 130), ("83", 140), ("0", 50)] {
+            let v = flooded(depth)
+            XCTAssertEqual(FloodCheck.freeboardCm(v), FloodCheck.defaultFreeboardCm)
+            XCTAssertEqual(FloodCheck.minCm(v), expected, depth)
+            XCTAssertEqual(Schema.recommendedEquipHeight(v), depth == "0" ? nil : expected)
+        }
+        XCTAssertNil(FloodCheck.roundedFrom(flooded("80")))
+        // the field is hidden, so A4's completion is unchanged
+        XCTAssertEqual(Schema.flood.completion(flooded("80", freeboard: "30")).total, Schema.flood.completion(flooded("80")).total)
+    }
+
+    /// The short labels are display only: each names an existing option, which stays what is stored.
+    func testShortLabelsNameExistingOptions() {
+        XCTAssertTrue(Set(Schema.floodSourceShort.keys).isSubset(of: Schema.floodSources))
+        XCTAssertTrue(Set(Schema.floodHitShort.keys).isSubset(of: Schema.floodHits))
+        XCTAssertEqual(Schema.floodSources.count, 5)
+        XCTAssertEqual(Schema.floodHits.count, 5)
+    }
+
+    func testFreeboardRoundsUp() {
+        let v = flooded("75", freeboard: "30")
+        XCTAssertEqual(FloodCheck.freeboardCm(v), 30)
+        XCTAssertEqual(FloodCheck.minCm(v), 110)
+        XCTAssertEqual(FloodCheck.roundedFrom(v), 105)
+        XCTAssertEqual(FloodCheck.cmText(FloodCheck.roundedFrom(v)!), "105")
+        XCTAssertEqual(FloodCheck.cmText(82.5), "82.5")
+    }
+
+    func testZeroFreeboard() {
+        let v = flooded("80", freeboard: "0")
+        XCTAssertEqual(FloodCheck.freeboardCm(v), 0)
+        XCTAssertEqual(FloodCheck.minCm(v), 80)
+        XCTAssertNil(FloodCheck.roundedFrom(v))
+        // a negative answer typed by hand counts as none above the water
+        XCTAssertEqual(FloodCheck.freeboardCm(flooded("80", freeboard: "-20")), 0)
+    }
+
+    /// `ไม่เคย`: no water, so the minimum level is the freeboard alone (rounded up to 10).
+    func testNeverIsTheFreeboardAlone() {
+        var v = flooded("80", freeboard: "70")
+        v["floodHistory"] = .choice("ไม่เคย", other: "")
+        XCTAssertEqual(FloodCheck.level(v), 0)
+        XCTAssertEqual(FloodCheck.minCm(v), 70)
+        v["floodFreeboard"] = .text("35")
+        XCTAssertEqual(FloodCheck.minCm(v), 40)
+        XCTAssertEqual(FloodCheck.roundedFrom(v), 35)
+        v["floodFreeboard"] = nil
+        XCTAssertEqual(FloodCheck.minCm(v), 50)
+    }
+
+    /// The freeboard moves the check table, the result and the drawings' label; the PDF keeps its own drawing.
+    func testFreeboardReachesTheCheckAndDrawings() {
+        var job = Job()
+        job.values = flooded("80", freeboard: "30")
+        job.values["invFloorCm"] = .text("30")
+        job.modules = [SurveyModule(type: .inverter), SurveyModule(type: .backfeed), SurveyModule(type: .fts)]
+        let r = job.floodCheck
+        XCTAssertEqual(r.freeboard, 30)
+        XCTAssertEqual(r.minCm, 110)
+        // floor and inverter share B2's number; the existing board (A3) isn't checked against the level
+        XCTAssertEqual(FloodCheck.checkedTags(r), [r.rows[1].tag, r.rows[2].tag, r.rows[3].tag])
+        XCTAssertFalse(FloodCheck.checkedTags(r).contains("A3"))
+        func texts(_ s: Sketch) -> [String] { s.ops.compactMap { if case let .text(t, _, _, _, _, _, _) = $0 { return t }; return nil } }
+        XCTAssertTrue(texts(FloodSection.sketch(job)).contains("ระยะเผื่อ 30"))
+        XCTAssertEqual(texts(FloodSection.sketch(job)), texts(FloodSection.sketch(job, style: .report)))
+        let screen = texts(FloodSection.sketch(job, style: .screen))
+        XCTAssertTrue(screen.contains("เผื่อ 30"))
+        XCTAssertTrue(screen.contains("+1.10"))
+        XCTAssertTrue(screen.contains("+0.80"))
+        XCTAssertTrue(screen.contains("+0.30"))
+        XCTAssertTrue(screen.contains("±0.00"))
+        // the minimum level's line is where the scale puts 110 cm
+        let k = FloodSection.scale(job, style: .screen)
+        XCTAssertTrue(FloodSection.sketch(job, style: .screen).ops.contains {
+            if case let .line(a, b, _, _, dash) = $0 { return !dash.isEmpty && abs(a.y - (FloodSection.groundY - 110 * k)) < 0.01 && a.y == b.y }
+            return false
+        })
+        XCTAssertEqual(FloodCheck.statusLine(r), "ครบช่องบังคับแล้ว | อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ 110 ซม. | จุดต่อ MDB1 เคยน้ำท่วม")
+        XCTAssertTrue(FloodCheck.statusLine(r, missing: 2).hasPrefix("ยังขาด 2 ช่องบังคับ | "))
+    }
 }
 
 /// Calls the real service; runs only with `GISTDA_API_KEY` in the environment (never in CI, no key in the repo).

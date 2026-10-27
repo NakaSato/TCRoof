@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "pwa-inverter-station-shelter-125k",
+  "name": "Inverter station with shelter — MAX 125KTL3-X LV",
+  "nameTh": "สถานีอินเวอร์เตอร์มีหลังคา 1 เครื่อง",
+  "units": "mm",
+  "source": "b681fdd9-Inverter.dxf",
+  "originNote": "frontView.xMm from grid line 1 (or first rack post for wallRack); elevationMm from finished ground to bottom of equipment",
+  "structure": {
+    "type": "shelter",
+    "shelter": true,
+    "gridXMm": [
+      0,
+      2000,
+      4000,
+      6000
+    ],
+    "gridYMm": [
+      0,
+      2500
+    ],
+    "gridLabelsX": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "gridLabelsY": [
+      "A",
+      "B"
+    ],
+    "column": "steel-column-150",
+    "basePlate": "base-plate-200",
+    "eaveHeightHighMm": 3000,
+    "eaveHeightLowMm": 2750,
+    "roof": "mono-pitch",
+    "rackPostsXMm": [
+      753,
+      1753,
+      2753,
+      4153,
+      5253
+    ],
+    "rackHeightMm": 2000,
+    "door": "door-swing-1100"
+  },
+  "equipment": [
+    {
+      "tag": "SOLAR AC-DB-01",
+      "componentId": "solar-ac-db",
+      "frontView": {
+        "xMm": 804,
+        "elevationMm": 598,
+        "widthMm": 899,
+        "heightMm": 1400
+      }
+    },
+    {
+      "tag": "SOLAR METER-DB-01",
+      "componentId": "solar-meter-db",
+      "frontView": {
+        "xMm": 1938,
+        "elevationMm": 1248,
+        "widthMm": 630,
+        "heightMm": 750
+      }
+    },
+    {
+      "tag": "INVERTER No.1",
+      "componentId": "growatt-max-125ktl3-lv",
+      "frontView": {
+        "xMm": 3015,
+        "elevationMm": 1461,
+        "widthMm": 970,
+        "heightMm": 635
+      }
+    },
+    {
+      "tag": "SOLAR DC-DB-01",
+      "componentId": "solar-dc-db",
+      "frontView": {
+        "xMm": 4353,
+        "elevationMm": 998,
+        "widthMm": 700,
+        "heightMm": 1000
+      }
+    }
+  ],
+  "cableways": [
+    {
+      "componentId": "ac-cable-ladder-200x100",
+      "route": "TYPE C cabinet → injection point"
+    },
+    {
+      "componentId": "ac-perforated-tray-100x100",
+      "route": "AC-DB ↔ METER-DB (top run)"
+    },
+    {
+      "componentId": "ac-perforated-tray-200x100",
+      "route": "inverter → SOLAR AC-DB-01"
+    },
+    {
+      "componentId": "dc-perforated-tray-100x100",
+      "route": "PV array → DC-DB"
+    }
+  ],
+  "lighting": [
+    {
+      "componentId": "t8-led-lamp",
+      "count": 2
+    }
+  ],
+  "existing": [
+    {
+      "componentId": "existing-type-c-cabinet"
+    }
+  ]
+}

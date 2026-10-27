@@ -1,0 +1,1097 @@
+{
+  "schemaVersion": 1,
+  "id": "pwa-tank-roof-40x26-240",
+  "name": "PV array on clear-water tank roof 40 x 26 m, 240 modules",
+  "nameTh": "แผงโซลาร์บนหลังคาถังน้ำใส 40 x 26 ม. 240 แผง",
+  "units": "mm",
+  "origin": "bottom-left corner of the roof outline; +x right, +y up as drawn (north not marked)",
+  "source": {
+    "file": "Top.dxf",
+    "lastSavedBy": "Chanthawat.K",
+    "drawingUnits": "metres (header says mm)",
+    "elevationFile": "Back_Side.dxf",
+    "sectionFile": "Side_View.dxf"
+  },
+  "view": "plan (Top.dxf) + back-side elevation (Back_Side.dxf) + side section (Side_View.dxf)",
+  "roof": {
+    "widthMm": 40000,
+    "depthMm": 26000
+  },
+  "module": {
+    "componentId": "pv-module-plan-2199x1134",
+    "moduleSpec": "components/modules/znshine-zxm7-uhldd144-570.json",
+    "planMm": {
+      "width": 2199,
+      "depth": 1134
+    },
+    "orientation": "portrait, 2 up along the slope (long side 2280 down the tilt, x in plan), 2 modules per rafter",
+    "tiltNote": "15 deg from Side_View.dxf (blocks at 345 deg). Cross-checks: plan length 2199 = 2280 x cos 15 (2202); Back_Side module rise gives 15.7 deg.",
+    "tiltFromElevationDeg": 15.7,
+    "tiltDeg": 15.0
+  },
+  "mounting": {
+    "post": "pv-mount-post-300",
+    "rafter": "pv-mount-rafter-4000",
+    "rail": "pv-mount-rail-48",
+    "bracing": "pv-mount-x-bracing",
+    "railsPerModule": 2,
+    "railInsetFromModuleEdgeMm": 400,
+    "railSpacingUnderModuleMm": 1400,
+    "rafterOverhangPastPostMm": "457 at the low end (section); plan draws 600 each side",
+    "rafterSpacingYMm": "= post bay (2700 typical)",
+    "notes": "Two support lines per table, 2800 apart in x: the rear (high) line has vertical posts with X-bracing in alternate bays; the front (low) line has a single foot carrying a V of two struts. Rafters 4000 at 15 deg; 4 rails along y on the rafters.",
+    "concreteTopping": "concrete-topping-300x300x150",
+    "footBracket": "pv-mount-foot-bracket-ag2-b02",
+    "frame": "per rafter: 1 vertical rear post (1998) + 3 struts (2038 rear diagonal, 1396 and 1148 from one front foot)",
+    "highSide": "the post line with the X-bracing (lower x in plan)"
+  },
+  "tables": [
+    {
+      "id": "TA",
+      "xRangeMm": [
+        790,
+        5210
+      ],
+      "postLinesXMm": [
+        1595,
+        4395
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        2700,
+        5400,
+        8100,
+        10800,
+        15200,
+        17900,
+        20600,
+        23300
+      ],
+      "postsMirrored": false,
+      "posts": 16,
+      "rafters": 8,
+      "rafterXMm": [
+        995,
+        4995
+      ],
+      "railsXMm": [
+        1166,
+        2566,
+        3386,
+        4786
+      ],
+      "rails": 8,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 1820,
+            "y1": 11332,
+            "length": 9512
+          },
+          "modules": 16,
+          "rows": 8,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        },
+        {
+          "railRunMm": {
+            "y0": 14668,
+            "y1": 24180,
+            "length": 9512
+          },
+          "modules": 16,
+          "rows": 8,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 32,
+      "bracedBays": [
+        {
+          "y0": 2675,
+          "y1": 5422
+        },
+        {
+          "y0": 8075,
+          "y1": 10822
+        },
+        {
+          "y0": 15175,
+          "y1": 17922
+        },
+        {
+          "y0": 20575,
+          "y1": 23322
+        }
+      ],
+      "bracingLineXMm": [
+        1499,
+        1651
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        4400,
+        2700,
+        2700,
+        2700
+      ]
+    },
+    {
+      "id": "TB",
+      "xRangeMm": [
+        6290,
+        10710
+      ],
+      "postLinesXMm": [
+        7095,
+        9895
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        2200,
+        4900,
+        7600,
+        10300,
+        13000,
+        15700,
+        18400,
+        21100,
+        23800
+      ],
+      "postsMirrored": false,
+      "posts": 18,
+      "rafters": 9,
+      "rafterXMm": [
+        6495,
+        10495
+      ],
+      "railsXMm": [
+        6666,
+        8066,
+        8886,
+        10286
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 1320,
+            "y1": 24680,
+            "length": 23360
+          },
+          "modules": 40,
+          "rows": 20,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 40,
+      "bracedBays": [
+        {
+          "y0": 2175,
+          "y1": 4922
+        },
+        {
+          "y0": 7575,
+          "y1": 10322
+        },
+        {
+          "y0": 12975,
+          "y1": 15722
+        },
+        {
+          "y0": 18375,
+          "y1": 21122
+        },
+        {
+          "y0": 21075,
+          "y1": 23822
+        }
+      ],
+      "bracingLineXMm": [
+        6999,
+        7151
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700
+      ]
+    },
+    {
+      "id": "TC",
+      "xRangeMm": [
+        11790,
+        16210
+      ],
+      "postLinesXMm": [
+        12595,
+        15395
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        2200,
+        4900,
+        7600,
+        10300,
+        13000,
+        15700,
+        18400,
+        21100,
+        23800
+      ],
+      "postsMirrored": false,
+      "posts": 18,
+      "rafters": 9,
+      "rafterXMm": [
+        11995,
+        15995
+      ],
+      "railsXMm": [
+        12166,
+        13566,
+        14386,
+        15786
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 1320,
+            "y1": 24680,
+            "length": 23360
+          },
+          "modules": 40,
+          "rows": 20,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 40,
+      "bracedBays": [
+        {
+          "y0": 2175,
+          "y1": 4922
+        },
+        {
+          "y0": 7575,
+          "y1": 10322
+        },
+        {
+          "y0": 12975,
+          "y1": 15722
+        },
+        {
+          "y0": 18375,
+          "y1": 21122
+        },
+        {
+          "y0": 21075,
+          "y1": 23822
+        }
+      ],
+      "bracingLineXMm": [
+        12499,
+        12651
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700
+      ]
+    },
+    {
+      "id": "TD",
+      "xRangeMm": [
+        17290,
+        21710
+      ],
+      "postLinesXMm": [
+        18095,
+        20895
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        2200,
+        4900,
+        7600,
+        10300,
+        13000,
+        15700,
+        18400,
+        21100,
+        23800
+      ],
+      "postsMirrored": false,
+      "posts": 18,
+      "rafters": 9,
+      "rafterXMm": [
+        17495,
+        21495
+      ],
+      "railsXMm": [
+        17666,
+        19066,
+        19886,
+        21286
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 1320,
+            "y1": 24680,
+            "length": 23360
+          },
+          "modules": 40,
+          "rows": 20,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 40,
+      "bracedBays": [
+        {
+          "y0": 2175,
+          "y1": 4922
+        },
+        {
+          "y0": 7575,
+          "y1": 10322
+        },
+        {
+          "y0": 12975,
+          "y1": 15722
+        },
+        {
+          "y0": 18375,
+          "y1": 21122
+        },
+        {
+          "y0": 21075,
+          "y1": 23822
+        }
+      ],
+      "bracingLineXMm": [
+        17999,
+        18151
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700
+      ]
+    },
+    {
+      "id": "TE",
+      "xRangeMm": [
+        22790,
+        27210
+      ],
+      "postLinesXMm": [
+        23595,
+        26395
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        2200,
+        4900,
+        7600,
+        10300,
+        13000,
+        15700,
+        18400,
+        21100,
+        23800
+      ],
+      "postsMirrored": false,
+      "posts": 18,
+      "rafters": 9,
+      "rafterXMm": [
+        22995,
+        26995
+      ],
+      "railsXMm": [
+        23166,
+        24566,
+        25386,
+        26786
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 1320,
+            "y1": 24680,
+            "length": 23360
+          },
+          "modules": 40,
+          "rows": 20,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 40,
+      "bracedBays": [
+        {
+          "y0": 2175,
+          "y1": 4922
+        },
+        {
+          "y0": 7575,
+          "y1": 10322
+        },
+        {
+          "y0": 12975,
+          "y1": 15722
+        },
+        {
+          "y0": 18375,
+          "y1": 21122
+        },
+        {
+          "y0": 21075,
+          "y1": 23822
+        }
+      ],
+      "bracingLineXMm": [
+        23499,
+        23651
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700,
+        2700
+      ]
+    },
+    {
+      "id": "TF",
+      "xRangeMm": [
+        28290,
+        32710
+      ],
+      "postLinesXMm": [
+        29095,
+        31895
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        6446,
+        9146,
+        11846,
+        14546,
+        16473,
+        19173,
+        21100,
+        23800
+      ],
+      "postsMirrored": true,
+      "posts": 16,
+      "rafters": 8,
+      "rafterXMm": [
+        28495,
+        32495
+      ],
+      "railsXMm": [
+        28666,
+        30066,
+        30886,
+        32286
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 5936,
+            "y1": 24680,
+            "length": 18744
+          },
+          "modules": 32,
+          "rows": 16,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 32,
+      "bracedBays": [
+        {
+          "y0": 6424,
+          "y1": 9171
+        },
+        {
+          "y0": 11824,
+          "y1": 14571
+        },
+        {
+          "y0": 16451,
+          "y1": 19198
+        },
+        {
+          "y0": 21078,
+          "y1": 23825
+        }
+      ],
+      "bracingLineXMm": [
+        28999,
+        29151
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700,
+        1927,
+        2700,
+        1927,
+        2700
+      ]
+    },
+    {
+      "id": "TG",
+      "xRangeMm": [
+        33790,
+        38210
+      ],
+      "postLinesXMm": [
+        34595,
+        37395
+      ],
+      "postLineSpacingMm": 2800,
+      "postsYMm": [
+        15700,
+        18400,
+        21100,
+        23800
+      ],
+      "postsMirrored": true,
+      "posts": 8,
+      "rafters": 4,
+      "rafterXMm": [
+        33995,
+        37995
+      ],
+      "railsXMm": [
+        34166,
+        35566,
+        36386,
+        37786
+      ],
+      "rails": 4,
+      "railRuns": [
+        {
+          "railRunMm": {
+            "y0": 15168,
+            "y1": 24680,
+            "length": 9512
+          },
+          "modules": 16,
+          "rows": 8,
+          "modulesPerRow": 2,
+          "rowPitchMm": 1154
+        }
+      ],
+      "modules": 16,
+      "bracedBays": [
+        {
+          "y0": 15678,
+          "y1": 18425
+        },
+        {
+          "y0": 21078,
+          "y1": 23825
+        }
+      ],
+      "bracingLineXMm": [
+        34499,
+        34651
+      ],
+      "postBaysYMm": [
+        2700,
+        2700,
+        2700
+      ]
+    }
+  ],
+  "obstacles": {
+    "hatches1000": [
+      {
+        "x0": 250,
+        "y0": 13250,
+        "x1": 1250,
+        "y1": 14250
+      },
+      {
+        "x0": 250,
+        "y0": 11750,
+        "x1": 1250,
+        "y1": 12750
+      },
+      {
+        "x0": 19500,
+        "y0": 500,
+        "x1": 20500,
+        "y1": 1500
+      },
+      {
+        "x0": 19500,
+        "y0": 24500,
+        "x1": 20500,
+        "y1": 25500
+      }
+    ],
+    "vents": [
+      {
+        "x": 38000,
+        "y": 14000,
+        "diaMm": 1600
+      },
+      {
+        "x": 38000,
+        "y": 12000,
+        "diaMm": 1600
+      },
+      {
+        "x": 5000,
+        "y": 1500,
+        "diaMm": 1600
+      },
+      {
+        "x": 5000,
+        "y": 24500,
+        "diaMm": 1600
+      }
+    ],
+    "inverterStation": {
+      "x0": 31226,
+      "y0": 1134,
+      "x1": 37226,
+      "y1": 3634,
+      "sizeMm": [
+        6000,
+        2500
+      ],
+      "matchesStation": "pwa-inverter-station-shelter-125k (6.0 x 2.5 m)"
+    }
+  },
+  "raceway": {
+    "widthDrawnMm": 100,
+    "polylines": [
+      [
+        [
+          32710,
+          9545
+        ],
+        [
+          1890,
+          9545
+        ]
+      ],
+      [
+        [
+          37110,
+          15318
+        ],
+        [
+          30511,
+          15318
+        ],
+        [
+          30511,
+          9548
+        ]
+      ],
+      [
+        [
+          1890,
+          14818
+        ],
+        [
+          5210,
+          14818
+        ],
+        [
+          5210,
+          9545
+        ]
+      ],
+      [
+        [
+          32710,
+          9548
+        ],
+        [
+          32710,
+          3634
+        ]
+      ]
+    ]
+  },
+  "waterCleaning": {
+    "pipe": [
+      [
+        [
+          28946,
+          18251
+        ],
+        [
+          40000,
+          18251
+        ]
+      ],
+      [
+        [
+          28946,
+          18251
+        ],
+        [
+          28946,
+          12851
+        ],
+        [
+          7095,
+          12851
+        ]
+      ]
+    ],
+    "taps": [
+      {
+        "x": 18095,
+        "y": 12851
+      },
+      {
+        "x": 7095,
+        "y": 12851
+      },
+      {
+        "x": 29095,
+        "y": 14397
+      },
+      {
+        "x": 34595,
+        "y": 18251
+      }
+    ]
+  },
+  "boq": {
+    "pvModules": 240,
+    "posts": 112,
+    "rafters": {
+      "count": 56,
+      "planLengthMm": {
+        "4000": 56
+      },
+      "trueLengthMm": 4000
+    },
+    "rails": {
+      "count": 32,
+      "byLengthMm": {
+        "9512": 12,
+        "18744": 4,
+        "23360": 16
+      },
+      "totalM": 562.88
+    },
+    "bracingMembers": {
+      "count": 60,
+      "planLengthMm": {
+        "2747": 60
+      },
+      "totalPlanM": 164.82
+    },
+    "cableRacewayM": 57.7,
+    "waterPipeM": 38.3,
+    "waterTaps": 4,
+    "concreteToppings": 112,
+    "concreteM3": 1.512,
+    "footBrackets": {
+      "AG2-B02 (rear post)": 56,
+      "AG5-B03 (front strut foot)": 56
+    },
+    "xBracingSets": 30,
+    "rearPostAboveToppingMm": 1851,
+    "frames": 56,
+    "rearPosts": {
+      "count": 56,
+      "lengthFromSlabMm": 1998
+    },
+    "struts": {
+      "rearDiagonal2038": 56,
+      "frontBack1396": 56,
+      "frontForward1148": 56,
+      "totalM": 256.59
+    },
+    "postsNote": "plan 'posts' = 112 support points = 56 rear posts + 56 front strut feet"
+  },
+  "elevation": {
+    "source": {
+      "file": "Back_Side.dxf",
+      "drawingUnits": "metres"
+    },
+    "view": "back side (high side), looking along +x. 4 rear posts of one table with a break line between posts 2 and 3.",
+    "datum": "0 = top of tank roof slab",
+    "postXMm": [
+      0,
+      2693,
+      5385,
+      8078
+    ],
+    "postBayMm": "2700 (drawn 2693)",
+    "concreteToppingMm": {
+      "width": 300,
+      "depth": 300,
+      "height": 150,
+      "note": [
+        "CONCRETE TOPPING 300X300X150 mm."
+      ]
+    },
+    "postFootBracket": {
+      "block": "AG2-B02正视图",
+      "widthMm": 153,
+      "heightMm": 85
+    },
+    "postMm": {
+      "width": 50,
+      "bottom": 6,
+      "top": 2001,
+      "aboveTopping": 1851,
+      "dimensioned": 1851
+    },
+    "overallHeightMm": {
+      "dimensioned": 2248,
+      "topOfModulesDrawn": 2246
+    },
+    "railsDrawnMm": [
+      {
+        "bottom": 1015,
+        "top": 1075
+      },
+      {
+        "bottom": 1355,
+        "top": 1415
+      },
+      {
+        "bottom": 1695,
+        "top": 1755
+      },
+      {
+        "bottom": 2035,
+        "top": 2095
+      }
+    ],
+    "railSectionHeightDrawnMm": 60,
+    "modulesDrawnMm": [
+      {
+        "bottom": 1009,
+        "top": 1626
+      },
+      {
+        "bottom": 1629,
+        "top": 2246
+      }
+    ],
+    "moduleLowEdgeMm": 1009,
+    "tiltFromElevationDeg": 15.7,
+    "xBracing": {
+      "block": "*U6",
+      "diagonals": 4,
+      "lowNodeMm": 376,
+      "highNodeMm": 1890,
+      "spanMm": 2781,
+      "bays": "alternate (bay 1-2 and 3-4)"
+    },
+    "unidentifiedUpstand": {
+      "note": "hatched box 1500 x 600 on a 600 x 400 base, 1000 high, sitting on the roof next to post 1; not labelled",
+      "boxesMm": [
+        {
+          "x0": 596,
+          "z0": 400,
+          "x1": 2096,
+          "z1": 1000
+        },
+        {
+          "x0": 1046,
+          "z0": 0,
+          "x1": 1646,
+          "z1": 400
+        }
+      ]
+    },
+    "dimensionsFound": [
+      152,
+      300,
+      300,
+      300,
+      300,
+      401,
+      600,
+      1000,
+      1500,
+      1851,
+      2248,
+      2693,
+      2693
+    ]
+  },
+  "section": {
+    "source": {
+      "file": "Side_View.dxf",
+      "drawingUnits": "metres"
+    },
+    "view": "side view across the tilt, looking along y; two tables (rear post lines 5504 apart), high side on the left (-x in plan is the high side)",
+    "datum": "x = 0 at the rear post of the first table, z = 0 = tank roof slab",
+    "tiltDeg": 15.0,
+    "tiltSource": "rafter and module blocks inserted at 345 deg",
+    "tablePitchMm": 5504,
+    "postLineSpacingMm": 2800,
+    "gapBetweenTablesMm": 2704,
+    "rearPost": {
+      "heightFromSlabMm": 1997,
+      "dimensioned": 1998,
+      "note": "vertical, on 300x300x150 topping; the only vertical post in the frame"
+    },
+    "frontSupport": {
+      "note": "no vertical post on the front (low) line: a V of two struts springs from one foot",
+      "footBracket": "AG5-B03",
+      "footBracketMm": [
+        115,
+        85
+      ]
+    },
+    "struts": [
+      {
+        "id": "rear-diagonal",
+        "block": "*U15",
+        "lengthMm": 2038,
+        "from": "rear post foot",
+        "toRafterNodeX": 1319,
+        "bboxMm": [
+          2,
+          16,
+          1349,
+          1645
+        ]
+      },
+      {
+        "id": "front-back",
+        "block": "*U17",
+        "lengthMm": 1396,
+        "from": "front foot",
+        "toRafterNodeX": 2285,
+        "bboxMm": [
+          2257,
+          19,
+          2795,
+          1383
+        ]
+      },
+      {
+        "id": "front-forward",
+        "block": "*U21",
+        "lengthMm": 1148,
+        "from": "front foot",
+        "toRafterNodeX": 3348,
+        "bboxMm": [
+          2803,
+          18,
+          3377,
+          1100
+        ]
+      }
+    ],
+    "rafter": {
+      "lengthMm": 4000,
+      "bboxMm": [
+        -281,
+        983,
+        3602,
+        2091
+      ],
+      "highEndZMm": 2091,
+      "lowEndZMm": 983,
+      "nodeSpacingAlongSlopeMm": [
+        1400,
+        1000,
+        1100
+      ],
+      "lowEndOverhangMm": 457,
+      "note": "nodes: rear post top, then struts at 1400 / +1000 / +1100 along the slope"
+    },
+    "modules": {
+      "count": 2,
+      "orientation": "portrait, 2 up along the slope",
+      "lengthAlongSlopeMm": 2280,
+      "lowEdgeZMm": 985,
+      "dimensionedLowEdge": "1.00",
+      "topEdgeZMm": 2247,
+      "bboxesMm": [
+        [
+          -438,
+          1621,
+          1774,
+          2247
+        ],
+        [
+          1784,
+          1025,
+          3996,
+          1651
+        ]
+      ]
+    },
+    "upstand": {
+      "note": "same 1500 x 600 box on 600 x 400 base (1000 high) as in Back_Side.dxf, under the second table between its post lines",
+      "x0": 6368,
+      "x1": 7868
+    },
+    "dimensionsFound": [
+      300,
+      401,
+      457,
+      600,
+      985,
+      1000,
+      1100,
+      1148,
+      1396,
+      1400,
+      1500,
+      1998,
+      2038,
+      2280,
+      2704,
+      2800,
+      4000,
+      8303
+    ]
+  },
+  "conflicts": [
+    "Rafter is 4000 true length in the section but also drawn 4000 in plan; its plan projection at 15 deg would be 3864. Modules are projected in plan (2199), rafters are not.",
+    "Rail positions: plan puts 2 rails per module 1400 apart and 820 between modules; the section only dimensions rafter nodes (1400 / 1000 / 1100 along slope). Rail-to-rafter clamp points are not dimensioned.",
+    "Rear post: 1851 above the 150 topping (Back_Side) = 2001 from slab; Side_View dimensions 1998 / 2000. Use 2000 from slab.",
+    "Plan bracing pair (40 wide, 152 c/c) sits on the rear post line; the section shows no bracing on the front line.",
+    "The 4 horizontal members are drawn evenly 340 apart in height (1015-2095); Side_View.dxf puts the rafter nodes at z = 2091 / 1625 / 1356 / 1072. Treat the back-view heights as schematic.",
+    "The posts shown are the rear (high) vertical posts: 1851 above the topping here, 1998 from the slab in Side_View.dxf (1998 - 150 = 1848). The front line has no vertical post, only a V of struts (see section).",
+    "Module width along y is drawn 1303 here vs 1134 in plan (hidden dashed outline)."
+  ]
+}

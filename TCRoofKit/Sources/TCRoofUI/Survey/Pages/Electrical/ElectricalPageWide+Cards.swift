@@ -167,7 +167,11 @@ extension ElectricalPageWide {
                 if moreMeter {
                     A3Input(label: "เลขผู้ใช้ไฟ (CA)", text: vText("meterCA"), keyboard: .numbersAndPunctuation)
                     A3Input(label: "ประเภทผู้ใช้ไฟ / อัตรา", text: vText("meterRate"))
-                    A3Input(label: "ขนาดมิเตอร์ / CT (A)", text: vText("meterCT"), keyboard: .numbersAndPunctuation)
+                    if narrow {
+                        A3Input(label: "ขนาดมิเตอร์ / CT (A)", text: vText("meterCT"), keyboard: .numbersAndPunctuation)
+                    } else {
+                        meterSizeField
+                    }
                     VStack(alignment: .leading, spacing: 3) {
                         A3Label(text: "ภาพมิเตอร์")
                         A3PhotoTile(photo: photoBinding("meterPic"), jobID: job.id, label: "ภาพมิเตอร์", height: 80)
@@ -184,7 +188,8 @@ extension ElectricalPageWide {
     var meterSummary: String? {
         let v = job.values
         let parts = [v.text("meterCA").isEmpty ? nil : "CA", v.text("meterRate").isEmpty ? nil : "อัตรา " + v.text("meterRate"),
-                     v.text("meterCT").isEmpty ? nil : "CT " + v.text("meterCT"), v.photo("meterPic") == nil ? nil : "ภาพมิเตอร์"].compactMap { $0 }
+                     v.text("meterCT").isEmpty ? nil : (A3Options.meterSizes.contains(v.text("meterCT")) ? "มิเตอร์ " : "CT ") + v.text("meterCT"),
+                     v.photo("meterPic") == nil ? nil : "ภาพมิเตอร์"].compactMap { $0 }
         return parts.isEmpty ? nil : "✓ " + parts.joined(separator: " | ") + " ครบแล้ว"
     }
 }
@@ -209,9 +214,7 @@ extension ElectricalPageWide {
             if a2Badges.contains(.kva(i)) { A2Badge().padding(.leading, 4) }
             SourceChip(source: job.values.source("tr\(i)_kva")).padding(.leading, 4)
             NameplateScanButton(kind: .transformer, compact: true) { fields, image in applyPlate(i, fields, frame: image) }
-            Menu {
-                ForEach(Self.kvaSizes, id: \.self) { k in Button(k + " kVA") { edit(i) { $0.kva = k }; job.values.forgetSource("tr\(i)_kva") } }
-            } label: { Image(systemName: "chevron.down").frame(width: 36, height: 44) }
+            kvaPicker(i)
         }
         .padding(.leading, 12).frame(minHeight: 44)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -280,6 +283,10 @@ extension ElectricalPageWide {
         .accessibilityHint("แตะเพื่อกางมาแก้")
     }
 
+    func typeSegments(_ i: Int) -> some View {
+        A3Segments(options: ["oil", "dry"], titles: ["Oil immersed", "Dry type"], selected: trafos[safe: i]?.type ?? "") { v in edit(i) { $0.type = v } }
+    }
+
     func openTransformer(_ i: Int) -> some View {
         let n = photoCount(i)
         return A3Panel(accent: true) {
@@ -295,25 +302,20 @@ extension ElectricalPageWide {
                     }
                     .buttonStyle(.plain).accessibilityLabel("ลบหม้อแปลง TX \(i + 1)")
                 }
-                rowStack {
-                    VStack(alignment: .leading, spacing: 3) { A3Label(text: "ขนาด", required: true); kvaField(i) }.frame(width: narrow ? nil : 190)
-                    A3Segments(options: ["oil", "dry"], titles: ["Oil immersed", "Dry type"], selected: trafos[safe: i]?.type ?? "") { v in edit(i) { $0.type = v } }
+                if narrow {
+                    rowStack {
+                        VStack(alignment: .leading, spacing: 3) { A3Label(text: "ขนาด", required: true); kvaField(i) }
+                        typeSegments(i)
+                    }
+                } else {
+                    // iPad: the size's hint shares the label line, so the card keeps its height
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 8) { A3Label(text: "ขนาด", required: true); sizeHint(i) }
+                        HStack(spacing: 8) { kvaField(i).frame(width: 190); typeSegments(i) }
+                    }
                 }
                 platePhotoSuggestion(i)
-                inputRow {
-                    A3Input(label: "แรงดัน", text: plateText(i, \.voltage, key: "voltage"), required: true, unit: "V",
-                            source: job.values.source("tr\(i)_voltage"))
-                    A3Input(label: "Vector group", text: plateText(i, \.vectorGroup, key: "vectorGroup"), required: true,
-                            source: job.values.source("tr\(i)_vectorGroup"))
-                    A3Input(label: "%Z", text: plateText(i, \.impedance, key: "impedance"), required: true, unit: "%", keyboard: .decimalPad,
-                            source: job.values.source("tr\(i)_impedance"))
-                }
-                inputRow {
-                    A3Input(label: "ยี่ห้อ", text: tText(i, \.brand))
-                    A3Input(label: "Serial no.", text: tText(i, \.serial))
-                    A3Input(label: "ปีผลิต", text: plateText(i, \.year, key: "year", number: true), keyboard: .numberPad,
-                            source: job.values.source("tr\(i)_year"))
-                }
+                nameplateRows(i)
                 rowStack {
                     VStack(alignment: .leading, spacing: 3) {
                         A3Label(text: "อุปกรณ์ตัดตอนแรงสูง", required: true)
@@ -448,19 +450,7 @@ extension ElectricalPageWide {
                             A3Label(text: "เมนเบรกเกอร์ (Main CB)", required: true)
                             A3Segments(options: ["ACB", "MCCB"], selected: b.mainType) { v in editBoards(i) { $0[0].mainType = v } }
                         }
-                        HStack(spacing: 8) {
-                            A3Input(label: "AT (ตั้งตัด)", text: bText(i, 0, \.at, number: true), required: true, unit: "A", keyboard: .numberPad,
-                                    a2: a2Badges.contains(.boardAT(i, 0)))
-                            A3Input(label: "AF (เฟรม)", text: bText(i, 0, \.af, number: true), required: true, unit: "A", keyboard: .numberPad)
-                        }
-                        HStack(alignment: .bottom, spacing: 8) {
-                            A3Input(label: "Icu", text: bText(i, 0, \.icu, number: true), required: true, unit: "kA", keyboard: .decimalPad)
-                            VStack(alignment: .leading, spacing: 3) {
-                                A3Label(text: "จำนวนขั้ว", required: true)
-                                A3Segments(options: ["3P", "4P"], selected: b.poles) { v in editBoards(i) { $0[0].poles = v } }
-                            }
-                        }
-                        A3Input(label: "ยี่ห้อ / รุ่น", text: bText(i, 0, \.brand))
+                        if narrow { phoneMainBreakerFields(i, b) } else { mainBreakerFields(i, b) }
                         boardSLDButton(i, 0)
                         breakerList(i, 0)
                     }
@@ -493,14 +483,72 @@ extension ElectricalPageWide {
         }
     }
 
+    /// The main breaker as typed boxes (iPhone).
+    func phoneMainBreakerFields(_ i: Int, _ b: Board) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                A3Input(label: "AT (ตั้งตัด)", text: bText(i, 0, \.at, number: true), required: true, unit: "A", keyboard: .numberPad,
+                        a2: a2Badges.contains(.boardAT(i, 0)))
+                A3Input(label: "AF (เฟรม)", text: bText(i, 0, \.af, number: true), required: true, unit: "A", keyboard: .numberPad)
+            }
+            HStack(alignment: .bottom, spacing: 8) {
+                A3Input(label: "Icu", text: bText(i, 0, \.icu, number: true), required: true, unit: "kA", keyboard: .decimalPad)
+                VStack(alignment: .leading, spacing: 3) {
+                    A3Label(text: "จำนวนขั้ว", required: true)
+                    A3Segments(options: ["3P", "4P"], selected: b.poles) { v in editBoards(i) { $0[0].poles = v } }
+                }
+            }
+            A3Input(label: "ยี่ห้อ / รุ่น", text: bText(i, 0, \.brand))
+        }
+    }
+
+    /// `CB ลูกย่อย | แตะแถวเพื่อแก้` on iPhone; on iPad the board's longer hint at the right.
+    @ViewBuilder var breakerListTitle: some View {
+        if narrow {
+            A3Label(text: "CB ลูกย่อย | แตะแถวเพื่อแก้")
+        } else {
+            HStack(spacing: 6) {
+                A3Label(text: "CB ลูกย่อย")
+                Spacer(minLength: 4)
+                Text("แตะแถวเพื่อแก้ AT/AF/Icu/ยี่ห้อ/สภาพ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+    }
+
+    /// iPad: the main board's breaker `e` is edited in a popover anchored to its row.
+    func breakerPopover(_ e: BreakerEdit) -> Binding<Bool> {
+        Binding(get: { !narrow && editBreaker?.id == e.id }, set: { if !$0 && editBreaker?.id == e.id { editBreaker = nil } })
+    }
+
+    /// The breaker editor of the row `n` (`BreakerSheet` in its popover style).
+    func breakerEditor(_ e: BreakerEdit, number n: Int) -> some View {
+        BreakerSheet(breaker: breakerBinding(e), isMain: e.board == 0, onDelete: { removeBreaker(e); editBreaker = nil },
+                     number: n, popover: true)
+            .presentationCompactAdaptation(.popover)
+    }
+
+    /// A row that opens its breaker: the sheet on iPhone (its texts read as they are); on iPad its popover, the row named
+    /// `CB ลูกย่อย n` with its sizes as the value.
+    @ViewBuilder func breakerRowButton(_ n: Int, _ br: Breaker, _ e: BreakerEdit) -> some View {
+        let button = Button { editBreaker = e } label: { breakerRow(n, br) }.buttonStyle(.plain)
+        if narrow {
+            button
+        } else {
+            button
+                .accessibilityLabel("CB ลูกย่อย \(n)")
+                .accessibilityValue(breakerSummary(br))
+                .popover(isPresented: breakerPopover(e), arrowEdge: .top) { breakerEditor(e, number: n) }
+        }
+    }
+
     /// Outgoing breakers of the main board: one row each, tap to edit.
     func breakerList(_ i: Int, _ k: Int) -> some View {
         let list = boards(i)[safe: k]?.breakers ?? []
         return VStack(alignment: .leading, spacing: 6) {
-            A3Label(text: "CB ลูกย่อย | แตะแถวเพื่อแก้")
+            breakerListTitle
             let rows = VStack(spacing: 6) {
                 ForEach(Array(list.enumerated()), id: \.element.id) { n, br in
-                    Button { editBreaker = BreakerEdit(id: br.id, trafo: i, board: k) } label: { breakerRow(n + 1, br) }.buttonStyle(.plain)
+                    breakerRowButton(n + 1, br, BreakerEdit(id: br.id, trafo: i, board: k))
                 }
             }
             // iPhone: the page scrolls, so the list takes its own height
@@ -519,10 +567,24 @@ extension ElectricalPageWide {
         }
     }
 
+    /// iPad: an empty AF reads as its อัตโนมัติ frame; nil on iPhone, which shows `?AF`.
+    func shownAF(_ b: Breaker) -> String {
+        if !b.af.isEmpty || narrow { return b.af }
+        return A3Options.autoAF(at: b.at, frames: A3Options.subAF) ?? ""
+    }
+
+    /// "100AT/100AF | ?kA | ยี่ห้อ ?" for VoiceOver and UI tests.
+    func breakerSummary(_ b: Breaker) -> String {
+        let q = { (s: String, u: String) in s.isEmpty ? "?" + u : s + u }
+        return q(b.at, "AT") + "/" + q(shownAF(b), "AF") + " | " + q(b.ic, "kA") + " | " + (b.brand.isEmpty ? "ยี่ห้อ ?" : b.brand)
+    }
+
     func breakerRow(_ n: Int, _ b: Breaker) -> some View {
         func v(_ s: String, _ unit: String) -> Text { s.isEmpty ? Text("?" + unit).foregroundColor(Theme.danger).bold() : Text(s + unit) }
-        let unknown = b.at.isEmpty || b.af.isEmpty || b.ic.isEmpty || b.brand.isEmpty
-        let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P | ") + v(b.at, "AT") + Text("/") + v(b.af, "AF") + Text(" | ") + v(b.ic, "kA")
+        let af = shownAF(b)
+        // iPad: AF has its อัตโนมัติ value, so a row reads red only for a missing trip, Icu or brand
+        let unknown = b.at.isEmpty || af.isEmpty || b.ic.isEmpty || b.brand.isEmpty
+        let line1 = Text(b.poles.isEmpty ? "" : "\(b.poles)P | ") + v(b.at, "AT") + Text("/") + v(af, "AF") + Text(" | ") + v(b.ic, "kA")
         let line2 = [b.brand.isEmpty ? "ยี่ห้อ ?" : b.brand, b.target.isEmpty ? nil : "→ " + b.target].compactMap { $0 }.joined(separator: " ")
         return HStack(spacing: 8) {
             Text("\(n)").font(.sarabunFixed(13, .bold)).frame(width: 24, height: 24).background(Theme.primarySoft, in: Circle())
@@ -612,42 +674,65 @@ extension ElectricalPageWide {
 
 // MARK: breaker sheet
 
-/// Edit one outgoing breaker of the main board.
+/// Edit one outgoing breaker of the main board: a sheet on iPhone, and on iPad (`popover`) the board's popover
+/// anchored to the row (docs/ui/survey-a3-ipad-v3 state 06): AT / AF / Icu / ยี่ห้อ menus, สภาพ and `เสร็จ` on top,
+/// the other fields below.
 struct BreakerSheet: View {
     @Binding var breaker: Breaker
     let isMain: Bool
     let onDelete: () -> Void
+    /// The row's number, for the popover's title `CB ลูกย่อย n`.
+    var number: Int? = nil
+    var popover = false
     @Environment(\.dismiss) private var dismiss
     /// iPhone: delete and done in the bottom bar (docs/ui/components/iphone-bottom-bar, state 07).
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
+        if popover { popoverBody } else { sheetBody }
+    }
+
+    // the same fields in both layouts
+
+    var at: Binding<String> { Binding(get: { breaker.at }, set: { breaker.at = NumberInput.clean($0) }) }
+    var af: Binding<String> { Binding(get: { breaker.af }, set: { breaker.af = NumberInput.clean($0) }) }
+    var ic: Binding<String> { Binding(get: { breaker.ic }, set: { breaker.ic = NumberInput.clean($0) }) }
+    var poles: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            A3Label(text: "จำนวนขั้ว")
+            A3Segments(options: ["2", "3", "4"], titles: ["2P", "3P", "4P"], selected: breaker.poles) { breaker.poles = $0 }
+        }
+    }
+    var condition: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            A3Label(text: "สภาพ", required: popover)
+            A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: breaker.condition) { breaker.condition = $0 }
+        }
+    }
+    var target: some View { A3Input(label: "ปลายทาง (ป้อนไปที่)", text: $breaker.target) }
+    func deleteButton() -> some View {
+        Button(role: .destructive, action: onDelete) {
+            Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(TCButtonStyle(.secondary, size: .card))
+    }
+
+    var sheetBody: some View {
         let phone = sizeClass == .compact
         return NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
-                        A3Input(label: "AT (ตั้งตัด)", text: Binding(get: { breaker.at }, set: { breaker.at = NumberInput.clean($0) }), unit: "A", keyboard: .numberPad)
-                        A3Input(label: "AF (เฟรม)", text: Binding(get: { breaker.af }, set: { breaker.af = NumberInput.clean($0) }), unit: "A", keyboard: .numberPad)
-                        A3Input(label: "IC", text: Binding(get: { breaker.ic }, set: { breaker.ic = NumberInput.clean($0) }), unit: "kA", keyboard: .decimalPad)
+                        A3Input(label: "AT (ตั้งตัด)", text: at, unit: "A", keyboard: .numberPad)
+                        A3Input(label: "AF (เฟรม)", text: af, unit: "A", keyboard: .numberPad)
+                        A3Input(label: "IC", text: ic, unit: "kA", keyboard: .decimalPad)
                     }
-                    VStack(alignment: .leading, spacing: 3) {
-                        A3Label(text: "จำนวนขั้ว")
-                        A3Segments(options: ["2", "3", "4"], titles: ["2P", "3P", "4P"], selected: breaker.poles) { breaker.poles = $0 }
-                    }
+                    poles
                     A3Input(label: "ยี่ห้อ / รุ่น", text: $breaker.brand)
-                    A3Input(label: "ปลายทาง (ป้อนไปที่)", text: $breaker.target)
-                    VStack(alignment: .leading, spacing: 3) {
-                        A3Label(text: "สภาพ")
-                        A3Segments(options: ["ดี", "พอใช้", "ชำรุด"], selected: breaker.condition) { breaker.condition = $0 }
-                    }
+                    target
+                    condition
                     BreakerSLDFields(breaker: $breaker)
-                    if !phone {
-                        Button(role: .destructive, action: onDelete) {
-                            Label("ลบ CB ลูกย่อยนี้", systemImage: "trash").frame(maxWidth: .infinity, minHeight: 44)
-                        }
-                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).padding(.top, 8)
-                    }
+                    if !phone { deleteButton().padding(.top, 8) }
                 }
                 .padding(20)
             }
@@ -660,6 +745,54 @@ struct BreakerSheet: View {
             .navigationTitle("CB ลูกย่อย").navigationBarTitleDisplayMode(.inline)
             .toolbar { if !phone { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() } } } }
         }
+    }
+
+    var popoverHeader: some View {
+        HStack(spacing: 8) {
+            Text("CB ลูกย่อย" + (number.map { " \($0)" } ?? "")).font(.sarabunFixed(17, .bold))
+            Text("MCCB" + (breaker.poles.isEmpty ? "" : " \(breaker.poles)P")).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Spacer(minLength: 4)
+            Button { dismiss() } label: {
+                Text("เสร็จ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
+                    .padding(.horizontal, 16).frame(minHeight: 44)
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    var popoverMenus: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                A3MenuField(label: "AT (ตั้งตัด)", text: at, options: A3Options.subAT, required: true, unit: "A", keyboard: .numberPad)
+                A3MenuField(label: "AF (เฟรม)", text: af, options: A3Options.subAF, required: true, unit: "A", keyboard: .numberPad,
+                            auto: A3Options.autoAF(at: breaker.at, frames: A3Options.subAF))
+            }
+            HStack(alignment: .top, spacing: 8) {
+                A3MenuField(label: "Icu", text: ic, options: A3Options.subIcu, required: true, unit: "kA", keyboard: .decimalPad, flagEmpty: true)
+                A3MenuField(label: "ยี่ห้อ", text: $breaker.brand, options: A3Options.breakerBrands, required: true, prompt: "เลือกยี่ห้อ",
+                            flagEmpty: true, addTitle: "อื่น ๆ")
+            }
+        }
+    }
+
+    var popoverBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                popoverHeader
+                popoverMenus
+                condition
+                Divider().padding(.vertical, 2)
+                poles
+                target
+                BreakerSLDFields(breaker: $breaker)
+                deleteButton().padding(.top, 4)
+            }
+            .padding(16)
+        }
+        .frame(width: 400)
+        .frame(minHeight: 420, idealHeight: 640, maxHeight: 720)
+        .foregroundStyle(Theme.navy)
     }
 }
 #endif

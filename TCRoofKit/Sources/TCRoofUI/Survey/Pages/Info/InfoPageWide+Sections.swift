@@ -10,7 +10,7 @@ extension InfoPageWide {
     // MARK: installation areas
 
     var areasBox: some View {
-        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ | รวม \(job.steps.count) ขั้น", spacing: 10, vertical: 14) {
+        A1Card(title: "พื้นที่ติดตั้ง", required: true, trailing: "กำหนดหน้า C / D ในแบบสำรวจ | รวม \(job.steps.count) ขั้น", spacing: 10, vertical: 14, titleWeight: .semibold) {
             areaTiles
         }
     }
@@ -96,7 +96,7 @@ extension InfoPageWide {
     /// The station address is in `projectCoordinatorBox`; the office address isn't on the iPad page (it stays in the job,
     /// the iPhone page and the export).
     var locationBox: some View {
-        A1Card(title: "ที่ตั้ง") {
+        A1Card(title: "ที่ตั้ง", titleWeight: .semibold) {
             VStack(alignment: .leading, spacing: 8) {
                 SiteMapPreview(gps: text("gps"), zoom: Binding(get: { mapZoom }, set: { job.values["mapZoom"] = .text(String($0)) }),
                                crop: Binding(get: { mapCrop }, set: { job.values[MapCrop.key] = .text($0.text) }),

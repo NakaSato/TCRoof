@@ -21,6 +21,11 @@ struct MPOverviewView: View {
     @State private var list: StationBatch?
     @State private var listResult: String?
     struct StationBatch: Identifiable { let id = UUID(); let name: String; let items: [StationListImportSheet.Item] }
+    /// เพิ่มสถานีจากไฟล์แผน: the 102 stations' own plan files the app doesn't have yet (`MPStationFilesSheet`).
+    @State private var addingStations = false
+    @State private var stationsResult: String?
+    /// Making a station needs both: a new job and its plan.
+    private var mayAddStations: Bool { permissions.can(.jobEdit) && permissions.can(.mpSetup) }
 
     /// One station's figures to this week.
     struct Row: Identifiable {
@@ -101,6 +106,9 @@ struct MPOverviewView: View {
                         if permissions.can(.jobEdit) {
                             Button { pick(list: true) } label: { Label("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle") }
                         }
+                        if mayAddStations {
+                            Button { addingStations = true } label: { Label("เพิ่มสถานีจากไฟล์แผน", systemImage: "plus.rectangle.on.rectangle") }
+                        }
                     } label: { Label("นำเข้า", systemImage: "square.and.arrow.down.on.square") }
                 }
             }
@@ -114,6 +122,9 @@ struct MPOverviewView: View {
             }
             if permissions.can(.mpSetup) {
                 TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { pick(list: false) }
+            }
+            if mayAddStations {
+                TCButton("เพิ่มสถานีจากไฟล์แผน", systemImage: "plus.rectangle.on.rectangle", kind: .secondary) { addingStations = true }
             }
         }
         .sheet(isPresented: $assistant) { AssistantChatView() }
@@ -129,6 +140,14 @@ struct MPOverviewView: View {
                 listResult = "สร้างงานใหม่ \(created) สถานี | เติมข้อมูล \(filled) สถานี"
             }
         }
+        .sheet(isPresented: $addingStations) {
+            MPStationFilesSheet(jobs: jobs) { added, failed in
+                stationsResult = "เพิ่มแล้ว \(added) สถานี" + (failed.isEmpty ? "" : " | อ่านไฟล์ไม่ได้: " + failed.joined(separator: ", "))
+            }
+        }
+        .alert(stationsResult ?? "", isPresented: Binding(get: { stationsResult != nil }, set: { if !$0 { stationsResult = nil } })) {
+            Button("ตกลง", role: .cancel) {}
+        } message: { Text("แต่ละสถานีใช้แผนจากไฟล์ของสถานีเอง และซิงก์ขึ้น Firebase ให้ทุกเครื่องของทีม") }
         .alert(listResult ?? "", isPresented: Binding(get: { listResult != nil }, set: { if !$0 { listResult = nil } })) {
             Button("ตกลง", role: .cancel) {}
         }
@@ -142,6 +161,12 @@ struct MPOverviewView: View {
             // after `-screen mpall` has made its stations PWA jobs
             try? await Task.sleep(for: .seconds(1))
             open(list.split(separator: "|").map { URL(fileURLWithPath: String($0)) })
+        }
+        // `-mpStationFiles YES` opens เพิ่มสถานีจากไฟล์แผน
+        .task {
+            guard UserDefaults.standard.bool(forKey: "mpStationFiles") else { return }
+            try? await Task.sleep(for: .seconds(1))
+            addingStations = true
         }
         // `-stationListFile <path>` opens the check of the tracking workbook without the picker
         .task {

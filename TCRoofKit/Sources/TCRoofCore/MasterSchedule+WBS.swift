@@ -103,9 +103,12 @@ public extension MasterSchedule {
         public var at: Date
         /// A document number, when one was given.
         public var document: String?
+        /// Taken from a plan file whose row was marked `Y` without a `เสร็จ` date: `at` is only the import's day, so
+        /// export leaves the file's date cell as it is. Nil for a tick made in the app.
+        public var undated: Bool?
 
-        public init(by: String, at: Date, document: String? = nil) {
-            self.by = by; self.at = at; self.document = document
+        public init(by: String, at: Date, document: String? = nil, undated: Bool? = nil) {
+            self.by = by; self.at = at; self.document = document; self.undated = undated
         }
 
         /// A contractor's ticks taken in by a team device: a contractor adds ticks in their own name and changes or
@@ -130,18 +133,40 @@ public extension MasterSchedule {
     /// The ticks a plan file brings (its `แผนโครงการ` sheet's `เสร็จ (Y)` column, docs/specs/project-plan-wbs.md step
     /// 3): only rows ticked or unticked in the file since `base` (the rows it was exported with, else the file the job
     /// keeps) change, so a tick made in the app after the export stays. A row ticked in the file takes its `เสร็จ` date,
-    /// else `today`, in the name of who imports it. Returns the ticks and how many rows changed.
+    /// else `today` (marked `undated`, so export writes no date for it), in the name of who imports it. Returns the
+    /// ticks and how many rows changed.
     static func mergingTicks(_ local: [String: WBSTick], fileDone: Set<String>, dates: [String: Date], base: Set<String>?,
                         by: String, today: Date) -> (ticks: [String: WBSTick], changed: Int) {
         let base = base ?? []
         var out = local, changed = 0
         for code in fileDone.subtracting(base).sorted() where out[code] == nil {
-            out[code] = WBSTick(by: by, at: dates[code] ?? today)
+            out[code] = WBSTick(by: by, at: dates[code] ?? today, undated: dates[code] == nil ? true : nil)
             changed += 1
         }
         for code in base.subtracting(fileDone).sorted() where out[code] != nil {
             out[code] = nil
             changed += 1
+        }
+        return (out, changed)
+    }
+
+    /// The rows' `ผู้รับผิดชอบ` and `หลักฐาน / เลขที่เอกสาร` with a file's taken in, for a file that gives only its
+    /// progress (`รับเฉพาะความก้าวหน้า`): a cell changed in Excel since `base` (the file the job keeps) takes the file's
+    /// text, a cell emptied there included; the rest stay the job's. Without a base, every cell where the file says
+    /// something else is taken. Rows the job doesn't have are left out. Returns the rows and how many cells changed.
+    static func mergingText(_ local: [WorkItem], file: [WorkItem], base: [WorkItem]?) -> (items: [WorkItem], changed: Int) {
+        let inFile = Dictionary(file.map { ($0.code, $0) }) { a, _ in a }
+        let inBase = base.map { b in Dictionary(b.map { ($0.code, $0) }) { a, _ in a } }
+        var out = local, changed = 0
+        for i in out.indices {
+            guard let f = inFile[out[i].code] else { continue }
+            let b = inBase?[out[i].code]
+            for field in [\WorkItem.responsible, \WorkItem.evidence] {
+                let was = inBase == nil ? out[i][keyPath: field] : b?[keyPath: field]
+                guard f[keyPath: field] != was, f[keyPath: field] != out[i][keyPath: field] else { continue }
+                out[i][keyPath: field] = f[keyPath: field]
+                changed += 1
+            }
         }
         return (out, changed)
     }

@@ -55,6 +55,9 @@ public enum MPWorkbook {
         public var wbsDoneDates: [String: Date] = [:]
         /// The rows ticked when the app last exported the file; nil for a file the app never wrote ticks into.
         public var wbsBase: Set<String>?
+        /// The project facts the file states (`ProjectSetup`: its title and set-up lines, installation points and
+        /// Inverter station); empty for a file without them.
+        public var setup = ProjectSetup()
     }
 
     /// The plan sheet's formulas worked out on the untouched file and compared with the results Excel saved in it.
@@ -135,6 +138,7 @@ public enum MPWorkbook {
                                         weeks: Set(layout.weeks.map(\.key))),
                         base: Snapshot.read(book.zip),
                         wbs: book.detail.map { siteSpecific(wbs($0, cal), sheet: $0) } ?? [])
+        imported.setup = setup(book)
         if let detail = book.detail, let h = wbsHeader(detail) {
             let done = wbsDone(detail, h, cal)
             imported.wbsDone = done.codes
@@ -163,9 +167,10 @@ public enum MPWorkbook {
     // MARK: export
 
     /// `ticks`: the job's WBS ticks, written into a template file's `แผนโครงการ` sheet (`เสร็จ (Y)` and its `เสร็จ`
-    /// date, docs/specs/project-plan-wbs.md step 3); nil leaves that sheet as it is.
+    /// date, docs/specs/project-plan-wbs.md step 3); nil leaves that sheet as it is. `setup`: the job's project facts
+    /// (`ProjectSetup(_:)`), written into the file's station lines where they differ; nil leaves the lines as they are.
     public static func export(_ original: Data, input: MasterSchedule.Input, actual: MasterSchedule.Actual,
-                              ticks: [String: MasterSchedule.WBSTick]? = nil,
+                              ticks: [String: MasterSchedule.WBSTick]? = nil, setup: ProjectSetup? = nil,
                               calendar cal: Calendar = MasterSchedule.calendar) throws -> Export {
         let book = try Book(original)
         let layout = book.layout
@@ -254,21 +259,23 @@ public enum MPWorkbook {
 
         // the WBS ticks: each row's `เสร็จ (Y)` and `เสร็จ` date as the app has them; a formula cell is left alone
         var detail = book.detail, tickedRows: Set<String>?, detailChanged = 0
-        if let ticks, var d = detail, let h = wbsHeader(d), let mark = h.doneMark {
+        if let ticks, var d = detail, let h = wbsHeader(d) {
             var rows = Set<String>()
-            // a row without the cell (the Inverter station table's steps) keeps its tick in the app only, and stays out
-            // of the record so a later import doesn't read it as unticked in Excel
-            for r in codeRows(d, h) where d.cell(Sheet.ref(mark, r.row)) != nil {
+            // a row without the cell keeps its tick in the app only, and stays out of the record so a later import
+            // doesn't read it as unticked in Excel; the Inverter station table's steps go in that table's own column
+            for r in tickCells(d, h) where d.cell(Sheet.ref(r.mark, r.row)) != nil {
                 let tick = ticks[r.code]
                 if tick != nil { rows.insert(r.code) }
-                let markRef = Sheet.ref(mark, r.row)
-                let marked = d.text(mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y"
+                let markRef = Sheet.ref(r.mark, r.row)
+                let marked = d.text(r.mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y"
                 if let cell = d.cell(markRef), !cell.formula, marked != (tick != nil) {
                     d.cells.set(markRef, tick != nil ? .inline("Y") : .empty)
                     detailChanged += 1
                 }
-                // `เสร็จ / นัด` also holds appointment dates: cleared only along with a Y the app takes away
-                if let col = h.doneDate, let cell = d.cell(Sheet.ref(col, r.row)), !cell.formula, tick != nil || marked {
+                // `เสร็จ / นัด` also holds appointment dates: cleared only along with a Y the app takes away; a tick taken
+                // from a Y without a date has only the import's day, so the cell stays as the file has it
+                if let col = r.date, let cell = d.cell(Sheet.ref(col, r.row)), !cell.formula,
+                   tick.map({ $0.undated != true }) ?? marked {
                     let want = tick.map { Sheet.serial(cal.startOfDay(for: $0.at), cal) }
                     if !close(cell.number, want), want != nil || cell.number != nil {
                         d.cells.set(Sheet.ref(col, r.row), want.map { .number($0) } ?? .empty)
@@ -278,6 +285,12 @@ public enum MPWorkbook {
             }
             detail = d
             tickedRows = rows
+        }
+        // the job's project facts into the file's lines (`ProjectSetup`), where they say something else
+        if let setup {
+            let n = writeSetup(setup, plan: &sheet, layout: layout, detail: &detail)
+            changed += n.plan
+            detailChanged += n.detail
         }
         let keptTicks = Snapshot.readTicks(book.zip)
         let ticksMoved = tickedRows.map { rows in keptTicks.map { $0 != rows } ?? false } ?? false
@@ -481,6 +494,8 @@ public enum MPWorkbook {
         let rows: [Row]
         let weeks: [Week]
         let project: String?, owner: String?
+        /// The `รหัส` line (`P3-001, ผรม. B, วิศวกร เปรม, …`), on the station files.
+        let code: String?
 
         /// Nil when the sheet has no `Status` / `Start` / `Finished` header.
         init?(_ s: Sheet, calendar cal: Calendar = MasterSchedule.calendar) {
@@ -521,7 +536,7 @@ public enum MPWorkbook {
                 let t = s.texts.filter { $0.row == at.row && $0.col > at.col }.min { $0.col < $1.col }?.text
                 return t.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ": ").union(.whitespaces)) }.flatMap { $0.isEmpty ? nil : $0 }
             }
-            project = line("PROJECT"); owner = line("OWNER")
+            project = line("PROJECT"); owner = line("OWNER"); code = line("รหัส")
         }
 
         /// The task a row's description names: by its number, or by its words when the number is taken (some copies

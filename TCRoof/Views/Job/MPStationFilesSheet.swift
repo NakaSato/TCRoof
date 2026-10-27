@@ -22,6 +22,8 @@ struct MPStationFilesSheet: View {
     /// While adding: how many are done.
     @State private var progress: Int?
     @State private var failures: [String] = []
+    /// The status every added station takes: most stations are already being built, so installing by default.
+    @State private var status: JobStatus = .installing
 
     var body: some View {
         NavigationStack {
@@ -76,6 +78,12 @@ struct MPStationFilesSheet: View {
                      + "และซิงก์ขึ้น Firebase ให้ทุกเครื่องของทีม | มีในแอปแล้ว \(present) สถานี")
                     .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                 if !missing.isEmpty {
+                    Picker("สถานะงาน", selection: $status) {
+                        ForEach([JobStatus.installing, .confirmed]) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 420, minHeight: touchMin)
+                    .accessibilityIdentifier("stationFiles.status")
                     HStack(spacing: 16) {
                         Button("เลือกทั้งหมด") { picked = Set(missing.map(\.id)) }
                             .accessibilityIdentifier("stationFiles.all")
@@ -135,6 +143,7 @@ struct MPStationFilesSheet: View {
     /// (`MPWorkbookFlow.install`, as `เริ่มจากแม่แบบ` does with the station's own file). Saved every ten.
     private func add() {
         let todo = missing.filter { picked.contains($0.id) }
+        let status = status
         progress = 0
         failures = []
         Task {
@@ -147,7 +156,7 @@ struct MPStationFilesSheet: View {
                     while codes.contains(code) { code = SampleData.newJobCode() }
                     codes.insert(code)
                     let job = Job(code: code, projectName: c.name, customerName: c.branch.isEmpty ? c.name : c.branch,
-                                  province: "", capacityKW: c.kWp ?? 0, team: .t1, status: .confirmed,
+                                  province: "", capacityKW: c.kWp ?? 0, team: .t1, status: status,
                                   surveyDate: Job.unscheduled, installStart: Job.unscheduled, installDays: 1)
                     job.kind = .pwa
                     context.insert(job)

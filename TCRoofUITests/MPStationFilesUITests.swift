@@ -18,6 +18,9 @@ final class MPStationFilesUITests: XCTestCase {
         XCTAssertTrue(summary.waitForExistence(timeout: slow), "the sheet should list the stations the app doesn't have")
         XCTAssertTrue(summary.label.hasPrefix("ยังไม่มีในแอป"), summary.label)
 
+        let installing = app.segmentedControls["stationFiles.status"].buttons["กำลังติดตั้ง"]
+        XCTAssertTrue(installing.exists && installing.isSelected, "stations are added as installing by default")
+
         app.buttons["stationFiles.none"].tap()
         let add = app.buttons["stationFiles.add"]
         XCTAssertFalse(add.isEnabled, "nothing picked")

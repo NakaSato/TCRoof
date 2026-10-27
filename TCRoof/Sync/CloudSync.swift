@@ -57,6 +57,7 @@ final class CloudSync {
     private static let contactCollection = "jobContacts"
     /// Each person's travel log (`Trip`, `Expense`, `ClaimMonth`).
     private static let travelCollections = [Trip.collection, Expense.collection, ClaimMonth.collection]
+    private static let toolCollections = [ToolEvent.collection, CompanyVehicle.collection]
     /// `config/app`: switches set in the Firebase console (`contactsSplit`).
     private static let configDocument = "config/app"
     private static let contactsSplitKey = "cloudSync.contactsSplit"
@@ -144,6 +145,7 @@ final class CloudSync {
             listen(ScannedDevice.self)
             listen(InstallLog.self)
             listen(Inspection.self)
+            listen(ICLSheet.self, optional: true)   // optional until firestore.rules has `iclSheets`
             listen(PhotoAsset.self, optional: true)
             // the travel log: each person's own (docs/specs/calendar-travel-expenses-swift.md §B6)
             if external == nil, !me.email.isEmpty {
@@ -151,6 +153,9 @@ final class CloudSync {
                 listen(Expense.self, optional: true, owner: me.email)
                 listen(ClaimMonth.self, optional: true, owner: me.email)
                 listenClaimReviews(owner: me.email)
+                // the tool and vehicle log: the team's, optional until firestore.rules has `toolEvents` / `vehicles`
+                listen(ToolEvent.self, optional: true)
+                listen(CompanyVehicle.self, optional: true)
             }
             listenSurveys()
             listenRevisions()
@@ -310,6 +315,10 @@ final class CloudSync {
         collect(ScannedDevice.self, context, &changes, &present)
         collect(InstallLog.self, context, &changes, &present)
         collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
+        // the site ICL: a contractor fills and sends their sheets (`icl.site_fill`); the rules refuse a sent or signed one.
+        // Committed on its own, so a refusal (rules not deployed yet, a sheet signed meanwhile) never holds back the rest.
+        var iclSheets: [Change] = []
+        collect(ICLSheet.self, context, &iclSheets, &present)
         var photos: [Change] = []
         collect(PhotoAsset.self, context, &photos, &present)
         // the travel log goes in its own batches: a refusal (rules not deployed yet) mustn't hold back the jobs
@@ -318,6 +327,12 @@ final class CloudSync {
             collect(Trip.self, context, &travel, &present)
             collect(Expense.self, context, &travel, &present)
             collect(ClaimMonth.self, context, &travel, &present)
+        }
+        // the tool and vehicle log in its own batches too
+        var tools: [Change] = []
+        if external == nil {
+            collect(ToolEvent.self, context, &tools, &present)
+            collect(CompanyVehicle.self, context, &tools, &present)
         }
         var contacts = external == nil ? contactChanges(context, &present) : []
         for job in survey.jobs {
@@ -334,15 +349,19 @@ final class CloudSync {
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
+            else if key.hasPrefix("\(ICLSheet.collection)/") { iclSheets.append(change) }
             else if key.hasPrefix("\(Self.contactCollection)/") { contacts.append(change) }
             else if Self.travelCollections.contains(where: { key.hasPrefix("\($0)/") }) { travel.append(change) }
+            else if Self.toolCollections.contains(where: { key.hasPrefix("\($0)/") }) { tools.append(change) }
             else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
+        commitSeparately(iclSheets, "site ICL upload", size: external == nil ? 400 : 1)
         commitSeparately(travel, "travel upload")
+        commitSeparately(tools, "tool log upload")
         // Photos go after the records they belong to, so a new daily report reaches Firestore before its photos
         // (the rules check that an external member's photo points at their own report). An external member's go one
         // by one, so a refused photo doesn't hold back the rest.
@@ -544,7 +563,7 @@ final class CloudSync {
             }
         }
         // records waiting for their job, and photos waiting for their log or inspection
-        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self {
+        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self {
             for (key, retry) in pending where retry() { pending[key] = nil }
         }
         try? context.save()

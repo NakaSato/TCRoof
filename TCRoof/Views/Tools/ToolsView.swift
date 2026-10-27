@@ -4,7 +4,8 @@ import TCRoofUI
 import TCRoofCore
 
 /// The measuring-tool register, kept on this device (`Documents/Tools/instruments.json`). Not synced: a shared
-/// register needs its own Firestore collection and rule.
+/// register needs its own Firestore collection and rule. Its tools are borrowed and returned in the synced log
+/// (`ToolLogCard`), which keeps each tool's name, so the log reads the same on a device without the register.
 @Observable final class InstrumentStore {
     static let shared = InstrumentStore()
     private(set) var all: [Instrument] = []
@@ -60,6 +61,7 @@ struct ToolsView: View {
 
     @State private var store = InstrumentStore.shared
     @Environment(\.permissions) private var permissions
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var editing: Instrument?
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
@@ -67,25 +69,39 @@ struct ToolsView: View {
         jobs.lazy.compactMap { j in j.installDay(on: .now).map { "Day \($0)/\(j.installDays)" } }.first
     }
 
+    /// The tool and vehicle log is the team's (`ToolLogCard`, `VehicleCard`).
+    private var showsLog: Bool { permissions.role != .external }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                // the travel log is the team's own; contractors claim elsewhere
-                ForEach(modules.filter { $0 != .travel || permissions.role != .external }) { module in
-                    NavigationLink { module.destination } label: {
-                        ModuleRow(size: .phone, module: module, chip: module.chip(surveyToday: 0, installDay: installChip))
+            if sizeClass == .regular && showsLog {
+                // iPad (the board's iPadToolsHub): the log on the left, the register and the vehicles on the right
+                VStack(alignment: .leading, spacing: 12) {
+                    moduleRows
+                    HStack(alignment: .top, spacing: 16) {
+                        ToolLogCard().frame(maxWidth: .infinity)
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) { header; register }.cardStyle()
+                            VehicleCard()
+                        }
+                        .frame(width: 420)
                     }
-                    .buttonStyle(.plain)
                 }
-                if let request, !request.isEmpty {
-                    Text("จากการแจ้งเตือน: \(request)").font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
-                        .padding(.horizontal, 14).padding(.vertical, 6).background(Theme.primarySoft, in: Capsule())
+                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 110)
+                .frame(maxWidth: 1320).frame(maxWidth: .infinity)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    moduleRows
+                    if showsLog {
+                        ToolLogCard().padding(.top, 4)
+                        VehicleCard().padding(.top, 4)
+                    }
+                    header.padding(.top, modules.isEmpty && !showsLog ? 0 : 12)
+                    register
                 }
-                header.padding(.top, modules.isEmpty ? 0 : 12)
-                register
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 16)
+                .frame(maxWidth: 720).frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 16)
-            .frame(maxWidth: 720).frame(maxWidth: .infinity)
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .navigationTitle("เครื่องมือวัด")
@@ -94,6 +110,20 @@ struct ToolsView: View {
         .tcPadNavBar("เครื่องมือวัด", trail: ["หน้าหลัก"])
         .sheet(item: $editing) { tool in
             InstrumentForm(tool: tool, isNew: !store.all.contains { $0.id == tool.id }, save: store.save, delete: store.delete)
+        }
+    }
+
+    @ViewBuilder private var moduleRows: some View {
+        // the travel log is the team's own; contractors claim elsewhere
+        ForEach(modules.filter { $0 != .travel || permissions.role != .external }) { module in
+            NavigationLink { module.destination } label: {
+                ModuleRow(size: .phone, module: module, chip: module.chip(surveyToday: 0, installDay: installChip))
+            }
+            .buttonStyle(.plain)
+        }
+        if let request, !request.isEmpty {
+            Text("จากการแจ้งเตือน: \(request)").font(.sarabun(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.primary)
+                .padding(.horizontal, 14).padding(.vertical, 6).background(Theme.primarySoft, in: Capsule())
         }
     }
 

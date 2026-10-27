@@ -14,7 +14,7 @@ public extension Capability {
         CapabilityGroup(id: "jobs_plan", label: "งานและแผนงาน", capabilities: [.jobList, .jobEdit, .jobDelete, .assignExternal, .assignTeam, .mpSetup, .mpProgress, .mpWBSTick, .moveToInstall, .installTracking, .overviewReports, .assistantUse]),
         CapabilityGroup(id: "survey_design_price", label: "สำรวจ ออกแบบ และราคา", capabilities: [.surveyEdit, .surveySignRev, .designLibrary, .tankStandard, .boqDraft, .boqApprove, .companyDocs]),
         CapabilityGroup(id: "customer_docs_permits", label: "เอกสารลูกค้าและการขออนุญาต", capabilities: [.customerPersonalDocs, .permitPPIM, .engineerCertify, .attachFiles, .driveUpload, .ercFlow, .stationDocsDrafts]),
-        CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .weeklyRequest, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .finalSignoff, .feedAckFix]),
+        CapabilityGroup(id: "site_contractor", label: "หน้างานและผู้รับเหมา", capabilities: [.workOrder, .changeRequest, .punchList, .dailyFill, .weeklyRequest, .dailySign, .iecFillSubmit, .iecClose, .iclChecklist, .iclSiteFill, .iclSiteSign, .finalSignoff, .feedAckFix]),
         CapabilityGroup(id: "users_system", label: "ผู้ใช้และระบบ", capabilities: [.usersManage, .usersSuspend, .usersPermissions, .usersAdmin, .companyTemplates, .toolsRegister]),
     ]
 
@@ -55,6 +55,8 @@ public extension Capability {
         case .iecFillSubmit: "ทดสอบ IEC 62446: วัดค่า กรอกผล ถ่ายรูป | ส่งผลให้ทีม"
         case .iecClose: "ทีมภายในปิดการทดสอบ IEC (จึงนับ 3.1 เข้าแผน MP) | ส่งกลับให้แก้"
         case .iclChecklist: "ใบตรวจรับงาน (ICL)"
+        case .iclSiteFill: "ICL ตรวจหน้างาน (กปภ.): ตรวจ กรอกผล ถ่ายรูป ส่งให้ วศ."
+        case .iclSiteSign: "ลงนามรับรอง ICL ตรวจหน้างาน, ส่งกลับให้แก้"
         case .finalSignoff: "เซ็นตรวจรับงานขั้นสุดท้าย | ยอดค่าแรงและยอดหัก"
         case .feedAckFix: "ฟีดโครงการ: กด แก้แล้ว / รับทราบ"
         case .usersManage: "เพิ่มสมาชิก | ตั้งบทบาท"
@@ -92,6 +94,7 @@ public extension Capability {
         case (.weeklyRequest, .external): "ต้องส่งทุกสัปดาห์ | งานตัวเอง"
         case (.dailySign, .internalTeam): "ทีมงานของงานนั้นหรือผู้ควบคุมงาน (งานที่ยังไม่มีชื่อใครของเรา: ทีมภายในทุกคน)"
         case (.iecFillSubmit, .external): "ต้องทดสอบและส่งผล ก่อน / หลังขนาน | งานตัวเอง"
+        case (.iclSiteFill, .external): "ต้องตรวจและส่งทุกหมวด ก่อนปิดงานติดตั้ง, งานตัวเอง"
         case (.finalSignoff, .internalTeam): "เฉพาะวิศวกรผู้ควบคุมงานของงานนั้น"
         case (.finalSignoff, .external): "ดูยอดของตัวเอง"
         case (.feedAckFix, .external): "แก้แล้ว เฉพาะรายการของตัวเอง"

@@ -68,17 +68,21 @@ struct RoutineReportCard: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: isPhone ? 2 : 5), spacing: 10) {
             link("รายงานวันนี้", "square.and.pencil", prominent: true) { DailyReportScreen(job: job, date: today) }
             link("รายงานย้อนหลัง", "list.bullet.rectangle") { DailyReportListView(job: job) }
-            link("คำขอสัปดาห์หน้า", "doc.badge.clock") { WeeklyRequestScreen(job: job) }
-            link("รายงานสัปดาห์", "calendar.badge.checkmark") { RoutineSummaryScreen(job: job, period: .week) }
+            link("คำขอสัปดาห์หน้า", "doc.badge.clock", tab: .request) { WeeklyRequestScreen(job: job) }
+            link("รายงานสัปดาห์", "calendar.badge.checkmark", tab: .weekly) { RoutineSummaryScreen(job: job, period: .week) }
             link("รายงานเดือน", "chart.bar.doc.horizontal") { RoutineSummaryScreen(job: job, period: .month) }
         }
     }
 
     @ViewBuilder
-    private func link<D: View>(_ title: String, _ symbol: String, prominent: Bool = false, @ViewBuilder _ destination: @escaping () -> D) -> some View {
+    private func link<D: View>(_ title: String, _ symbol: String, prominent: Bool = false, tab: InstallTrackingPage.Tab? = nil,
+                               @ViewBuilder _ destination: @escaping () -> D) -> some View {
         let label = Label(title, systemImage: symbol).font(.sarabun(15, .semibold, relativeTo: .subheadline)).lineLimit(1).minimumScaleFactor(0.8)
             .frame(maxWidth: .infinity, minHeight: touchMin)
-        if prominent {
+        if let tab {
+            // on iPad, the install tracking page's tab (InstallTrackingPage+Entry)
+            InstallTabLink(job: job, tab: tab, fallback: destination) { label }.buttonStyle(TCButtonStyle(.secondary, size: .card))
+        } else if prominent {
             NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.primary, size: .card))
         } else {
             NavigationLink(destination: destination) { label }.buttonStyle(TCButtonStyle(.secondary, size: .card))

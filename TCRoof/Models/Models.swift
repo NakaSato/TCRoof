@@ -135,6 +135,8 @@ final class Job {
     @Relationship(deleteRule: .cascade, inverse: \DocumentAsset.job) var documents: [DocumentAsset] = []
     /// Photos of the IEC 62446 test, tagged with the id the `IECReport` keeps for them.
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.iecJob) var iecPhotos: [PhotoAsset] = []
+    /// The PWA site ICL's sheets (`ICLSheet`, `SiteICL`).
+    @Relationship(deleteRule: .cascade, inverse: \ICLSheet.job) var iclSheets: [ICLSheet] = []
     /// Project folder on Google Drive, set after the first upload.
     var driveFolderURL: String?
     /// Firestore document id shared by every device; nil only on records made before cloud sync.
@@ -162,6 +164,9 @@ final class Job {
     /// A contractor changed the weekly requests here and Firestore hasn't echoed them back yet: their device pushes
     /// them (signed `weeklyRequestsBy`) and keeps them over an older copy arriving meanwhile. Device only.
     var weeklyRequestsUnsent = false
+    /// Encoded `[RoutineReport.WeeklySent]`: the Weekly Reports (R3) sent from the iPad install page, one per week; nil
+    /// until one is sent, and on jobs from before it.
+    var weeklySentJSON: String?
     /// Encoded `[MasterSchedule.WorkItem]`: the plan file's work breakdown (docs/specs/project-plan-wbs.md), kept beside
     /// the plan rather than inside `scheduleInputJSON`, so a device on an older build that saves the plan leaves it be.
     var scheduleWBSJSON: String?
@@ -627,6 +632,8 @@ final class PhotoAsset {
     var survey: SurveyForm?
     var log: InstallLog?
     var inspection: Inspection?
+    /// The site ICL sheet of a photo (`SiteICL`), tagged `sheet#item`.
+    var iclSheet: ICLSheet?
     /// The job of an IEC 62446 test photo, or of the station's uploaded key plan (tag `Job.keyPlanTag`).
     var iecJob: Job?
     /// Google Drive file id once uploaded (daily-report photos, docs/specs/routine-reports-swift.md §4.6).

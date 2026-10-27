@@ -11,6 +11,7 @@ extension InverterPageWide {
         VStack(alignment: .leading, spacing: 18) {
             planCard
             calcCard
+            dxfButton
         }
     }
 

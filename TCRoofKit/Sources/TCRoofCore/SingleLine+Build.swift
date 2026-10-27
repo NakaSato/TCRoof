@@ -216,7 +216,7 @@ private struct Builder {
             if name.isEmpty { name = "MDB\(k + 1)" }
             var loc = t(bd.location)
             if loc.isEmpty && k == 0 { loc = feedLoc }
-            let main = breaker(type: bd.mainType, poles: bd.poles, at: bd.at, af: bd.af, ic: bd.icu, brand: bd.brand, condition: bd.condition,
+            let main = breaker(type: bd.mainType, poles: bd.poles, at: bd.at, af: bd.af, ic: bd.icu, brand: bd.brandModel, condition: bd.condition,
                                note: bd.conditionNote, id: bd.id, trafo: i, board: k, isMain: true, number: 0, name: name)
             var outs: [SLBreaker] = []
             for (j, br) in bd.breakers.enumerated() {

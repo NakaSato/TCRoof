@@ -183,13 +183,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   side along the module's, stretched to the module on plan, on its WIPEOUT; a roof file defines only that block of the
   tank components. The BOQ counts the walkways (`RoofWalkwayQuantities`, `RoofMount.walkwayLine`: length, HDG
   gratings, cross rails and their L-feet, lifeline and supports, cable tray and PPR, caged or eave ladders) on the roof
-  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per post and two side braces
-  and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line. Open: whether the team keeps the eave
+  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per footing and two side
+  braces and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line (one post per pair since the
+  tank-roof frame, below). Open: whether the team keeps the eave
   ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,
-  yellow) and the bracing between neighbouring posts on the front and back lines (P-BRAC-N, cyan), each on its own
+  yellow) and the X braces on the back line (P-BRAC-N, cyan; every other bay since the tank-roof frame), each on its own
   WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
   the C post's flanges and the two 50 mm plates; P-FTNG-N, green); a dimension chain along each table beyond its
   low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
@@ -202,7 +203,8 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   posts and the front elevation the longest table's numbers, as bubbles under their lowest dimension, so a section
   reads against the plan.
   Beside the mounting plan, a footing schedule (G-ANNO-SCHD): a line per letter line with its footings' references
-  (`A-1…A-14`), the footing size, the post height (the row's front or back post) and the count, and the total.
+  (`A-1…A-14`), the footing size, what stands on it (the back post and its height, or the front line's V) and the
+  count, and the total.
 - **Roof structure drawing** (2026-10-22): the plan's words reach the DXF: the T1 marks on the trusses, the slope
   labels, `สันหลังคา`, obstacle labels and the purlin callout (`แป @1.00` with its ticks) on G-ANNO-TEXT, and the
   section mark's letters and arrows on G-ANNO-SYMB. Section A-A's member callouts ①–⑦ (bubble, number, leader and
@@ -219,9 +221,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   reference (`b-3`, G-ANNO-TEXT). Lower case keeps it apart from the building's grid (A, B … and 1, 2 …). The plan's
   title moves down past the bubbles beyond a bottom eave. The PDF keeps only the panel layout: no grid, no tags, no
   schedule. Open: whether the team names the mounting grid differently (for example R1, R2 for rails).
-- **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
+- **Tank sections** (2026-10-22; sections 1–1 and 2–2 taken out of the DXF 2026-10-27, with the plan's cut marks: the
+  PDF keeps both): D1's DXF also carried, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
-  (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
+  (`tableSectionCAD`) and the longest table's back post line elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
   at x = 0, on S-TANK-SECT-E / C-TOPO-E / the PV layers by colour, their lengths, heights, spacings, post heights
   and bays as live DIMENSIONs.
 - **Tank mounting components** (2026-10-22, after the team's `Tank mounting Section 1.dxf`, `Section 2.dxf` and
@@ -242,6 +245,76 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   module) and, under the sections at 1:10, DETAIL CONCRETE TOPPING and DETAIL 1 with their dimensions and labels.
   Posts, rafters and braces are closed polylines (50, 75 and 45 mm), stretched by their grips. The PDF keeps its own
   drawings. Run the tool again when a reference drawing changes.
+- **Tank-roof frame** (2026-10-27, after the team's tank-roof drawings `Top.dxf`, `Back_Side.dxf` and `Side_View.dxf`
+  of a 40 × 26 m tank with 240 modules, in `reference/tank-roof/`: their blocks as `tcroof-tank-mount-blocks.dxf`,
+  SVGs, the catalog, the layout as JSON with its BOQ and the extraction scripts): the frame follows their drawing,
+  in the DXF, the PDF, the B1-C3 sheet and the BOQ. Per post pair one vertical post on the back (high) line; on the
+  front (low) line no post, one foot (AG5-B03) carrying a V of two struts to the rafter (`TankComponents.frame`: the
+  inner leg 0.565 m up the rafter from the front line, the outer leg 0.60 m down it, the back diagonal 1.40 m down
+  from the post). X braces only on the back line, in every other bay and the last (`TankLayout.bracedBays`: 8 bays
+  give 1, 3, 5, 7, 8; their drawing's 30 sets), between 0.376 m above the slab and 0.108 m under the post's top;
+  on the mounting plan each X is the team's pair of 40 mm members 152 mm apart either side of the line. The
+  elevation under the sections is the back post line's (`รูปด้านแนวเสาหลัง`: back posts, the braced bays, the modules
+  behind as dashed hidden outlines); the footing schedule says what stands on each line (`เสา 2.00 ม.` or
+  `ขาค้ำ V`). BOQ: `เสา` = post pairs (back posts only), `ฐานราก` and `ฐานเสา` = 2 per pair, M12 2 per base,
+  `ค้ำโครงข้าง` 2 and `ค้ำยื่น` 1 per pair, `ค้ำ X` = braced bays. The heights stay the standard's (`hFront` is the
+  rafter's height over the front line). Their drawing's own conflicts (rafter drawn 4000 on plan too, schematic rail
+  heights in the back view, unlabelled member sections) are listed in its README and layout JSON. Open: the member
+  sections (post, strut, rafter, brace) are named nowhere in their drawings.
+- **Tank plan module** (2026-10-27, after the team's `reference/PV_570W.dxf`: a frame on a WIPEOUT, 2.19911 × 1.134 m,
+  the slope along x): every module on D1's plan is one INSERT of one block named for its power, `PV_570W`
+  (`TankDXF.moduleBlock`), written to a micrometre, in place of the per-size blocks with the cells drawing inside. Its
+  frame is the layout's module projected on plan: `moduleL` × cos(tilt) by `moduleW` (`Params.cellH` × `cellW`), so
+  at the team's 15° the ZXM7 570 W (2278 × 1134 mm) gives 2.20038 × 1.134; their block's 2.19911 is 1.3 mm shorter
+  (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
+  INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
+  The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
+- **Inverter station** (2026-10-27, after the team's `reference/inverter-station`: `Inverter.dxf` one 125 kW inverter
+  under a 6.0 × 2.5 m shelter, `Inverter_EXL-HV.dxf` 125 + 40 kW under 9.0 × 2.5 m, `Internal_Inverter_Station_EXL-LV.dxf`
+  an 80 kW rack on a building's wall, `Part_1.dxf` the column's base plate, and the component library extracted from
+  them in `components/cad`): B2's `ส่งออก DXF` (`InverterStationDXF`) draws the section's station at real scale in
+  metres. TOP VIEW on the B2 page's own positions (`InverterStationDrawing`: the rack band 0.17 m off the back line, the
+  row in front of it, the door by column 1 on line A): outdoors the columns 1, 2 … on lines A (front, door) and B
+  (back) with bubbles, each the library's 150 plate with its 75 tube; indoors the existing wall (hatched) and the
+  measured area; the rack with its posts (no span over 1.40 m, as the team's), the AC tray (`TCR_TRAY_PLAN_COVER_W…`),
+  the inverters' top views (MAX 125 / 80 blocks), the chains of spans, width, row and walkway. FRONT VIEW under it on
+  the same x: the columns of line A, the edge beam, the rafters' ends, the purlin and sheet, a T8 LED lamp on each
+  inside column line; the rack on its 200×100 concrete footings and 200×10 plates, the top rail at 2.00 m, the AC tray
+  at 0.50 m and the DC tray at 0.90 m (the library's side modules, 1.0 m), each cabinet topped at 2.00 m and each
+  inverter at 2.10 m (the team's station templates: AC-DB 0.598, meter 1.248, inverter 1.461, DC-DB 0.998 for 1.40 /
+  0.75 / 0.635 / 1.00 m tall), the library's front blocks stretched to the equipment catalog's sizes, the ladder
+  (`TCR_LADDER_PLAN_W…`, 1.2 m modules) up from AC-DB-01 and a DC tray up from each DC-DB, labelled over the roof.
+  SIDE VIEW right of it, seen from the right end: the posts 3.00 m at A and 2.75 m at B (the measured height ส for the
+  front when there is one), the edge beams' sections, the tie beam, the rafter 0.40 m past A and 0.55 m past B, its
+  purlins about 1 m apart and the sheet; the rack's section with its arms, the trays' sections (`TCR_TRAY_SECTION_…`),
+  the equipment from the generic side blocks drawn far end first so nearer items hide farther ones; indoors the wall.
+  The scale figure stands in both views. Right of the plan the equipment schedule (model, W × H × D, the levels), the
+  notes (including a short area and a narrow walkway) and the base plate DETAIL at 5 : 1 with its sizes in mm.
+  The shelter's members are marked (2026-10-27): a mark in a circle with a leader, in the front view C1 column, B1
+  edge beam, R1 rafter, P1 purlin, in the side view C1, B1, TB tie beam, R1, P1, and right of the base plate detail
+  `ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE` (`InverterStationDXF.members`): mark, member, size, count and length
+  together centre to centre (columns from their base plates; the rafter along its slope, 0.40 m past A and 0.55 m past
+  B; the purlins over the length and both 0.50 m overhangs), the column `□75×75×2.4 (รอยืนยัน)` and the rest at the
+  depth drawn, `ตามแบบ`, until the team names the sections. A station on a wall has none.
+  Layers: `S-COLS-N`, `S-BEAM-N`, `S-ROOF-PURL-N`, `A-ROOF-N`, `S-FRAM-N` (rack), `S-FTNG-N`, `E-EQPM-N`, `E-CTRY-N`,
+  `E-LITE-N`, `A-DOOR-N`, `A-WALL-E` (hatched), `A-AREA-E`, ground `C-TOPO-E`. A size the library lacks (a tray over
+  300 or a ladder over 600 mm wide) is drawn by the file itself. Open: the column size (the library's tube is 75×75×2.4
+  on a 150 plate, its layer says 100×100×3, and the elevations' plate is 200 wide); the catalog's AC-DB (900 × 1200 for
+  up to 2 inverters) against the team's 900 × 1400, the meter 630 × 800 against 630 × 750, the MAX 80 870 × 580
+  against the block's 860 × 628, the 40 kW 580 × 435 against 580 × 600; the beams', rafters' and purlins' sections.
+- **Tank roof beam plan** (2026-10-27, after the team's `reference/Tank_Truss.dxf` / `.dwg`: a 40 × 24 m tank on a
+  4.00 m grid, B1 0.20 m on the perimeter wall line and B2 0.20 m on every interior line, a mark per span, 4.00 chains
+  and the 40.00 / 24.00 overall): D1's DXF draws it for any rectangular tank from its own spans (`TankFraming`), right
+  of the other plans with grid line A level with the module plan's: the B1 outer edge as one closed polyline and every
+  other beam edge between the faces of the beams crossing it, so the junctions read clean (the reference drew each
+  beam as a full-length rectangle, crossing every other one, and several twice); a B1 / B2 mark on every span beside
+  its beam towards the inside and along it; the grid's centre lines with a bubble at both ends (1, 2, 3 … and A, B, C …,
+  as the module plan names them); the span chains and the overall sizes on top and on the left as DIMENSIONs; the title
+  `แปลนคานหลังคาถัง / ROOF BEAM PLAN` with the width and the note; and to its right `ตารางคาน / BEAM SCHEDULE` (mark,
+  location, width × depth `0.20 × ตามแบบ`, spans, length centre to centre, the total) with three notes. Layers: the
+  beams S-BEAM-E (existing, continuous lines as the team draws them; the module plan keeps S-TANK-BEAM-E hidden), marks G-ANNO-TEXT, grid G-GRID, chains G-ANNO-DIMS, the
+  schedule G-ANNO-SCHD. A round tank (ring beams) has none. The module plan's beams (`TankPlan.beam`) are 0.20 m too.
+  Open: the beams' depth and whether some tanks carry a third mark (a deeper beam on a column line).
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.
@@ -251,11 +324,11 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   `Discipline-Major[-Minor]-Status`, the discipline one letter (`G` general, `A` architectural, `S` structural, `E`
   electrical, `C` civil), four-letter groups, and the status last: `E` existing (roof, tank, what the survey found),
   `N` new (what we install), `T` temporary (crane access). So a layer filter `*-N` shows everything we build and `S-*`
-  the structure. The groups: `G-GRID`, `G-ANNO-DIMS | TEXT | NRTH | SYMB | SCHD | MEAS`, `G-ANNO-NPLT` (the only
+  the structure. The groups: `G-GRID`, `G-ANNO-DIMS | TEXT | NRTH | SYMB | MARK | SCHD | MEAS` (`MARK`: the member numbers of C1 section A-A and the inverter station), `G-ANNO-NPLT` (the only
   non-plot layer, named so), `G-DETL`; the existing roof `S-ROOF-OTLN | RIDG | FRAM | PURL | SECT-E`, `S-COLS-E`,
   `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `P-MODL-N`, `P-MODL-KEEP-N`, `P-CTRY-N`, `P-RAIL-N`, `P-RAIL-CUTS-N`, `P-FOOT-N`,
   `P-TABL-N`, `P-RAFT-N`, `P-BRAC-N`, `P-FTNG-N`, `P-WALK-N` (`-RAIL-N`, `-FOOT-N`), `P-LIFE-N` (`-RAIL-N`, `-SUPT-N`),
-  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E`, `C-TOPO-E`; the site `A-BLDG-E`, `P-AREA-N`,
+  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E` (and the roof beam plan's continuous `S-BEAM-E`), `C-TOPO-E`; the inverter station `S-COLS | BEAM | FRAM | FTNG-N`, `S-ROOF-PURL-N`, `A-ROOF | DOOR-N`, `E-EQPM | CTRY | LITE-N`, `A-WALL-E`, `A-AREA-E`; the site `A-BLDG-E`, `P-AREA-N`,
   `P-AREA-DRAW-N`, `E-CABL-N`, `E-EQPM-E`, `C-ACCS-T`, `C-SHAD-E`, `C-BNDY-E`; the single line diagram `E-SLDG-E | N`,
   `E-SLDG-OKAY | WARN | MISS | ASSM | TEXT | OTHR`, `E-SLDG-POLE-E`. Every object is ByLayer (no colour on an entity):
   a part drawn in another colour has its own layer, and a single line text whose colour means something goes on that

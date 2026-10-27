@@ -95,7 +95,7 @@ public enum RoofMount {
         public var walkwayCentre = false
         /// The roof access ladder at the ridge's right end on plan (false = left); drawing only, not in the digest.
         public var accessRight = false
-        /// A walkway along the ridge: on for a new layout, off for a job kept before it existed (its layout stays).
+        /// A walkway along the ridge: on unless the job says off (a job kept before it existed gets it too).
         public var walkwayRidge = true
         /// Modules landscape, the long side along the purlins (ด้านยาวตามแป).
         public var landscape = false
@@ -125,7 +125,8 @@ public enum RoofMount {
             railsAcross = try c.decodeIfPresent(Bool.self, forKey: .railsAcross) ?? false
             walkwayCentre = try c.decodeIfPresent(Bool.self, forKey: .walkwayCentre) ?? false
             accessRight = try c.decodeIfPresent(Bool.self, forKey: .accessRight) ?? false
-            walkwayRidge = try c.decodeIfPresent(Bool.self, forKey: .walkwayRidge) ?? false
+            // on unless a job says otherwise: the walkway is the default and the iPad tab no longer switches it
+            walkwayRidge = try c.decodeIfPresent(Bool.self, forKey: .walkwayRidge) ?? true
             landscapePairs = try c.decodeIfPresent(Bool.self, forKey: .landscapePairs) ?? false
             pairGap = try c.decodeIfPresent(Double.self, forKey: .pairGap)
             ridgeWalkwayWidth = try c.decodeIfPresent(Double.self, forKey: .ridgeWalkwayWidth)
@@ -142,7 +143,7 @@ public enum RoofMount {
             if railsAcross { try c.encode(railsAcross, forKey: .railsAcross) }
             if walkwayCentre { try c.encode(walkwayCentre, forKey: .walkwayCentre) }
             if accessRight { try c.encode(accessRight, forKey: .accessRight) }
-            if walkwayRidge { try c.encode(walkwayRidge, forKey: .walkwayRidge) }
+            try c.encode(walkwayRidge, forKey: .walkwayRidge)
             if landscapePairs { try c.encode(landscapePairs, forKey: .landscapePairs) }
             try c.encodeIfPresent(pairGap, forKey: .pairGap)
             try c.encodeIfPresent(ridgeWalkwayWidth, forKey: .ridgeWalkwayWidth)

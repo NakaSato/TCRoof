@@ -68,10 +68,10 @@ final class TankEnergyTests: XCTestCase {
             let texts = sk.ops.compactMap { op -> String? in if case .text(let s, _, _, _, _, _, _) = op { return s }; return nil }
             let t = l.builtTables.max { $0.columns < $1.columns }!
             XCTAssertTrue(texts.contains { $0.contains("\(t.columns) คอลัมน์") }, "az \(String(describing: az))")
-            XCTAssertTrue(texts.contains { $0.hasPrefix("เสา \(t.pairs) คู่") })
+            XCTAssertTrue(texts.contains { $0.hasPrefix("เสาแนวหลัง \(t.pairs) ต้น") })
             XCTAssertTrue(texts.contains(String(format: "ยาว %.2f", l.params.width(t.columns))))
             // the bays and the cantilevers wide enough to label add up to the length, less at most the two cantilevers
-            let parts = texts.compactMap { Double($0) }.filter { $0 > 0.05 && $0 < 3 && $0 != l.params.hFront }
+            let parts = texts.compactMap { Double($0) }.filter { $0 > 0.05 && $0 < 3 && $0 != l.params.hBack }
             let sum = parts.reduce(0, +), L = l.params.width(t.columns)
             XCTAssertLessThanOrEqual(sum, L + 0.01 * Double(parts.count))
             XCTAssertGreaterThanOrEqual(sum, L - 2 * l.params.maxCantilever - 0.01 * Double(parts.count))

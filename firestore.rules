@@ -63,6 +63,11 @@ service cloud.firestore {
       return logID is string
         && listsMe(get(/databases/$(database)/documents/installLogs/$(logID)).data);
     }
+    // The site ICL sheet a photo points at lists the signed-in external member.
+    function sheetIsMine(sheetID) {
+      return sheetID is string
+        && listsMe(get(/databases/$(database)/documents/iclSheets/$(sheetID)).data);
+    }
     // The signed-in team member signs the daily reports of this job: on its team, its supervisor, or the job names
     // none of ours (Permissions.signsDaily).
     function signsFor(jobID) {
@@ -242,8 +247,20 @@ service cloud.firestore {
       allow create, update: if isExternal() && keepsMe()
         && request.resource.data.get('inspection', null) == null
         && (request.resource.data.get('log', null) == null || logIsMine(request.resource.data.log))
-        && (request.resource.data.get('iecJob', null) == null || jobIsMine(request.resource.data.iecJob));
+        && (request.resource.data.get('iecJob', null) == null || jobIsMine(request.resource.data.iecJob))
+        && (request.resource.data.get('iclSheet', null) == null || sheetIsMine(request.resource.data.iclSheet));
       allow delete: if isExternal() && listsMe(resource.data);
+    }
+
+    // The PWA site ICL, one sheet per document (`SiteICL`, `ICLSheet`): the contractor fills their job's sheets and sends
+    // them (`state` sent), only while a sheet is open; only the team signs (`closed`), sends one back or reopens it.
+    // Team devices drop a signature the state doesn't record (`SiteICL.Sheet.trusting`).
+    match /iclSheets/{doc} {
+      allow read: if isTeam() || readsMine();
+      allow write: if isTeam();
+      allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.get('jobID', null))
+        && (resource == null || resource.data.get('state', 'open') == 'open')
+        && request.resource.data.get('state', null) in ['open', 'sent'];
     }
 
     // ICL check lists: an external member only reads theirs.
@@ -321,6 +338,17 @@ service cloud.firestore {
         && request.resource.data.submittedAt is int
         && doc == request.resource.data.ownerEmail + '_' + request.resource.data.month;
       allow delete: if false;
+    }
+
+    // The tool and vehicle log (`ToolLog`, the tools tab's บันทึกการใช้เครื่องมือและรถ): one document per event (borrow,
+    // return, a vehicle out or back, fuel) and per company vehicle, the team's to read and write. Contractors have none.
+    match /toolEvents/{doc} {
+      allow read, delete: if isTeam();
+      allow create, update: if isTeam() && request.resource.data.event is string && request.resource.data.at is int;
+    }
+    match /vehicles/{doc} {
+      allow read, delete: if isTeam();
+      allow create, update: if isTeam() && request.resource.data.vehicle is string;
     }
 
     // The home feed's acknowledgements (รับทราบ): one document per post, its members the emails that acknowledged it.

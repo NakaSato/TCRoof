@@ -1,0 +1,27 @@
+{
+  "_note": "Example values from the board iPadA2.dc.html. The app reads the job's site picture, marks, shapes, building models (SiteModels), siteList and notes. Never hard-code these.",
+  "header": { "title": "A2 ภาพสถานที่ติดตั้ง", "subtitle": "แบบสำรวจ NO.224 · GRF2567-23407", "step": "2/13 · ภาพสถานที่ติดตั้ง" },
+  "columns": { "palette": 104, "picture": 860, "side": "rest (≈ 330 at 1366 wide)", "gap": 12, "content": "1318 = 1366 − 2 × 24" },
+  "palette": {
+    "title": "สัญลักษณ์",
+    "hint": "แตะ แล้วแตะบนภาพ",
+    "tiles": ["PEA METER", "กันย้อน", "หม้อแปลง", "MDB", "INV", "M", "Weather", "Site Office", "ชื่อหลังคา", "ทางเข้าเครน", "ร่มเงา"],
+    "tile": "icon 30 above title 11.5 bold, no detail line, green dot top-right when placed, min height 58",
+    "armed": "2 pt primary border, primarySoft fill, 3 pt soft ring",
+    "banner": "แตะบนภาพเพื่อวาง {name}  [ยกเลิก]"
+  },
+  "side": {
+    "source": { "title": "ภาพมุมสูง *", "hint": "เลือก 1 แหล่ง", "options": [["Google Maps", "ภาพดาวเทียมตามพิกัด A1"], ["อัปภาพจากโดรน", "JPG ภาพมุมตรง (Nadir)"]], "layout": "one per row" },
+    "list": { "title": "LIST ในภาพ", "chip": "ครบ 10/12", "open": "one column, scrolls" },
+    "notes": { "title": "หมายเหตุหน้างาน", "hint": "ไม่บังคับ · ใต้ภาพในรายงาน", "example": "รถเครนเข้าทางถนนด้านตะวันออก · ต้นไม้บังแดดเช้าด้านตะวันตก" },
+    "hintPlacement": "card hints sit on their own line under the title (12 pt muted)"
+  },
+  "placedMark": { "select": "tap a placed symbol: 4 pt soft primary ring", "delete": "ลบ pill under it (danger outline)" },
+  "fullscreen": {
+    "bar": { "height": 64, "left": "ออกจากเต็มจอ (pill, white 34 pt circle with the exit icon)", "centre": ["A2 ภาพสถานที่ติดตั้ง", "แตะจุดบนภาพเพื่อแทรกอาคาร · ลากเพื่อย้าย"], "right": "อาคารในโครงการ · 1/5 (pill toggle, filled primary when open)" },
+    "picture": "fits the height under the bar with 16 pt top and bottom (928 at 1024), centred, radius 8; the picture's aspect is kept",
+    "panel": "อาคารในโครงการ floats over the picture's right side (right 16, top 76, bottom 16, width 290, shadow) only while open or while a card is armed",
+    "panelCounts": "วางแล้ว 1/5",
+    "buildings": [["D1 หลังคาถังน้ำใส 1", "ขั้น 12/13 · 40 × 40 ม.", "วางแล้ว"], ["C1 หลังคาอาคาร 1", "ขั้น 10/13 · 19 × 16 ม.", "แตะ/ลาก"], ["C2 หลังคาอาคาร 2", "ขั้น 11/13 · 19 × 16 ม.", "แตะ/ลาก"], ["B1 อาคารตู้ไฟฟ้า MDB", "ขั้น 5/13 · 6 × 4 ม.", "แตะ/ลาก"], ["B2 ห้องอินเวอร์เตอร์", "ขั้น 6/13 · 5 × 4 ม.", "แตะ/ลาก"]]
+  }
+}

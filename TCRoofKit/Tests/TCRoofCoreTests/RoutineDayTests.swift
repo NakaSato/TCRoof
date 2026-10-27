@@ -114,4 +114,10 @@ final class RoutineDayTests: XCTestCase {
         XCTAssertNil(R.reportDay(from: d(5), by: 1, settings: s, limit: d(6)))
         XCTAssertEqual(R.thaiWeekdayDate(d(2)), "พ. 2 ก.ค. 2568")
     }
+
+    func testTitleDateHasTheFullWeekday() {
+        XCTAssertEqual(R.thaiDateFullWeekday(d(2)), "2 ก.ค. 2568 (วันพุธ)")
+        XCTAssertEqual(R.thaiDateFullWeekday(d(3)), "3 ก.ค. 2568 (วันพฤหัสบดี)")
+        XCTAssertEqual(R.thaiDateFullWeekday(d(6)), "6 ก.ค. 2568 (วันอาทิตย์)")
+    }
 }

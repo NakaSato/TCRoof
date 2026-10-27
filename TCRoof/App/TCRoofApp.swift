@@ -33,8 +33,9 @@ struct TCRoofApp: App {
     static let sharedContainer: ModelContainer = {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
-            Inspection.self, PhotoAsset.self, DocumentAsset.self,
+            Inspection.self, ICLSheet.self, PhotoAsset.self, DocumentAsset.self,
             Trip.self, Expense.self, ClaimMonth.self,
+            ToolEvent.self, CompanyVehicle.self,
         ])
         do {
             return try ModelContainer(for: schema)
@@ -223,7 +224,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "members", "useradmin", "assistant", "travel", "claimreview"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "siteicl", "members", "useradmin", "assistant", "travel", "claimreview"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -256,7 +257,7 @@ struct DebugScreen: View {
         case "log": if let log = job?.logs.first { InstallLogDetailView(log: log) }
         case "icl": if let job { InspectionView(job: job) }
         // `-mpClear YES` opens it on the job with no plan, no progress, no WBS and no plan file instead; then
-        // `-mpTemplate P9-012` starts it from that template case and `-mpTickWBS 2.1.1,2.1.2` ticks those WBS rows today
+        // `-mpTemplate P3-028` starts it from that station's plan file (moved to today) and `-mpTickWBS 2.1.1,2.1.2` ticks those WBS rows today
         case "mp": if let job = Self.mpJob.flatMap({ id in jobs.first { $0.syncID == id } }) ?? job {
             MPScheduleScreen(job: job).onAppear {
                 guard Self.mpJob == nil else { return }
@@ -268,8 +269,9 @@ struct DebugScreen: View {
                     job.scheduleWorkbook = nil; job.scheduleWorkbookName = nil; job.scheduleWorkbookDriveID = nil
                 } else { job.seedMPDemo() }
                 if let id = d.string(forKey: "mpTemplate"), job.scheduleInput == nil,
-                   let c = MPTemplates.cases().first(where: { $0.id == id }),
-                   let r = try? MPTemplates.plan(c, kickoff: MasterSchedule.calendar.startOfDay(for: .now)) {
+                   let c = (MPTemplates.cases() + MPTemplates.installCases()).first(where: { $0.id == id }),
+                   let r = try? MPTemplates.plan(c, kickoff: MasterSchedule.calendar.startOfDay(for: .now),
+                                                 people: ProjectSetup(job.setupTarget)) {
                     MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP (แม่แบบ \(c.id)).xlsx", on: job)
                 }
                 if let codes = d.string(forKey: "mpTickWBS") {
@@ -303,6 +305,8 @@ struct DebugScreen: View {
         case "selfcert": if let job { SelfCertificationView(job: job) }
         case "homework": if let job { HomeWorkView(job: job) }
         case "stationdocs": if let job { StationDocsScreen(job: job) }
+        // the PWA site ICL (`SiteICL`) of the first job
+        case "siteicl": if let job { SiteICLScreen(job: job) }
         case "members": MembersView()
         // `-travelDemo YES` seeds a month (for good), `-travelMonth 2026-09` opens that month, `-travelSubmit YES` the sign sheet
         case "travel": ClaimScreen()

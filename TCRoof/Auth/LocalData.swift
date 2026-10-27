@@ -40,6 +40,7 @@ enum LocalData {
         for key in d.dictionaryRepresentation().keys where key.hasPrefix("cloudSync.known.") { d.removeObject(forKey: key) }
         try? context.delete(model: InstallLog.self)
         try? context.delete(model: Inspection.self)
+        try? context.delete(model: ICLSheet.self)
         try? context.delete(model: ScannedDevice.self)
         try? context.delete(model: SurveyForm.self)
         try? context.delete(model: PhotoAsset.self)
@@ -48,6 +49,8 @@ enum LocalData {
         try? context.delete(model: Trip.self)
         try? context.delete(model: Expense.self)
         try? context.delete(model: ClaimMonth.self)
+        try? context.delete(model: ToolEvent.self)
+        try? context.delete(model: CompanyVehicle.self)
         try? context.save()
         for job in survey.jobs { survey.delete(job.id) }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

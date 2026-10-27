@@ -1,0 +1,5933 @@
+{
+  "schemaVersion": 1,
+  "units": "mm",
+  "generatedFrom": [
+    "1751d41a-Internal_Inverter_Station_EXL-LV.dxf",
+    "b681fdd9-Inverter.dxf",
+    "fd337b54-Inverter_EXL-HV.dxf",
+    "83f3482c-Part_1.dxf"
+  ],
+  "components": [
+    {
+      "kind": "accessory",
+      "name": "AC cable gland",
+      "views": {
+        "elevation": {
+          "svg": "svg/cable-gland-ac-elevation.svg",
+          "dxfBlock": "TCR_CABLE_GLAND_AC_ELEVATION",
+          "bboxMm": {
+            "width": 38,
+            "height": 57
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "AC port"
+          }
+        }
+      },
+      "id": "cable-gland-ac"
+    },
+    {
+      "kind": "accessory",
+      "name": "Cable gland (plan)",
+      "views": {
+        "plan": {
+          "svg": "svg/cable-gland-hex-plan.svg",
+          "dxfBlock": "TCR_CABLE_GLAND_HEX_PLAN",
+          "bboxMm": {
+            "width": 18,
+            "height": 15
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$C71643F1A"
+          }
+        }
+      },
+      "id": "cable-gland-hex"
+    },
+    {
+      "kind": "accessory",
+      "name": "MC4 connector",
+      "views": {
+        "elevation": {
+          "svg": "svg/mc4-connector-elevation.svg",
+          "dxfBlock": "TCR_MC4_CONNECTOR_ELEVATION",
+          "bboxMm": {
+            "width": 16,
+            "height": 28
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "mc4"
+          }
+        }
+      },
+      "id": "mc4-connector"
+    },
+    {
+      "kind": "annotation",
+      "name": "Grid bubble",
+      "notes": "Attribute tag '8' holds the grid label (1..5 / A, B).",
+      "views": {
+        "annotation": {
+          "svg": "svg/grid-bubble-annotation.svg",
+          "dxfBlock": "TCR_GRID_BUBBLE_ANNOTATION",
+          "bboxMm": {
+            "width": 370,
+            "height": 224
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "spec-col(V)"
+          }
+        }
+      },
+      "id": "grid-bubble"
+    },
+    {
+      "kind": "annotation",
+      "name": "Human scale figure",
+      "views": {
+        "elevation": {
+          "svg": "svg/scale-figure-elevation.svg",
+          "dxfBlock": "TCR_SCALE_FIGURE_ELEVATION",
+          "bboxMm": {
+            "width": 700,
+            "height": 1785
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$C8B47C620"
+          }
+        }
+      },
+      "id": "scale-figure"
+    },
+    {
+      "kind": "architectural",
+      "name": "Door + swing",
+      "dimensionsMm": {
+        "width": 1125,
+        "depth": 1120
+      },
+      "views": {
+        "plan": {
+          "svg": "svg/door-swing-1100-plan.svg",
+          "dxfBlock": "TCR_DOOR_SWING_1100_PLAN",
+          "bboxMm": {
+            "width": 1125,
+            "height": 1120
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "A$C5CD537DB"
+          }
+        }
+      },
+      "id": "door-swing-1100"
+    },
+    {
+      "kind": "cableway",
+      "name": "AC cable ladder 200x100 (no cover)",
+      "id": "ac-cable-ladder-200x100",
+      "productId": "cable-ladder-200x100",
+      "service": "AC",
+      "withCover": false,
+      "symbol": "cable-ladder-200x100"
+    },
+    {
+      "kind": "cableway",
+      "name": "AC perforated tray 100x100 with cover",
+      "id": "ac-perforated-tray-100x100",
+      "productId": "perforated-tray-100x100",
+      "service": "AC",
+      "withCover": true,
+      "symbol": "perforated-tray-100x100"
+    },
+    {
+      "kind": "cableway",
+      "name": "AC perforated tray 200x100 with cover",
+      "id": "ac-perforated-tray-200x100",
+      "productId": "perforated-tray-200x100",
+      "service": "AC",
+      "withCover": true,
+      "symbol": "perforated-tray-200x100"
+    },
+    {
+      "id": "cable-ladder-200x100",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 200x100",
+      "nameTh": "รางบันไดเคเบิล 200x100",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 100
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 2.0,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-200x100.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_200X100",
+          "bboxMm": {
+            "width": 224,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_200X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w200.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W200",
+          "bboxMm": {
+            "width": 1200,
+            "height": 224
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h100.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H100",
+          "bboxMm": {
+            "width": 1200,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-200x60",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 200x60",
+      "nameTh": "รางบันไดเคเบิล 200x60",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 60
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 1.5,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-200x60.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_200X60",
+          "bboxMm": {
+            "width": 224,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_200X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w200.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W200",
+          "bboxMm": {
+            "width": 1200,
+            "height": 224
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h60.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H60",
+          "bboxMm": {
+            "width": 1200,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-300x100",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 300x100",
+      "nameTh": "รางบันไดเคเบิล 300x100",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 100
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 2.0,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-300x100.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_300X100",
+          "bboxMm": {
+            "width": 324,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_300X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w300.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W300",
+          "bboxMm": {
+            "width": 1200,
+            "height": 324
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h100.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H100",
+          "bboxMm": {
+            "width": 1200,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-300x60",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 300x60",
+      "nameTh": "รางบันไดเคเบิล 300x60",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 60
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 1.5,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-300x60.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_300X60",
+          "bboxMm": {
+            "width": 324,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_300X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w300.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W300",
+          "bboxMm": {
+            "width": 1200,
+            "height": 324
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h60.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H60",
+          "bboxMm": {
+            "width": 1200,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-400x100",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 400x100",
+      "nameTh": "รางบันไดเคเบิล 400x100",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 100
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 2.0,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-400x100.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_400X100",
+          "bboxMm": {
+            "width": 424,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_400X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w400.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W400",
+          "bboxMm": {
+            "width": 1200,
+            "height": 424
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h100.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H100",
+          "bboxMm": {
+            "width": 1200,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-400x60",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 400x60",
+      "nameTh": "รางบันไดเคเบิล 400x60",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 60
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 1.5,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-400x60.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_400X60",
+          "bboxMm": {
+            "width": 424,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_400X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w400.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W400",
+          "bboxMm": {
+            "width": 1200,
+            "height": 424
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h60.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H60",
+          "bboxMm": {
+            "width": 1200,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-500x100",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 500x100",
+      "nameTh": "รางบันไดเคเบิล 500x100",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 100
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 2.0,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-500x100.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_500X100",
+          "bboxMm": {
+            "width": 524,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_500X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w500.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W500",
+          "bboxMm": {
+            "width": 1200,
+            "height": 524
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h100.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H100",
+          "bboxMm": {
+            "width": 1200,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-500x60",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 500x60",
+      "nameTh": "รางบันไดเคเบิล 500x60",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 60
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 1.5,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-500x60.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_500X60",
+          "bboxMm": {
+            "width": 524,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_500X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w500.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W500",
+          "bboxMm": {
+            "width": 1200,
+            "height": 524
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h60.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H60",
+          "bboxMm": {
+            "width": 1200,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-600x100",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 600x100",
+      "nameTh": "รางบันไดเคเบิล 600x100",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 100
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 2.0,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-600x100.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_600X100",
+          "bboxMm": {
+            "width": 624,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_600X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w600.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W600",
+          "bboxMm": {
+            "width": 1200,
+            "height": 624
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h100.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H100",
+          "bboxMm": {
+            "width": 1200,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "cable-ladder-600x60",
+      "kind": "cableway",
+      "trayType": "ladder",
+      "name": "Cable ladder 600x60",
+      "nameTh": "รางบันไดเคเบิล 600x60",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 60
+      },
+      "moduleLengthMm": 1200,
+      "rungPitchMm": 300,
+      "rung": {
+        "profile": "C",
+        "widthMm": 25,
+        "depthMm": 15,
+        "thicknessMm": 1.25,
+        "slotOpeningMm": 11,
+        "pitchMm": 300
+      },
+      "rail": {
+        "thicknessMm": 1.5,
+        "thicknessSource": "assumed (t not dimensioned on the supplier drawing)",
+        "webSlots": {
+          "sizeMm": [
+            15,
+            9
+          ],
+          "pitchMm": 50
+        },
+        "fixingHoles": {
+          "diaMm": 8.5,
+          "pitchMm": 100,
+          "location": "bottom flange (interpreted)"
+        },
+        "smallHoles": {
+          "diaMm": 5.4,
+          "pitchMm": 50,
+          "location": "web, lower row (interpreted)"
+        },
+        "topFlangeMm": 12,
+        "bottomFlangeMm": 30,
+        "flangeSource": "estimated from the isometric"
+      },
+      "manufacturerSeries": [],
+      "notes": "Drawn to the supplier ladder detail (rung C 25x15x1.25 with 11 mm slot at 300; rail 9x15 slots at 50, D8.5 at 100, D5.4 at 50). Rail thickness and flange widths are not dimensioned there and are assumed. Plan/side module 1200 mm (4 rungs) tiles.",
+      "views": {
+        "rung-profile": {
+          "svg": "svg/ladder-rung-profile.svg",
+          "dxfBlock": "TCR_LADDER_RUNG_PROFILE",
+          "bboxMm": {
+            "width": 25,
+            "height": 15
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_RUNG_PROFILE"
+          }
+        },
+        "section": {
+          "svg": "svg/ladder-section-600x60.svg",
+          "dxfBlock": "TCR_LADDER_SECTION_600X60",
+          "bboxMm": {
+            "width": 624,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SECTION_600X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/ladder-plan-w600.svg",
+          "dxfBlock": "TCR_LADDER_PLAN_W600",
+          "bboxMm": {
+            "width": 1200,
+            "height": 624
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_PLAN_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/ladder-side-h60.svg",
+          "dxfBlock": "TCR_LADDER_SIDE_H60",
+          "bboxMm": {
+            "width": 1200,
+            "height": 60
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_LADDER_SIDE_H60"
+          }
+        }
+      }
+    },
+    {
+      "kind": "cableway",
+      "name": "DC perforated tray 100x100 with cover",
+      "id": "dc-perforated-tray-100x100",
+      "productId": "perforated-tray-100x100",
+      "service": "DC",
+      "withCover": true,
+      "symbol": "perforated-tray-100x100"
+    },
+    {
+      "id": "perforated-tray-100x100",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x100",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x100",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 100
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x100.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X100",
+          "bboxMm": {
+            "width": 105,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h100.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-100x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x110",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X110",
+          "bboxMm": {
+            "width": 105,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-100x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x35",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X35",
+          "bboxMm": {
+            "width": 105,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-100x50",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x50",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x50",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 50
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RSV"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x50.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X50",
+          "bboxMm": {
+            "width": 105,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X50"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h50.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H50"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-100x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x60",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X60",
+          "bboxMm": {
+            "width": 105,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-100x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 100x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 100x85",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X85",
+          "bboxMm": {
+            "width": 105,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-120x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 120x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 120x60",
+      "crossSectionMm": {
+        "width": 120,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-120x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_120X60",
+          "bboxMm": {
+            "width": 125,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_120X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w120.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W120",
+          "bboxMm": {
+            "width": 1000,
+            "height": 120
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W120"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w120.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W120",
+          "bboxMm": {
+            "width": 1000,
+            "height": 125
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W120"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-150x100",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 150x100",
+      "nameTh": "รางเคเบิลแบบเจาะรู 150x100",
+      "crossSectionMm": {
+        "width": 150,
+        "height": 100
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-150x100.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_150X100",
+          "bboxMm": {
+            "width": 155,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_150X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 150
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W150"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 155
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W150"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h100.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-150x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 150x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 150x35",
+      "crossSectionMm": {
+        "width": 150,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-150x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_150X35",
+          "bboxMm": {
+            "width": 155,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_150X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 150
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W150"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 155
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W150"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-150x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 150x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 150x60",
+      "crossSectionMm": {
+        "width": 150,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLV"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-150x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_150X60",
+          "bboxMm": {
+            "width": 155,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_150X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 150
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W150"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 155
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W150"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-200x100",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 200x100",
+      "nameTh": "รางเคเบิลแบบเจาะรู 200x100",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 100
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x100.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X100",
+          "bboxMm": {
+            "width": 205,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h100.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-200x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 200x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 200x110",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X110",
+          "bboxMm": {
+            "width": 205,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-200x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 200x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 200x35",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X35",
+          "bboxMm": {
+            "width": 205,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-200x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 200x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 200x60",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X60",
+          "bboxMm": {
+            "width": 205,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-200x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 200x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 200x85",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X85",
+          "bboxMm": {
+            "width": 205,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-250x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 250x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 250x35",
+      "crossSectionMm": {
+        "width": 250,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-250x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_250X35",
+          "bboxMm": {
+            "width": 255,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_250X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 250
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W250"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 255
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W250"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-250x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 250x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 250x60",
+      "crossSectionMm": {
+        "width": 250,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-250x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_250X60",
+          "bboxMm": {
+            "width": 255,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_250X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 250
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W250"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 255
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W250"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-300x100",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 300x100",
+      "nameTh": "รางเคเบิลแบบเจาะรู 300x100",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 100
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x100.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X100",
+          "bboxMm": {
+            "width": 305,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X100"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h100.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 102
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H100"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-300x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 300x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 300x110",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X110",
+          "bboxMm": {
+            "width": 305,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-300x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 300x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 300x35",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X35",
+          "bboxMm": {
+            "width": 305,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-300x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 300x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 300x60",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X60",
+          "bboxMm": {
+            "width": 305,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-300x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 300x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 300x85",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X85",
+          "bboxMm": {
+            "width": 305,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-400x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 400x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 400x110",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X110",
+          "bboxMm": {
+            "width": 405,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-400x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 400x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 400x35",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X35",
+          "bboxMm": {
+            "width": 405,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-400x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 400x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 400x60",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X60",
+          "bboxMm": {
+            "width": 405,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-400x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 400x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 400x85",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X85",
+          "bboxMm": {
+            "width": 405,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-500x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 500x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 500x110",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X110",
+          "bboxMm": {
+            "width": 505,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-500x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 500x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 500x60",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X60",
+          "bboxMm": {
+            "width": 505,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-500x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 500x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 500x85",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X85",
+          "bboxMm": {
+            "width": 505,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-50x35",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 50x35",
+      "nameTh": "รางเคเบิลแบบเจาะรู 50x35",
+      "crossSectionMm": {
+        "width": 50,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-50x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_50X35",
+          "bboxMm": {
+            "width": 55,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_50X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w50.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 50
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W50"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w50.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 55
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W50"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-50x50",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 50x50",
+      "nameTh": "รางเคเบิลแบบเจาะรู 50x50",
+      "crossSectionMm": {
+        "width": 50,
+        "height": 50
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RSV"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-50x50.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_50X50",
+          "bboxMm": {
+            "width": 55,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_50X50"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w50.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 50
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W50"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w50.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 55
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W50"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h50.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H50"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-550x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 550x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 550x110",
+      "crossSectionMm": {
+        "width": 550,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-550x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_550X110",
+          "bboxMm": {
+            "width": 555,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_550X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w550.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W550",
+          "bboxMm": {
+            "width": 1000,
+            "height": 550
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W550"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w550.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W550",
+          "bboxMm": {
+            "width": 1000,
+            "height": 555
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W550"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-600x110",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 600x110",
+      "nameTh": "รางเคเบิลแบบเจาะรู 600x110",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X110",
+          "bboxMm": {
+            "width": 605,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-600x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 600x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 600x60",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLC",
+        "Niedax RLVC",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X60",
+          "bboxMm": {
+            "width": 605,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-600x85",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 600x85",
+      "nameTh": "รางเคเบิลแบบเจาะรู 600x85",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL",
+        "Niedax RLCPV",
+        "Niedax RS"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X85",
+          "bboxMm": {
+            "width": 605,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-70x60",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 70x60",
+      "nameTh": "รางเคเบิลแบบเจาะรู 70x60",
+      "crossSectionMm": {
+        "width": 70,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-70x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_70X60",
+          "bboxMm": {
+            "width": 75,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_70X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w70.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W70",
+          "bboxMm": {
+            "width": 1000,
+            "height": 70
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W70"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w70.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W70",
+          "bboxMm": {
+            "width": 1000,
+            "height": 75
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W70"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "perforated-tray-75x50",
+      "kind": "cableway",
+      "trayType": "perforated",
+      "name": "Perforated cable tray 75x50",
+      "nameTh": "รางเคเบิลแบบเจาะรู 75x50",
+      "crossSectionMm": {
+        "width": 75,
+        "height": 50
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RL"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-75x50.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_75X50",
+          "bboxMm": {
+            "width": 80,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_75X50"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-perforated-w75.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_PERF_W75",
+          "bboxMm": {
+            "width": 1000,
+            "height": 75
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_PERF_W75"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w75.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W75",
+          "bboxMm": {
+            "width": 1000,
+            "height": 80
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W75"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-perforated-h50.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_PERF_H50",
+          "bboxMm": {
+            "width": 1000,
+            "height": 52
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_PERF_H50"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-100x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 100x110",
+      "nameTh": "รางเคเบิลทึบ 100x110",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X110",
+          "bboxMm": {
+            "width": 105,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-100x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 100x35",
+      "nameTh": "รางเคเบิลทึบ 100x35",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X35",
+          "bboxMm": {
+            "width": 105,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-100x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 100x60",
+      "nameTh": "รางเคเบิลทึบ 100x60",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X60",
+          "bboxMm": {
+            "width": 105,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-100x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 100x85",
+      "nameTh": "รางเคเบิลทึบ 100x85",
+      "crossSectionMm": {
+        "width": 100,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-100x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_100X85",
+          "bboxMm": {
+            "width": 105,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_100X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 100
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W100"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w100.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W100",
+          "bboxMm": {
+            "width": 1000,
+            "height": 105
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W100"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-120x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 120x60",
+      "nameTh": "รางเคเบิลทึบ 120x60",
+      "crossSectionMm": {
+        "width": 120,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLUC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-120x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_120X60",
+          "bboxMm": {
+            "width": 125,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_120X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w120.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W120",
+          "bboxMm": {
+            "width": 1000,
+            "height": 120
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W120"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w120.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W120",
+          "bboxMm": {
+            "width": 1000,
+            "height": 125
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W120"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-150x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 150x35",
+      "nameTh": "รางเคเบิลทึบ 150x35",
+      "crossSectionMm": {
+        "width": 150,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-150x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_150X35",
+          "bboxMm": {
+            "width": 155,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_150X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 150
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W150"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 155
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W150"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-150x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 150x60",
+      "nameTh": "รางเคเบิลทึบ 150x60",
+      "crossSectionMm": {
+        "width": 150,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-150x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_150X60",
+          "bboxMm": {
+            "width": 155,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_150X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 150
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W150"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w150.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W150",
+          "bboxMm": {
+            "width": 1000,
+            "height": 155
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W150"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-200x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 200x110",
+      "nameTh": "รางเคเบิลทึบ 200x110",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X110",
+          "bboxMm": {
+            "width": 205,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-200x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 200x35",
+      "nameTh": "รางเคเบิลทึบ 200x35",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X35",
+          "bboxMm": {
+            "width": 205,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-200x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 200x60",
+      "nameTh": "รางเคเบิลทึบ 200x60",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X60",
+          "bboxMm": {
+            "width": 205,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-200x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 200x85",
+      "nameTh": "รางเคเบิลทึบ 200x85",
+      "crossSectionMm": {
+        "width": 200,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-200x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_200X85",
+          "bboxMm": {
+            "width": 205,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_200X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 200
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W200"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w200.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W200",
+          "bboxMm": {
+            "width": 1000,
+            "height": 205
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W200"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-250x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 250x35",
+      "nameTh": "รางเคเบิลทึบ 250x35",
+      "crossSectionMm": {
+        "width": 250,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-250x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_250X35",
+          "bboxMm": {
+            "width": 255,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_250X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 250
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W250"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 255
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W250"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-250x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 250x60",
+      "nameTh": "รางเคเบิลทึบ 250x60",
+      "crossSectionMm": {
+        "width": 250,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-250x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_250X60",
+          "bboxMm": {
+            "width": 255,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_250X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 250
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W250"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w250.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W250",
+          "bboxMm": {
+            "width": 1000,
+            "height": 255
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W250"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-300x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 300x110",
+      "nameTh": "รางเคเบิลทึบ 300x110",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X110",
+          "bboxMm": {
+            "width": 305,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-300x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 300x35",
+      "nameTh": "รางเคเบิลทึบ 300x35",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X35",
+          "bboxMm": {
+            "width": 305,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-300x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 300x60",
+      "nameTh": "รางเคเบิลทึบ 300x60",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X60",
+          "bboxMm": {
+            "width": 305,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-300x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 300x85",
+      "nameTh": "รางเคเบิลทึบ 300x85",
+      "crossSectionMm": {
+        "width": 300,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-300x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_300X85",
+          "bboxMm": {
+            "width": 305,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_300X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 300
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W300"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w300.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W300",
+          "bboxMm": {
+            "width": 1000,
+            "height": 305
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W300"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-400x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 400x110",
+      "nameTh": "รางเคเบิลทึบ 400x110",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X110",
+          "bboxMm": {
+            "width": 405,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-400x35",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 400x35",
+      "nameTh": "รางเคเบิลทึบ 400x35",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 35
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x35.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X35",
+          "bboxMm": {
+            "width": 405,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X35"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h35.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H35",
+          "bboxMm": {
+            "width": 1000,
+            "height": 36
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H35"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-400x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 400x60",
+      "nameTh": "รางเคเบิลทึบ 400x60",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X60",
+          "bboxMm": {
+            "width": 405,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-400x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 400x85",
+      "nameTh": "รางเคเบิลทึบ 400x85",
+      "crossSectionMm": {
+        "width": 400,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-400x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_400X85",
+          "bboxMm": {
+            "width": 405,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_400X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 400
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W400"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w400.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W400",
+          "bboxMm": {
+            "width": 1000,
+            "height": 405
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W400"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-500x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 500x110",
+      "nameTh": "รางเคเบิลทึบ 500x110",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X110",
+          "bboxMm": {
+            "width": 505,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-500x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 500x60",
+      "nameTh": "รางเคเบิลทึบ 500x60",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X60",
+          "bboxMm": {
+            "width": 505,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-500x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 500x85",
+      "nameTh": "รางเคเบิลทึบ 500x85",
+      "crossSectionMm": {
+        "width": 500,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-500x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_500X85",
+          "bboxMm": {
+            "width": 505,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_500X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 500
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W500"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w500.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W500",
+          "bboxMm": {
+            "width": 1000,
+            "height": 505
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W500"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-550x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 550x110",
+      "nameTh": "รางเคเบิลทึบ 550x110",
+      "crossSectionMm": {
+        "width": 550,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-550x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_550X110",
+          "bboxMm": {
+            "width": 555,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_550X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w550.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W550",
+          "bboxMm": {
+            "width": 1000,
+            "height": 550
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W550"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w550.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W550",
+          "bboxMm": {
+            "width": 1000,
+            "height": 555
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W550"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-600x110",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 600x110",
+      "nameTh": "รางเคเบิลทึบ 600x110",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 110
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x110.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X110",
+          "bboxMm": {
+            "width": 605,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X110"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h110.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H110",
+          "bboxMm": {
+            "width": 1000,
+            "height": 112
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H110"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-600x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 600x60",
+      "nameTh": "รางเคเบิลทึบ 600x60",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RLUC",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X60",
+          "bboxMm": {
+            "width": 605,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-600x85",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 600x85",
+      "nameTh": "รางเคเบิลทึบ 600x85",
+      "crossSectionMm": {
+        "width": 600,
+        "height": 85
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLU",
+        "Niedax RSU"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-600x85.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_600X85",
+          "bboxMm": {
+            "width": 605,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_600X85"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 600
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W600"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w600.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W600",
+          "bboxMm": {
+            "width": 1000,
+            "height": 605
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W600"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h85.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H85",
+          "bboxMm": {
+            "width": 1000,
+            "height": 86
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H85"
+          }
+        }
+      }
+    },
+    {
+      "id": "solid-tray-70x60",
+      "kind": "cableway",
+      "trayType": "solid",
+      "name": "Solid-bottom cable tray 70x60",
+      "nameTh": "รางเคเบิลทึบ 70x60",
+      "crossSectionMm": {
+        "width": 70,
+        "height": 60
+      },
+      "moduleLengthMm": 1000,
+      "manufacturerSeries": [
+        "Niedax RLUC"
+      ],
+      "notes": "2D symbol. The cross-section and slot pattern are generic; real thickness and weight are on the manufacturer type in trays/*.json.",
+      "views": {
+        "section": {
+          "svg": "svg/tray-section-70x60.svg",
+          "dxfBlock": "TCR_TRAY_SECTION_70X60",
+          "bboxMm": {
+            "width": 75,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SECTION_70X60"
+          }
+        },
+        "plan": {
+          "svg": "svg/tray-plan-solid-w70.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_SOLID_W70",
+          "bboxMm": {
+            "width": 1000,
+            "height": 70
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_SOLID_W70"
+          }
+        },
+        "plan-cover": {
+          "svg": "svg/tray-plan-cover-w70.svg",
+          "dxfBlock": "TCR_TRAY_PLAN_COVER_W70",
+          "bboxMm": {
+            "width": 1000,
+            "height": 75
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_PLAN_COVER_W70"
+          }
+        },
+        "side": {
+          "svg": "svg/tray-side-solid-h60.svg",
+          "dxfBlock": "TCR_TRAY_SIDE_SOLID_H60",
+          "bboxMm": {
+            "width": 1000,
+            "height": 62
+          },
+          "source": {
+            "file": "tcroof-cable-tray-blocks.dxf",
+            "block": "TCR_TRAY_SIDE_SOLID_H60"
+          }
+        }
+      }
+    },
+    {
+      "kind": "distributionBoard",
+      "name": "SOLAR AC-DB",
+      "nameTh": "ตู้ AC-DB โซลาร์",
+      "dimensionsMm": {
+        "width": 900,
+        "height": 1400,
+        "depth": 400
+      },
+      "notes": "Front face carries 'PV SOLAR SUPPLY / MAIN SWITCH' and the 2-way-supply warning label (มีไฟฟ้า 2 ทาง). Depth is 400 in the LV and 125k drawings, 300 in EXL-HV.",
+      "views": {
+        "front": {
+          "svg": "svg/solar-ac-db-front.svg",
+          "dxfBlock": "TCR_SOLAR_AC_DB_FRONT",
+          "bboxMm": {
+            "width": 899,
+            "height": 1400
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$CF654F5B4"
+          }
+        }
+      },
+      "id": "solar-ac-db"
+    },
+    {
+      "kind": "distributionBoard",
+      "name": "SOLAR DC-DB",
+      "nameTh": "ตู้ DC-DB โซลาร์",
+      "dimensionsMm": {
+        "width": 700,
+        "height": 1000,
+        "depth": 250
+      },
+      "views": {
+        "front": {
+          "svg": "svg/solar-dc-db-front.svg",
+          "dxfBlock": "TCR_SOLAR_DC_DB_FRONT",
+          "bboxMm": {
+            "width": 700,
+            "height": 1000
+          },
+          "source": {
+            "file": "fd337b54-Inverter_EXL-HV.dxf",
+            "block": "G$C1C0043C9"
+          }
+        }
+      },
+      "id": "solar-dc-db"
+    },
+    {
+      "kind": "distributionBoard",
+      "name": "SOLAR METER-DB",
+      "nameTh": "ตู้มิเตอร์โซลาร์",
+      "symbol": "enclosure-630x750",
+      "dimensionsMm": {
+        "width": 630,
+        "height": 750,
+        "depth": 200
+      },
+      "id": "solar-meter-db"
+    },
+    {
+      "kind": "distributionBoard",
+      "name": "SOLAR SEM-DB",
+      "nameTh": "ตู้ Smart Energy Meter",
+      "symbol": "enclosure-630x750",
+      "dimensionsMm": {
+        "width": 630,
+        "height": 750,
+        "depth": 200
+      },
+      "notes": "Only in the internal (EXL-LV) station.",
+      "id": "solar-sem-db"
+    },
+    {
+      "kind": "enclosure",
+      "name": "DB enclosure (side view)",
+      "dimensionsMm": {
+        "width": 250,
+        "height": 1000
+      },
+      "views": {
+        "side": {
+          "svg": "svg/db-enclosure-side.svg",
+          "dxfBlock": "TCR_DB_ENCLOSURE_SIDE",
+          "bboxMm": {
+            "width": 250,
+            "height": 1000
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$CF48E2AB0"
+          }
+        }
+      },
+      "id": "db-enclosure"
+    },
+    {
+      "kind": "enclosure",
+      "name": "Wall enclosure 630x750",
+      "dimensionsMm": {
+        "width": 630,
+        "height": 750,
+        "depth": 200
+      },
+      "notes": "Shared symbol for METER-DB and SEM-DB.",
+      "views": {
+        "front": {
+          "svg": "svg/enclosure-630x750-front.svg",
+          "dxfBlock": "TCR_ENCLOSURE_630X750_FRONT",
+          "bboxMm": {
+            "width": 630,
+            "height": 750
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$C6FDF2B68"
+          }
+        }
+      },
+      "id": "enclosure-630x750"
+    },
+    {
+      "kind": "existing",
+      "name": "Existing electrical cabinet TYPE C",
+      "nameTh": "ตู้ไฟฟ้า TYPE C",
+      "notes": "Existing utility cabinet the station ties into; drawn as context, not supplied.",
+      "id": "existing-type-c-cabinet"
+    },
+    {
+      "kind": "inverter",
+      "name": "Growatt 40KTL3-X",
+      "inverterSpec": null,
+      "dimensionsMm": {
+        "width": 580,
+        "height": 600
+      },
+      "notes": "Labelled 'GROWATT 40kTL3-X' in EXL-HV; no inverter spec JSON exists yet in components/inverters/. Depth not drawn.",
+      "views": {
+        "front": {
+          "svg": "svg/growatt-40ktl3-x-front.svg",
+          "dxfBlock": "TCR_GROWATT_40KTL3_X_FRONT",
+          "bboxMm": {
+            "width": 580,
+            "height": 600
+          },
+          "source": {
+            "file": "fd337b54-Inverter_EXL-HV.dxf",
+            "block": "G$C8D530D04"
+          }
+        }
+      },
+      "id": "growatt-40ktl3-x"
+    },
+    {
+      "kind": "inverter",
+      "name": "Growatt MAX 125KTL3-X LV",
+      "inverterSpec": "components/inverters/growatt-max-125ktl3-x-lv.json",
+      "dimensionsMm": {
+        "width": 970,
+        "height": 640,
+        "depth": 365
+      },
+      "notes": "Front block in the DXF is named 'MAX60 KTL3-X' but its text and labels say MAX125KTL3-LV. Top-view block is 1075 wide (includes side handles). EXL-HV inserts it at 0.9 scale.",
+      "views": {
+        "front": {
+          "svg": "svg/growatt-max-125ktl3-lv-front.svg",
+          "dxfBlock": "TCR_GROWATT_MAX_125KTL3_LV_FRONT",
+          "bboxMm": {
+            "width": 970,
+            "height": 635
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "MAX60 KTL3-X"
+          }
+        },
+        "top": {
+          "svg": "svg/growatt-max-125ktl3-lv-top.svg",
+          "dxfBlock": "TCR_GROWATT_MAX_125KTL3_LV_TOP",
+          "bboxMm": {
+            "width": 1075,
+            "height": 365
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$CD2F47895"
+          }
+        }
+      },
+      "id": "growatt-max-125ktl3-lv"
+    },
+    {
+      "kind": "inverter",
+      "name": "Growatt MAX 80KTL3 LV",
+      "inverterSpec": "components/inverters/growatt-max-80ktl3-lv.json",
+      "dimensionsMm": {
+        "width": 860,
+        "height": 628,
+        "depth": 301
+      },
+      "views": {
+        "front": {
+          "svg": "svg/growatt-max-80ktl3-lv-front.svg",
+          "dxfBlock": "TCR_GROWATT_MAX_80KTL3_LV_FRONT",
+          "bboxMm": {
+            "width": 860,
+            "height": 628
+          },
+          "source": {
+            "file": "1751d41a-Internal_Inverter_Station_EXL-LV.dxf",
+            "block": "G$C1122B4A8"
+          }
+        },
+        "top": {
+          "svg": "svg/growatt-max-80ktl3-lv-top.svg",
+          "dxfBlock": "TCR_GROWATT_MAX_80KTL3_LV_TOP",
+          "bboxMm": {
+            "width": 860,
+            "height": 301
+          },
+          "source": {
+            "file": "1751d41a-Internal_Inverter_Station_EXL-LV.dxf",
+            "block": "G$C495614EF"
+          }
+        }
+      },
+      "id": "growatt-max-80ktl3-lv"
+    },
+    {
+      "kind": "inverter",
+      "name": "Inverter (side view)",
+      "dimensionsMm": {
+        "depth": 382,
+        "height": 710
+      },
+      "notes": "Generic side profile; LV drawing inserts it smaller (329x611).",
+      "views": {
+        "side": {
+          "svg": "svg/inverter-generic-side.svg",
+          "dxfBlock": "TCR_INVERTER_GENERIC_SIDE",
+          "bboxMm": {
+            "width": 382,
+            "height": 710
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$CCD1817F7"
+          }
+        }
+      },
+      "id": "inverter-generic"
+    },
+    {
+      "kind": "lighting",
+      "name": "T8 LED lamp",
+      "id": "t8-led-lamp"
+    },
+    {
+      "kind": "structure",
+      "name": "Base plate 200",
+      "dimensionsMm": {
+        "width": 200,
+        "height": 10
+      },
+      "views": {
+        "elevation": {
+          "svg": "svg/base-plate-200-elevation.svg",
+          "dxfBlock": "TCR_BASE_PLATE_200_ELEVATION",
+          "bboxMm": {
+            "width": 200,
+            "height": 10
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$CC68670CA"
+          }
+        }
+      },
+      "id": "base-plate-200"
+    },
+    {
+      "kind": "structure",
+      "name": "Column base plate with anchor bolts (plan detail)",
+      "nameTh": "แผ่นเพลทฐานเสาพร้อมพุก",
+      "dimensionsMm": {
+        "width": 150,
+        "depth": 150
+      },
+      "plate": {
+        "widthMm": 150,
+        "depthMm": 150
+      },
+      "column": {
+        "section": "SHS",
+        "outerMm": 75,
+        "wallMm": 2.4,
+        "layerName": "S-100X100X3-2"
+      },
+      "anchorBolts": {
+        "count": 4,
+        "spacingMm": 105,
+        "edgeDistanceMm": 22.5,
+        "holeDiaMm": 18,
+        "boltDiaMm": 9,
+        "washerDiaMm": 14.5,
+        "nutAcrossFlatsMm": 15
+      },
+      "usedBy": "steel-column-150",
+      "notes": "From Part_1.dxf, measured as drawn. The tube layer is named S-100X100X3-2 (100x100x3.2) but the tube is drawn 75x75x2.4, exactly 0.75x. At 1:0.75 the plate would be 200x200, matching base-plate-200 in the station elevations. Confirm the true size before using it for BOQ or fabrication.",
+      "views": {
+        "plan": {
+          "svg": "svg/column-base-plate-detail-plan.svg",
+          "dxfBlock": "TCR_COLUMN_BASE_PLATE_DETAIL_PLAN",
+          "bboxMm": {
+            "width": 150,
+            "height": 150
+          },
+          "source": {
+            "file": "83f3482c-Part_1.dxf",
+            "block": "modelspace"
+          }
+        }
+      },
+      "id": "column-base-plate-detail"
+    },
+    {
+      "kind": "structure",
+      "name": "Concrete footing",
+      "nameTh": "ขาเก๊าปูน",
+      "dimensionsMm": {
+        "width": 200,
+        "height": 100
+      },
+      "views": {
+        "elevation": {
+          "svg": "svg/concrete-footing-200x100-elevation.svg",
+          "dxfBlock": "TCR_CONCRETE_FOOTING_200X100_ELEVATION",
+          "bboxMm": {
+            "width": 200,
+            "height": 100
+          },
+          "source": {
+            "file": "1751d41a-Internal_Inverter_Station_EXL-LV.dxf",
+            "block": "ขาเก๊าปูน"
+          }
+        }
+      },
+      "id": "concrete-footing-200x100"
+    },
+    {
+      "kind": "structure",
+      "name": "Steel column 150x150",
+      "dimensionsMm": {
+        "width": 150,
+        "depth": 150
+      },
+      "notes": "Simplified plan symbol used on the station grids (150 plate + 75 tube). Detailed version: column-base-plate-detail.",
+      "views": {
+        "plan": {
+          "svg": "svg/steel-column-150-plan.svg",
+          "dxfBlock": "TCR_STEEL_COLUMN_150_PLAN",
+          "bboxMm": {
+            "width": 150,
+            "height": 150
+          },
+          "source": {
+            "file": "b681fdd9-Inverter.dxf",
+            "block": "G$C974A1353"
+          }
+        }
+      },
+      "id": "steel-column-150"
+    }
+  ],
+  "manufacturerCatalogues": [
+    "trays/excel-ezfit.json",
+    "trays/niedax.json"
+  ]
+}

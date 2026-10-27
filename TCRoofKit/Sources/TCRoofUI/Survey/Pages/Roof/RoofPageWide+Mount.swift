@@ -167,30 +167,32 @@ extension RoofPageWide {
             mountSummaryPhone
             mountMorePhone
         } else {
+            // docs/ui board step 10: the summary, the fixing choices as one-line switches, the landscape arrangement and
+            // the two layout buttons. Walkways (ridge on, cleaning off), faces (both, by yield) and shade (avoided) keep
+            // their defaults; energy, BOQ and the module rules stay in the PDF and Excel.
             mountFixing
             mountShedSide
-            mountWalkway
-            mountFaces
-            mountAlign
             mountBearing
-            mountQuantities
-            mountRules.id("rules")
-            mountFooter
+            mountActions
         }
     }
 
-    /// One card for the layout's count, kWp and yearly energy, the count the report takes, and the energy's details.
+    /// The layout's count and kWp on one line, the module on the right, and the count the report takes.
     var mountSummary: some View {
         let q = shownMount?.quantities
-        let energy = shownEnergy ?? q?.energy ?? 0
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                summaryTile("\(q?.modules ?? 0)", "แผง", note: mountBusy ? "กำลังจัดผัง…" : "\(Int(mountChoice.standardOrDefault.moduleWp)) W")
-                summaryTile(String(format: "%.1f", q?.kWp ?? 0), "kWp", note: "กำลังติดตั้ง")
-                summaryTile(String(format: "%.1f", energy), "MWh/ปี", note: currentYield?.p90MWh.map { String(format: "P90 %.1f", $0) } ?? "ประมาณการ")
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(q?.modules ?? 0)").font(.sarabunFixed(26, .bold)).monospacedDigit()
+                Text("แผง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("|").font(.sarabunFixed(18)).foregroundStyle(Theme.inkMuted)
+                Text(String(format: "%.1f", q?.kWp ?? 0)).font(.sarabunFixed(26, .bold)).monospacedDigit()
+                Text("kWp").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Spacer(minLength: 6)
+                Text(mountBusy ? "กำลังจัดผัง…" : "แผง \(Int(mountChoice.standardOrDefault.moduleWp)) W")
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
+            .accessibilityElement(children: .combine)
             panelsField(q?.modules ?? 0)
-            mountEnergy
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -327,28 +329,32 @@ extension RoofPageWide {
         let c = mountChoice, metal = (values.choice(Roof.Key.material) ?? values.text(Roof.Key.material)).contains("เมทัลชีท")
         let tile = RoofMount.tileRoof(values)
         let onPurlins = !tile && !c.ribClamp
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 8) {
             if tile {
                 fixingLine("วิธียึด", "ขอเกี่ยวกระเบื้องยึดจันทัน")
                 standardStepper("จันทันห่าง (ม.)", \.rafterSpacing, step: 0.05)
             } else if metal {
-                fixingChoice("method", selected: c.ribClamp ? 1 : 0) { i in changeChoice { $0.ribClamp = i == 1 } }
+                fixingRow("method", selected: c.ribClamp ? 1 : 0) { i in changeChoice { $0.ribClamp = i == 1 } }
             } else {
                 fixingLine("วิธียึด", "ยึดเข้าแป")
             }
-            // iPhone has this segment in `02 แผงและการวาง`
+            // iPhone has the direction, the arrangement and the edge in `02 แผงและการวาง`
             if !narrow {
-                fixingChoice("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
-                landscapeArrangement
+                fixingRow("orientation", selected: c.landscape ? 1 : 0) { i in changeChoice { $0.landscape = i == 1 } }
             }
             if onPurlins {
-                fixingChoice("rails", selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
+                fixingRow("rails", selected: c.railsAcross ? 1 : 0) { i in changeChoice { $0.railsAcross = i == 1 } }
             }
+            if !narrow { landscapeArrangement }
             mountDirectionNotes
-            Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
-                Text("เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี").font(.sarabunFixed(14))
+            if narrow {
+                Toggle(isOn: Binding(get: { c.avoidShade }, set: { on in changeChoice { $0.avoidShade = on } })) {
+                    Text("เว้นเงาสิ่งกีดขวาง 09:00–15:00 ทั้งปี").font(.sarabunFixed(14))
+                }
+                .tint(Theme.primary).frame(minHeight: 44)
+            } else {
+                edgeStepper
             }
-            .tint(Theme.primary).frame(minHeight: 44)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -361,6 +367,48 @@ extension RoofPageWide {
             VStack(alignment: .leading, spacing: 6) {
                 A3Label(text: choice.title)
                 FixingTiles(options: choice.options, selected: selected, pick: pick)
+            }
+        }
+    }
+
+    /// One choice on one line: its title on the left, its options as a 44 pt switch on the right.
+    @ViewBuilder func fixingRow(_ id: String, selected: Int, _ pick: @escaping (Int) -> Void) -> some View {
+        if let choice = FixingChoice.all[id] {
+            HStack(spacing: 10) {
+                Text(choice.title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1).frame(width: 72, alignment: .leading)
+                RoofSegments(options: choice.options.map(\.title), selected: selected, minSegment: 110, height: 44, set: pick)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(choice.title)
+        }
+    }
+
+    /// จัดแผงใหม่ (the automatic layout again: no moved rows, no removed modules) and หาผังที่ได้แผงมากที่สุด, with
+    /// what the search tried.
+    var mountActions: some View {
+        let c = mountChoice, edited = !c.placements.isEmpty || !c.removed.isEmpty
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Button {
+                    changeChoice { $0.placements = [:]; $0.removed = [] }
+                } label: {
+                    Label("จัดแผงใหม่", systemImage: "arrow.clockwise").font(.sarabunFixed(15, .bold)).frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                .disabled(mountBusy || !edited)
+                Button {
+                    Task { await searchMostModules() }
+                } label: {
+                    Label("หาผังที่ได้แผงมากที่สุด", systemImage: "wand.and.stars").font(.sarabunFixed(15, .bold))
+                        .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
+                .disabled(mountBusy)
+            }
+            .id("most")
+            if let t = mountTried {
+                Text("ลองทุกแนวแผงและแนวราง | ลอง \(t.tried.formatted()) แบบ | ดีที่สุด \(t.best) แผง")
+                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
         }
     }

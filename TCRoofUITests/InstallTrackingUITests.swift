@@ -75,7 +75,8 @@ final class InstallTrackingUITests: XCTestCase {
     }
 
     func testActionsSheetOpensAnItem() {
-        let app = launch()
+        // the KPI strip is at the top: not scrolled to the end
+        let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องดำเนินการ")).firstMatch
         XCTAssertTrue(cell.waitForExistence(timeout: 8))
@@ -84,8 +85,9 @@ final class InstallTrackingUITests: XCTestCase {
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "กลาง", "Weekly Report W40")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8), "the KPI cell should open the open items")
         row.tap()
-        XCTAssertTrue(waitGone(pageBack(app)), "an item should push its screen")
-        back(app)
+        // on iPad the Weekly Report is a tab of the page: the item selects it (no push)
+        XCTAssertTrue(app.buttons["weeklySend"].waitForExistence(timeout: 8), "the item should open the Weekly Report tab")
+        XCTAssertTrue(pageBack(app).exists, "the page stays")
         XCTAssertFalse(row.exists, "the sheet should be closed after opening an item")
     }
 
@@ -332,15 +334,22 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["เอกสาร"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
     }
 
-    /// `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request) is a tab of the page on the board's example: a crew
-    /// day cell switches a role off and the day's total drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for
-    /// the signature sheet's `ยืนยันลายเซ็น`, and `ดู PDF` opens its sheet. Nothing is kept.
-    func testRequestTab() {
+    /// The page's `คำขอรายสัปดาห์` item pushes the one-page request (docs/ui/weekly-request-ipad-map).
+    func testRequestItemPushesTheOnePageRequest() {
         let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label == %@", "คำขอรายสัปดาห์")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["requestSendNow"].waitForExistence(timeout: 10), "คำขอรายสัปดาห์ should push the one-page request")
+    }
+
+    /// The in-page `คำขอรายสัปดาห์` tab (docs/ui/install-tracking-ipad-weekly-request, `-installTab request`; the item
+    /// pushes the one-page request now) on the board's example: a crew day cell switches a role off and the day's total
+    /// drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for the signature sheet's `ยืนยันลายเซ็น`, and
+    /// `ดู PDF` opens its sheet. Nothing is kept.
+    func testRequestTab() {
+        let app = launch(["-installTab", "request"])
         let cell = app.buttons["crewCell0-0"]
-        XCTAssertTrue(cell.waitForExistence(timeout: 8), "คำขอรายสัปดาห์ should open the tab in the page")
+        XCTAssertTrue(cell.waitForExistence(timeout: slow), "-installTab request opens the tab in the page")
         XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
         let day = app.staticTexts["crewDay0"]
         let before = Int(day.label) ?? 0

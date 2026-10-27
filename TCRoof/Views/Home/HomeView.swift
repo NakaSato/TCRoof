@@ -138,7 +138,9 @@ struct HomeView: View {
             case .dailyReport(let key):
                 if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) { DailyReportScreen(job: job, date: .now) }
             case .weeklyRequest(let key):
-                if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) { WeeklyRequestScreen(job: job) }
+                if let job = jobs.first(where: { ($0.syncID ?? $0.code) == key }) {
+                    InstallTabScreen(job: job, tab: .request) { WeeklyRequestScreen(job: job) }
+                }
             }
         }
         .sheet(item: $shareURL) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
@@ -213,7 +215,8 @@ struct HomeView: View {
         case .job(let key): if let job = job(key) { JobDetailView(job: job) }
         case .homework(let key): if let job = job(key) { HomeWorkView(job: job) }
         case .calendar(let day): PlanCalendarView(day: day)
-        case .stationDocs(let key): if let job = job(key) { StationDocsScreen(job: job) }
+        case .stationDocs(let key):
+            if let job = job(key) { InstallTabScreen(job: job, tab: .docs) { StationDocsScreen(job: job) } }
         case .records: InstallRecordsView()
         case .claims(let month): ClaimScreen(month: month)
         }

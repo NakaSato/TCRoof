@@ -48,7 +48,7 @@ enum ProjectDriveUpload {
         let signatures = job.requestSignatures.compactMap { r, p -> (PhotoAsset, [String], String)? in
             p.driveFileID == nil ? (p, RoutineReport.folder(.request, date: r.weekStart), "\(r.id) ลายเซ็น Site Engineer.png") : nil
         }
-        return daily + (keyPlan.map { [$0] } ?? []) + signatures + pendingICLPhotos(job) + pendingIECPhotos(job)
+        return daily + (keyPlan.map { [$0] } ?? []) + signatures + pendingICLPhotos(job) + pendingSiteICLPhotos(job) + pendingIECPhotos(job)
     }
 
     /// The ICL's step photos (`ICL รูปถ่าย/โครงสร้าง 1.jpg`).
@@ -57,6 +57,18 @@ enum ProjectDriveUpload {
         return InspectionStep.all.flatMap { step in
             inspection.photos(for: step.id).enumerated().compactMap { i, p in
                 p.driveFileID == nil ? (p, ["ICL รูปถ่าย"], "\(step.short) \(i + 1).jpg") : nil
+            }
+        }
+    }
+
+    /// The site ICL's photos (`ICL หน้างาน/2.1 R1 ICL-2.1-03 1.jpg`).
+    static func pendingSiteICLPhotos(_ job: Job) -> [(photo: PhotoAsset, folder: [String], name: String)] {
+        job.siteICL.flatMap { sheet -> [(photo: PhotoAsset, folder: [String], name: String)] in
+            let id = sheet.sheet.id
+            return sheet.items.flatMap { item in
+                sheet.photos(for: item).enumerated().compactMap { i, p in
+                    p.driveFileID == nil ? (p, SiteICL.photoFolder, SiteICL.photoName(sheet: id, item: item.id, index: i + 1)) : nil
+                }
             }
         }
     }

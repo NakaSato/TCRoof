@@ -140,7 +140,7 @@ final class PhotoSync {
         let waiting = (try? context.fetch(FetchDescriptor<PhotoAsset>(predicate: #Predicate { $0.driveFileID == nil && !$0.needsDownload }))) ?? []
         var jobs: [Job] = []
         for p in waiting {
-            guard let job = p.log?.job ?? p.inspection?.job ?? p.iecJob, !jobs.contains(where: { $0 === job }) else { continue }
+            guard let job = p.ownerJob, !jobs.contains(where: { $0 === job }) else { continue }
             jobs.append(job)
         }
         for job in jobs where paused == 0 {

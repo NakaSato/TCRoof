@@ -66,16 +66,6 @@ struct SLDViewer: View {
     }
 }
 
-struct PDFKitView: UIViewRepresentable {
-    let data: Data
-    func makeUIView(context: Context) -> PDFView {
-        let v = PDFView()
-        v.autoScales = true
-        v.document = PDFDocument(data: data)
-        return v
-    }
-    func updateUIView(_ v: PDFView, context: Context) {}
-}
 
 /// Reads a serial from a nameplate photo (`สแกนป้าย`, the instruments' `สแกน`): the camera, the photo text reader,
 /// then `IECReport.serialCandidate`. With `-iecCameraStub` it reads a drawn plate.

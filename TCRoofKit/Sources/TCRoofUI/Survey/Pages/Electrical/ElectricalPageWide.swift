@@ -34,6 +34,10 @@ struct ElectricalPageWide: View {
     /// The `ดึงจากภาพ A2` panel.
     @State var showA2 = false
     @State var a2Cache = A2SyncCache()
+    /// The open list of an iPad menu field (`menuOpen`), by key.
+    @State var openMenu: String?
+    /// The meter's size set to `CT` while its ratio isn't typed yet.
+    @State var meterCTPicked = false
 
     // MARK: layout (points at 100 %)
 
@@ -54,13 +58,17 @@ struct ElectricalPageWide: View {
     func headerY(_ i: Int) -> CGFloat { rowY(i) + (i == openIndex ? 30 : Self.collapsedH / 2) }
     var addY: CGFloat { rowY(trafos.count) }
     var contentH: CGFloat { addY + 64 + Self.top }
+    /// x of the boards: after the transformers, or where they would be when the meter feeds the boards at 0.4 kV.
+    var boardsLeft: CGFloat { lowVoltage ? Self.trafoX : Self.boardsX }
     func boardsEnd(_ i: Int) -> CGFloat {
         let n = boards(i).count
-        if i == openIndex { return Self.boardsX + Self.mainW + CGFloat(max(n - 1, 0)) * (Self.subW + Self.boardGap) + Self.boardGap + Self.addW }
-        return Self.boardsX + CGFloat(max(n, 1)) * (Self.miniW + Self.boardGap) + Self.addW
+        if i == openIndex { return boardsLeft + Self.mainW + CGFloat(max(n - 1, 0)) * (Self.subW + Self.boardGap) + Self.boardGap + Self.addW }
+        return boardsLeft + CGFloat(max(n, 1)) * (Self.miniW + Self.boardGap) + Self.addW
     }
     var contentW: CGFloat { max(1720, (0..<trafos.count).map(boardsEnd).max() ?? 0) + Self.top }
-    var meterH: CGFloat { moreMeter ? 560 : 400 }
+    var meterH: CGFloat { moreMeter ? (narrow ? 560 : 680) : 400 }
+    /// Room above the meter for the `0.4 kV ไม่มีหม้อแปลง` chip.
+    static let lvChipH: CGFloat = 40, lvChipGap: CGFloat = 12
 
     var body: some View {
         Group {
@@ -68,7 +76,7 @@ struct ElectricalPageWide: View {
                 phoneBody
             } else {
                 VStack(spacing: 16) {
-                    PageStepBar(job: job, here: .electrical)
+                    PageStepBar(job: job, here: .electrical, title: lowVoltage ? "มิเตอร์ และตู้ MDB" : nil)
                     card.frame(maxHeight: .infinity)
                 }
             }
@@ -79,6 +87,7 @@ struct ElectricalPageWide: View {
         #if DEBUG
         // `-surveyA2Panel YES` opens the ดึงจากภาพ A2 panel for simulator checks
         .task { if UserDefaults.standard.bool(forKey: "surveyA2Panel") { try? await Task.sleep(nanoseconds: 600_000_000); showA2 = true } }
+        .task { await applyA3Debug() }
         #endif
         .onChange(of: request) { _, i in
             guard let i else { return }
@@ -93,7 +102,7 @@ struct ElectricalPageWide: View {
                 editBreaker = BreakerEdit(id: id, trafo: i, board: k)
             }
         }
-        .sheet(item: $editBreaker) { e in
+        .sheet(item: sheetBreaker) { e in
             BreakerSheet(breaker: breakerBinding(e), isMain: e.board == 0,
                          onDelete: { removeBreaker(e); editBreaker = nil })
                 .presentationDetents([.medium, .large])
@@ -141,7 +150,8 @@ struct ElectricalPageWide: View {
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text("ผังการจ่ายไฟ").font(.sarabunFixed(22, .bold))
-                Text("กรอกทุกอย่างในผังนี้ | มิเตอร์ → หม้อแปลง → ตู้ MDB").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(lowVoltage ? "มิเตอร์แรงต่ำ 0.4 kV → ตู้ MDB | ไม่มีหม้อแปลง" : "มิเตอร์ → หม้อแปลง → ตู้ MDB")
+                    .font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 Spacer(minLength: 8)
                 a2Button
                 diagramButton
@@ -247,41 +257,59 @@ struct ElectricalPageWide: View {
     var diagram: some View {
         ZStack(alignment: .topLeading) {
             connectors
+            if lowVoltage {
+                lowVoltageChip
+                    .frame(width: Self.meterW, height: Self.lvChipH)
+                    .offset(x: Self.meterX, y: meterY - Self.lvChipH - Self.lvChipGap)
+            }
             meterCard
                 .frame(width: Self.meterW, height: meterH, alignment: .top)
                 .offset(x: Self.meterX, y: meterY)
             ForEach(Array(trafos.indices), id: \.self) { i in
-                transformerView(i)
-                    .frame(width: Self.trafoW, height: rowH(i), alignment: .top)
-                    .offset(x: Self.trafoX, y: rowY(i))
+                if !lowVoltage {
+                    transformerView(i)
+                        .frame(width: Self.trafoW, height: rowH(i), alignment: .top)
+                        .offset(x: Self.trafoX, y: rowY(i))
+                }
                 boardsRow(i)
-                    .offset(x: Self.boardsX, y: rowY(i))
+                    .offset(x: boardsLeft, y: rowY(i))
             }
-            addTransformerButton
-                .frame(width: Self.trafoW, height: 64)
-                .offset(x: Self.trafoX, y: addY)
+            if lowVoltage {
+                addBoardRowButton
+                    .frame(width: Self.addMDBW, height: 56)
+                    .offset(x: Self.trafoX, y: addY)
+            } else {
+                addTransformerButton
+                    .frame(width: Self.trafoW, height: 64)
+                    .offset(x: Self.trafoX, y: addY)
+            }
         }
     }
 
     /// The meter sits at the middle of the transformers.
     var meterY: CGFloat {
-        guard !trafos.isEmpty else { return Self.top }
+        let top = Self.top + (lowVoltage ? Self.lvChipH + Self.lvChipGap : 0)
+        guard !trafos.isEmpty else { return top }
         let mid = (headerY(0) + headerY(trafos.count - 1)) / 2
-        return max(Self.top, mid - meterH / 2)
+        return max(top, mid - meterH / 2)
     }
 
     var connectors: some View {
         Canvas { ctx, _ in
             var p = Path()
             let my = meterY + 34, mx = Self.meterX + Self.meterW
-            let ys = trafos.indices.map(headerY)
+            var ys = trafos.indices.map(headerY)
+            // 0.4 kV: the trunk also reaches `+ เพิ่ม MDB`
+            if lowVoltage && trafos.count < Transformer.maxTransformers { ys.append(addY + 28) }
             p.move(to: CGPoint(x: mx, y: my)); p.addLine(to: CGPoint(x: Self.trunkX, y: my))
             if let a = ys.first, let b = ys.last {
                 p.move(to: CGPoint(x: Self.trunkX, y: min(a, my))); p.addLine(to: CGPoint(x: Self.trunkX, y: max(b, my)))
             }
             for (i, y) in ys.enumerated() {
                 p.move(to: CGPoint(x: Self.trunkX, y: y)); p.addLine(to: CGPoint(x: Self.trafoX, y: y))
-                p.move(to: CGPoint(x: Self.trafoX + Self.trafoW, y: y)); p.addLine(to: CGPoint(x: boardsEnd(i) - Self.addW - Self.boardGap, y: y))
+                guard trafos.indices.contains(i) else { continue }
+                p.move(to: CGPoint(x: lowVoltage ? Self.trafoX : Self.trafoX + Self.trafoW, y: y))
+                p.addLine(to: CGPoint(x: boardsEnd(i) - Self.addW - Self.boardGap, y: y))
             }
             ctx.stroke(p, with: .color(Theme.primary), style: StrokeStyle(lineWidth: 2, lineCap: .round))
         }
@@ -303,6 +331,26 @@ struct ElectricalPageWide: View {
                 Text("ครบ 5 ลูกแล้ว (สูงสุด) | แตะหม้อแปลงเพื่อขยายมาแก้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderControl.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
+            }
+        }
+    }
+
+    static let addMDBW: CGFloat = 204
+
+    /// 0.4 kV: another main board fed from the meter (stored as one more entry of `trafos`, its transformer fields unused).
+    var addBoardRowButton: some View {
+        Group {
+            if trafos.count < Transformer.maxTransformers {
+                Button { add() } label: {
+                    Label("เพิ่ม MDB", systemImage: "plus").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("ครบ 5 ตู้แล้ว (สูงสุด)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    .frame(maxWidth: .infinity, minHeight: 56)
             }
         }
     }
@@ -361,6 +409,11 @@ struct ElectricalPageWide: View {
         editBoards(e.trafo) { b in if b.indices.contains(e.board) { b[e.board].breakers.removeAll { $0.id == e.id } } }
     }
 
+    /// The breaker sheet: iPhone, and on iPad a sub-board's breaker (the main board's rows open their own popover).
+    var sheetBreaker: Binding<BreakerEdit?> {
+        Binding(get: { editBreaker.flatMap { narrow || $0.board != 0 ? $0 : nil } }, set: { editBreaker = $0 })
+    }
+
     func breakerBinding(_ e: BreakerEdit) -> Binding<Breaker> {
         Binding(get: { boards(e.trafo)[safe: e.board]?.breakers.first { $0.id == e.id } ?? Breaker() },
                 set: { new in
@@ -394,15 +447,17 @@ struct ElectricalPageWide: View {
                                                                   ("mdbBreaker", "เมนเบรกเกอร์"), ("mdbSpace", "ที่ว่างติดตั้ง CB โซลาร์")]
 
     /// "TX 1 (1)" for a transformer short of photos and "MDP-1 (1)" for its main board; each opens that transformer.
+    /// A meter at 0.4 kV has no transformer, so only the boards' photos are listed (the bar's status is iPad only).
     static func gaps(_ job: Job) -> [(index: Int, title: String)] {
+        let lowVoltage = job.values.choice("meterKV") == A3Options.lowVoltageKV
         var out: [(Int, String)] = []
         for i in job.values.transformers("trafos").indices where Schema.transformerPresent(job.values, i) {
             let tx = Schema.transformerAngles.filter { job.values.photo("tr\(i)_\($0.key)") == nil }.count
-            if tx > 0 { out.append((i, "TX \(i + 1) (\(tx))")) }
+            if tx > 0 && !lowVoltage { out.append((i, "TX \(i + 1) (\(tx))")) }
             let mb = mainPhotoSlots.filter { job.values.photo("tr\(i)_\($0.key)") == nil }.count
             if mb > 0 {
                 let n = job.values.text("tr\(i)_feed").trimmingCharacters(in: .whitespaces)
-                out.append((i, (n.isEmpty ? "ตู้หลัก TX \(i + 1)" : n) + " (\(mb))"))
+                out.append((i, (n.isEmpty ? (lowVoltage ? "ตู้ MDB \(i + 1)" : "ตู้หลัก TX \(i + 1)") : n) + " (\(mb))"))
             }
         }
         return out

@@ -120,7 +120,11 @@ struct JobEditorView: View {
         if let m = cardFts { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B5") + " ปุ่ม Emergency" }
         if let m = cardWater { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B3") + " " + m.spec.label }
         if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
-        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง | MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? electricalTitle : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+    }
+    /// iPad A3 with the meter at 0.4 kV has no transformer (docs/ui/survey-a3-ipad-v3 §1.6); iPhone keeps its title.
+    var electricalTitle: String {
+        sizeClass != .compact && job.values.choice("meterKV") == A3Options.lowVoltageKV ? "A3 มิเตอร์แรงต่ำ | MDB" : "A3 หม้อแปลง | MDB"
     }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?

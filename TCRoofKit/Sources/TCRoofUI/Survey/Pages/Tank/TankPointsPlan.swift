@@ -14,6 +14,10 @@ struct TankPointsPlan: View {
     /// `เทียบกับแบบ` (docs/specs/standard-designs.md §3.3): a moved point's design position dashed orange with an arrow
     /// to where it is, missing points crossed out, points added on site purple.
     var compare = false
+    /// iPad (docs/ui/survey-d1-obstacles-ipad A4, A7): the row / column moving with the selected point, outlined and
+    /// joined, and dragged together; the keep-out around the selected point (m), drawn red dashed.
+    var group: [UUID] = []
+    var keepOut: Double? = nil
 
     @State var drag: (id: UUID, drop: TankPoints.Drop)?
     @State var dragStart: TankPoints.Rect?
@@ -49,6 +53,8 @@ struct TankPointsPlan: View {
         TankPoints.points(values).compactMap { o in
             guard var r = TankPoints.rect(o) else { return nil }
             if let d = drag, d.id == o.id { r.x = d.drop.x; r.y = d.drop.y }
+            // the rest of a dragged group moves by the same step
+            else if let d = drag, let s = dragStart, group.contains(d.id), group.contains(o.id) { r.x += d.drop.x - s.x; r.y += d.drop.y - s.y }
             let s: Look = o.id == selected ? .selected : o.isAbsent ? .absent : o.status.isEmpty ? .unconfirmed : .confirmed
             var m = Mark(id: o.id, point: o, rect: r, state: s)
             // out past the nearest wall, or past the rim of a round tank
@@ -97,6 +103,13 @@ struct TankPointsPlan: View {
                 ctx.stroke(p, with: .color(Theme.teal), lineWidth: 1)
             }
         }
+        if group.count > 1 { groupLine(&ctx, all.filter { group.contains($0.id) }, f) }
+        if let s = sel, let k = keepOut, k > 0 {
+            let box = CGRect(x: f.ox + (s.rect.x - k) * f.k + s.shift.width, y: f.oy + (s.rect.y - k) * f.k + s.shift.height,
+                             width: (s.rect.w + 2 * k) * f.k, height: (s.rect.h + 2 * k) * f.k)
+            ctx.fill(Path(box), with: .color(Theme.danger.opacity(0.06)))
+            ctx.stroke(Path(box), with: .color(Theme.danger.opacity(0.6)), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+        }
         if compare { for m in all { designTrace(&ctx, m, f) } }
         for m in all where m.state != .selected { symbol(&ctx, m, f) }
         if compare { for m in all where m.point.isAbsent { cross(&ctx, m, f) } }
@@ -108,6 +121,19 @@ struct TankPointsPlan: View {
             ctx.stroke(Path(roundedRect: box, cornerRadius: 6), with: .color(Theme.warning), lineWidth: 1)
             ctx.draw(Text(String(format: "%.2f", s.rect.x)).font(.system(size: 8, weight: .bold)).foregroundColor(Theme.pending),
                      at: CGPoint(x: box.midX, y: box.midY))
+        }
+    }
+
+    /// The group: a line through its centres and the selected outline on each member.
+    func groupLine(_ ctx: inout GraphicsContext, _ members: [Mark], _ f: (ox: Double, oy: Double, k: Double)) {
+        let pts = members.map { centre($0, f) }.sorted { $0.x + $0.y < $1.x + $1.y }
+        guard let first = pts.first, let last = pts.last else { return }
+        var line = Path(); line.move(to: first); line.addLine(to: last)
+        ctx.stroke(line, with: .color(Theme.warning), lineWidth: 1.5)
+        for m in members where m.state != .selected {
+            let c = centre(m, f), halo = CGRect(x: c.x - 11, y: c.y - 11, width: 22, height: 22)
+            ctx.fill(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning.opacity(0.12)))
+            ctx.stroke(Path(roundedRect: halo, cornerRadius: 5), with: .color(Theme.warning), lineWidth: 1)
         }
     }
 

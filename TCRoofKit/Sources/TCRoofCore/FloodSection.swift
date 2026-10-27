@@ -24,6 +24,25 @@ public enum FloodSection {
         return scale(minCm: Double(FloodCheck.minCm(v)), floorCm: FloodCheck.floorCm(v), mountCm: FloodCheck.mountCm(v))
     }
 
+    /// Which drawing: the editor's (docs/ui/survey-a4-ipad-v2: ruler, level pills, E-stop, pass badges) or the PDF's
+    /// (docs/ui/survey-a4), kept until the team decides the report should follow the screen.
+    public enum Style: Sendable { case screen, report }
+
+    public static func scale(_ job: Job, style: Style) -> Double {
+        guard style == .screen else { return scale(job) }
+        let v = job.values, r = job.floodCheck
+        let top = max(Double(r.minCm), r.level, FloodCheck.emergencyCm(v) + 13)
+        var k = min(1.8, (groundY - 34) / max(top, 1))
+        // the inverter (104 high) stays under the room's title
+        let fm = FloodCheck.floorCm(v) + FloodCheck.mountCm(v)
+        if fm > 0 { k = min(k, (groundY - 150) / fm) }
+        return max(0.5, k)
+    }
+
+    public static func sketch(_ job: Job, style: Style) -> Sketch {
+        style == .screen ? screenSketch(job) : sketch(job)
+    }
+
     /// "ภาพตัดระดับน้ำท่วม 80 ซม. และระดับติดตั้งอุปกรณ์ 130 ซม." for VoiceOver.
     public static func accessibilityLabel(_ job: Job) -> String {
         let r = job.floodCheck
@@ -92,7 +111,7 @@ public enum FloodSection {
             // freeboard dimension
             o.append(.line(Pt(160, wy), Pt(160, my), width: 1, color: teal))
             for yy in [wy, my] { o.append(.line(Pt(155, yy + 5), Pt(165, yy - 5), width: 1, color: teal)) }
-            o.append(.text("ระยะเผื่อ \(Int(FloodCheck.freeboardCm))", at: Pt(152, (wy + my) / 2), size: 11, bold: true, color: teal, align: .center, angle: -90))
+            o.append(.text("ระยะเผื่อ \(FloodCheck.cmText(r.freeboard))", at: Pt(152, (wy + my) / 2), size: 11, bold: true, color: teal, align: .center, angle: -90))
         }
         marker(18, g, ink)
         halo("±0.00 " + refName, Pt(30, g - 10), size: 11.5, color: ink)

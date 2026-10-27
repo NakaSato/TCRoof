@@ -243,6 +243,12 @@ public enum Schema {
     public static let floodInfoSources = ["เจ้าหน้าที่", "คราบน้ำ"]
     public static let floodSources = ["ฝนตกหนัก / ระบายน้ำไม่ทัน", "แม่น้ำ / คลองล้นตลิ่ง", "น้ำทะเลหนุน", "น้ำป่า / น้ำหลาก", "อื่นๆ"]
     public static let floodHits = ["ห้อง MDB / ตู้ไฟฟ้า", "หม้อแปลง", "ห้องเครื่องสูบน้ำ", "อาคาร / พื้นที่ติดตั้งอินเวอร์เตอร์", "ถนนทางเข้า"]
+    /// Display-only labels of the A4 wide page's buttons (docs/ui/survey-a4-ipad-v2); the stored values, the PDF and A2
+    /// keep the full options above.
+    public static let floodSourceShort = ["ฝนตกหนัก / ระบายน้ำไม่ทัน": "ฝนตกหนัก", "แม่น้ำ / คลองล้นตลิ่ง": "แม่น้ำล้นตลิ่ง",
+                                          "น้ำป่า / น้ำหลาก": "น้ำป่าหลาก"]
+    public static let floodHitShort = ["ห้อง MDB / ตู้ไฟฟ้า": "ห้อง MDB", "ห้องเครื่องสูบน้ำ": "ห้องสูบน้ำ",
+                                       "อาคาร / พื้นที่ติดตั้งอินเวอร์เตอร์": "พื้นที่ INV", "ถนนทางเข้า": "ทางเข้า"]
     public static let flood = GroupSpec("ประวัติน้ำท่วม", [
         C("floodHistory", "พื้นที่เคยมีน้ำท่วมหรือไม่", ["ไม่เคย", "เคย", "ไม่ทราบ"]),
         T("floodYear", "ปีที่ท่วมล่าสุด (พ.ศ.)", "เช่น 2554", when: flooded),
@@ -263,8 +269,10 @@ public enum Schema {
         N("invMountCm", "ความสูงติดตั้ง Inverter / SMDB จากพื้นห้อง", "ซม.", optional: true, when: flooded),
         N("emgMountCm", "ความสูงติดตั้งปุ่ม Emergency", "ซม.", optional: true, when: flooded),
         N("equipHeight", "ระดับติดตั้งอุปกรณ์ที่แนะนำ (สูงจากพื้นดิน)", "ซม.", optional: true, when: flooded),
+        // A4 v2 (docs/ui/survey-a4-ipad-v2): the freeboard over the water, set on the wide page; empty = `FloodCheck.defaultFreeboardCm`
+        N("floodFreeboard", "ระยะเผื่อเหนือน้ำ", "ซม.", optional: true, when: { _ in false }),
         FieldSpec("floodNote", "หมายเหตุ", .textarea, optional: true)])
-    /// Water level + 50 cm, rounded up to 10 cm — for a flood the surveyor reported, or a GISTDA estimate (`FloodCheck.level`).
+    /// Water level + the freeboard (50 cm unless set), rounded up to 10 cm — for a flood the surveyor reported, or a GISTDA estimate (`FloodCheck.level`).
     /// nil when there is no water level.
     public static func recommendedEquipHeight(_ v: Values) -> Int? {
         FloodCheck.level(v) > 0 ? FloodCheck.minCm(v) : nil

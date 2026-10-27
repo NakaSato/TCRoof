@@ -465,9 +465,10 @@ public enum InverterStationDXF {
     /// A member's mark: its name in a circle at `c` and a leader from the circle to the member at `a`.
     static func tag(_ dxf: inout SketchDXF, _ mark: String, at c: (Double, Double), to a: (Double, Double)) {
         let d = hypot(a.0 - c.0, a.1 - c.1)
-        if d > markR + 0.01 { dxf.line(L.text, (c.0 + (a.0 - c.0) / d * markR, c.1 + (a.1 - c.1) / d * markR), a) }
-        dxf.circle(L.text, c, r: markR)
-        dxf.text(L.text, c, height: markR * 0.9, mark, align: .center, middle: true)
+        let l = CADLayers.memberMark
+        if d > markR + 0.01 { dxf.line(l, (c.0 + (a.0 - c.0) / d * markR, c.1 + (a.1 - c.1) / d * markR), a) }
+        dxf.circle(l, c, r: markR)
+        dxf.text(l, c, height: markR * 0.9, mark, align: .center, middle: true)
     }
 
     // MARK: - front view

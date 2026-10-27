@@ -19,6 +19,8 @@ public enum CADLayers {
     public static let text = SketchDXF.Layer("G-ANNO-TEXT", aci: 7, lineweight: 25, description: "ข้อความและหัวแบบ / Text and captions")
     public static let north = SketchDXF.Layer("G-ANNO-NRTH", aci: 7, lineweight: 25, description: "ลูกศรทิศเหนือ / North arrow")
     public static let sectionMark = SketchDXF.Layer("G-ANNO-SYMB", aci: 1, lineweight: 25, description: "เครื่องหมายรูปตัด / Section marks")
+    /// The numbered marks that name a drawing's members (C1 section A-A's ①–⑦, C2 / C3's, the inverter station's C1 / B1 …).
+    public static let memberMark = SketchDXF.Layer("G-ANNO-MARK", aci: 7, lineweight: 25, description: "เลขชิ้นส่วนในรูปตัด / Member marks")
     public static let roofTable = SketchDXF.Layer("G-ANNO-SCHD", aci: 7, lineweight: 18, description: "ตารางขนาดชิ้นส่วน / Member schedule")
     public static let siteMeasure = SketchDXF.Layer("G-ANNO-MEAS", aci: 3, lineweight: 18, description: "ระยะที่วัด / Measurements")
     public static let siteFrame = SketchDXF.Layer("G-ANNO-NPLT", aci: 8, lineweight: 18, plot: false, description: "กรอบภาพผังบริเวณ (ไม่พิมพ์) / Site picture frame (no plot)")
@@ -99,7 +101,7 @@ public enum CADLayers {
 
     /// Every layer of the standard, in the order the spec lists them.
     public static let all: [SketchDXF.Layer] = [
-        grid, dim, text, north, sectionMark, roofTable, siteMeasure, siteFrame, detail,
+        grid, dim, text, north, sectionMark, memberMark, roofTable, siteMeasure, siteFrame, detail,
         obstacle, roofSkylight, roofOutline, roofRidge, roofTruss, roofPost, roofPurlin, roofSection,
         pvModule, pvKeepout, pvCableTray, pvRail, pvCut, pvFoot, pvTable, pvRafter, pvBrace, pvFooting,
         pvWalkway, walkRail, walkFoot, pvLifeline, lifeRail, lifeSupport, pvAccess,
@@ -135,7 +137,7 @@ public enum CADLayers {
 
     /// The layers that carry hatches in the exports (their `HATC` layers are in the standards file too).
     public static let hatched: [SketchDXF.Layer] = [obstacle, roofSection, pvModule, pvCableTray, pvFooting, pvWalkway, lifeRail, pvAccess,
-                                                     tankSection, tankSoil, stationWall, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
+                                                     tankSection, tankSoil, stationWall, memberMark, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
 
     /// The layers whose texts take their own `TEXT` layer (the single line diagram's meanings).
     public static let annotated: [SketchDXF.Layer] = [sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed]

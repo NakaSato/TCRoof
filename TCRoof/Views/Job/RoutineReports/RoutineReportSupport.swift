@@ -174,6 +174,12 @@ enum RoutineReportFiles {
               name: "แบบฟอร์มรายงานประจำวัน (เปล่า).pdf", folder: [], title: RoutineReport.Kind.daily.title)
     }
 
+    /// The WORK REQUEST form blank, for filling in by hand (no button yet: docs/ui/weekly-request-pdf, open question 3).
+    static func requestBlank(_ job: Job) -> Built {
+        Built(pages: RoutineReportPages.requestBlankForm(settings: job.routineSettings, measure: PDFRenderer.Measure()), images: [:],
+              name: "แบบฟอร์มคำขอปฏิบัติงานรายสัปดาห์ (เปล่า).pdf", folder: [], title: RoutineReport.Kind.request.title)
+    }
+
     static func daily(_ job: Job, log: InstallLog, samplePhotos: Int = 0) -> Built? {
         guard let r = log.report else { return nil }
         var (photos, images) = log.dayPhotos(r)

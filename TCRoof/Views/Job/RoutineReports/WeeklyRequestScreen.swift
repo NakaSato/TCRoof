@@ -94,7 +94,26 @@ struct WeeklyRequestScreen: View {
             }
         }
         .onChange(of: week) { _, w in reload(w); onWeek?(w) }
+        #if DEBUG
+        .task { writeDebugPDFs() }
+        #endif
     }
+
+    #if DEBUG
+    /// `-routineDemo pdf`: the week's request to Documents/request.pdf, and with nine work lines to request-overflow.pdf
+    /// (a second page); `-routineDemo blank`: the blank form to request-blank.pdf too (docs/ui/weekly-request-pdf).
+    private func writeDebugPDFs() {
+        let mode = UserDefaults.standard.string(forKey: "routineDemo")
+        guard mode == "pdf" || mode == "blank", !embedded,
+              let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        try? RoutineReportFiles.request(job, request).data.write(to: docs.appendingPathComponent("request.pdf"))
+        var long = request
+        let line = long.work.first ?? .init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1", qty: 1, unit: "งาน")
+        long.work = (0..<9).map { i in var l = line; l.id = UUID(); l.description = "\(line.description) (\(i + 1))"; return l }
+        try? RoutineReportFiles.request(job, long).data.write(to: docs.appendingPathComponent("request-overflow.pdf"))
+        if mode == "blank" { try? RoutineReportFiles.requestBlank(job).data.write(to: docs.appendingPathComponent("request-blank.pdf")) }
+    }
+    #endif
 
     /// The form of cards: the iPhone, and an iPad narrower than 1000 pt.
     private var classic: some View {
@@ -415,9 +434,7 @@ struct WeeklyRequestScreen: View {
     }
 
     /// ISO week of the request's Saturday, as the install page's other weeks.
-    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int {
-        Calendar(identifier: .iso8601).component(.weekOfYear, from: r.date(ofDay: 5))
-    }
+    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int { r.weekNumber }
 }
 
 /// The week's request (or its draft from the MP plan), keeping it, and its R1 PDF.

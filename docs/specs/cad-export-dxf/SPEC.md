@@ -324,7 +324,7 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   `Discipline-Major[-Minor]-Status`, the discipline one letter (`G` general, `A` architectural, `S` structural, `E`
   electrical, `C` civil), four-letter groups, and the status last: `E` existing (roof, tank, what the survey found),
   `N` new (what we install), `T` temporary (crane access). So a layer filter `*-N` shows everything we build and `S-*`
-  the structure. The groups: `G-GRID`, `G-ANNO-DIMS | TEXT | NRTH | SYMB | SCHD | MEAS`, `G-ANNO-NPLT` (the only
+  the structure. The groups: `G-GRID`, `G-ANNO-DIMS | TEXT | NRTH | SYMB | MARK | SCHD | MEAS` (`MARK`: the member numbers of C1 section A-A and the inverter station), `G-ANNO-NPLT` (the only
   non-plot layer, named so), `G-DETL`; the existing roof `S-ROOF-OTLN | RIDG | FRAM | PURL | SECT-E`, `S-COLS-E`,
   `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `P-MODL-N`, `P-MODL-KEEP-N`, `P-CTRY-N`, `P-RAIL-N`, `P-RAIL-CUTS-N`, `P-FOOT-N`,
   `P-TABL-N`, `P-RAFT-N`, `P-BRAC-N`, `P-FTNG-N`, `P-WALK-N` (`-RAIL-N`, `-FOOT-N`), `P-LIFE-N` (`-RAIL-N`, `-SUPT-N`),

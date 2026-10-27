@@ -17,6 +17,9 @@ function onOpen() {
     .addItem('ดึงข้อมูลตอนนี้', 'pullFromApp')
     .addItem('บันทึกประวัติตอนนี้', 'snapshotNow')
     .addSeparator()
+    .addItem('เพิ่มสถานีที่ยังไม่มีในแอป…', 'addMissingStations')
+    .addItem('ลบสถานีที่เพิ่มจากชีต…', 'removeAddedStations')
+    .addSeparator()
     .addItem('เปิดงานอัตโนมัติ (ดึงทุก 5 นาที, ประวัติวันจันทร์ 08:00)', 'installTriggers')
     .addItem('ปิดงานอัตโนมัติ', 'removeTriggers')
     .addItem('ตั้งค่าโปรเจกต์ Firebase…', 'setProject')
@@ -88,26 +91,100 @@ function writeUnmatched(tab, col, first, list) {
   if (list.length) tab.getRange(top + 2, col, list.length, width).setValues(list);
 }
 
+function project() {
+  return PropertiesService.getScriptProperties().getProperty('FIREBASE_PROJECT') || DEFAULT_PROJECT;
+}
+
 /** The documents of a collection, with only `fields` (a projection keeps the large JSON out). */
 function firestoreQuery(collection, fields, where) {
-  var project = PropertiesService.getScriptProperties().getProperty('FIREBASE_PROJECT') || DEFAULT_PROJECT;
   var query = { from: [{ collectionId: collection }], select: { fields: fields.map(function (f) { return { fieldPath: f }; }) } };
   if (where) query.where = where;
-  var res = UrlFetchApp.fetch('https://firestore.googleapis.com/v1/projects/' + project + '/databases/(default)/documents:runQuery', {
+  return fsDocuments(firestoreCall(':runQuery', { structuredQuery: query }, collection));
+}
+
+/** One Firestore REST call on the database's documents (`:runQuery`, `:commit`). */
+function firestoreCall(method, body, what) {
+  var res = UrlFetchApp.fetch('https://firestore.googleapis.com/v1/projects/' + project() + '/databases/(default)/documents' + method, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify({ structuredQuery: query }),
-    // the account that runs the script reads with its own Google access (IAM, see README), billed to the app's project
-    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'x-goog-user-project': project },
+    payload: JSON.stringify(body),
+    // the account that runs the script uses its own Google access (IAM, see README), billed to the app's project
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'x-goog-user-project': project() },
     muteHttpExceptions: true
   });
   var code = res.getResponseCode();
   if (code !== 200) {
     var msg = res.getContentText();
     try { msg = JSON.parse(msg)[0].error.message; } catch (e) { try { msg = JSON.parse(res.getContentText()).error.message; } catch (e2) {} }
-    throw new Error('Firestore ' + collection + ' (' + code + '): ' + msg);
+    throw new Error('Firestore ' + (what || method) + ' (' + code + '): ' + msg);
   }
-  return fsDocuments(JSON.parse(res.getContentText()));
+  return JSON.parse(res.getContentText());
+}
+
+// MARK: adding the stations to the app
+
+/**
+ * Creates a PWA job in Firestore for each station row no app job is (`จับคู่โดย` `ไม่พบงานในแอป`), after asking.
+ * Each is a new document (never one that exists); their ids are kept so `ลบสถานีที่เพิ่มจากชีต` can take them back.
+ * The app's devices receive them on their next sync.
+ */
+function addMissingStations() {
+  var ui = SpreadsheetApp.getUi();
+  var book = SpreadsheetApp.getActive();
+  var keys = sheetKeys(book, 'TCRoof'), tab = book.getSheetByName('TCRoof');
+  var first = keys.id.first, n = keys.id.last - first + 1;
+  var read = function (k) { return tab.getRange(first, keys[k].col, n, 1).getValues().map(function (r) { return r[0]; }); };
+  var ids = read('id'), names = read('name'), kwps = read('kwp'), overrides = read('override');
+  // the branch from the Master Plan, by station code
+  var branches = {};
+  readRows(book, 'Master Plan').forEach(function (r) { if (r.id) branches[String(r.id).trim()] = r.branch; });
+  var rows = ids.map(function (id, i) {
+    return { code: id, name: names[i], kWp: kwps[i], override: overrides[i], branch: branches[String(id).trim()] };
+  });
+  var jobs = firestoreQuery('jobs', ['projectName', 'code', 'capacityKW', 'kind', 'stationDocs']).map(jobSummary);
+  var todo = rowsToCreate(rows, matchRows(rows, jobs));
+  if (!todo.length) { ui.alert('ทุกสถานีมีงานในแอปแล้ว (หรือรอใส่รหัสงานในช่องเหลือง)'); return; }
+  var answer = ui.alert('เพิ่มสถานีลงแอป',
+    'สร้างงาน PWA ใหม่ ' + todo.length + ' สถานี ใน Firebase (' + project() + ')\n'
+    + todo.slice(0, 5).map(function (r) { return r.code + ' ' + r.name; }).join('\n') + (todo.length > 5 ? '\n…' : '')
+    + '\n\nทุกเครื่องของทีมจะเห็นงานเหล่านี้ในการซิงก์รอบถัดไป ลบคืนได้จากเมนู ‘ลบสถานีที่เพิ่มจากชีต’', ui.ButtonSet.YES_NO);
+  if (answer !== ui.Button.YES) return;
+
+  var now = new Date(), created = [];
+  var base = 'projects/' + project() + '/databases/(default)/documents/jobs/';
+  for (var i = 0; i < todo.length; i += 400) {
+    var writes = todo.slice(i, i + 400).map(function (r) {
+      var id = Utilities.getUuid().toUpperCase();
+      created.push(id);
+      return { update: { name: base + id, fields: newJobFields(r, now) }, currentDocument: { exists: false } };
+    });
+    firestoreCall(':commit', { writes: writes });
+  }
+  var props = PropertiesService.getScriptProperties();
+  var kept = JSON.parse(props.getProperty('ADDED_JOBS') || '[]');
+  props.setProperty('ADDED_JOBS', JSON.stringify(kept.concat(created)));
+  report('ดึงจาก TCRoof', 'เพิ่มงาน PWA ' + created.length + ' สถานีลงแอปแล้ว');
+  pullFromApp();
+  ui.alert('เพิ่มแล้ว ' + created.length + ' สถานี', 'ดู B4 ของชีต TCRoof: สถานีเหล่านี้จับคู่ด้วยรหัสแล้ว', ui.ButtonSet.OK);
+}
+
+/** Deletes the jobs `addMissingStations` created, after asking: only those, and only the ones still there. */
+function removeAddedStations() {
+  var ui = SpreadsheetApp.getUi();
+  var props = PropertiesService.getScriptProperties();
+  var kept = JSON.parse(props.getProperty('ADDED_JOBS') || '[]');
+  if (!kept.length) { ui.alert('ยังไม่มีสถานีที่เพิ่มจากชีตนี้'); return; }
+  var answer = ui.alert('ลบสถานีที่เพิ่มจากชีต',
+    'ลบงาน ' + kept.length + ' งานที่ชีตนี้สร้างออกจาก Firebase? งานเหล่านี้จะหายจากทุกเครื่อง รวมถึงสิ่งที่บันทึกไว้ในงาน (แผน MP, รายงาน)',
+    ui.ButtonSet.YES_NO);
+  if (answer !== ui.Button.YES) return;
+  var base = 'projects/' + project() + '/databases/(default)/documents/jobs/';
+  for (var i = 0; i < kept.length; i += 400) {
+    firestoreCall(':commit', { writes: kept.slice(i, i + 400).map(function (id) { return { delete: base + id }; }) });
+  }
+  props.deleteProperty('ADDED_JOBS');
+  report('ดึงจาก TCRoof', 'ลบงานที่เพิ่มจากชีต ' + kept.length + ' งานแล้ว');
+  pullFromApp();
 }
 
 // MARK: history

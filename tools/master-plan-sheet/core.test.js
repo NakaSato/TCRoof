@@ -156,3 +156,28 @@ test('the app jobs no row took, PWA first', () => {
   assert.equal(list[0][4], 'P3-001');
   assert.equal(list[2][2], 'งานบ้าน');
 });
+
+test('a new station job is the app\'s job document, and only unmatched station rows make one', () => {
+  const now = new Date('2026-10-27T06:00:00Z');
+  const f = core.newJobFields({ code: ' P3-005 ', name: 'สถานีผลิตน้ำบ้านนา', kWp: 88.92, branch: 'บ้านนา' }, now);
+  // every non-optional field of Job.Record, in the type the app decodes
+  assert.deepEqual(Object.keys(f).sort(), ['capacityKW', 'code', 'createdAt', 'customerName', 'installDays', 'installStart', 'kind',
+    'projectName', 'province', 'status', 'surveyDate', 'team']);
+  assert.deepEqual(f.code, { stringValue: 'P3-005' });
+  assert.deepEqual(f.customerName, { stringValue: 'กปภ.สาขาบ้านนา' });
+  assert.deepEqual(f.capacityKW, { doubleValue: 88.92 });
+  assert.deepEqual(f.createdAt, { integerValue: String(now.getTime()) });
+  assert.deepEqual(f.installStart, { integerValue: '0' });
+  assert.deepEqual([f.team, f.status, f.kind], [{ stringValue: 'TCR01' }, { stringValue: 'confirmed' }, { stringValue: 'pwa' }]);
+  assert.equal(core.newJobFields({ code: 'P3-001', name: 'x', kWp: 1, branch: 'กปภ.สาขาชัยบาดาล' }, now).customerName.stringValue, 'กปภ.สาขาชัยบาดาล');
+  assert.equal(core.newJobFields({ code: 'P3-001', name: 'x', kWp: '' }, now).customerName.stringValue, 'x');
+  // the job is found by its code on the next pull
+  const job = core.jobSummary({ id: 'N', projectName: 'สถานีผลิตน้ำบ้านนา', code: 'P3-005', kind: 'pwa' });
+  assert.deepEqual(core.matchRows([{ code: 'P3-005', name: 'อื่น' }], [job]).map(m => m.how), ['รหัส']);
+
+  const rows = [{ code: 'P3-005', name: 'ก' }, { code: 'P3-006', name: 'ข', override: 'X' }, { code: 'P3-007', name: 'ค' },
+                { code: '', name: 'ว่าง' }, { code: 'P3-008', name: 'ง' }];
+  const matches = [{ job: null, how: 'ไม่พบงานในแอป' }, { job: null, how: 'ไม่พบงาน X' }, { job: job, how: 'ชื่อ' },
+                   { job: null, how: 'ไม่พบงานในแอป' }, { job: null, how: 'ชื่อซ้ำ 2 งาน: ใส่รหัสงานเอง' }];
+  assert.deepEqual(core.rowsToCreate(rows, matches).map(r => r.code), ['P3-005']);
+});

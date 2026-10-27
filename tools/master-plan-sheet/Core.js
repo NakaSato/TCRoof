@@ -204,6 +204,42 @@ function unmatchedJobs(jobs, matches, stats) {
     });
 }
 
+/**
+ * A new PWA job for a station row, as the app's job document (`Job.Record`, TCRoof/Sync/CloudRecords.swift): the
+ * station's code as the job's code (so the sheet and `MPTemplates.best` find it by code), its name, `กปภ.สาขา<branch>`
+ * as the customer, its kWp, no dates yet (1970, `Job.unscheduled`), `ลูกค้ายืนยันติดตั้ง`, team TCR01. Firestore REST
+ * fields; the app fills the rest the first time a team device saves it.
+ */
+function newJobFields(row, now) {
+  var branch = String(row.branch || '').trim();
+  if (branch && !/^(กปภ|การประปา)/.test(branch)) branch = 'กปภ.สาขา' + branch;
+  var name = String(row.name || '').trim();
+  var str = function (v) { return { stringValue: String(v) }; };
+  var int = function (v) { return { integerValue: String(Math.round(v)) }; };
+  return {
+    code: str(String(row.code || '').trim()),
+    projectName: str(name),
+    customerName: str(branch || name),
+    province: str(''),
+    capacityKW: { doubleValue: Number(row.kWp) || 0 },
+    team: str('TCR01'),
+    status: str('confirmed'),
+    surveyDate: int(0),
+    installStart: int(0),
+    createdAt: int(now.getTime()),
+    installDays: int(1),
+    kind: str('pwa')
+  };
+}
+
+/** The rows to create jobs for: a station code and name, nothing in the yellow cell, and no job of the app's found. */
+function rowsToCreate(rows, matches) {
+  return rows.filter(function (r, i) {
+    return /^P\d+-\d+$/.test(String(r.code || '').trim()) && String(r.name || '').trim() && !String(r.override || '').trim()
+      && !matches[i].job && matches[i].how === 'ไม่พบงานในแอป';
+  });
+}
+
 /** The daily reports per job: how many, the latest day, and how many the engineer signed. */
 function logStats(logs) {
   var out = {};
@@ -289,6 +325,6 @@ function phaseSummary(stations, previousCOD, risks, changes) {
 if (typeof module !== 'undefined') {
   module.exports = { SWIFT_EPOCH: SWIFT_EPOCH, TASKS: TASKS, swiftDate: swiftDate, millisDate: millisDate, taskWeight: taskWeight,
                      progress: progress, fsDocuments: fsDocuments, fsValue: fsValue, normalizeName: normalizeName,
-                     jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
+                     jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, newJobFields: newJobFields, rowsToCreate: rowsToCreate, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
                      phaseSummary: phaseSummary };
 }

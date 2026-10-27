@@ -9,7 +9,13 @@ columns were laid out for it; this fills them.
 | `ดึงข้อมูลตอนนี้` | Reads the app's jobs and daily reports from Firestore and writes the `TCRoof` tab's blue columns, and lists the app jobs no row took to the right of them (their ids go in a row's yellow cell) | every 5 minutes |
 | `บันทึกประวัติตอนนี้` | Adds this week's station rows to `ประวัติรายสัปดาห์` and a phase line to `ประวัติสรุป` (the same day again replaces them) | Mondays 08:00 |
 
-The sheet only reads from the app: nothing it holds goes back to Firestore. Columns are found through `_keys`.
+| `เพิ่มสถานีที่ยังไม่มีในแอป…` | Creates a PWA job in Firestore for each station row no app job is (`ไม่พบงานในแอป`), after asking: the station's code as the job's code, its name, `กปภ.สาขา…` from the Master Plan, its kWp, no dates yet, `ลูกค้ายืนยันติดตั้ง`. Only new documents, never an existing one; then it pulls, and the rows pair by code | by hand |
+| `ลบสถานีที่เพิ่มจากชีต…` | Deletes, after asking, only the jobs the item above created (their ids are kept in the script's properties) | by hand |
+
+Apart from those two items the sheet only reads from the app. Columns are found through `_keys`. Writing needs the
+account's **Cloud Datastore User** role instead of Viewer (the project's owner has it). A station added this way has
+no MP plan yet: in the app, its `ตั้งค่าแผน › เริ่มจากแม่แบบ` opens on its own plan file (found by its code) and keeps
+its dates and progress.
 
 ## What the `TCRoof` tab gets
 

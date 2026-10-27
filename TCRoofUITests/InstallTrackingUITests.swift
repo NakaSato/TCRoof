@@ -368,20 +368,31 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["เอกสาร"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
     }
 
-    /// The page's `คำขอรายสัปดาห์` item pushes the one-page request (docs/ui/weekly-request-ipad-map).
-    func testRequestItemPushesTheOnePageRequest() {
+    /// `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-request-map) shows the one-page key-plan request in the page at
+    /// full width: the key plan and `ส่งขออนุมัติ` under the page's tab bar, pin 2 selects its line, and `ภาพรวม` goes back.
+    func testRequestTabIsTheOnePageRequest() {
         let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label == %@", "คำขอรายสัปดาห์")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["requestSendNow"].waitForExistence(timeout: 10), "คำขอรายสัปดาห์ should push the one-page request")
+        XCTAssertTrue(app.buttons["requestSendNow"].waitForExistence(timeout: 10), "the tab should show the one-page request")
+        XCTAssertTrue(app.staticTexts["KEY PLAN"].exists, "the key plan should be on the tab")
+        XCTAssertTrue(pageBack(app).exists, "the page's header and tab bar stay")
+        let pin2 = app.buttons["requestPin2"]
+        XCTAssertTrue(pin2.waitForExistence(timeout: 5))
+        pin2.tap()
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: pin2)
+        XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 5), .completed, "pin 2 should select its line")
+        app.buttons.matching(NSPredicate(format: "label == %@", "ภาพรวม")).firstMatch.tap()
+        XCTAssertTrue(waitGone(app.buttons["requestSendNow"]), "ภาพรวม should leave the request")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label == %@", "Gantt")).firstMatch.waitForExistence(timeout: 5), "ภาพรวม should show the overview")
     }
 
-    /// The in-page `คำขอรายสัปดาห์` tab (docs/ui/install-tracking-ipad-weekly-request, `-installTab request`; the item
-    /// pushes the one-page request now) on the board's example: a crew day cell switches a role off and the day's total
+    /// The R1 form of `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request: an iPad under 1000 pt wide, here
+    /// `-installRequestForm YES`) on the board's example: a crew day cell switches a role off and the day's total
     /// drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for the signature sheet's `ยืนยันลายเซ็น`, and
     /// `ดู PDF` opens its sheet. Nothing is kept.
     func testRequestTab() {
-        let app = launch(["-installTab", "request"])
+        let app = launch(["-installTab", "request", "-installRequestForm", "YES"])
         let cell = app.buttons["crewCell0-0"]
         XCTAssertTrue(cell.waitForExistence(timeout: slow), "-installTab request opens the tab in the page")
         XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
@@ -412,7 +423,7 @@ final class InstallTrackingUITests: XCTestCase {
 
     /// A contractor on a sent week sees no steppers.
     func testRequestTabSentIsReadOnlyForAContractor() {
-        let app = launch(["-installTab", "request", "-installRequestState", "sent", "-role", "external"])
+        let app = launch(["-installTab", "request", "-installRequestForm", "YES", "-installRequestState", "sent", "-role", "external"])
         XCTAssertTrue(app.buttons["crewCell0-0"].waitForExistence(timeout: slow))
         XCTAssertFalse(app.buttons["crew0Plus"].exists, "a sent request is read only for a contractor")
         XCTAssertFalse(app.buttons["requestSend"].exists)

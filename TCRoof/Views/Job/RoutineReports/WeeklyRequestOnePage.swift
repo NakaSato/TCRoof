@@ -51,6 +51,12 @@ struct WeeklyRequestOnePage: View {
     /// The board's example: a drawn key plan, nothing uploaded.
     let demo: Bool
     let actions: Actions
+    /// Inside the install tracking page's tab (docs/ui/install-tracking-ipad-request-map): the page's header and tab bar
+    /// stand in for this header, its background shows through, and the sides line up with its other tabs.
+    var embedded = false
+
+    /// The side margins: the standalone page's 63 pt, the install page's 24 pt.
+    private var side: CGFloat { embedded ? 24 : 63 }
 
     @State var selected: UUID?
     @State var teamTab = 0
@@ -69,19 +75,19 @@ struct WeeklyRequestOnePage: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            if !embedded { header }
             GeometryReader { g in
                 HStack(alignment: .top, spacing: 16) {
                     // the plan about as tall as its picture is at the card's width, leaving room for the lines
-                    let width = g.size.width - 63 * 2 - 16 - 384
+                    let width = g.size.width - side * 2 - 16 - 384
                     leftCard(planHeight: min(560, max(280, width * 0.66), g.size.height - 230))
                     rightColumn.frame(width: 384)
                 }
-                .padding(.horizontal, 63).padding(.top, 16).padding(.bottom, 12)
+                .padding(.horizontal, side).padding(.top, embedded ? 14 : 16).padding(.bottom, 12)
             }
             bottomBar
         }
-        .background(Theme.pageGradient.ignoresSafeArea())
+        .background { if !embedded { Theme.pageGradient.ignoresSafeArea() } }
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapFull) { fullPlan }
         .overlay { if let e = riskEdit { riskSheet(e) } }
@@ -246,7 +252,7 @@ struct WeeklyRequestOnePage: View {
             previewButton
             mainButton
         }
-        .padding(.horizontal, 63).padding(.vertical, 10)
+        .padding(.horizontal, side).padding(.vertical, 10)
         .background(Theme.surface.ignoresSafeArea(edges: .bottom))
         .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
     }

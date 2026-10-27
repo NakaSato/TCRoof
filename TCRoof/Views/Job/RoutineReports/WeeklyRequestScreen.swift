@@ -25,9 +25,16 @@ struct WeeklyRequestScreen: View {
     @State private var showPDF = false
     @State private var toast: String?
     @State private var prepared: String?
+    /// Inside the install tracking page's `คำขอรายสัปดาห์` tab: always the one-page layout, without its own header.
+    private let embedded: Bool
+    /// Told the week shown whenever it changes, so the host keeps its own week in step.
+    private let onWeek: ((Date) -> Void)?
 
-    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!) {
+    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!, embedded: Bool = false,
+         onWeek: ((Date) -> Void)? = nil) {
         self.job = job
+        self.embedded = embedded
+        self.onWeek = onWeek
         var ws = MasterSchedule.weekStart(week)
         #if DEBUG
         // `-requestWeek 0|-1|-2`: next week or one of the two before
@@ -73,14 +80,20 @@ struct WeeklyRequestScreen: View {
     private var editable: Bool { mayAct && request.isEditable(external: external) }
 
     var body: some View {
-        GeometryReader { g in
-            if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+        Group {
+            if embedded {
                 onePage
             } else {
-                classic
+                GeometryReader { g in
+                    if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+                        onePage
+                    } else {
+                        classic
+                    }
+                }
             }
         }
-        .onChange(of: week) { _, w in reload(w) }
+        .onChange(of: week) { _, w in reload(w); onWeek?(w) }
     }
 
     /// The form of cards: the iPhone, and an iPad narrower than 1000 pt.
@@ -134,7 +147,8 @@ struct WeeklyRequestScreen: View {
                            preview: { showPDF = true }, send: sendFromPage,
                            withdraw: { request.sendBack(); save(file: false) },
                            week: { shift(7 * $0) }, openWeek: { week = MasterSchedule.weekStart($0) },
-                           toast: { t in withAnimation { toast = t } }))
+                           toast: { t in withAnimation { toast = t } }),
+            embedded: embedded)
             .id(request.id)
             .task(id: request.id) { prepare() }
             .sheet(isPresented: $showSign) {

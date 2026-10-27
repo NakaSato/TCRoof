@@ -316,7 +316,7 @@ public enum InverterStationDXF {
     /// A label over a riser: a leader from the riser's top `a` up to the label's first line at `top`.
     static func riserLabel(_ dxf: inout SketchDXF, _ a: (Double, Double), top: Double, _ lines: [String]) {
         let y = top - Double(lines.count - 1) * labelH * 1.5
-        dxf.line(L.text, a, (a.0, y - labelH))
+        dxf.leader(L.text, [a, (a.0, y - labelH)], arrow: leaderArrow)
         label(&dxf, (a.0 + 0.04, top), lines)
     }
 
@@ -432,8 +432,8 @@ public enum InverterStationDXF {
     /// The members' sizes until the team names them: the column as the library's base plate detail draws it, the rest
     /// at the depth the station drawings show.
     public static let columnSize = "□75×75×2.4 (รอยืนยัน)", beamSize = "ลึก 0.10 ม. ตามแบบ", purlinSize = "0.05 ม. ตามแบบ"
-    /// A mark's circle (m).
-    static let markR = 0.13
+    /// A mark's circle and every leader's arrowhead (m).
+    static let markR = 0.13, leaderArrow = 0.06
 
     /// The purlins on each rafter, about 1 m apart over its length.
     static func purlinCount(_ g: Geometry) -> Int {
@@ -466,7 +466,7 @@ public enum InverterStationDXF {
     static func tag(_ dxf: inout SketchDXF, _ mark: String, at c: (Double, Double), to a: (Double, Double)) {
         let d = hypot(a.0 - c.0, a.1 - c.1)
         let l = CADLayers.memberMark
-        if d > markR + 0.01 { dxf.line(l, (c.0 + (a.0 - c.0) / d * markR, c.1 + (a.1 - c.1) / d * markR), a) }
+        if d > markR + 0.01 { dxf.leader(l, [a, (c.0 + (a.0 - c.0) / d * markR, c.1 + (a.1 - c.1) / d * markR)], arrow: leaderArrow) }
         dxf.circle(l, c, r: markR)
         dxf.text(l, c, height: markR * 0.9, mark, align: .center, middle: true)
     }
@@ -539,7 +539,7 @@ public enum InverterStationDXF {
         let lx = k.x1 + 0.35
         for (y, t) in [(acTray + 0.05, ["TO SOLAR AC-DB-01", "AC PERFORATED TRAY \(s.trayWidth)x100 (WITH COVER)"]),
                        (dcTray + 0.05, ["DC PERFORATED TRAY 100x100 (WITH COVER)"])] {
-            dxf.line(L.text, p(min(ac1, dc1), y), p(lx - 0.05, y))
+            dxf.leader(L.text, [p(min(ac1, dc1), y), p(lx - 0.05, y)], arrow: leaderArrow)
             label(&dxf, p(lx, y + (t.count > 1 ? 0.06 : 0)), t)
         }
         // the equipment in front of the rack, hiding it; names on the plates and over the inverters

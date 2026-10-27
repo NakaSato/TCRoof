@@ -290,6 +290,12 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   the equipment from the generic side blocks drawn far end first so nearer items hide farther ones; indoors the wall.
   The scale figure stands in both views. Right of the plan the equipment schedule (model, W × H × D, the levels), the
   notes (including a short area and a narrow walkway) and the base plate DETAIL at 5 : 1 with its sizes in mm.
+  The shelter's members are marked (2026-10-27): a mark in a circle with a leader, in the front view C1 column, B1
+  edge beam, R1 rafter, P1 purlin, in the side view C1, B1, TB tie beam, R1, P1, and right of the base plate detail
+  `ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE` (`InverterStationDXF.members`): mark, member, size, count and length
+  together centre to centre (columns from their base plates; the rafter along its slope, 0.40 m past A and 0.55 m past
+  B; the purlins over the length and both 0.50 m overhangs), the column `□75×75×2.4 (รอยืนยัน)` and the rest at the
+  depth drawn, `ตามแบบ`, until the team names the sections. A station on a wall has none.
   Layers: `S-COLS-N`, `S-BEAM-N`, `S-ROOF-PURL-N`, `A-ROOF-N`, `S-FRAM-N` (rack), `S-FTNG-N`, `E-EQPM-N`, `E-CTRY-N`,
   `E-LITE-N`, `A-DOOR-N`, `A-WALL-E` (hatched), `A-AREA-E`, ground `C-TOPO-E`. A size the library lacks (a tray over
   300 or a ladder over 600 mm wide) is drawn by the file itself. Open: the column size (the library's tube is 75×75×2.4

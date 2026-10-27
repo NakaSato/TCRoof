@@ -418,6 +418,58 @@ public enum InverterStationDXF {
         title(&dxf, (0, -low), "TOP VIEW / แปลน", "หน่วย ม. | มาตราส่วนจริง")
     }
 
+    // MARK: - the shelter's members
+
+    /// A member of the outdoor shelter as the member schedule lists it: its mark, what it is, its size, how many and
+    /// their length together (m, centre to centre; the columns from their base plates).
+    public struct Member: Hashable, Sendable {
+        public var mark: String
+        public var name: String
+        public var size: String
+        public var count: Int
+        public var length: Double
+    }
+    /// The members' sizes until the team names them: the column as the library's base plate detail draws it, the rest
+    /// at the depth the station drawings show.
+    public static let columnSize = "□75×75×2.4 (รอยืนยัน)", beamSize = "ลึก 0.10 ม. ตามแบบ", purlinSize = "0.05 ม. ตามแบบ"
+    /// A mark's circle (m).
+    static let markR = 0.13
+
+    /// The purlins on each rafter, about 1 m apart over its length.
+    static func purlinCount(_ g: Geometry) -> Int {
+        let len: Double = g.width + overFront + overBack
+        return max(2, Int((len / 1.0).rounded(.up))) + 1
+    }
+    /// One rafter along its slope, from 0.40 m past A to 0.55 m past B.
+    static func rafterLength(_ g: Geometry) -> Double {
+        let len: Double = g.width + overFront + overBack
+        return hypot(len, roofFall * len / g.width)
+    }
+
+    /// The shelter's members: C1 the columns, B1 the edge beams on lines A and B, TB a tie beam on each column line,
+    /// R1 a rafter on each column line, P1 the purlins; none for a station on a wall.
+    public static func members(_ s: InverterStation) -> [Member] { members(Geometry(s)) }
+    static func members(_ g: Geometry) -> [Member] {
+        guard g.outdoor, let first = g.grid.first, let last = g.grid.last else { return [] }
+        let n = g.grid.count, run = last - first, np = purlinCount(g)
+        let columns: Double = Double(n) * (g.high - postFoot) + Double(n) * (g.low - postFoot)
+        return [
+            Member(mark: "C1", name: "เสา / Column", size: columnSize, count: 2 * n, length: columns),
+            Member(mark: "B1", name: "คานขอบ แนว A, B / Edge beam", size: beamSize, count: 2, length: 2 * run),
+            Member(mark: "TB", name: "คานยึดหัวเสา / Tie beam", size: beamSize, count: n, length: Double(n) * g.width),
+            Member(mark: "R1", name: "จันทัน / Rafter", size: beamSize, count: n, length: Double(n) * rafterLength(g)),
+            Member(mark: "P1", name: "แป / Purlin", size: purlinSize, count: np, length: Double(np) * (run + 2 * overEnd)),
+        ]
+    }
+
+    /// A member's mark: its name in a circle at `c` and a leader from the circle to the member at `a`.
+    static func tag(_ dxf: inout SketchDXF, _ mark: String, at c: (Double, Double), to a: (Double, Double)) {
+        let d = hypot(a.0 - c.0, a.1 - c.1)
+        if d > markR + 0.01 { dxf.line(L.text, (c.0 + (a.0 - c.0) / d * markR, c.1 + (a.1 - c.1) / d * markR), a) }
+        dxf.circle(L.text, c, r: markR)
+        dxf.text(L.text, c, height: markR * 0.9, mark, align: .center, middle: true)
+    }
+
     // MARK: - front view
 
     static func frontView(_ dxf: inout SketchDXF, _ g: Geometry) {
@@ -455,6 +507,12 @@ public enum InverterStationDXF {
                 dxf.line(L.grid, p(x, -0.10), p(x, -1.03))
                 TankDXF.bubble(&dxf, p(x, -1.25), r: 0.22, "\(i + 1)")
             }
+            // the members' marks in a column right of the last column line
+            let tx = end + overEnd + 0.35
+            tag(&dxf, "C1", at: p(end + 0.45, 1.6), to: p(end + h, 1.6))
+            tag(&dxf, "B1", at: p(tx, H - 0.30), to: p(end - h - 0.10, H - beamDepth / 2))
+            tag(&dxf, "R1", at: p(tx, H + 0.03), to: p(end + 0.025, H + beamDepth / 2))
+            tag(&dxf, "P1", at: p(tx, H + 0.35), to: p(end + overEnd - 0.05, H + beamDepth + purlin / 2))
         }
 
         // the rack: posts on their pads, the top rail, the trays' rails and a rail under each item
@@ -605,6 +663,15 @@ public enum InverterStationDXF {
                 dxf.line(L.grid, p(u, -0.10), p(u, -0.78))
                 TankDXF.bubble(&dxf, p(u, -1.0), r: 0.22, name)
             }
+            // the members' marks: the column and edge beam left of line A, the tie beam over the rack, the rafter and
+            // the last purlin over the roof
+            tag(&dxf, "C1", at: p(-0.35, 1.2), to: p(-h, 1.2))
+            tag(&dxf, "B1", at: p(-0.35, Hf - 0.18), to: p(h + 0.025, Hf - beamDepth / 2))
+            let tu = W - 0.35
+            tag(&dxf, "TB", at: p(tu, Hb - 0.36), to: p(tu, Hb - beamDepth))
+            tag(&dxf, "R1", at: p(W / 2, under(W / 2) + 0.55), to: p(W / 2, under(W / 2) + beamDepth / 2))
+            let pu = u1 - 0.03 - purlin
+            tag(&dxf, "P1", at: p(pu, under(pu) + 0.55), to: p(pu + purlin / 2, under(pu) + beamDepth + purlin))
         } else {
             let wall = rect(X + W, G, 0.12, rackTop + 1.0)
             dxf.polyline(L.wall, wall, closed: true)
@@ -710,7 +777,7 @@ public enum InverterStationDXF {
                      "2. เสาเหล็ก □75×75 บนแผ่นเหล็ก 150×150 พุก 4 ตัว ตาม DETAIL ทุกต้น ตั้งบนฐานคอนกรีต 0.20 × \(fmt(pad)) ม.",
                      "3. ตู้ไฟฟ้าแขวนขอบบนที่ \(fmt(rackTop)) ม. อินเวอร์เตอร์ขอบบนที่ \(fmt(inverterTop)) ม. ขนาดตามแคตตาล็อก \(s.catalog.version)"]
         if g.outdoor {
-            notes.append("4. หลังคาเมทัลชีทลาดหน้า \(fmt(g.high)) → หลัง \(fmt(g.low)) ม. คาน จันทัน ลึก \(fmt(beamDepth)) ม. แป \(fmt(purlin)) ม. ขนาดเหล็กตามแบบ")
+            notes.append("4. หลังคาเมทัลชีทลาดหน้า \(fmt(g.high)) → หลัง \(fmt(g.low)) ม. คาน จันทัน ลึก \(fmt(beamDepth)) ม. แป \(fmt(purlin)) ม. ชิ้นส่วนตาม MEMBER SCHEDULE")
         }
         if !s.measured { notes.append("\(notes.count). ยังไม่ได้วัดพื้นที่ ก × ย: แสดงขนาดขั้นต่ำ \(s.minimumText)") }
         if s.measured && !s.fits { notes.append("\(notes.count). พื้นที่จริงสั้นไป \(String(format: "%.2f", s.shortfall)) ม. สำหรับ \(s.sizes.count) เครื่อง") }
@@ -731,5 +798,33 @@ public enum InverterStationDXF {
         dxf.dimension(L.dim, (c.0 - post / 2 * k, c.1 - half), (c.0 + post / 2 * k, c.1 - half), at: (0, c.1 - half - 0.25), vertical: false, text: mm(post), height: dimH)
         label(&dxf, (c.0 - half, c.1 - half - 0.6), ["เสาเหล็ก □75×75 (หนา 2.4 มม.)", "แผ่นเหล็กฐาน 150×150", "พุก / ANCHOR BOLT 4 ตัว ระยะ 105 มม."], h: 0.1)
         title(&dxf, (c.0 - half, c.1 - half - 1.25), "DETAIL ฐานเสา / BASE PLATE", "ขยาย 5 เท่า | หน่วย มม.")
+
+        memberSchedule(&dxf, g, at: (x0 + w + 5.8, y0))
+    }
+
+    static let memberCols: [Double] = [0, 0.6, 3.8, 6.6, 7.6, 9.0]
+
+    /// MEMBER SCHEDULE: each of the shelter's marks, what it is, its size, how many and their length together; its
+    /// notes under it. Nothing for a station on a wall.
+    static func memberSchedule(_ dxf: inout SketchDXF, _ g: Geometry, at o: (Double, Double)) {
+        let list = members(g)
+        guard !list.isEmpty else { return }
+        let rh = 0.32, th = 0.12, cols = memberCols, w = cols[cols.count - 1]
+        dxf.text(L.text, (o.0, o.1 + 0.3), height: 0.2, "ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE")
+        let rows = [["", "ชิ้นส่วน / Member", "ขนาด / Size", "จำนวน", "ยาวรวม (ม.)"]]
+            + list.map { [$0.mark, $0.name, $0.size, "\($0.count)", String(format: "%.2f", $0.length)] }
+        for (r, cells) in rows.enumerated() {
+            let y = o.1 - Double(r) * rh
+            dxf.line(L.table, (o.0, y), (o.0 + w, y))
+            for (c, t) in cells.enumerated() where !t.isEmpty {
+                dxf.text(L.table, (o.0 + cols[c] + 0.08, y - rh / 2), height: th, t, middle: true)
+            }
+        }
+        let bottom = o.1 - Double(rows.count) * rh
+        dxf.line(L.table, (o.0, bottom), (o.0 + w, bottom))
+        for x in cols { dxf.line(L.table, (o.0 + x, o.1), (o.0 + x, bottom)) }
+        let notes = ["1. ยาวรวมคิดจากศูนย์กลางถึงศูนย์กลาง เสาคิดจากแผ่นเหล็กฐาน / Lengths centre to centre; columns from their base plates.",
+                     "2. ขนาดเหล็กตามแบบ: รอทีมออกแบบยืนยัน / Sections per the design, to be confirmed."]
+        for (i, n) in notes.enumerated() { dxf.text(L.text, (o.0, bottom - 0.35 - Double(i) * 0.24), height: 0.11, n) }
     }
 }

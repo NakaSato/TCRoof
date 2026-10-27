@@ -23,21 +23,49 @@ extension SitePageWide {
         .statusBarHidden(true)
     }
 
+    /// iPad (v3): the bar, the picture fitted to the height under it, and the building panel floating on the right while
+    /// it is open or a card is being dragged from it.
     var padFull: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(spacing: 0) {
             fullHeader
-            HStack(alignment: .top, spacing: 16) {
-                fullPicture
-                modelPanel.frame(width: 290)
+            padFullPicture.padding(16)
+        }
+        .overlay(alignment: .topTrailing) {
+            if panelShown {
+                modelPanel
+                    .frame(width: 290)
+                    .shadow(color: Theme.navySolid.opacity(0.35), radius: 14, y: 4)
+                    .padding(.top, 76).padding(.trailing, 16).padding(.bottom, 16)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .accessibilityIdentifier("a2.modelPanel")
             }
         }
-        .padding(.horizontal, 20).padding(.vertical, 12)
     }
 
-    var fullPicture: some View {
+    /// iPad: the building panel shows while it is open, and stays while one of its cards is dragged.
+    var panelShown: Bool { panelOpen || cardDrag != nil }
+
+    /// The picture's own aspect, as large as fits `size` (the whole size until there is a picture).
+    func fitted(_ size: CGSize) -> CGSize {
+        guard let p = photo, let img = model.image(p, in: job.id), img.size.width > 0, img.size.height > 0 else { return size }
+        let k = min(size.width / img.size.width, size.height / img.size.height)
+        return CGSize(width: img.size.width * k, height: img.size.height * k)
+    }
+
+    var padFullPicture: some View {
+        GeometryReader { geo in
+            let s = fitted(geo.size)
+            fullPicture(radius: 8).frame(width: s.width, height: s.height)
+                .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
+
+    var fullPicture: some View { fullPicture(radius: 10) }
+
+    func fullPicture(radius: CGFloat) -> some View {
         GeometryReader { geo in
             picture(geo.size, full: true)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: radius))
                 .onAppear { fullFrame = geo.frame(in: .named(Self.fullSpace)) }
                 .onChange(of: geo.frame(in: .named(Self.fullSpace))) { _, f in fullFrame = f }
         }
@@ -75,23 +103,69 @@ extension SitePageWide {
         .padding(.horizontal, 12).padding(.vertical, 8)
     }
 
+    /// iPad's full-screen bar (v3): `ออกจากเต็มจอ` on the left, the title and hint centred, the building panel's toggle on the right.
     var fullHeader: some View {
-        HStack(spacing: 14) {
-            Text("ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onMedia)
-            Text("เต็มจอ | ใช้เครื่องมือวาด / วางสัญลักษณ์ได้เหมือนเดิม | หนีบ 2 นิ้วเพื่อซูม")
-                .font(.sarabunFixed(13)).foregroundStyle(Theme.onMedia.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
-            Spacer(minLength: 8)
-            Button { fullScreen = false } label: {
-                HStack(spacing: 8) {
-                    A2Icon(name: "action-fullscreenExit", fallback: "arrow.down.right.and.arrow.up.left", size: 18)
-                    Text("ออกจากเต็มจอ").font(.sarabunFixed(15, .bold))
-                }
-                .foregroundStyle(Theme.navy)
-                .padding(.horizontal, 16).frame(minHeight: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
+        HStack(spacing: 12) {
+            fullExitPill
+            Spacer(minLength: 12)
+            panelToggle
         }
+        .overlay { fullTitle.padding(.horizontal, 270).allowsHitTesting(false) }
+        .padding(.horizontal, 16)
+        .frame(height: 64)
+        .background(Theme.mediaBackdrop)
+    }
+
+    var fullTitle: some View {
+        VStack(spacing: 1) {
+            Text("A2 ภาพสถานที่ติดตั้ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onMedia)
+            Text("ลากการ์ดอาคารไปวางบนภาพ · ลากเพื่อย้าย").font(.sarabunFixed(12.5)).foregroundStyle(Theme.onMedia.opacity(0.7))
+        }
+        .lineLimit(1).minimumScaleFactor(0.75)
+        .accessibilityElement(children: .combine)
+    }
+
+    var fullExitPill: some View {
+        Button { fullScreen = false } label: {
+            HStack(spacing: 10) {
+                A2Icon(name: "action-fullscreenExit", fallback: "arrow.down.right.and.arrow.up.left", size: 16)
+                    .foregroundStyle(Theme.navy)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.surface, in: Circle())
+                Text("ออกจากเต็มจอ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onMedia).lineLimit(1)
+            }
+            .padding(.leading, 5).padding(.trailing, 18).frame(minHeight: 44)
+            .background(Theme.onMedia.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(Theme.onMedia.opacity(0.28)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("ออกจากเต็มจอ")
+        .accessibilityIdentifier("a2.fullExit")
+    }
+
+    /// `อาคารในโครงการ · n/N`: placed models of the job's buildings; filled while the panel shows.
+    var panelToggle: some View {
+        let src = SiteModels.sources(job)
+        let ids = Set(models.map(\.id))
+        let n = src.filter { ids.contains($0.id) }.count
+        let on = panelShown
+        return Button { withAnimation(.easeOut(duration: 0.18)) { panelOpen = !on } } label: {
+            HStack(spacing: 8) {
+                // a plain glyph in the pill's ink (the catalog's model icons are coloured skins)
+                A2Icon(name: nil, fallback: "building.2", size: 20)
+                Text("อาคารในโครงการ · \(n)/\(src.count)").font(.sarabunFixed(15, .bold)).lineLimit(1)
+            }
+            .foregroundStyle(on ? Theme.onPrimary : Theme.onMedia)
+            .padding(.horizontal, 18).frame(minHeight: 44)
+            .background(on ? Theme.primary : Theme.onMedia.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(on ? Theme.primary : Theme.onMedia.opacity(0.28)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("อาคารในโครงการ \(n) จาก \(src.count)")
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityIdentifier("a2.panelToggle")
     }
 
     // MARK: building-model panel

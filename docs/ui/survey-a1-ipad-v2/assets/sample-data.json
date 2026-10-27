@@ -1,0 +1,82 @@
+{
+  "_note": "Example data only, from the board iPadA1.dc.html (PWA survey form NO.224). Bind to the real Job / Schema.info values.",
+  "header": {
+    "title": "A1 ข้อมูลโครงการ",
+    "subtitle": "แบบสำรวจ NO.224 · GRF2567-23407"
+  },
+  "stepLine": {
+    "counter": "1/13",
+    "name": "ข้อมูลโครงการ"
+  },
+  "location": {
+    "zoomPresets": [
+      [
+        "พื้นที่",
+        "500 ม."
+      ],
+      [
+        "สถานี",
+        "200 ม."
+      ],
+      [
+        "อาคาร",
+        "50 ม."
+      ]
+    ],
+    "selected": "สถานี",
+    "crop": {
+      "default": "22,16,54,64",
+      "label": "ภาพในรายงาน · 108 × 69 ม."
+    },
+    "hint": "ลากกรอบหรือมุมเพื่อเลือกพื้นที่ภาพในรายงาน PDF / Excel · แตะค้างที่หมุดเพื่อย้าย",
+    "reset": "รีเซ็ตกรอบ",
+    "scale": "50 ม.",
+    "gps": "17.0062, 99.8235",
+    "gpsButton": "ตำแหน่งปัจจุบัน",
+    "accuracy": "ความแม่นยำ ±5 ม. · บันทึกเมื่อ 09:41"
+  },
+  "document": {
+    "docNo": "224",
+    "rev": "00",
+    "date": "29/9/2569",
+    "engineer": "สมชาย"
+  },
+  "projectCoordinator": {
+    "title": "โครงการ · ผู้ประสานงาน",
+    "projectName": "กปภ. สาขาตัวอย่าง — สถานีผลิตน้ำ 1",
+    "capacity": "120 kWp",
+    "internet": "มี",
+    "address": "ม.3 ต.หนองบัว อ.เมือง จ.ตัวอย่าง 60000",
+    "coordinator": "คุณสมหญิง ใจดี",
+    "phone": "081-234-5678"
+  },
+  "areas": {
+    "aside": "กำหนดหน้า C / D ในแบบสำรวจ · รวม 13 ขั้น",
+    "tiles": [
+      {
+        "title": "หลังคา",
+        "sub": "หน้า C · หลัง",
+        "count": 2
+      },
+      {
+        "title": "ถังน้ำใส",
+        "sub": "หน้า D1 · ถัง",
+        "count": 1
+      }
+    ]
+  },
+  "bottomBar": {
+    "status": "ครบ 11/11 ช่องในหน้านี้",
+    "save": {
+      "idle": "บันทึกร่างตอนนี้",
+      "saving": "กำลังบันทึก",
+      "justSaved": "บันทึกแล้ว (green fill + check circle, ~1.35 s)",
+      "clean": "✓ บันทึกแล้ว (2 pt green outline)"
+    },
+    "previous": "หัวข้อแรก (disabled)",
+    "next": {
+      "sub": "ถัดไป 2/13",
+      "title": "A2 ภาพสถานที่ติดตั้ง"
+    }
+  }
+}

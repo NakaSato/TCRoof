@@ -193,35 +193,28 @@ struct SiteMapPreview: View {
                 let on = z == zoom
                 Button { zoom = z } label: {
                     levelLabel(l, on: on)
-                    .padding(.horizontal, phone ? 8 : 10).frame(minHeight: phone ? 28 : 44)
-                    .background(on ? Theme.mint : .clear, in: RoundedRectangle(cornerRadius: 8))
-                    // the 28-pt chip keeps a 44-pt tap area
-                    .contentShape(Rectangle().inset(by: phone ? -8 : 0))
+                    .padding(.horizontal, phone ? 8 : 10).frame(minHeight: phone ? 28 : 30)
+                    .background(on ? Theme.mint : .clear, in: RoundedRectangle(cornerRadius: phone ? 8 : 6))
+                    // the 28 / 30-pt chip keeps a 44-pt tap area
+                    .contentShape(Rectangle().inset(by: phone ? -8 : -7))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
         .foregroundStyle(Theme.navy)
-        .padding(3)
-        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: 10))
+        .padding(phone ? 3 : 2)
+        .background(Theme.surface.opacity(0.95), in: RoundedRectangle(cornerRadius: phone ? 10 : 8))
         .shadow(color: Theme.navy.opacity(0.2), radius: 2, y: 1)
     }
 
-    /// Two lines on iPad ("สถานี" over "200 ม."); one line on iPhone ("สถานี 200 ม.").
+    /// One line: "สถานี 200 ม." (iPad, docs/ui/survey-a1-ipad-v2: 12 / 11 pt, the metres regular).
     @ViewBuilder func levelLabel(_ l: (name: String, meters: Double), on: Bool) -> some View {
-        if phone {
-            HStack(spacing: 3) {
-                Text(l.name).font(.sarabunFixed(12, on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.sarabunFixed(11, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
-            }
-            .lineLimit(1).fixedSize()
-        } else {
-            VStack(spacing: 0) {
-                Text(l.name).font(.sarabunFixed(13, on ? .bold : .regular))
-                Text("\(Int(l.meters)) ม.").font(.sarabunFixed(11)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
-            }
+        HStack(spacing: phone ? 3 : 4) {
+            Text(l.name).font(.sarabunFixed(12, on ? .bold : .regular))
+            Text("\(Int(l.meters)) ม.").font(.sarabunFixed(11, on && phone ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
         }
+        .lineLimit(1).fixedSize()
     }
 
     var zoomButtons: some View {

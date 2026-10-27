@@ -118,13 +118,14 @@ public struct ProjectSetup: Equatable, Sendable {
     }
 
     /// The Weekly PLAN's `รหัส` line (`: P3-001, ผรม. B, วิศวกร เปรม, ข้อมูล ณ …`): fills the code, contractor and
-    /// engineer where the set-up line didn't give them.
-    public mutating func readCodeLine(_ line: String) {
+    /// engineer where the set-up line didn't give them. `people` false takes only the code: a file with a set-up line
+    /// names its people there, and one left out of it is no one, whatever the `รหัส` line still says.
+    public mutating func readCodeLine(_ line: String, people: Bool = true) {
         for raw in line.components(separatedBy: ",") {
             var p = Self.clean(raw)
             if p.hasPrefix(":") { p = Self.clean(String(p.dropFirst())) }
             if code == nil, p.range(of: #"^P\d+-\d+$"#, options: .regularExpression) != nil { code = p; continue }
-            guard let kind = Part(p), !Self.isPlaceholder(kind.value(of: p)) else { continue }
+            guard people, let kind = Part(p), !Self.isPlaceholder(kind.value(of: p)) else { continue }
             if kind == .contractor, contractor == nil { contractor = kind.value(of: p) }
             if kind == .engineer, engineer == nil { engineer = kind.value(of: p) }
         }
@@ -174,12 +175,14 @@ public struct ProjectSetup: Equatable, Sendable {
     // MARK: writing the lines back
 
     /// The set-up line with each part this has a value for put in, in the line's own order; parts it has no value for,
-    /// and parts this doesn't know, are kept as they were.
-    public func rewrite(line: String) -> String {
-        line.components(separatedBy: ",").map { raw -> String in
+    /// and parts this doesn't know, are kept as they were. `dropPeople`: the engineer, admin and subcontractor this has
+    /// none for are taken out instead, as a job's people are its own (a template's are another station's).
+    public func rewrite(line: String, dropPeople: Bool = false) -> String {
+        line.components(separatedBy: ",").compactMap { raw -> String? in
             let p = Self.clean(raw)
-            guard let kind = Part(p), let new = part(kind, was: p) else { return p }
-            return new
+            guard let kind = Part(p) else { return p }
+            if let new = part(kind, was: p) { return new }
+            return dropPeople && [.engineer, .admin, .contractor].contains(kind) ? nil : p
         }.joined(separator: ", ")
     }
 
@@ -194,6 +197,9 @@ public struct ProjectSetup: Equatable, Sendable {
             old.code = nil
         }
         let c = code ?? old.code, n = stationName ?? old.stationName, k = kWp ?? old.kWp
+        // the same facts keep the title as written (`182.40 kWp` stays, not `182.4`)
+        let sameKWp = switch (k, old.kWp) { case let (a?, b?): abs(a - b) < 0.005; case (nil, nil): true; default: false }
+        if c == old.code, n == old.stationName, sameKWp { return title }
         var t = "แผนโครงการ"
         if let c { t += " " + c + " –" }
         if let n { t += " " + n }

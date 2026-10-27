@@ -92,6 +92,28 @@ cells, so the app fills them.
   the others. A station file carries them (P3-001: its 15 list rows and the 6 steps).
 - A plan moved from another station's file (`MPTemplates.plan` with a kickoff) takes none of that station's ticks
   (`wbsDone`, `wbsBase` empty); its first export clears their `Y`.
+- A `Y` the file has without a `เสร็จ` date comes in dated the import's day for the booking, marked `undated`
+  (`WBSTick.undated`), and export leaves its date cell as the file has it: a station's own file comes back byte for byte.
+  Only the list's rows above the tables take ticks; a table further down whose rows also start with a code (P4-001's
+  drawings per task) has none.
+- `รับเฉพาะความก้าวหน้า` also takes the rows' `ผู้รับผิดชอบ` and `หลักฐาน / เลขที่เอกสาร` changed in Excel since the kept
+  file, an emptied cell included (`MasterSchedule.mergingText`); the rest of the plan stays the job's. A whole import
+  takes the file's rows as they are.
+
+### People in `ผู้รับผิดชอบ`
+
+The 20 cases name a role in each row (`วศ.`, `Admin`, `ผรม.`, with `วศ.01` / `ผรม. 01` as examples); the 102 station files
+name that station's people in the same rows (`เปรม`, `บีม`, `ผรม. B`), always the set-up line's. `wbs-roles.json`
+(`tools/plan-template/wbs_roles.py` from the cases) gives each row's role (`MPTemplates.roles`; the utility's rows,
+`กฟภ.` and `พพ.`, have none), and `WBSPeopleExcelTests` holds every station file to it.
+
+- The set-up line is the file's word on its people: a person taken out of it isn't read back from `รหัส` (which still
+  gives the code).
+- Export (with the job's facts) writes the job's people: a row naming a person takes the job's for its role, or the role
+  when the job has no one for it; a row naming the role stays (the team may prefer roles). The set-up and `รหัส` lines
+  take out whom the job has no one for (`ProjectSetup.rewrite(line:dropPeople:)`).
+- A plan moved from another station's file names the job's people, else the roles, in the app's rows too
+  (`MPTemplates.plan(…, people:)`, `withPeople`); an Inverter station step takes its row's.
 
 ## Step 4: the rest
 

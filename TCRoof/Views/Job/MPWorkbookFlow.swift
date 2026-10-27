@@ -136,17 +136,21 @@ final class MPWorkbookFlow {
                                           weights: weights)
     }
 
-    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`merged`); the job keeps its plan, and the
-    /// file becomes the kept original. Returns how many task-weeks and dates changed.
+    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`merged`), its ticks, and the rows'
+    /// `ผู้รับผิดชอบ` and `หลักฐาน` changed in Excel since (`MasterSchedule.mergingText`); the job keeps its plan, and the
+    /// file becomes the kept original. Returns how many task-weeks, dates, ticks and texts changed.
     @discardableResult
     static func takeProgress(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) -> Int {
         let (a, changed) = merged(imported, into: job)
         if a != job.scheduleActual { job.scheduleActual = a }
+        let (rows, edited) = MasterSchedule.mergingText(job.scheduleWBS, file: imported.wbs,
+                                                        base: job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).wbs })
+        if rows != job.scheduleWBS { job.scheduleWBS = rows }
         let ticked = takeTicks(imported, on: job)
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
-        return changed + ticked
+        return changed + ticked + edited
     }
 
     /// The WBS rows ticked or unticked in the file since the app exported it (`MasterSchedule.mergingTicks`: the

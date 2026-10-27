@@ -216,11 +216,11 @@ struct MPTemplateSheet: View {
         guard let c = picked else { return }
         working = true
         // a case's own dates are its example's: it always moves to the kickoff
-        let kickoff = kickoff, keep = keepFile && c.site.isEmpty
+        let kickoff = kickoff, keep = keepFile && c.site.isEmpty, people = ProjectSetup(job.setupTarget)
         Task {
             defer { working = false }
             do {
-                let r = try await Task.detached { try MPTemplates.plan(c, kickoff: keep ? nil : kickoff) }.value
+                let r = try await Task.detached { try MPTemplates.plan(c, kickoff: keep ? nil : kickoff, people: people) }.value
                 // the station's own file fills its empty project facts; another station's are not this one's
                 let setup = c.id == own ? ProjectSetup.defaultFields(job.setupChanges(r.imported.setup)) : []
                 MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP \(job.stationName) (\(keep ? "" : "แม่แบบ ")\(c.id)).xlsx",

@@ -155,23 +155,25 @@ public enum MPTemplates {
     /// The case's file with its plan moved so the kickoff falls on `kickoff`, and that file read back: what a station
     /// takes, as an import of the file would give it. No progress.
     /// `kickoff` nil keeps the file's own dates and progress: a station taking its own plan, as importing its file would.
-    public static func plan(_ c: Case, kickoff: Date?, calendar cal: Calendar = MasterSchedule.calendar) throws
-        -> (data: Data, imported: MPWorkbook.Imported) {
+    /// A moved plan's rows name `people` (the station's own, `ProjectSetup(_:)`), else the roles, in `ผู้รับผิดชอบ`
+    /// (`withPeople`): the file's are another station's.
+    public static func plan(_ c: Case, kickoff: Date?, people: ProjectSetup = ProjectSetup(),
+                            calendar cal: Calendar = MasterSchedule.calendar) throws -> (data: Data, imported: MPWorkbook.Imported) {
         let original = try Data(contentsOf: c.url)
         let template = try MPWorkbook.read(original, calendar: cal)
         guard let kickoff else { return (original, template) }
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: template.input.kickoff), to: cal.startOfDay(for: kickoff)).day ?? 0
-        guard days != 0 else { return (original, template) }
-        let out = try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),
-                                        actual: MasterSchedule.Actual(), calendar: cal)
+        let data = days == 0 ? original
+            : try MPWorkbook.export(original, input: template.input.shifted(days: days, calendar: cal),
+                                    actual: MasterSchedule.Actual(), calendar: cal).data
         // export writes the MP plan only: the WBS sheet keeps the template's dates, so its rows move here
-        var moved = try MPWorkbook.read(out.data, calendar: cal)
-        moved.wbs = moved.wbs.map { $0.shifted(days: days, calendar: cal) }
+        var moved = days == 0 ? template : try MPWorkbook.read(data, calendar: cal)
+        moved.wbs = withPeople(moved.wbs.map { $0.shifted(days: days, calendar: cal) }, people)
         // no progress: the rows that station marked done are its own, not ticks for the station taking the plan (an
         // empty base also keeps the import from taking back that station's earlier ticks); its export clears their Y
         moved.wbsDone = []
         moved.wbsDoneDates = [:]
         moved.wbsBase = []
-        return (out.data, moved)
+        return (data, moved)
     }
 }

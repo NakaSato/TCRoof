@@ -51,6 +51,28 @@ final class ProjectSetupTests: XCTestCase {
         XCTAssertEqual(t.contractor, "B")
     }
 
+    /// A file with a set-up line names its people there: `รหัส` still naming someone the line left out gives no one.
+    func testTheSetUpLineNamesThePeople() {
+        var s = ProjectSetup.parse(title: Self.title, line: "กปภ.สาขาชัยบาดาล, ภาคเหนือ-กลาง, Zero export HV")
+        s.readCodeLine(": P3-001, ผรม. B, วิศวกร เปรม, ข้อมูล ณ 19/10/2026", people: false)
+        XCTAssertEqual(s.code, "P3-001")
+        XCTAssertNil(s.engineer)
+        XCTAssertNil(s.contractor)
+    }
+
+    /// A job's people are its own: export takes out of the line those the job has no one for.
+    func testPeopleTheJobHasNoOneForLeaveTheLine() {
+        var s = ProjectSetup()
+        s.engineer = "สมชาย"
+        XCTAssertEqual(s.rewrite(line: Self.line, dropPeople: true),
+                       "กปภ.สาขาชัยบาดาล, ภาคเหนือ-กลาง, กฟภ. เขต น.3, Inverter 160 kW (ไม่ต้อง พค.2), Zero export HV, "
+                        + "คำขอ PPIM1A5072BC, วิศวกร สมชาย")
+        XCTAssertEqual(s.rewrite(line: ": P3-001, ผรม. B, วิศวกร เปรม, ข้อมูล ณ 19/10/2026", dropPeople: true),
+                       ": P3-001, วิศวกร สมชาย, ข้อมูล ณ 19/10/2026")
+        XCTAssertEqual(s.rewrite(line: Self.line), Self.line.replacingOccurrences(of: "วิศวกร เปรม", with: "วิศวกร สมชาย"),
+                       "without dropPeople the file keeps whom the job has no one for")
+    }
+
     func testLinesAreWrittenBackInPlace() {
         // nothing changed: the same line
         XCTAssertEqual(p3001().rewrite(line: Self.line), Self.line)
@@ -64,6 +86,10 @@ final class ProjectSetupTests: XCTestCase {
             .replacingOccurrences(of: "ผรม. B", with: "ผรม. S"))
         XCTAssertEqual(s.rewrite(title: Self.title), "แผนโครงการ P3-001 – สถานีใหม่ 163.02 kWp")
         XCTAssertEqual(s.rewrite(title: "Master Plan"), "Master Plan")
+        // the same kWp keeps the title as written
+        var same = ProjectSetup()
+        same.kWp = 182.4
+        XCTAssertEqual(same.rewrite(title: "แผนโครงการ P3-004 – สถานีผลิตน้ำลพบุรี 182.40 kWp"), "แผนโครงการ P3-004 – สถานีผลิตน้ำลพบุรี 182.40 kWp")
     }
 
     func testANewJobTakesEveryFactTicked() {

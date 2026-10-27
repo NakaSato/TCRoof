@@ -22,8 +22,10 @@ extension MPWorkbook {
 
     static func setup(_ book: Book) -> ProjectSetup {
         var s = ProjectSetup()
+        var hasLine = false
         if let detail = book.detail {
             let cells = setupCells(detail)
+            hasLine = cells.line != nil
             s = .parse(title: cells.title.flatMap { detail.text($0.col, $0.row) },
                        line: cells.line.flatMap { detail.text($0.col, $0.row) })
             s.points = points(detail)
@@ -35,8 +37,9 @@ extension MPWorkbook {
             t.isTemplate = true
             return t
         }
-        // the plan sheet's lines fill what the detail sheet didn't give (an older Master Plan Weekly has only these)
-        if let code = book.layout.code { s.readCodeLine(code) }
+        // the plan sheet's lines fill what the detail sheet didn't give (an older Master Plan Weekly has only these); a
+        // set-up line names the station's people, so a person taken out of it isn't read back from `รหัส`
+        if let code = book.layout.code { s.readCodeLine(code, people: !hasLine) }
         if let project = book.layout.project {
             let p = station(project: project, fileName: "")
             if s.stationName == nil, let name = p.name, !name.isEmpty { s.stationName = name }
@@ -47,8 +50,9 @@ extension MPWorkbook {
     }
 
     /// Writes the job's facts into the file's lines, each only where it says something else: the `แผนโครงการ` title
-    /// and set-up line (`ProjectSetup.rewrite`), and the plan sheet's `PROJECT` (station and kWp) and `รหัส` (code,
-    /// subcontractor, engineer) lines. Returns how many cells changed in each sheet.
+    /// and set-up line (`ProjectSetup.rewrite`), its rows' `ผู้รับผิดชอบ` (`writePeople`), and the plan sheet's
+    /// `PROJECT` (station and kWp) and `รหัส` (code, subcontractor, engineer) lines. The people are the job's: one the job
+    /// has none for is taken out of the lines, and its rows name the role. Returns how many cells changed in each sheet.
     static func writeSetup(_ setup: ProjectSetup, plan: inout Sheet, layout: Layout, detail: inout Sheet?) -> (plan: Int, detail: Int) {
         var planChanged = 0, detailChanged = 0
         func put(_ s: inout Sheet, _ at: (col: Int, row: Int)?, _ new: (String) -> String) -> Bool {
@@ -64,7 +68,8 @@ extension MPWorkbook {
             let cells = setupCells(d)
             was = .parse(title: cells.title.flatMap { d.text($0.col, $0.row) }, line: cells.line.flatMap { d.text($0.col, $0.row) })
             if put(&d, cells.title, { setup.rewrite(title: $0) }) { detailChanged += 1 }
-            if put(&d, cells.line, { setup.rewrite(line: $0) }) { detailChanged += 1 }
+            if put(&d, cells.line, { setup.rewrite(line: $0, dropPeople: true) }) { detailChanged += 1 }
+            detailChanged += writePeople(setup, into: &d)
             detail = d
         }
         if let project = layout.project {
@@ -94,7 +99,7 @@ extension MPWorkbook {
             var line = ProjectSetup()
             line.contractor = setup.contractor
             line.engineer = setup.engineer
-            var t = line.rewrite(line: old)
+            var t = line.rewrite(line: old, dropPeople: true)
             if let code = setup.code, let r = t.range(of: #"P\d+-\d+"#, options: .regularExpression) { t.replaceSubrange(r, with: code) }
             // an install case's code isn't the station's: without one of its own the line names none
             else if was.isTemplate, setup.stationName != nil, let r = t.range(of: #"P\d+-\d+,\s*"#, options: .regularExpression) {
@@ -105,6 +110,22 @@ extension MPWorkbook {
             return t
         }) { planChanged += 1 }
         return (planChanged, detailChanged)
+    }
+
+    /// The rows' `ผู้รับผิดชอบ` with the job's people (`MPTemplates.responsible`): a cell naming a person takes the
+    /// job's for the row's role, or the role (`วศ.`, `Admin`, `ผรม.`) when the job has no one for it; a cell naming the
+    /// role stays. Returns how many cells changed.
+    static func writePeople(_ people: ProjectSetup, into d: inout Sheet) -> Int {
+        guard let h = wbsHeader(d), let col = h.responsible else { return 0 }
+        var n = 0
+        let end = listEnd(d, h)
+        for r in codeRows(d, h) where r.row < end {
+            let ref = Sheet.ref(col, r.row)
+            guard let cell = d.cell(ref), !cell.formula, let want = MPTemplates.responsible(cell.text, code: r.code, people: people) else { continue }
+            d.cells.set(ref, .inline(want))
+            n += 1
+        }
+        return n
     }
 
     /// The text right of a label (`PROJECT`, `รหัส`) above the plan's header.

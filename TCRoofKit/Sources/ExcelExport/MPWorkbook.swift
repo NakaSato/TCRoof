@@ -272,8 +272,10 @@ public enum MPWorkbook {
                     d.cells.set(markRef, tick != nil ? .inline("Y") : .empty)
                     detailChanged += 1
                 }
-                // `เสร็จ / นัด` also holds appointment dates: cleared only along with a Y the app takes away
-                if let col = r.date, let cell = d.cell(Sheet.ref(col, r.row)), !cell.formula, tick != nil || marked {
+                // `เสร็จ / นัด` also holds appointment dates: cleared only along with a Y the app takes away; a tick taken
+                // from a Y without a date has only the import's day, so the cell stays as the file has it
+                if let col = r.date, let cell = d.cell(Sheet.ref(col, r.row)), !cell.formula,
+                   tick.map({ $0.undated != true }) ?? marked {
                     let want = tick.map { Sheet.serial(cal.startOfDay(for: $0.at), cal) }
                     if !close(cell.number, want), want != nil || cell.number != nil {
                         d.cells.set(Sheet.ref(col, r.row), want.map { .number($0) } ?? .empty)

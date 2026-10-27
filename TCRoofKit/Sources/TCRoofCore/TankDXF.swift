@@ -67,6 +67,11 @@ public enum TankDXF {
             mountingPlan(&dxf, l, dx: dx, TH: TH)
         }
 
+        // to the right of the plans: the roof beam plan (B1 / B2 on the grid) and its schedule, line A level with the plan's
+        do {
+            let e = dxf.extents
+            TankFraming.draw(&dxf, v, origin: (e.max.x / (millimetres ? 1000 : 1) + 10, TH))
+        }
         // under the plan, to scale and in metres: the module rows' section and the back post line's elevation, each with
         // its zero (a row's front line, the table's west end) at x = 0. The tank's own sections 1–1 and 2–2 stay in the
         // PDF only.

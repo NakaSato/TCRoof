@@ -65,12 +65,13 @@ final class TankDXFTests: XCTestCase {
     }
 
     func testNoBackgroundAndNoColours() throws {
-        let v = Self.sample(), (TW, _) = spans(v)
+        let v = Self.sample()
         let ents = t.entities(try XCTUnwrap(TankDXF.build(v)).data)
-        // the white background rect spans the whole sketch, well outside the tank and its chains
+        // the white background rect spans the whole sketch, well outside the tank and its chains on both sides (the right
+        // has the roof beam plan, TankFramingTests, so the left side tells)
         func outside(_ e: [(String, String)], _ c: String) -> Bool {
             guard let x = t.value(e, c).flatMap(Double.init) else { return false }
-            return x < -30 || x > TW + 30
+            return x < -30
         }
         let far = ents.filter { e in outside(e, "10") || outside(e, "11") }
         XCTAssertTrue(far.isEmpty)
@@ -106,7 +107,9 @@ final class TankDXFTests: XCTestCase {
         let postLines: Set<Int> = Set(l.builtTables.flatMap { (t: TankLayout.Table) -> [Int] in t.posts.map { Int(($0.y * 1000).rounded()) } })
         let mounting = chains + postLines.count + 1
         // and the two footing details' (0.30 each way on the plan, 0.30 × 0.15 on DETAIL 1)
-        XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +) + 4)
+        // and the roof beam plan's (every span each way and the two sizes, TankFramingTests)
+        let beamPlan = Tank.spans(v).x.count + Tank.spans(v).y.count + 2
+        XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +) + 4 + beamPlan)
         // the tank's own sections 1–1 and 2–2 stay in the PDF: no tank height dimension, no cut marks
         let key = String(data: SketchDXF.tis620("สูง <>"), encoding: .isoLatin1)!
         XCTAssertFalse(dims.contains { t.value($0, "1") == key })

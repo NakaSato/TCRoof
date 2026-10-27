@@ -17,6 +17,7 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
   xcodebuild -project TCRoof.xcodeproj -scheme TCRoof -destination 'generic/platform=iOS Simulator' -derivedDataPath <scratch>/DerivedData build
   ```
   Always pass your own `-derivedDataPath`. The user keeps Xcode open, and a CLI build in the shared DerivedData locks Xcode's `build.db`. Reuse the same path between builds: a clean build takes over 10 minutes, so run it in the background.
+- **Linux (cloud sessions):** only PVYield and ModuleRules build there. `tools/linux-swift/test.sh` (takes `swift test`'s arguments, e.g. `--filter HourlyYieldTests`) links them into a small package and runs their tests; the session hook (`.claude/hooks/session-start.sh`) installs Swift in `/opt` and puts it on `PATH`.
 - **Lint:** there is no SwiftLint or swift-format config and no CI; the checks are `swift test` and the xcodebuild build.
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.

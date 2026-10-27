@@ -66,5 +66,10 @@ final class RoofSectionScaleTests: XCTestCase {
         XCTAssertFalse(s.callouts.isEmpty)
         XCTAssertEqual(marks.sorted(), s.callouts.keys.sorted().map(String.init))
         XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-ANNO-MARK" }.count, s.callouts.count)
+        // each with CAD's own LEADER (arrowhead from its leader style), not a drawn line and filled arrowhead
+        let leaders = t.rawEntities(out.data).filter { $0.first?.1 == "LEADER" && t.value($0, "8") == "G-ANNO-MARK" }
+        XCTAssertEqual(leaders.count, s.callouts.count)
+        XCTAssertTrue(leaders.allSatisfy { (t.value($0, "3") ?? "").hasPrefix("TC_LDR_") && t.value($0, "71") == "1" && t.value($0, "76") == "2" })
+        XCTAssertFalse(t.rawEntities(out.data).contains { ["LINE", "HATCH"].contains($0.first?.1 ?? "") && (t.value($0, "8") ?? "").hasPrefix("G-ANNO-MARK") })
     }
 }

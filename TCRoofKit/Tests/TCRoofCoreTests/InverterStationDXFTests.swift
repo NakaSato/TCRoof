@@ -144,6 +144,11 @@ final class InverterStationDXFTests: XCTestCase {
         for (mark, n) in [("C1", 3), ("B1", 3), ("TB", 2), ("R1", 3), ("P1", 3)] {
             XCTAssertEqual(texts.filter { $0 == mark }.count, n, mark)
         }
+        // every leader is CAD's LEADER: the 9 marks' on G-ANNO-MARK, the trays' and risers' labels on G-ANNO-TEXT
+        let leaders = t.rawEntities(d).filter { $0.first?.1 == "LEADER" }
+        XCTAssertEqual(leaders.filter { t.value($0, "8") == "G-ANNO-MARK" }.count, 9)
+        XCTAssertEqual(leaders.filter { t.value($0, "8") == "G-ANNO-TEXT" }.count, 4)
+        XCTAssertFalse(t.rawEntities(d).contains { $0.first?.1 == "LINE" && t.value($0, "8") == "G-ANNO-MARK" })
         XCTAssertTrue(InverterStationDXF.members(station([80], site: .indoor, length: 8)).isEmpty)
         XCTAssertFalse(hasText(InverterStationDXF.build(station([80], site: .indoor, length: 8)).data, "ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE"))
     }

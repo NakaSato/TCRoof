@@ -121,7 +121,8 @@ public struct SketchDXF: Sendable {
     /// A WIPEOUT was written: the file declares its class and its frame setting.
     private var wipeouts = false
     /// The dimension styles in use (one per text height, drawing units), in order of first use, and the dimensions written.
-    private var dimStyles: [(name: String, height: Double, zeros: Bool)] = []
+    /// `arrow` (drawing units) is a leader style's arrowhead (`leader`); 0 for a dimension style's ticks.
+    private var dimStyles: [(name: String, height: Double, zeros: Bool, arrow: Double)] = []
     private var dimCount = 0
     private var blockLo = (x: Double.infinity, y: Double.infinity), blockHi = (x: -Double.infinity, y: -Double.infinity)
 
@@ -241,7 +242,7 @@ public struct SketchDXF: Sendable {
         }
         let hu = (height * unit * (options.millimetres ? 10 : 1000)).rounded() / (options.millimetres ? 10 : 1000)
         let style = "TC_" + Self.num(hu).replacingOccurrences(of: ".", with: "_") + (zeros ? "" : "_Z")
-        if !dimStyles.contains(where: { $0.name == style }) { dimStyles.append((style, hu, zeros)) }
+        if !dimStyles.contains(where: { $0.name == style }) { dimStyles.append((style, hu, zeros, 0)) }
         dimCount += 1
         let tick = height * 0.4, ext = height * 0.4, gap = height * 0.25
         // a point along the measured axis and across it
@@ -268,6 +269,23 @@ public struct SketchDXF: Sendable {
                                               "70", "32", "71", "5", "1", label == "<>" ? "" : label,
                                               "100", "AcDbAlignedDimension", "13", q(a.0), "23", q(a.1), "33", "0", "14", q(b.0), "24", q(b.1), "34", "0",
                                               "50", vertical ? "90" : "0", "100", "AcDbRotatedDimension"]
+    }
+
+    /// A LEADER, CAD's own leader object: its arrowhead at `points[0]` (metres), its line on through the others, so it
+    /// edits as one leader (drag the arrowhead and the line follows). The arrowhead is `arrow` m long, closed and filled,
+    /// from the leader style `TC_LDR_<arrow>` (no ticks); the leader has no text of its own, the label is written at its
+    /// tail.
+    public mutating func leader(_ l: Layer, _ points: [(Double, Double)], arrow: Double) {
+        guard points.count >= 2, arrow > 0 else { return }
+        let au = (arrow * unit * 1000).rounded() / 1000
+        let style = "TC_LDR_" + Self.num(au).replacingOccurrences(of: ".", with: "_")
+        if !dimStyles.contains(where: { $0.name == style }) { dimStyles.append((style, au, true, au)) }
+        use(l)
+        ents += head("LEADER", layerName(l)) + ["100", "AcDbLeader", "3", style, "71", "1", "72", "0", "73", "3", "74", "0", "75", "0",
+                                                 "40", "0", "41", "0", "76", String(points.count)]
+        for p in points { ents += ["10", q(p.0), "20", q(p.1), "30", "0"]; cover(p.0, p.1) }
+        ents += ["210", "0", "220", "0", "230", "1", "211", "1", "221", "0", "231", "0", "212", "0", "222", "0", "232", "0",
+                 "213", "0", "223", "0", "233", "0"]
     }
 
     /// The sketch's dimensions as DIMENSIONs on `l`; the text height is `fixedTextHeight`, else the size × 0.7.
@@ -691,8 +709,8 @@ public struct SketchDXF: Sendable {
         for ds in dimStyles {
             let x = ds.height, f = { (v: Double) in Self.num((v * 1000).rounded() / 1000) }
             dimRecords += ["0", "DIMSTYLE", "105", h(), "330", tDim, "100", "AcDbSymbolTableRecord", "100", "AcDbDimStyleTableRecord",
-                           "2", ds.name, "70", "0", "3", "", "4", "", "40", "1", "41", f(x * 0.6), "42", "0", "43", f(x * 1.5), "44", f(x * 0.4),
-                           "45", "0", "46", f(x * 0.4), "47", "0", "48", "0", "140", f(x), "141", "0", "142", f(x * 0.4), "143", "0.03937007874",
+                           "2", ds.name, "70", "0", "3", "", "4", "", "40", "1", "41", f(ds.arrow > 0 ? ds.arrow : x * 0.6), "42", "0", "43", f(x * 1.5), "44", f(x * 0.4),
+                           "45", "0", "46", f(x * 0.4), "47", "0", "48", "0", "140", f(x), "141", "0", "142", ds.arrow > 0 ? "0" : f(x * 0.4), "143", "0.03937007874",
                            "144", options.millimetres ? "0.001" : "1", "145", "0", "146", "1", "147", f(x * 0.25),
                            "71", "0", "72", "0", "73", "0", "74", "0", "75", "0", "76", "0", "77", "1", "78", ds.zeros ? "0" : "8",
                            "170", "0", "171", "2", "172", "1", "173", "0", "174", "0", "175", "0", "176", "0", "177", "0", "178", "0",

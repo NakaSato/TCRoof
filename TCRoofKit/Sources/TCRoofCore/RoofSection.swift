@@ -38,6 +38,8 @@ public struct RoofSection: Sendable {
     public var dimensionOps: Set<Int> = []
 
     static let navy = RGBA(hex: 0x16325C), red = RGBA(hex: 0xD9453B), blue = RGBA(hex: 0x1F6FB5)
+    /// A callout's arrowhead (sketch points); the DXF's LEADER takes the same length.
+    static let calloutArrow = 7.0
     /// The posts' break line on screen, and the band of the level marks.
     static let cut = 194.0, marks = 606.0...750.0
 
@@ -335,7 +337,7 @@ public struct RoofSection: Sendable {
             for (r, t, x) in xs { bubbles[r] = Pt(x, y); call(r, Pt(x, y), t) }
         }
         func call(_ n: Int, _ b: Pt, _ t: Pt) {
-            let dx = t.x - b.x, dy = t.y - b.y, l = max(hypot(dx, dy), 1), ux = dx / l, uy = dy / l, r = 9.0, al = 7.0, aw = 2.6
+            let dx = t.x - b.x, dy = t.y - b.y, l = max(hypot(dx, dy), 1), ux = dx / l, uy = dy / l, r = 9.0, al = calloutArrow, aw = 2.6
             let e = Pt(t.x - ux, t.y - uy)
             d.add(.line(Pt(b.x + ux * r, b.y + uy * r), Pt(e.x - ux * al, e.y - uy * al), width: 1, color: red), "CALLOUT")
             d.add(.polygon([e, Pt(e.x - ux * al - uy * aw, e.y - uy * al + ux * aw), Pt(e.x - ux * al + uy * aw, e.y - uy * al - ux * aw)],

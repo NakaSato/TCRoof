@@ -100,8 +100,8 @@ public struct InstallKeyPlan: Equatable, Sendable {
         return points.filter { $0.location == l && $0.id != point.id }
     }
 
-    /// Where each placed point's pin sits relative to its location, in points: those sharing a location fan out on a
-    /// small circle, `spacing` apart, so none hides another; a location's only point sits on it.
+    /// Where each placed point's pin sits relative to its location, in points: those sharing a location stack in a
+    /// column centred on it, `spacing` apart (the pins are wider than tall), so none hides another.
     public func fanOffsets(spacing: Double = 26) -> [String: (dx: Double, dy: Double)] {
         var out: [String: (dx: Double, dy: Double)] = [:]
         var byLocation: [String: [Point]] = [:], order: [String] = []
@@ -117,12 +117,9 @@ public struct InstallKeyPlan: Equatable, Sendable {
         return out
     }
 
-    /// The `index`th of `count` places on a circle whose neighbours are `spacing` apart, starting at the top.
+    /// The `index`th of `count` places in a column centred on the location, `spacing` apart.
     public static func fan(index: Int, count: Int, spacing: Double) -> (dx: Double, dy: Double) {
         guard count > 1 else { return (0, 0) }
-        // two points: side by side; more: the circle whose chord between neighbours is `spacing`
-        let r = count == 2 ? spacing / 2 : spacing / (2 * sin(Double.pi / Double(count)))
-        let a = -Double.pi / 2 + 2 * Double.pi * Double(index) / Double(count) + (count == 2 ? Double.pi / 2 : 0)
-        return (r * cos(a), r * sin(a))
+        return (0, (Double(index) - Double(count - 1) / 2) * spacing)
     }
 }

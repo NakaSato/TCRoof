@@ -29,6 +29,12 @@ extension MPWorkbook {
             s.points = points(detail)
             if let station = inverterStation(detail) { s.inverterStation = station.type; s.inverterStationDetail = station.detail }
         }
+        // an install case states an example station: nothing of it is a station's
+        if s.isTemplate {
+            var t = ProjectSetup()
+            t.isTemplate = true
+            return t
+        }
         // the plan sheet's lines fill what the detail sheet didn't give (an older Master Plan Weekly has only these)
         if let code = book.layout.code { s.readCodeLine(code) }
         if let project = book.layout.project {
@@ -69,6 +75,12 @@ extension MPWorkbook {
         let projectCell = lineCell(plan, "PROJECT", above: layout)
         if put(&plan, projectCell, { old in
             var t = old
+            // an install case's line names the case (`แม่แบบ หลังคาลอนคู่, กันย้อน HV, Inverter < 200 kVA`) and an example
+            // branch (`สาขา (ตัวอย่าง)`): the station's name and branch take their places
+            if was.isTemplate {
+                if let b = setup.stationName, let r = t.range(of: #"แม่แบบ .*?kVA"#, options: .regularExpression) { t.replaceSubrange(r, with: b) }
+                if let b = setup.branch.map(ProjectSetup.branchName), !b.isEmpty { t = t.replacingOccurrences(of: "สาขา (ตัวอย่าง)", with: "สาขา" + b) }
+            }
             if let a = was.stationName, let b = setup.stationName, a != b, !a.isEmpty { t = t.replacingOccurrences(of: a, with: b) }
             if let a = was.branch.map(ProjectSetup.branchName), let b = setup.branch.map(ProjectSetup.branchName), !a.isEmpty, !b.isEmpty, a != b {
                 t = t.replacingOccurrences(of: "สาขา" + a, with: "สาขา" + b)
@@ -84,6 +96,10 @@ extension MPWorkbook {
             line.engineer = setup.engineer
             var t = line.rewrite(line: old)
             if let code = setup.code, let r = t.range(of: #"P\d+-\d+"#, options: .regularExpression) { t.replaceSubrange(r, with: code) }
+            // an install case's code isn't the station's: without one of its own the line names none
+            else if was.isTemplate, setup.stationName != nil, let r = t.range(of: #"P\d+-\d+,\s*"#, options: .regularExpression) {
+                t.removeSubrange(r)
+            }
             // the line keeps its leading ": "
             if old.hasPrefix(": "), !t.hasPrefix(": ") { t = ": " + t.drop { $0 == ":" || $0 == " " } }
             return t

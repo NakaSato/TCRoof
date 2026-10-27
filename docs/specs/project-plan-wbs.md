@@ -1,6 +1,6 @@
 # Project plan WBS in the app
 
-The team's plan files (`Project_Plan_TCRoof/`, 20 cases P9-001…020) carry two plans: the hidden `Weekly PLAN` sheet
+The team's plan files (`Project_Plan_TCRoof/`: the 102 stations' own, and the 20 install cases P9-001…020 in `3_แม่แบบ 20 กรณี`) carry two plans: the hidden `Weekly PLAN` sheet
 with the 18 MP tasks, which the app reads today (`MPWorkbook`, `MPTemplates`), and the visible `แผนโครงการ` sheet with
 the work breakdown under them. This spec brings the work breakdown into the app in four steps.
 
@@ -121,6 +121,12 @@ cells, so the app fills them.
   `site-steps.json`, and `MPWorkbook.read` gives a template file's 2.1.1–2.1.7 its site type's titles and shares of 2.1
   (`MPTemplates.applySite`, the type from the sheet's title), so `เริ่มจากแม่แบบ` and an import of a template file both
   get them. Run the script again when the workbook's table changes.
+- Install cases (built): the 20 cases (`3_แม่แบบ 20 กรณี`, `MPTemplates.installCases`) are a station's plan when it has no
+  file of its own: `เริ่มจากแม่แบบ`'s `แม่แบบตามกรณี` picks one by the station's main site type (most kWp, else its
+  daily-report locations), zero export and size (`MPTemplates.suggest`), always moved to the kickoff. Beyond 2.1, the
+  cases differ only in the permits: ≥ 200 kVA weighs 1.5 พค.2 at 1 (1.4 and 1.7 give 0.5 each) and opens its sub-tasks;
+  LV marks 0.2.7 and 2.8.1 / 2.8.2 / 2.8.6 (22 kV) not for the station. Their figures are an example's
+  (`ProjectSetup.isTemplate`): none is taken, and the station's export writes its own over them.
 
 ## Decisions (2026-10-26)
 

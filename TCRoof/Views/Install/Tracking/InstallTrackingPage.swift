@@ -169,7 +169,7 @@ struct InstallTrackingPage: View {
                             if let g = data.gantt { progressCard(data, g) }
                             siteRow(data)
                         case .daily:
-                            dailyTab(dailyData, site: data.site)
+                            dailyTab(dailyData)
                         case .plan:
                             planTab(data)
                         case .docs:

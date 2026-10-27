@@ -182,6 +182,10 @@ final class InstallTrackingUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "รายงานประจำวัน")).firstMatch.tap()
         let open = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เปิดรายงาน"))
         XCTAssertTrue(open.firstMatch.waitForExistence(timeout: 8), "the tab should list the reports")
+        // the table runs to the dock: no cards under it (docs/ui/install-tracking-ipad-daily)
+        XCTAssertFalse(app.staticTexts["กำลังคนรายวัน"].exists, "the crew card should be gone")
+        let delta = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "เร็วกว่าแผน", "ช้ากว่าแผน"))
+        XCTAssertTrue(delta.firstMatch.exists, "a row's progress should read ahead of or behind the MP plan")
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องทำ")).firstMatch.tap()
         XCTAssertTrue(waitGone(open.firstMatch), "ต้องทำ should leave out the signed reports")
         let draft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำต่อ | ส่ง")).firstMatch

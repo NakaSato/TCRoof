@@ -3,7 +3,7 @@ import XCTest
 
 /// docs/specs/cad-export-dxf phase 3: the A2 site plan as DXF.
 final class SiteDXFTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
     func layerOf(_ e: [(String, String)]) -> String? { t.value(e, "8") }
 
     /// A 2000 × 1000 px picture 100 m across, with a 40 × 20 m tank model in the middle, a cable route, a measure line,

@@ -120,7 +120,11 @@ struct JobEditorView: View {
         if let m = cardFts { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B5") + " ปุ่ม Emergency" }
         if let m = cardWater { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B3") + " " + m.spec.label }
         if let m = cardInverter { return (job.sectionsByCategory.flatMap(\.sections).first { $0.id == m.id }?.number ?? "B2") + " " + m.spec.label }
-        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? "A3 หม้อแปลง | MDB" : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+        return cardFlood ? "A4 น้ำท่วม" : cardElectrical ? electricalTitle : cardSite ? "A2 ภาพสถานที่ติดตั้ง" : "A1 ข้อมูลโครงการ"
+    }
+    /// iPad A3 with the meter at 0.4 kV has no transformer (docs/ui/survey-a3-ipad-v3 §1.6); iPhone keeps its title.
+    var electricalTitle: String {
+        sizeClass != .compact && job.values.choice("meterKV") == A3Options.lowVoltageKV ? "A3 มิเตอร์แรงต่ำ | MDB" : "A3 หม้อแปลง | MDB"
     }
     /// A LIST item the A2 bottom bar's "ยังขาด" chip points to.
     @State var siteRequest: String?
@@ -144,7 +148,7 @@ struct JobEditorView: View {
         return detailSize.width > detailSize.height ? 2 : 1
     }
 
-    /// DEBUG `-surveyWideA1 YES`: the two-column D1 too, below its 1100 pt (the simulator can't be turned).
+    /// DEBUG `-surveyWideA1 YES`: the two-column C1 and D1 too, below their 1100 pt (the simulator can't be turned).
     var debugWide: Bool {
         #if DEBUG
         return UserDefaults.standard.bool(forKey: "surveyWideA1")
@@ -284,7 +288,7 @@ struct JobEditorView: View {
         } else if let m = cardRoof {
             AnyView(VStack(spacing: 12) {
                 RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
-                             stacked: compact || infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
+                             stacked: compact || infoColumns != 2 || (detailSize.width < 1100 && !debugWide), request: $roofRequest)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)
@@ -421,10 +425,13 @@ struct JobEditorView: View {
         let after: Page? = last.map { steps[safe: $0 + 1].map { page(for: $0.page) } } ?? nextPage
         let status = cardElectrical ? electricalStatus : cardSite ? siteStatus : cardPanels.map(panelsStatus)
         let sub = tankSubSteps
+        // A4: the height check's line, naming the required fields still empty
+        let floodDone = cardFlood ? steps.first { $0.page == .flood }?.completion : nil
+        let floodLine = floodDone.map { c in FloodCheck.statusLine(job.floodCheck, missing: max(0, c.total - c.filled)) }
         return InfoPageBar(job: job, here: here, narrow: detailSize.width < 900, tight: detailSize.width < 720,
                            previous: sub?.previous ?? (module != nil ? go(before) : cardFlood ? go(.electrical) : cardElectrical ? go(.site) : cardSite ? go(.info) : nil),
                            next: sub?.next ?? go(after), status: status,
-                           statusText: station?.status ?? water ?? (cardFlood ? FloodCheck.statusLine(job.floodCheck) : nil),
+                           statusText: station?.status ?? water ?? floodLine,
                            statusAlert: station.map { !$0.isOK } ?? ((cardWater.map { WaterPoint.missingPhotos($0.values) > 0 } ?? false) ||
                                                                      backfeedMissing || ftsMissing || roofMissing || tankMissing || (cardFlood && job.floodCheck.fails > 0)),
                            statusWarn: ftsWarn,

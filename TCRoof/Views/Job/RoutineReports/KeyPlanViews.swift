@@ -65,12 +65,12 @@ extension Job {
     }()
     #endif
 
-    /// The key plan for the PDF, with the image data it draws; nil without a picture or any placed point.
+    /// The key plan for the PDF, with the image data it draws; nil without a picture. A plan with no location placed on
+    /// it yet still prints, without markers (an uploaded plan used to be left out until a point was placed).
     @MainActor func reportKeyPlan() -> (plan: RoutineReportPages.KeyPlan, image: Data)? {
         guard let (p, img) = keyPlanPicture, img.size.height > 0, let data = img.jpegData(compressionQuality: 0.8) else { return nil }
         let s = routineSettings
         let points = s.locations.compactMap { l in s.keyPoint(l).map { (name: l, x: $0.x, y: $0.y) } }
-        guard !points.isEmpty else { return nil }
         return (.init(photo: p, aspect: img.size.width / img.size.height, points: points), data)
     }
 }

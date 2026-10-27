@@ -15,6 +15,8 @@ struct InstallTrackingPage: View {
     let job: Job
     @State var tab = Debug.tab
     @State var view = Debug.view
+    /// `Key Plan`'s settings with `-installDemo YES`: the board's example, kept in memory.
+    @State var keyDemo: RoutineReport.Settings?
     /// `แผนก่อสร้าง`'s `Gantt | ตาราง`.
     @State var planView = Debug.planView
     /// Stages opened or closed against their default: the running stage and the next start open, or none with
@@ -63,6 +65,8 @@ struct InstallTrackingPage: View {
     @State var planReason = ""
     /// `คำขอรายสัปดาห์` and `Weekly Report`: weeks from their default one.
     @State var requestWeek = Debug.requestWeek
+    /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
+    @State var pageWidth: CGFloat = 0
     /// iPad `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request): the week's request as edited, the
     /// requester's drawn signature and name (kept only until it is sent: `engineerSignedAt` records the signing), the open
     /// sheet, a short note, and `ดึงจากแผน MP`'s time and spinner.
@@ -139,8 +143,18 @@ struct InstallTrackingPage: View {
         .navigationDestination(item: $phoneRoute) { phoneDestination($0) }
     }
 
-    /// The iPad page (docs/ui/install-tracking-ipad, -v2).
-    private func padBody(_ data: InstallPageData) -> some View {
+    /// The iPad page (docs/ui/install-tracking-ipad, -v2). On `คำขอรายสัปดาห์` at full width the request's own bottom
+    /// bar takes the dock's place (docs/ui/install-tracking-ipad-request-map), as a pushed screen covers it.
+    @ViewBuilder private func padBody(_ data: InstallPageData) -> some View {
+        let page = padPage(data)
+        if requestOnePage { page } else { page.padDock(fade: nil) }
+    }
+
+    /// `คำขอรายสัปดาห์` shows the one-page key-plan request: iPads at least 1000 pt wide, unless DEBUG's
+    /// `-installRequestForm YES` asks for the R1 form.
+    var requestOnePage: Bool { tab == .request && pageWidth >= 1000 && !Debug.requestForm }
+
+    private func padPage(_ data: InstallPageData) -> some View {
         VStack(spacing: 0) {
             header(data)
             tabBar(data)
@@ -148,7 +162,15 @@ struct InstallTrackingPage: View {
             if tab == .weekly {
                 weeklyTab()
                     .task(id: reportWeek) { loadReport() }
-            // คำขอรายสัปดาห์ scrolls its form and keeps its panel still
+            // คำขอรายสัปดาห์: the one-page request through its own screen (saving, signing, the PDF and sending stay there)
+            } else if requestOnePage {
+                WeeklyRequestScreen(job: job, week: requestWeekStart, embedded: true) { w in
+                    requestWeek = Int((MasterSchedule.weekStart(w).timeIntervalSince(nextRequestWeek) / (7 * 86_400)).rounded())
+                }
+            // the width isn't known for the first frame: neither layout yet
+            } else if tab == .request && pageWidth == 0 {
+                Spacer(minLength: 0)
+            // narrower, the R1 form scrolls and keeps its panel still
             } else if tab == .request {
                 requestTab()
                     .task(id: requestWeek) {
@@ -167,7 +189,7 @@ struct InstallTrackingPage: View {
                             if let g = data.gantt { progressCard(data, g) }
                             siteRow(data)
                         case .daily:
-                            dailyTab(dailyData, site: data.site)
+                            dailyTab(dailyData)
                         case .plan:
                             planTab(data)
                         case .docs:
@@ -194,8 +216,11 @@ struct InstallTrackingPage: View {
             }
         }
         .background(Theme.phonePage.ignoresSafeArea())
-        .padDock(fade: nil)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
     }
+
+    /// Next week's start, which `requestWeek` counts from.
+    private var nextRequestWeek: Date { MasterSchedule.weekStart(RoutineReport.add(.now, 7)) }
 
     var data: InstallPageData {
         #if DEBUG
@@ -373,6 +398,7 @@ struct InstallTrackingPage: View {
     func items(_ data: InstallPageData) -> [Item] {
         [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
+         // the one-page request in the page (docs/ui/install-tracking-ipad-request-map), the R1 form below 1000 pt
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
@@ -442,7 +468,7 @@ struct InstallTrackingPage: View {
             }
             out.append(Cell(label: "กำหนดการ", value: title, ink: ink, note: (t.variance > 0 ? "+" : "") + "\(t.variance)%", weight: 0.85))
             let slack = t.slackDays()
-            out.append(Cell(label: "คาดส่งมอบ", value: ThaiFormat.dayMonth.string(from: t.forecastEnd()),
+            out.append(Cell(label: "คาดส่งมอบ", value: Self.forecastDay(t),
                             ink: slack < 0 ? Theme.dangerText : slack == 0 ? Theme.pending : Theme.navy,
                             note: slack < 0 ? "ช้า \(-slack) วัน" : slack == 0 ? "ตามกำหนดพอดี" : "ตามกำหนด เผื่อ \(slack) วัน", weight: 1.12))
             if let spi = t.spi {
@@ -490,7 +516,7 @@ struct InstallTrackingPage: View {
 
     /// `-installTab overview|daily|plan|docs|request|weekly`, `-installReportWeek n`, `-installReportSlide 1…8`,
     /// `-installReportState ready|menu|pptx|sent`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
-    /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
+    /// `-installView gantt|curve|keyplan` (`-installKeyPlanState selected|placing|placed`), `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
     enum Debug {
@@ -515,6 +541,8 @@ struct InstallTrackingPage: View {
         static let requestWeek = -UserDefaults.standard.integer(forKey: "installRequestWeek")
         /// `-installRequestState sign|signed|sent|approved|pdf|edited`.
         static let requestState = UserDefaults.standard.string(forKey: "installRequestState")
+        /// `-installRequestForm YES`: `คำขอรายสัปดาห์` keeps the R1 form at any width (the simulator can't be turned).
+        static let requestForm = UserDefaults.standard.bool(forKey: "installRequestForm")
         static let docsPaper = UserDefaults.standard.string(forKey: "installDocsPaper")
         /// `-installReportWeek 0|1|2`: the week being reported or one of the two before.
         static let reportWeek = -UserDefaults.standard.integer(forKey: "installReportWeek")
@@ -543,6 +571,7 @@ struct InstallTrackingPage: View {
         static let docsPackage: StationDocs.Package? = nil
         static let docsPaper: String? = nil
         static let requestWeek = 0
+        static let requestForm = false
         static let reportWeek = 0
         static let reportSlide = 0
         #endif

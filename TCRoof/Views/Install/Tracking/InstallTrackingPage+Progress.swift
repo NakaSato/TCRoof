@@ -3,10 +3,11 @@ import TCRoofUI
 import TCRoofCore
 
 /// `ความคืบหน้าเทียบแผน` (docs/ui/install-tracking-ipad-v2 §2–3): the Gantt of the MP plan's install tasks over a day
-/// (or, past a month, a week) axis, or the station's S-curve by day, behind a `Gantt | S-Curve` switch. The card ends
+/// (or, past a month, a week) axis, the station's S-curve by day, or the key plan (`InstallTrackingPage+KeyPlan`),
+/// behind a `Gantt | S-Curve | Key Plan` switch. The card ends
 /// above the dock and its rows scroll inside it under the pinned day header. A task row opens its sheet.
 extension InstallTrackingPage {
-    enum ProgressView: String { case gantt, curve }
+    enum ProgressView: String { case gantt, curve, keyplan }
 
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
@@ -23,7 +24,11 @@ extension InstallTrackingPage {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 10) {
             progressHeader(data, g)
-            if view == .gantt { ganttGrid(g, nonWorking: data.nonWorking) } else { curvePanel(data) }
+            switch view {
+            case .gantt: ganttGrid(g, nonWorking: data.nonWorking)
+            case .curve: curvePanel(data)
+            case .keyplan: keyPlanPanel(data)
+            }
         }
         .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 8)
         .frame(height: fittedHeight, alignment: .top)
@@ -46,17 +51,32 @@ extension InstallTrackingPage {
                 }
             }
             Spacer(minLength: 8)
-            (view == .gantt ? AnyView(ganttLegend) : AnyView(curveLegend)).padding(.top, 10)
-            TCCountSegments([.init("Gantt"), .init("S-Curve")],
-                            selection: Binding(get: { view == .gantt ? 0 : 1 }, set: { view = $0 == 0 ? .gantt : .curve }), equalWidths: false)
+            switch view {
+            case .gantt: ganttLegend.padding(.top, 10)
+            case .curve: curveLegend.padding(.top, 10)
+            case .keyplan:
+                keyPlanLegend.padding(.top, 10)
+                keyPlanChip(keyPlanModel(data)).padding(.top, 8)
+            }
+            TCCountSegments([.init("Gantt"), .init("S-Curve"), .init("Key Plan")],
+                            selection: Binding(get: { Self.views.firstIndex(of: view) ?? 0 }, set: { view = Self.views[$0] }), equalWidths: false)
                 .fixedSize()
                 .accessibilityLabel("มุมมองความคืบหน้า")
         }
     }
 
+    /// The switch's order.
+    static let views: [ProgressView] = [.gantt, .curve, .keyplan]
+
+    /// The forecast end as `6/10`, or `6/10/2570` when it falls in another year than the due date.
+    static func forecastDay(_ t: InstallTracking) -> String {
+        let f = t.forecastEnd(), cal = Calendar.current
+        return cal.component(.year, from: f) == cal.component(.year, from: t.due) ? ThaiFormat.dayMonth.string(from: f) : ThaiFormat.numericDate.string(from: f)
+    }
+
     /// `คาดส่งมอบ 6/10 ตามกำหนด | เผื่อ 1 วัน`, amber with no spare day, red `คาดส่งมอบช้า n วัน` when late.
     private func forecastPill(_ t: InstallTracking) -> some View {
-        let slack = t.slackDays(), end = ThaiFormat.dayMonth.string(from: t.forecastEnd())
+        let slack = t.slackDays(), end = Self.forecastDay(t)
         let (text, tone): (String, InstallPageData.Tone) = slack < 0 ? ("คาดส่งมอบ \(end) | ช้า \(-slack) วัน", .danger)
             : slack == 0 ? ("คาดส่งมอบ \(end) ตามกำหนดพอดี", .warn) : ("คาดส่งมอบ \(end) ตามกำหนด | เผื่อ \(slack) วัน", .ok)
         return Text(text).font(.sarabunFixed(12, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
@@ -346,7 +366,7 @@ struct InstallColumns: View {
 
 // MARK: - axis
 
-/// The Gantt's time axis: one column a day, or a week (from Sunday, as the MP plan) when the span passes a month.
+/// The Gantt's time axis: one column a day, or a week (from Sunday, as the MP plan) when the span passes two months.
 struct InstallAxis {
     enum Unit { case day, week }
 
@@ -359,11 +379,13 @@ struct InstallAxis {
     /// The first day of each column.
     let columns: [Date]
 
-    init(_ g: InstallGantt) {
+    /// `dayLimit`: the longest span still drawn a day a column (the iPhone keeps a month, its columns scroll).
+    init(_ g: InstallGantt, dayLimit: Int = 62) {
         let cal = MasterSchedule.calendar
         let span = g.span(calendar: cal) ?? g.today...g.today
         let days = (cal.dateComponents([.day], from: span.lowerBound, to: span.upperBound).day ?? 0) + 1
-        unit = days > 31 ? .week : .day
+        // a day a column up to two months (the board's weekends and today's column read), a week past that
+        unit = days > dayLimit ? .week : .day
         today = cal.startOfDay(for: g.today)
         if unit == .day {
             start = span.lowerBound
@@ -405,9 +427,9 @@ struct InstallAxis {
         return out
     }
 
-    /// The columns that get a label: all of them, or every other past 16.
+    /// The columns that get a label: all of them up to 16, else every second, third … so about 16 show.
     var labelled: [Date] {
-        let step = columns.count > 16 ? 2 : 1
+        let step = max(1, Int((Double(columns.count) / 16).rounded(.up)))
         return columns.enumerated().filter { $0.offset % step == 0 }.map(\.element)
     }
 
@@ -428,6 +450,8 @@ struct InstallAxis {
 /// A step row's capsules: the plan as a light 24 pt track, the actual over it (green when done; while it runs, blue to
 /// its percent of the plan), the forecast dashed, and the days past the plan red with `+n วัน`.
 struct InstallBars: View {
+    /// Room kept for the `+n วัน` tag at the axis's end.
+    static let overrunTag: CGFloat = 76
     let row: InstallGantt.Row
     let axis: InstallAxis
     let width: CGFloat
@@ -453,14 +477,15 @@ struct InstallBars: View {
                 EmptyView()
             }
             if row.overrunDays > 0, row.status != .done || (row.actualEnd.map { $0 > row.end } ?? false) {
-                let ox = x1 + 7, oend = x1 + width * CGFloat(row.overrunDays) / CGFloat(max(axis.dayCount, 1)) - 4
+                let ox = x1 + 7, oend = min(x1 + width * CGFloat(row.overrunDays) / CGFloat(max(axis.dayCount, 1)) - 4, width - 2)
                 Group {
                     if row.status == .done { Capsule().fill(Theme.danger) } else { InstallHatch(ink: Theme.danger).clipShape(Capsule()) }
                 }
                 .frame(width: max(oend - ox, 10), height: 16).offset(x: ox)
+                // after the bar, or over its end when that would run past the axis into the % column
                 Text("+\(row.overrunDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText).fixedSize()
                     .padding(.horizontal, 8).frame(height: 22).background(Theme.dangerSoft, in: Capsule())
-                    .offset(x: max(oend - ox, 10) + ox + 8)
+                    .offset(x: min(max(oend - ox, 10) + ox + 8, width - Self.overrunTag))
             } else if let f = row.forecastEnd, row.status == .current, f > row.end {
                 let fx = axis.xEnd(f, width) - 3
                 Capsule().strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))

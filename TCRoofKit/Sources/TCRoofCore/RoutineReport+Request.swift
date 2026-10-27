@@ -6,6 +6,9 @@ public extension RoutineReport.WeeklyRequest {
     /// Day 0 is the Monday after `weekStart` (a Sunday, as the MP plan's weeks), day 5 the Saturday.
     func date(ofDay d: Int) -> Date { RoutineReport.add(weekStart, d + 1) }
 
+    /// ISO week of the request's Saturday, as the install page's weeks (`สัปดาห์ที่ 32`).
+    var weekNumber: Int { Calendar(identifier: .iso8601).component(.weekOfYear, from: date(ofDay: 5)) }
+
     /// The days 0…5 that are working weekdays in the job's settings.
     static func workingDays(_ settings: RoutineReport.Settings) -> [Int] {
         (0...5).filter { settings.workingWeekdays.contains($0 + 2) }

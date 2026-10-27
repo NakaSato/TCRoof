@@ -3,7 +3,8 @@ import XCTest
 /// ตั้งค่าแผน's `เริ่มจากแม่แบบ` on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/MPTemplateUITests -derivedDataPath <scratch>`.
 /// From an empty plan (`-mpClear YES`), station P3-028 (LV, ≥ 200 kVA), found by search, becomes the first job's plan moved
-/// to its kickoff, with its file kept for export. The first job keeps that plan.
+/// to its kickoff, with its file kept for export; the second test starts it from an install case (`แม่แบบตามกรณี`, LV,
+/// ≥ 200 kVA). The first job keeps the last plan.
 final class MPTemplateUITests: XCTestCase {
     let slow: TimeInterval = 90
 
@@ -54,5 +55,35 @@ final class MPTemplateUITests: XCTestCase {
         let export = app.buttons["ส่งออกไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(export.waitForExistence(timeout: 5))
         XCTAssertTrue(export.isEnabled, "the template's file should be kept for export")
+    }
+
+    /// `แม่แบบตามกรณี`: the demo station has no file of its own, so the sheet opens on the case its facts point to; the
+    /// pickers change it, and the case becomes the plan moved to the kickoff (the file's name says which case).
+    func testStartFromAnInstallCase() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let setup = app.buttons["ตั้งค่าแผน"].firstMatch
+        XCTAssertTrue(setup.waitForExistence(timeout: slow), "an empty plan should offer ตั้งค่าแผน")
+        setup.tap()
+        app.buttons["mpSetup.template"].firstMatch.tap()
+
+        // a case is picked from the start; LV and ≥ 200 kVA pick the matching one
+        XCTAssertTrue(caseShown(app, "P9-0").waitForExistence(timeout: 20), "the station without a file should start on a case")
+        app.segmentedControls["mpTemplate.caseBackfeed"].buttons["กันย้อน LV"].tap()
+        app.segmentedControls["mpTemplate.caseSize"].buttons["ตั้งแต่ 200 kVA (พค.2)"].tap()
+        let shown = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                                                          "กันย้อน LV", "≥ 200 kVA")).firstMatch
+        XCTAssertTrue(shown.waitForExistence(timeout: 5), "the case should follow the pickers")
+        XCTAssertFalse(app.switches["mpTemplate.keepFile"].firstMatch.isEnabled, "a case always moves to the kickoff")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "case-section"; shot.lifetime = .keepAlways
+        add(shot)
+
+        app.buttons["mpTemplate.apply"].firstMatch.tap()
+        let fromFile = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "แม่แบบ P9-0")).firstMatch
+        XCTAssertTrue(fromFile.waitForExistence(timeout: 30), "the plan should come from the case's file")
+        XCTAssertTrue(app.buttons["mpSetup.task.1.5"].firstMatch.exists, "พค.2 is in a ≥ 200 kVA plan")
     }
 }

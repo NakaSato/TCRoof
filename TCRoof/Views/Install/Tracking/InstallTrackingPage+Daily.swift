@@ -2,9 +2,8 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// `รายงานประจำวัน` (docs/ui/install-tracking-ipad-v2 §5, `states/04`): the KPI row, `ทุกรายงาน` with its filter and one row
-/// a working day in a fixed-height table, and under it three equal cards that end above the dock: the crew, the photos
-/// by MP task and tomorrow. The cumulative progress is the overview's S-curve.
+/// `รายงานประจำวัน` (docs/ui/install-tracking-ipad-daily): the KPI strip, then `ทุกรายงาน` with its filter and one row a
+/// working day, running down to the dock. Each row's cumulative progress is set against the MP plan.
 extension InstallTrackingPage {
     /// A file to hand to the share sheet.
     struct Shared: Identifiable {
@@ -25,16 +24,14 @@ extension InstallTrackingPage {
         return InstallDailyData(job: job)
     }
 
-    /// The report table card's height, as on the board.
-    static let reportsHeight: CGFloat = 372
-    /// The KPI row's height.
-    static let dailyKPIHeight: CGFloat = 96
+    /// The KPI strip's height.
+    static let dailyKPIHeight: CGFloat = 52
 
-    func dailyTab(_ d: InstallDailyData, site: InstallPageData.Site?) -> some View {
+    func dailyTab(_ d: InstallDailyData) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             dailyKPIs(d)
-            reportsCard(d)
-            dailyCards(d, site: site, height: max(viewport - 14 - Self.dailyKPIHeight - 14 - Self.reportsHeight - 14 - Self.dockClearance, 240))
+            // the reports card takes the rest of the height, down to the dock
+            reportsCard(d).frame(height: max(viewport - 14 - Self.dailyKPIHeight - 14 - Self.dockClearance, 300))
         }
     }
 
@@ -89,12 +86,16 @@ extension InstallTrackingPage {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return HStack(spacing: 0) {
             ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(c.label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-                    Text(c.value).font(.sarabunFixed(26, .bold)).foregroundStyle(c.ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-                    Text(c.note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).truncationMode(.tail)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(c.label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Spacer(minLength: 4)
+                        Text(c.value).font(.sarabunFixed(20, .bold)).foregroundStyle(c.ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                            .layoutPriority(1)
+                    }
+                    Text(c.note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).truncationMode(.tail)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
                 .accessibilityElement(children: .combine)
@@ -121,7 +122,7 @@ extension InstallTrackingPage {
     private struct Col {
         let compact: Bool
         let date: CGFloat = 80, status: CGFloat = 88, weather: CGFloat = 56, crew: CGFloat = 32, photos: CGFloat = 36
-        let progress: CGFloat = 150
+        let progress: CGFloat = 170
         var sign: CGFloat { compact ? 110 : 190 }
         var problem: CGFloat { compact ? 130 : 170 }
         var action: CGFloat { compact ? 120 : 140 }
@@ -165,7 +166,6 @@ extension InstallTrackingPage {
             }
             .padding(18)
         }
-        .frame(height: Self.reportsHeight)
     }
 
     /// `ทุกรายงาน`, its filter and buttons; `short` names the Weekly Report button without its count of reports.
@@ -198,7 +198,7 @@ extension InstallTrackingPage {
             Text("อากาศ").frame(width: col.weather, alignment: .leading)
             Text("คน").frame(width: col.crew, alignment: .leading)
             if !col.compact { Text("งานที่ทำ").frame(minWidth: 0, idealWidth: Col.work, maxWidth: .infinity, alignment: .leading) }
-            Text("สะสม (แผน MP)").frame(width: col.progress, alignment: .leading)
+            Text("สะสม | เทียบแผน MP").frame(width: col.progress, alignment: .leading)
             Text("รูป").frame(width: col.photos, alignment: .leading)
             Text("ลงนาม | รับทราบ").frame(width: col.sign, alignment: .leading)
             Text("ปัญหา").frame(width: col.problem, alignment: .leading)
@@ -233,7 +233,7 @@ extension InstallTrackingPage {
             if col.compact { Spacer(minLength: 0) }
             actionButton(r).frame(width: col.action)
         }
-        .padding(.horizontal, 14).frame(minHeight: 64)
+        .padding(.horizontal, 14).frame(minHeight: 56)
         .background(urgent ? Theme.dangerSoft.opacity(0.45) : Theme.surface)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .accessibilityElement(children: .contain)
@@ -264,21 +264,44 @@ extension InstallTrackingPage {
         }
     }
 
+    /// `47%` with `+3 เร็วกว่า` / `ตามแผน` / `-6 ช้ากว่า`, over a bar green when on or ahead of plan, orange when behind,
+    /// with a tick at the plan; `—` and `แผน 52%` before there is an actual.
     @ViewBuilder private func progressCell(_ r: InstallDailyData.Row) -> some View {
         if let p = r.planned {
-            HStack(spacing: 8) {
-                Capsule().fill(Theme.track).frame(width: 54, height: 6)
-                    .overlay(alignment: .leading) {
-                        Capsule().fill(Theme.primary).frame(width: 54 * min(max((r.actual ?? 0) / 100, 0), 1), height: 6)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 6) {
+                    Text(r.actual.map { "\(Int($0.rounded()))%" } ?? "—").font(.sarabunFixed(15, .bold))
+                        .foregroundStyle(r.actual == nil ? Theme.inkMuted : Theme.navy).monospacedDigit().lineLimit(1)
+                    if let d = r.delta {
+                        chip(d > 0 ? "+\(d) เร็วกว่า" : d == 0 ? "ตามแผน" : "\(d) ช้ากว่า", d >= 0 ? .ok : .danger)
+                    } else {
+                        chip("แผน \(Int(p.rounded()))%", .idle)
                     }
-                Text("\(r.actual.map { "\(Int($0.rounded()))%" } ?? "—") / \(Int(p.rounded()))%")
-                    .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit().lineLimit(1)
+                }
+                progressBar(actual: r.actual, planned: p, behind: (r.delta ?? 0) < 0)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("สะสม \(r.actual.map { "\(Int($0.rounded()))" } ?? "ไม่มี") เปอร์เซ็นต์ แผน \(Int(p.rounded())) เปอร์เซ็นต์")
+            .accessibilityLabel("สะสม \(r.actual.map { "\(Int($0.rounded()))" } ?? "ไม่มี") เปอร์เซ็นต์ แผน \(Int(p.rounded())) เปอร์เซ็นต์"
+                                + (r.delta.map { $0 > 0 ? " | เร็วกว่าแผน \($0)" : $0 < 0 ? " | ช้ากว่าแผน \(-$0)" : " | ตามแผน" } ?? ""))
         } else {
             Text("—").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
         }
+    }
+
+    /// A 6 pt bar the column's width: the actual filled, a navy tick at the plan.
+    private func progressBar(actual: Double?, planned: Double, behind: Bool) -> some View {
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Theme.track)
+                if let a = actual {
+                    Capsule().fill(behind ? Theme.warning : Theme.success).frame(width: g.size.width * min(max(a / 100, 0), 1))
+                }
+                Rectangle().fill(Theme.navy).frame(width: 2, height: 10)
+                    .offset(x: min(max(g.size.width * planned / 100 - 1, 0), g.size.width - 2))
+            }
+        }
+        .frame(height: 6)
+        .padding(.trailing, 8)
     }
 
     private func signCell(_ r: InstallDailyData.Row, today: Date, stacked: Bool) -> some View {
@@ -315,112 +338,5 @@ extension InstallTrackingPage {
         let all = RoutineReportFiles.Built(pages: built.flatMap(\.pages), images: built.reduce(into: [:]) { $0.merge($1.images) { a, _ in a } },
                                            name: "รายงานประจำวันรวม-\(job.stationName).pdf", folder: [], title: RoutineReport.Kind.daily.title)
         if let url = try? RoutineReportFiles.temporaryURL(all) { shared = Shared(url: url) }
-    }
-
-    // MARK: the three cards
-
-    @ViewBuilder private func dailyCards(_ d: InstallDailyData, site: InstallPageData.Site?, height: CGFloat) -> some View {
-        let labour = site?.labour ?? []
-        HStack(alignment: .top, spacing: 14) {
-            if !labour.isEmpty { crewCard(labour, chart: height - 104) }
-            if !d.photosByTask.isEmpty { photosCard(d) }
-            if let t = d.nextDay, !d.next.isEmpty { tomorrowCard(t, d.next) }
-        }
-        .frame(height: height)
-    }
-
-    private func cardTitle(_ title: String, _ note: String, trailing: String? = nil, ink: Color = Theme.inkMuted) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1).accessibilityAddTraits(.isHeader)
-            Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            Spacer(minLength: 4)
-            if let trailing { Text(trailing).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).lineLimit(1) }
-        }
-    }
-
-    private func crewCard(_ days: [InstallPageData.LabourDay], chart h: CGFloat) -> some View {
-        let top = max(days.map { max($0.plan ?? 0, $0.actual ?? 0) }.max() ?? 1, 1)
-        return panel {
-            VStack(alignment: .leading, spacing: 12) {
-                cardTitle("กำลังคนรายวัน", days.contains { $0.plan != nil } ? "เส้นประ = แผน" : "จากรายงาน")
-                HStack(alignment: .bottom, spacing: 3) {
-                    ForEach(days) { day in
-                        VStack(spacing: 3) {
-                            Text((day.actual ?? day.plan).map(String.init) ?? "").font(.sarabunFixed(11, .bold))
-                                .foregroundStyle(day.actual == nil ? Theme.inkMuted : Theme.navy).frame(height: 14)
-                            ZStack(alignment: .bottom) {
-                                if let a = day.actual {
-                                    RoundedRectangle(cornerRadius: 3).fill(Theme.primary).frame(height: h * CGFloat(a) / CGFloat(top))
-                                } else if let p = day.plan {
-                                    RoundedRectangle(cornerRadius: 3).strokeBorder(Theme.inkMuted.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [3, 2]))
-                                        .frame(height: h * CGFloat(p) / CGFloat(top))
-                                }
-                            }
-                            .frame(height: h, alignment: .bottom)
-                            Text(ThaiFormat.dayMonth.string(from: day.date).split(separator: "/").first.map(String.init) ?? "")
-                                .font(.sarabunFixed(10)).foregroundStyle(Theme.inkMuted)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(ThaiFormat.dayMonth.string(from: day.date))
-                        .accessibilityValue([day.plan.map { "แผน \($0) คน" }, day.actual.map { "จริง \($0) คน" }].compactMap { $0 }.joined(separator: " | "))
-                    }
-                }
-            }
-            .padding(16)
-        }
-    }
-
-    private func photosCard(_ d: InstallDailyData) -> some View {
-        let top = max(d.photosByTask.map(\.count).max() ?? 1, 1)
-        return panel {
-            VStack(alignment: .leading, spacing: 10) {
-                cardTitle("รูปตามงาน MP", "", trailing: "\(d.photosByTask.reduce(0) { $0 + $1.count }) รูป", ink: Theme.navy)
-                ScrollView {
-                    VStack(spacing: 10) {
-                        ForEach(d.photosByTask, id: \.code) { t in
-                            HStack(spacing: 10) {
-                                Text(t.code).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(width: 30, alignment: .leading)
-                                Text(t.title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1)
-                                Spacer(minLength: 6)
-                                Capsule().fill(Theme.track).frame(width: 70, height: 6)
-                                    .overlay(alignment: .leading) { Capsule().fill(Theme.success).frame(width: 70 * CGFloat(t.count) / CGFloat(top), height: 6) }
-                                Text("\(t.count)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk).monospacedDigit().frame(width: 26, alignment: .trailing)
-                            }
-                            .accessibilityElement(children: .combine)
-                        }
-                    }
-                }
-                .scrollIndicators(.automatic)
-            }
-            .padding(16)
-        }
-    }
-
-    private func tomorrowCard(_ day: Date, _ items: [InstallDailyData.Next]) -> some View {
-        panel {
-            VStack(alignment: .leading, spacing: 10) {
-                cardTitle("พรุ่งนี้ " + Self.dayLabel(day), "งานตามแผน MP")
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(items) { n in
-                            HStack(spacing: 10) {
-                                Text(n.code).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                                Text(n.title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1)
-                                Spacer(minLength: 6)
-                                Text("ตอนนี้ \(Int(n.percent.rounded()))%").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
-                            }
-                            .padding(.horizontal, 12).frame(minHeight: 40)
-                            .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .accessibilityElement(children: .combine)
-                        }
-                    }
-                }
-                .scrollIndicators(.automatic)
-                Button { route = .day(day) } label: { Text("สร้างร่างรายงาน " + ThaiFormat.dayMonth.string(from: day)).frame(maxWidth: .infinity) }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
-            }
-            .padding(16)
-        }
     }
 }

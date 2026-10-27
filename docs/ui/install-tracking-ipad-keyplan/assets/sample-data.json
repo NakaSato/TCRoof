@@ -1,0 +1,30 @@
+{
+  "_note": "Example data shown on the board (iPadInstall.dc.html, Key Plan view). Never hard-code any of it; the app reads the job, its MP plan, RoutineReport.Settings and the daily reports.",
+  "station": "การประปาบ้านโป่ง (ตัวอย่าง)",
+  "picture": { "file": "keyplan-example.jpg", "source": "ภาพ A2 จากรายงานสำรวจ", "aspect": [688, 477] },
+  "locations": ["หลังคา 1", "หลังคา 2", "หลังคา 3", "หลังคา 4", "หลังคา 5", "ถังน้ำใส 1", "ถังน้ำใส 2", "ห้องอินเวอร์เตอร์"],
+  "placed": 10,
+  "total": 16,
+  "groups": [
+    { "task": "2.1", "name": "โครงสร้าง + ราง", "points": [
+      { "label": "2.1-1", "location": "หลังคา 1", "actual": 100, "planned": 100, "state": "done" },
+      { "label": "2.1-2", "location": "หลังคา 2", "actual": 100, "planned": 100, "state": "done" },
+      { "label": "2.1-3", "location": "หลังคา 3", "actual": 70, "planned": 80, "state": "late" },
+      { "label": "2.1-4", "location": "หลังคา 4", "actual": 40, "planned": 80, "state": "late" },
+      { "label": "2.1-5", "location": "หลังคา 5", "actual": 0, "planned": 30, "state": "late" }
+    ]},
+    { "task": "2.2", "name": "ระบบไฟฟ้า DC", "points": [
+      { "label": "2.2-1", "location": "หลังคา 3", "actual": 60, "planned": 60, "state": "onPlan" },
+      { "label": "2.2-2", "location": "ห้องอินเวอร์เตอร์", "actual": 0, "planned": 0, "state": "notStarted", "placed": false }
+    ]},
+    { "task": "2.3", "name": "ติดตั้งแผง", "points": [
+      { "label": "2.3-1", "location": "หลังคา 1", "state": "onPlan" },
+      { "label": "2.3-2", "location": "หลังคา 2", "state": "late" }
+    ]},
+    { "task": "2.4", "name": "แผงบนถัง", "points": [
+      { "label": "2.4-1", "location": "ถังน้ำใส 1", "state": "notStarted" },
+      { "label": "2.4-2", "location": "ถังน้ำใส 2", "state": "notStarted" }
+    ]}
+  ],
+  "_unlisted": "The other 5 unplaced points on the board are filler rows of 2.5–3.x; their names and values are illustrative only."
+}

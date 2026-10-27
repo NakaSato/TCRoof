@@ -145,6 +145,40 @@ extension SurveyHomeView {
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderControl.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
+    // MARK: stations with no survey
+
+    /// The host's install stations that no survey here is linked to (stations added from their own plan files): the
+    /// project list shows them under the survey cards, so `ทั้งหมด` lists every project. Narrowed by the search.
+    var unsurveyedStations: [InstallStationSummary] {
+        let linked = Set(model.jobs.compactMap(\.jobSyncID) + model.jobs.map(\.id.uuidString))
+        let q = search.trimmingCharacters(in: .whitespaces)
+        let given = (host.installStations ?? []).filter { s in
+            !linked.contains(s.id)
+                && (q.isEmpty || s.name.localizedCaseInsensitiveContains(q) || s.contractor.localizedCaseInsensitiveContains(q)
+                    || s.mpNumber.map { "MP \($0)".localizedCaseInsensitiveContains(q) } == true)
+        }
+        return InstallOverview.rows(given, filter: .all, threshold: threshold)
+    }
+
+    /// `งานติดตั้ง | n สถานี` and the install overview's station cards; a tap opens the station.
+    @ViewBuilder func unsurveyedSection(_ stations: [InstallStationSummary]) -> some View {
+        HStack(spacing: 8) {
+            Text("งานติดตั้ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("\(stations.count) สถานี | ไม่มีรายงานสำรวจในแอป").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+        }
+        .padding(.top, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("pwaHome.stations")
+        stationRows {
+            ForEach(stations) { s in
+                Button { openStation(s) } label: {
+                    if compact { card(installRow(s), padding: rowPadding) } else { card(padInstallRow(s), padding: rowPadding) }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     // MARK: งานติดตั้ง
 
     @ViewBuilder var installOverview: some View {

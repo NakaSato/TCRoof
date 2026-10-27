@@ -227,36 +227,82 @@ final class RoutineReportPagesTests: XCTestCase {
         XCTAssertTrue(partial.contains("ยื่นขอขนานไฟ"))
     }
 
-    func testRequestShowsApprovalAndRisks() {
+    // MARK: R1 in the WORK REQUEST form (docs/ui/weekly-request-pdf)
+
+    private func request(work: Int = 3) -> RoutineReport.WeeklyRequest {
+        // the week of Monday 14 to Sunday 20 July 2025
         var r = RoutineReport.WeeklyRequest(weekStart: d(13))
-        r.work = [.init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1")]
+        r.crew = [.init(name: "ผู้ควบคุมงาน", count: 1), .init(name: "หัวหน้างาน", count: 1), .init(name: "ผู้ปฏิบัติงาน", count: 5),
+                  .init(name: "ช่างไฟฟ้า", count: 0)]
+        r.tools = [.init(name: "สว่านไฟฟ้า", count: 2), .init(name: "บันได", count: 1)]
+        r.work = (0..<work).map { .init(task: .panels, description: "ติดตั้งแผง \($0 + 1)", location: "หลังคา 1", qty: 1, unit: "งาน") }
         r.risks = [.init(description: "งานบนที่สูง", level: .high, prevention: "สวมเข็มขัดนิรภัย")]
-        r.approvedAt = d(12); r.approvedBy = "นาย ก"
-        let t = texts(pages.request(r))
-        XCTAssertTrue(t.contains("สูง"))
-        XCTAssertTrue(t.contains("อนุมัติ 12 ก.ค. 2568"))
-        XCTAssertTrue(t.contains("(นาย ก)"))
-        XCTAssertTrue(t.contains { $0.contains("13 ก.ค. 2568 – 19 ก.ค. 2568") })
+        return r
     }
 
-    func testRequestPrintsDaysAndTheDrawnSignature() {
-        var r = RoutineReport.WeeklyRequest(weekStart: d(13))
-        r.crew = [.init(name: "ช่างไฟฟ้า", count: 2)]
-        r.work = [.init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1", days: [0, 1])]
-        r.toggleOff(role: 0, day: 1)
+    func testRequestFormFitsOnePageWithItsTitlesAndTotals() {
+        var r = request()
+        r.engineerSignedAt = d(11)
+        r.approvedAt = d(12); r.approvedBy = "นาย ก"
         let sig = Photo(fileName: "sig.png", width: 240, height: 70)
-        let ops = pages.request(r, signature: sig).flatMap(\.ops)
-        let t = texts(pages.request(r, signature: sig))
-        XCTAssertTrue(t.contains("หยุด"), "a role off prints หยุด on its day")
-        XCTAssertTrue(t.contains("✓"))
-        XCTAssertTrue(t.contains("คน·วัน"))
-        XCTAssertTrue(t.contains("2"), "Monday's two people")
-        XCTAssertTrue(ops.contains { if case .photo(let p, _) = $0 { return p.id == sig.id } else { return false } }, "the drawn signature")
-        // a request without days prints as before
-        var old = r
-        old.crewOff = []; old.work[0].days = []
-        let plain = texts(pages.request(old))
-        XCTAssertFalse(plain.contains("คน·วัน"))
-        XCTAssertTrue(plain.contains("จำนวน (คน)"))
+        let p = pages.request(r, signature: sig)
+        XCTAssertEqual(p.count, 1)
+        XCTAssertEqual(p[0].width, RoutineReportPages.dailyFormPage.w)
+        let t = texts(p)
+        XCTAssertTrue(t.contains("WORK REQUEST CIVIL-ELECTRICAL"))
+        XCTAssertTrue(t.contains("คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)"))
+        XCTAssertFalse(t.contains("DAILY REPORT"))
+        XCTAssertTrue(t.contains("14–20 July 2025 (สัปดาห์ที่ 29)"), "Monday to Sunday with the week number")
+        XCTAssertTrue(t.contains("MANPOWER PLAN แผนกำลังคน"))
+        XCTAssertTrue(t.contains("RISK ASSESSMENT ประเมินความเสี่ยง"))
+        XCTAssertTrue(t.contains("สูง") && t.contains("สวมเข็มขัดนิรภัย"))
+        XCTAssertTrue(t.contains("1 / 1"))
+        // the totals: people 1 + 1 + 5 (a role at 0 is left out), tools 2 + 1
+        let placed = placed(p[0])
+        let manTotal = placed.firstIndex { $0.0 == "Total Man-Day" }.map { placed[$0 + 1].0 }
+        let toolTotal = placed.firstIndex { $0.0 == "Total Tool & Machinery" }.map { placed[$0 + 1].0 }
+        XCTAssertEqual(manTotal, "7")
+        XCTAssertEqual(toolTotal, "3")
+        XCTAssertFalse(t.contains("ช่างไฟฟ้า"))
+        // the signatures: the engineer's drawn one, the approver's name and date
+        XCTAssertTrue(t.contains("นาย ก"))
+        XCTAssertTrue(t.contains("Date : 11/7/2025") && t.contains("Date : 12/7/2025"))
+        XCTAssertTrue(p[0].ops.contains { if case .photo(let ph, _) = $0 { return ph.id == sig.id } else { return false } })
+    }
+
+    func testRequestFormContinuesWithTheSignaturesOnTheLastPage() {
+        let p = pages.request(request(work: 9))
+        XCTAssertEqual(p.count, 2, "9 work lines are more than the form's 7")
+        XCTAssertTrue(texts([p[1]]).contains("2 / 2"))
+        XCTAssertFalse(texts([p[0]]).contains("Site Engineer"), "no signatures before the last page")
+        XCTAssertTrue(texts([p[1]]).contains("Site Engineer") && texts([p[1]]).contains("Inspector"))
+        XCTAssertTrue(texts([p[1]]).contains("ติดตั้งแผง 9"))
+        XCTAssertTrue(texts([p[1]]).contains("9"), "the numbering goes on")
+        XCTAssertTrue(texts([p[1]]).contains("WORK REQUEST CIVIL-ELECTRICAL"), "the header repeats")
+        let second = placed(p[1])
+        XCTAssertEqual(second.firstIndex { $0.0 == "Total Man-Day" }.map { second[$0 + 1].0 }, "", "no total under a page without crew rows")
+    }
+
+    func testRequestBlankFormHasTheBoardsRows() {
+        let p = RoutineReportPages.requestBlankForm()
+        XCTAssertEqual(p.count, 1)
+        let t = texts(p)
+        XCTAssertTrue(t.contains("WORK REQUEST CIVIL-ELECTRICAL"))
+        XCTAssertTrue(t.contains("MANPOWER PLAN") && t.contains("WORK PLAN") && t.contains("ประเมินความเสี่ยง"))
+        XCTAssertFalse(t.contains("MANPOWER PLAN แผนกำลังคน"), "the blank form's titles are English only")
+        // numbered rows 11 / 11 / 10 / 4: "11" twice, "10" three times, "5" three times
+        XCTAssertEqual(t.filter { $0 == "11" }.count, 2)
+        XCTAssertEqual(t.filter { $0 == "10" }.count, 3)
+        XCTAssertEqual(t.filter { $0 == "5" }.count, 3)
+        XCTAssertEqual(t.filter { $0 == "4" }.count, 4)
+        XCTAssertFalse(t.contains("12"))
+        XCTAssertTrue(t.contains("Site Engineer") && t.contains("1 / 1"))
+    }
+
+    func testDailyFormKeepsItsTitles() {
+        let r = report(1, 20)
+        let t = texts(pages.daily(entry(r), all: [r]))
+        XCTAssertTrue(t.contains("DAILY REPORT") && t.contains("รายงานการทำงานประจำวัน"))
+        XCTAssertFalse(t.contains("WORK REQUEST CIVIL-ELECTRICAL"))
     }
 }

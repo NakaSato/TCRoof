@@ -98,6 +98,27 @@ final class MeasuredRoofSectionTests: XCTestCase {
         XCTAssertNil(MeasuredRoofSection.input(SurveyModule(type: .roof)).input, "C1 has its own section")
     }
 
+    /// Each listed member's number sits on the drawing too, in a circle with its leader: C2 with all seven sizes gets
+    /// six (อเส, the wall plate, isn't drawn in the section), C3 its two (แป, จันทัน), a flat roof none.
+    func testListedMembersAreMarked() throws {
+        func marks(_ sk: Sketch) -> [String] {
+            sk.ops.compactMap { op -> String? in if case let .text(t, _, _, true, _, _, _) = op, Int(t) != nil { return t }; return nil }
+        }
+        func circles(_ sk: Sketch) -> Int { sk.ops.filter { if case .circle = $0 { return true }; return false }.count }
+        var v = Values()
+        v["buildingWidth"] = .text("1000"); v["roofShape"] = .choice("หลังคาทรงจั่ว", other: "")
+        v[MeasuredRoofSection.Key.eaveHeight] = .text("4"); v[MeasuredRoofSection.Key.ridgeHeight] = .text("6")
+        for n in 1...7 { v["size\(n)"] = .text("10x5") }
+        let c2 = try XCTUnwrap(MeasuredRoofSection.draw(SurveyModule(type: .roofForm, values: v)).sketch)
+        XCTAssertEqual(Options.components, ["แป", "จันทัน", "อเส", "ขื่อ", "ค้ำยัน", "เชิงชาย", "ดั้ง"])
+        XCTAssertEqual(Set(marks(c2)), ["1", "2", "4", "5", "6", "7"])
+        XCTAssertEqual(circles(c2), 6)
+        let c3 = try XCTUnwrap(MeasuredRoofSection.draw(house()).sketch)
+        XCTAssertEqual(Set(marks(c3)), ["1", "2"])
+        let flat = try XCTUnwrap(MeasuredRoofSection.draw(house(shape: "หลังคาคอนกรีต (ดาดฟ้า)", i1: 300)).sketch)
+        XCTAssertTrue(marks(flat).isEmpty)
+    }
+
     func testEveryOpStaysInsideTheSketch() throws {
         var g = SystemRandomNumberGenerator()
         for n in 0..<50 {

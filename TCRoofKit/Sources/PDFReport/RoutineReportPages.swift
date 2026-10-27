@@ -286,65 +286,14 @@ public struct RoutineReportPages {
 
     // MARK: - R1 weekly request
 
-    /// R1. A request with days (`PlanLine.days`, `crewOff`) prints a column per working day in the crew and work tables;
-    /// one without prints as before. `signature` is the requester's drawn signature, on the Site Engineer's line.
+    /// R1, in the customer's WORK REQUEST form (`requestForm`, docs/ui/weekly-request-pdf). `signature` is the
+    /// requester's drawn signature, on the Site Engineer's line.
     public func request(_ r: RoutineReport.WeeklyRequest, signature: Photo? = nil) -> [ReportLayout.Page] {
-        let end = RoutineReport.calendar.date(byAdding: .day, value: 6, to: r.weekStart)!
-        let range = "\(RoutineReport.thaiDate(r.weekStart)) – \(RoutineReport.thaiDate(end))"
-        var f = Flow(title: "คำขอปฏิบัติงานรายสัปดาห์ (Weekly Request)", subtitle: stationLine + " | " + range)
-        projectFacts(&f)
-        facts(&f, [("สัปดาห์", range)])
-
-        let days = RoutineReport.WeeklyRequest.workingDays(station.settings)
-        let byDay = !days.isEmpty && (r.work.contains { !$0.days.isEmpty } || !r.crewOff.isEmpty)
-        func dayTitle(_ d: Int) -> String {
-            ["จ", "อ", "พ", "พฤ", "ศ", "ส"][d] + " \(RoutineReport.calendar.component(.day, from: r.date(ofDay: d)))"
-        }
-        heading(&f, "1. กำลังคน")
-        let crew = Self.counts(r.crew)
-        if crew.isEmpty { note(&f, "ไม่มี") } else if byDay {
-            let rows: [[String]] = r.crew.indices.filter { r.crew[$0].count > 0 }.map { i in
-                [r.crew[i].name] + days.map { d in r.people(role: i, day: d).map { $0 == 0 ? "หยุด" : "\($0)" } ?? "–" } + ["\(r.manDays(role: i, days: days))"]
-            }
-            let total = ["รวมต่อวัน"] + days.map { r.hasWork($0) ? "\(r.people(on: $0))" : "–" } + ["\(r.manDays(days: days))"]
-            table(&f, [Column(title: "ตำแหน่ง", width: 3)] + days.map { Column(title: dayTitle($0), width: 0.7, align: .center) }
-                      + [Column(title: "คน·วัน", width: 0.9, align: .center)],
-                  rows + [total], bold: [rows.count])
-        } else {
-            let total = r.crew.reduce(0) { $0 + $1.count }
-            table(&f, [Column(title: "ตำแหน่ง", width: 4), Column(title: "จำนวน (คน)", width: 1.4, align: .center)],
-                  crew + [["รวม", "\(total)"]], bold: [crew.count])
-        }
-        heading(&f, "2. เครื่องมือ / เครื่องจักร")
-        let tools = Self.counts(r.tools)
-        if tools.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "รายการ", width: 4), Column(title: "จำนวน", width: 1.4, align: .center)], tools)
-        }
-        heading(&f, "3. แผนงาน")
-        if r.work.isEmpty { note(&f, "ไม่มี") } else if byDay {
-            table(&f, [Column(title: "งาน MP", width: 0.8, align: .center), Column(title: "รายละเอียด", width: 3.0), Column(title: "ตำแหน่ง", width: 1.5),
-                       Column(title: "ปริมาณ", width: 0.8, align: .right)] + days.map { Column(title: dayTitle($0), width: 0.55, align: .center) },
-                  r.work.map { w in
-                      [w.task?.code ?? "อื่น", w.description, w.location, w.qty > 0 ? Self.num(w.qty) + (w.unit.isEmpty ? "" : " " + w.unit) : w.unit]
-                          + days.map { w.days.contains($0) ? "✓" : "" }
-                  })
-        } else {
-            table(&f, [Column(title: "งาน MP", width: 0.9, align: .center), Column(title: "รายละเอียด", width: 3.6), Column(title: "ตำแหน่ง", width: 1.8),
-                       Column(title: "ปริมาณ", width: 0.9, align: .right), Column(title: "หน่วย", width: 0.8, align: .center)],
-                  r.work.map { [$0.task?.code ?? "อื่น", $0.description, $0.location, $0.qty > 0 ? Self.num($0.qty) : "", $0.unit] })
-        }
-        heading(&f, "4. ประเมินความเสี่ยง")
-        let risks = r.risks.filter { !$0.description.isEmpty }
-        if risks.isEmpty { note(&f, "ไม่มี") } else {
-            table(&f, [Column(title: "ความเสี่ยง", width: 3), Column(title: "ระดับ", width: 0.9, align: .center), Column(title: "แนวทางป้องกัน", width: 4)],
-                  risks.map { [$0.description, $0.level.title, $0.prevention] })
-        }
-        let s = station.settings
-        signatures(&f, [("Site Engineer ผู้ขออนุมัติ", s.siteEngineer, r.engineerSignedAt, "ลงนาม"),
-                        ("Inspector ผู้อนุมัติ", r.approvedBy.isEmpty ? s.inspector : r.approvedBy, r.approvedAt, "อนุมัติ")],
-                   drawn: [signature, nil])
-        return f.finish()
+        requestForm(r, signature: signature)
     }
+
+    /// Minutes after midnight as `08:00`.
+    static func clock(_ minutes: Int) -> String { String(format: "%02d:%02d", minutes / 60, minutes % 60) }
 
     // MARK: - R3 weekly
 

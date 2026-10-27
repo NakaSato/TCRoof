@@ -1,0 +1,37 @@
+{
+  "_note": "Example values from the board iPadA4.dc.html. The app reads the job's A4 values (floodHistory, floodDepth, floodYear, floodDays, floodRef, floodInfoSource, floodFreq, floodSource, floodHit, floodPhoto/floodPhotos, floodNote, floodGistda) and B2 / B4 / B5 heights through FloodCheck. Never hard-code these.",
+  "header": { "title": "A4 น้ำท่วม", "subtitle": "แบบสำรวจ NO.224 · GRF2567-23407", "step": "4/13 · ประวัติน้ำท่วม" },
+  "history": {
+    "card": "ประวัติน้ำท่วม", "aside": "มีผลกับระดับติดตั้ง B2 · B4 · B5",
+    "answer": "เคย",
+    "level": { "value_cm": 80, "step_cm": 5, "range_cm": [5, 200], "slider_ticks": [0, 50, 100, 150, 200] },
+    "year": "2554", "days": 7, "ref": "ดินเดิม", "infoSource": "เจ้าหน้าที่"
+  },
+  "minLevel": {
+    "title": "ระดับติดตั้งต่ำสุด", "aside": "วัดจาก{ref} · ใช้ตรวจ B2 · B4 · B5",
+    "equation": "น้ำสูงสุด 80 ซม. + เผื่อเหนือน้ำ 50 ซม. = ติดตั้งต่ำสุด 130 ซม. (+1.30 ม.)",
+    "freeboard": { "default_cm": 50, "step_cm": 10, "range_cm": [0, 150] },
+    "rounding": "up to the next 10 cm; shows 'ปัดขึ้นจาก n' when rounded (e.g. 75 + 30 = 105 → 110)"
+  },
+  "frequencyCause": {
+    "card": "ความถี่ · สาเหตุ",
+    "freq": ["ทุกปี", "2–5 ปีครั้ง", "นานกว่า 5 ปี"],
+    "causeShortLabels": { "ฝนตกหนัก / ระบายน้ำไม่ทัน": "ฝนตกหนัก", "แม่น้ำ / คลองล้นตลิ่ง": "แม่น้ำล้นตลิ่ง", "น้ำทะเลหนุน": "น้ำทะเลหนุน", "น้ำป่า / น้ำหลาก": "น้ำป่าหลาก", "อื่นๆ": "อื่นๆ" }
+  },
+  "hits": {
+    "card": "จุดที่ได้รับผลกระทบ", "aside": "{n} จุด · แสดงบนภาพ A2",
+    "shortLabels": { "ห้อง MDB / ตู้ไฟฟ้า": "ห้อง MDB", "หม้อแปลง": "หม้อแปลง", "ห้องเครื่องสูบน้ำ": "ห้องสูบน้ำ", "อาคาร / พื้นที่ติดตั้งอินเวอร์เตอร์": "พื้นที่ INV", "ถนนทางเข้า": "ทางเข้า" },
+    "example": ["ห้อง MDB", "ห้องสูบน้ำ", "ทางเข้า"]
+  },
+  "never": "ไม่เคยท่วม · ข้ามรายละเอียดได้ — ระดับติดตั้งใช้ระยะเผื่อจากพื้น 50 ซม. → +0.50 ม.",
+  "chart": {
+    "title": "ภาพตัดระดับน้ำ", "caption": "ระดับเป็นเมตร · มิติเป็น ซม.",
+    "legend": ["ระยะเผื่อ (hatched band)", "น้ำท่วม (blue)"],
+    "rulerMetres": [0, 0.5, 1.0, 1.5, 2.0],
+    "tags": [["ติดตั้งต่ำสุด", "+1.30"], ["น้ำสูงสุด 2554", "+0.80 (drag grip)"], ["พื้นห้อง INV", "+0.30"], ["ดินเดิม", "±0.00"]],
+    "equipment": ["MDB 1 (เดิม · A3)", "ห้อง Inverter B2: INV, SMDB, E-stop", "pass / fail badge on each new device"],
+    "dims": ["เผื่อ 50", "100 (INV mount above floor)"]
+  },
+  "checkTable": [["พื้นห้อง Inverter", "B2", "30 ซม.", "! ต่ำกว่าน้ำ 50 ซม."], ["อินเวอร์เตอร์ × 2", "B2", "130 ซม.", "✓ ผ่าน"], ["ตู้ SMDB-PV · รีเลย์กันย้อน", "B4", "130 ซม.", "✓ ผ่าน"], ["ปุ่ม Emergency", "B5", "140 ซม.", "✓ ผ่าน"], ["MDP-1 จุดเชื่อมต่อ (เดิม)", "A3", "ฐาน 0 ซม.", "! น้ำเคยเข้า 80 ซม."]],
+  "bottomStatus": { "ok": "✓ ครบช่องบังคับแล้ว · อุปกรณ์ใหม่ผ่านเกณฑ์ ≥ 130 ซม. · จุดต่อ MDP-1 เคยน้ำท่วม", "fail": "! อุปกรณ์ต่ำกว่าเกณฑ์ n รายการ" }
+}

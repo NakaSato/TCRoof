@@ -48,6 +48,36 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: 8), "back should return to the page")
     }
 
+    /// `Key Plan` (docs/ui/install-tracking-ipad-keyplan): a pin selects its row, which offers `ย้ายจุดบนผัง`; on
+    /// `ยังไม่วาง`, `วางบนผัง` then a tap on the plan places the point and `วางแล้ว n/N` goes up.
+    func testKeyPlanSelectsAndPlaces() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "Key Plan")).firstMatch.tap()
+        let chip = app.staticTexts["keyPlanPlaced"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 8), "Key Plan should show the วางแล้ว chip")
+        func placed() -> Int { Int(chip.label.split(separator: " ").last?.split(separator: "/").first ?? "") ?? -1 }
+        let before = placed()
+
+        let pin = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "จุด 2.1-4")).firstMatch
+        XCTAssertTrue(pin.waitForExistence(timeout: 8), "the plan should have pin 2.1-4")
+        pin.tap()
+        XCTAssertTrue(app.buttons["ย้ายจุดบนผัง"].waitForExistence(timeout: 5), "a pin should open its row with ย้ายจุดบนผัง")
+
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ยังไม่วาง")).firstMatch.tap()
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ยังไม่วางบนผัง")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "ยังไม่วาง should list an unplaced point")
+        row.tap()
+        let placeButton = app.buttons["วางบนผัง"]
+        XCTAssertTrue(placeButton.waitForExistence(timeout: 5), "an unplaced row should offer วางบนผัง")
+        placeButton.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["keyPlanPlacing"].waitForExistence(timeout: 5), "place mode should show its banner")
+        app.descendants(matching: .any)["keyPlanImage"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.85)).tap()
+        // every point at the placed location is placed with it, so the count goes up by one or more
+        let counted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in placed() > before }, object: nil)
+        XCTAssertEqual(XCTWaiter().wait(for: [counted], timeout: 5), .completed, "placing should count more points (was \(before))")
+    }
+
     /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6) is a tab of the page: a stage's chevron hides its sub-tasks,
     /// `ตาราง` shows the table and `แก้ไขแผน` pushes the MP plan screen.
     func testPlanTab() {
@@ -75,7 +105,8 @@ final class InstallTrackingUITests: XCTestCase {
     }
 
     func testActionsSheetOpensAnItem() {
-        let app = launch()
+        // the KPI strip is at the top: not scrolled to the end
+        let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องดำเนินการ")).firstMatch
         XCTAssertTrue(cell.waitForExistence(timeout: 8))
@@ -151,6 +182,10 @@ final class InstallTrackingUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "รายงานประจำวัน")).firstMatch.tap()
         let open = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "เปิดรายงาน"))
         XCTAssertTrue(open.firstMatch.waitForExistence(timeout: 8), "the tab should list the reports")
+        // the table runs to the dock: no cards under it (docs/ui/install-tracking-ipad-daily)
+        XCTAssertFalse(app.staticTexts["กำลังคนรายวัน"].exists, "the crew card should be gone")
+        let delta = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "เร็วกว่าแผน", "ช้ากว่าแผน"))
+        XCTAssertTrue(delta.firstMatch.exists, "a row's progress should read ahead of or behind the MP plan")
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ต้องทำ")).firstMatch.tap()
         XCTAssertTrue(waitGone(open.firstMatch), "ต้องทำ should leave out the signed reports")
         let draft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ทำต่อ | ส่ง")).firstMatch
@@ -333,15 +368,33 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["เอกสาร"].waitForExistence(timeout: 8), "เปิดเอกสาร should open the paper's sheet")
     }
 
-    /// `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request) is a tab of the page on the board's example: a crew
-    /// day cell switches a role off and the day's total drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for
-    /// the signature sheet's `ยืนยันลายเซ็น`, and `ดู PDF` opens its sheet. Nothing is kept.
-    func testRequestTab() {
+    /// `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-request-map) shows the one-page key-plan request in the page at
+    /// full width: the key plan and `ส่งขออนุมัติ` under the page's tab bar, pin 2 selects its line, and `ภาพรวม` goes back.
+    func testRequestTabIsTheOnePageRequest() {
         let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
         app.buttons.matching(NSPredicate(format: "label == %@", "คำขอรายสัปดาห์")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["requestSendNow"].waitForExistence(timeout: 10), "the tab should show the one-page request")
+        XCTAssertTrue(app.staticTexts["KEY PLAN"].exists, "the key plan should be on the tab")
+        XCTAssertTrue(pageBack(app).exists, "the page's header and tab bar stay")
+        let pin2 = app.buttons["requestPin2"]
+        XCTAssertTrue(pin2.waitForExistence(timeout: 5))
+        pin2.tap()
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: pin2)
+        XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 5), .completed, "pin 2 should select its line")
+        app.buttons.matching(NSPredicate(format: "label == %@", "ภาพรวม")).firstMatch.tap()
+        XCTAssertTrue(waitGone(app.buttons["requestSendNow"]), "ภาพรวม should leave the request")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label == %@", "Gantt")).firstMatch.waitForExistence(timeout: 5), "ภาพรวม should show the overview")
+    }
+
+    /// The R1 form of `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request: an iPad under 1000 pt wide, here
+    /// `-installRequestForm YES`) on the board's example: a crew day cell switches a role off and the day's total
+    /// drops, a work day cell adds a day, `ส่งขออนุมัติ (PDF)` waits for the signature sheet's `ยืนยันลายเซ็น`, and
+    /// `ดู PDF` opens its sheet. Nothing is kept.
+    func testRequestTab() {
+        let app = launch(["-installTab", "request", "-installRequestForm", "YES"])
         let cell = app.buttons["crewCell0-0"]
-        XCTAssertTrue(cell.waitForExistence(timeout: 8), "คำขอรายสัปดาห์ should open the tab in the page")
+        XCTAssertTrue(cell.waitForExistence(timeout: slow), "-installTab request opens the tab in the page")
         XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")
         let day = app.staticTexts["crewDay0"]
         let before = Int(day.label) ?? 0
@@ -370,7 +423,7 @@ final class InstallTrackingUITests: XCTestCase {
 
     /// A contractor on a sent week sees no steppers.
     func testRequestTabSentIsReadOnlyForAContractor() {
-        let app = launch(["-installTab", "request", "-installRequestState", "sent", "-role", "external"])
+        let app = launch(["-installTab", "request", "-installRequestForm", "YES", "-installRequestState", "sent", "-role", "external"])
         XCTAssertTrue(app.buttons["crewCell0-0"].waitForExistence(timeout: slow))
         XCTAssertFalse(app.buttons["crew0Plus"].exists, "a sent request is read only for a contractor")
         XCTAssertFalse(app.buttons["requestSend"].exists)

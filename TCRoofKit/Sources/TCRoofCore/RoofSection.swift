@@ -7,7 +7,8 @@ import Foundation
 ///
 /// The sketch is 760 × 250, the roof structure only: the posts stop at a break line under the clear height (the level
 /// marks give the height). `trueScale` (the DXF) also lists the dimensions (`dimensions`) for the DXF's DIMENSIONs.
-/// `callouts` adds the page's numbered member bubbles ①–⑦; the PDF and the DXF leave them out.
+/// `callouts` adds the numbered member bubbles ①–⑦ that match the member schedule's rows: red on the page, in ink
+/// for the PDF and the DXF (`ink`).
 /// `tags` names each op's CAD layer (`SECTION`, `POST`, `PURLIN`, `GRID`, `LEVEL`, `DIM`, `CALLOUT`; nil for the
 /// background and the dimension texts).
 public struct RoofSection: Sendable {
@@ -41,7 +42,8 @@ public struct RoofSection: Sendable {
     static let cut = 194.0, marks = 606.0...750.0
 
     /// - Parameter highlight: member row 1…7 whose callout is filled red.
-    public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false, callouts showCallouts: Bool = true) {
+    /// - Parameter ink: the callouts in the drawing's ink, as printed (the PDF and the DXF), not the page's red.
+    public init(_ v: Values, highlight: Int? = nil, trueScale: Bool = false, callouts showCallouts: Bool = true, ink: Bool = false) {
         let f = Roof.frame(v)
         var m = Self.structure(v, structureOnly: trueScale)
         // the CAD file is the roof structure only, as the team's drawings: no level marks
@@ -108,7 +110,7 @@ public struct RoofSection: Sendable {
         if let i = baseLevel, i < d.levelValues.count { clearLabel = d.levelValues[i] }
         if let last = d.levelValues.last { riseLabel = last }
 
-        if showCallouts { callouts = Self.callouts(m, into: &d, P, base: base, below: yBase, half: half, overhang: o) }
+        if showCallouts { callouts = Self.callouts(m, into: &d, P, base: base, below: yBase, half: half, overhang: o, color: ink ? Self.navy : Self.red) }
         if let n = highlight, let c = callouts[n] {
             d.add(.circle(c, r: 11, stroke: .white, fill: Self.red, width: 2), nil)
             d.add(.text(String(n), at: c, size: 13, bold: true, color: .white, align: .center), nil)
@@ -306,7 +308,7 @@ public struct RoofSection: Sendable {
     /// The numbered member bubbles ①–⑦: one per row the section draws, on the member nearest a spot set for each row,
     /// the roof's members (purlin, top chord, fascia) from a band over the roof and the rest from one under the frame.
     static func callouts(_ m: StructureSection, into d: inout StructureSection.Drawn, _ P: (Pt) -> Pt, base: Double, below yBase: Double,
-                         half h: Double, overhang o: Double) -> [Int: Pt] {
+                         half h: Double, overhang o: Double, color red: RGBA = RoofSection.red) -> [Int: Pt] {
         let prefer: [Int: Double] = [1: 0.35 * h, 2: 1.4 * h, 3: 0.3 * h, 4: 0.3 * h, 5: 0.5 * h, 6: -o, 7: 1.6 * h]
         var spots: [Int: [Pt]] = [:]
         for mem in m.members {

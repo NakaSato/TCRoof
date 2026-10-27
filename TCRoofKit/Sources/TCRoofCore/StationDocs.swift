@@ -289,6 +289,17 @@ public enum StationDocs {
         /// (`AS-Built {station_name} {branch}`, `คู่มือ… พื้นที่{region}`); empty until the team types them.
         public var branch: String = ""
         public var region: String = ""
+        /// The project facts the station's plan file names on its second line (`ProjectSetup`), kept as the file
+        /// writes them: the station's code in the 102-station list (`P3-001`), its area (`ภาคเหนือ-กลาง`), the PEA
+        /// office (`กฟภ. เขต น.3`), the PPIM request number, where the zero export sits (`HV` / `LV`) and the admin.
+        /// Nil until a plan file is imported with them, or the team types them; left out of the JSON while nil, so a
+        /// station without them encodes as before.
+        public var code: String?
+        public var area: String?
+        public var peaZone: String?
+        public var ppimRequest: String?
+        public var zeroExport: String?
+        public var admin: String?
 
         public init(over200kVA: Bool? = nil, buildingRoute: BuildingRoute = .unknown, requestType: RequestType = .new,
                     sellsPower: Bool = false, srtProject: Bool = true, docs: [String: DocState] = [:], dueDates: [String: String] = [:]) {
@@ -323,6 +334,12 @@ public enum StationDocs {
             erc = try? c.decodeIfPresent(ERCFlow.Record.self, forKey: .erc)
             branch = try c.decodeIfPresent(String.self, forKey: .branch) ?? ""
             region = try c.decodeIfPresent(String.self, forKey: .region) ?? ""
+            code = try c.decodeIfPresent(String.self, forKey: .code)
+            area = try c.decodeIfPresent(String.self, forKey: .area)
+            peaZone = try c.decodeIfPresent(String.self, forKey: .peaZone)
+            ppimRequest = try c.decodeIfPresent(String.self, forKey: .ppimRequest)
+            zeroExport = try c.decodeIfPresent(String.self, forKey: .zeroExport)
+            admin = try c.decodeIfPresent(String.self, forKey: .admin)
         }
 
         public static func decode(_ json: String?) -> Station {

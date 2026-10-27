@@ -106,4 +106,31 @@ final class InstallGanttTests: XCTestCase {
         let newer = #"{"points":{},"lateCauses":{"dcSide":"crane","panels":"weather"}}"#
         XCTAssertEqual(try JSONDecoder().decode(MasterSchedule.Actual.self, from: Data(newer.utf8)).lateCauses, ["panels": .weather])
     }
+
+    func testEarnedScheduleMovesTheDueDateByTheDaysBehind() {
+        // the plan reached today's actual 6 days ago: the end moves 6 days, not by the whole period over the SPI
+        let t = InstallTracking(actual: 6, planned: 93, start: day(24, month: 9), due: day(6), today: day(30, month: 9), earned: day(24, month: 9))
+        XCTAssertEqual(t.forecastEnd(calendar: cal), day(12))
+        XCTAssertEqual(t.slackDays(calendar: cal), -6)
+        // ahead: the plan reaches today's actual in 2 days, so 2 days early
+        let ahead = InstallTracking(actual: 60, planned: 50, start: day(24, month: 9), due: day(6), today: day(30, month: 9), earned: day(2))
+        XCTAssertEqual(ahead.slackDays(calendar: cal), 2)
+    }
+
+    func testEarnedDateInterpolatesThePlansWeeks() throws {
+        // one task of 100 points over four weeks from Sunday 4 ต.ค. 2569: 25 a week, each reached at its week's end
+        var i = MasterSchedule.Input(installStart: day(4, month: 10), installEnd: day(31, month: 10), kickoff: day(4, month: 10),
+                                     engineeringStart: day(4, month: 10), siteHandover: day(4, month: 10), over200kVA: false)
+        i.fixed = ["structure": .init(start: day(4, month: 10), end: day(31, month: 10), weight: 100)]
+        let plan = MasterSchedule.plan(i, calendar: cal).filter { $0.task == .structure }
+        let total = MasterSchedule.status(plan: plan, actual: MasterSchedule.Actual(), through: day(31, month: 10), calendar: cal).planned
+        XCTAssertEqual(total, 100, accuracy: 0.5)
+        // 50 % is reached at the end of the second week, Saturday 17 ต.ค.
+        let e = try XCTUnwrap(InstallTracking.earnedDate(plan: plan, actual: MasterSchedule.Actual(), done: 50, start: day(4, month: 10), calendar: cal))
+        XCTAssertEqual(e, day(17, month: 10))
+        // 37.5 % half way through the second week
+        let m = try XCTUnwrap(InstallTracking.earnedDate(plan: plan, actual: MasterSchedule.Actual(), done: 37.5, start: day(4, month: 10), calendar: cal))
+        XCTAssertTrue((day(13, month: 10)...day(14, month: 10)).contains(m))
+        XCTAssertNil(InstallTracking.earnedDate(plan: plan, actual: MasterSchedule.Actual(), done: 101, start: day(4, month: 10), calendar: cal))
+    }
 }

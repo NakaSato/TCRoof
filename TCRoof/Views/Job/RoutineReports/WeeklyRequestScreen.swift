@@ -17,15 +17,60 @@ struct WeeklyRequestScreen: View {
     @State private var showApprove = false
     @State private var showAddRisk = false
     @State private var share: ReportShare?
+    // the iPad one-page layout (docs/ui/weekly-request-ipad-map): the week's drawn signature, the MP lines at their
+    // places, the sheets, the toast, and which week's draft has been laid out
+    @State private var signature: WeeklyRequestOnePage.Signature?
+    @State private var planned: [RoutineReport.PlanLine] = []
+    @State private var showSign = false
+    @State private var showPDF = false
+    @State private var toast: String?
+    @State private var prepared: String?
+    /// Inside the install tracking page's `คำขอรายสัปดาห์` tab: always the one-page layout, without its own header.
+    private let embedded: Bool
+    /// Told the week shown whenever it changes, so the host keeps its own week in step.
+    private let onWeek: ((Date) -> Void)?
 
-    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!) {
+    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!, embedded: Bool = false,
+         onWeek: ((Date) -> Void)? = nil) {
         self.job = job
-        let ws = MasterSchedule.weekStart(week)
+        self.embedded = embedded
+        self.onWeek = onWeek
+        var ws = MasterSchedule.weekStart(week)
+        #if DEBUG
+        // `-requestWeek 0|-1|-2`: next week or one of the two before
+        if let n = Int(UserDefaults.standard.string(forKey: "requestWeek") ?? "") { ws = RoutineReport.add(ws, 7 * n) }
+        #endif
         _week = State(initialValue: ws)
-        _request = State(initialValue: Self.load(job, ws))
+        _request = State(initialValue: Self.demo ? Self.demoRequest(ws, offset: Self.offset(ws)) : Self.load(job, ws))
     }
 
     static func load(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest { WeeklyRequestStore.load(job, week) }
+
+    /// `-requestDemo YES` (or the install page's `-installDemo YES`): the board's example in memory, nothing saved.
+    static var demo: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "requestDemo") || UserDefaults.standard.bool(forKey: "installDemo")
+        #else
+        false
+        #endif
+    }
+
+    /// `-routineRequest onepage`: the one-page layout whatever the width.
+    private static var forceOnePage: Bool {
+        #if DEBUG
+        UserDefaults.standard.string(forKey: "routineRequest") == "onepage"
+        #else
+        false
+        #endif
+    }
+
+    /// Next week's start, which the week list counts from.
+    private static var nextWeek: Date { MasterSchedule.weekStart(RoutineReport.add(.now, 7)) }
+
+    /// Weeks from next week (0, -1, -2 …).
+    private static func offset(_ week: Date) -> Int {
+        Int((MasterSchedule.weekStart(week).timeIntervalSince(nextWeek) / (7 * 86_400)).rounded())
+    }
 
     private var weekEnd: Date { RoutineReport.calendar.date(byAdding: .day, value: 6, to: week)! }
     private var stored: Bool { job.weeklyRequest(for: week) != nil }
@@ -35,6 +80,43 @@ struct WeeklyRequestScreen: View {
     private var editable: Bool { mayAct && request.isEditable(external: external) }
 
     var body: some View {
+        Group {
+            if embedded {
+                onePage
+            } else {
+                GeometryReader { g in
+                    if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+                        onePage
+                    } else {
+                        classic
+                    }
+                }
+            }
+        }
+        .onChange(of: week) { _, w in reload(w); onWeek?(w) }
+        #if DEBUG
+        .task { writeDebugPDFs() }
+        #endif
+    }
+
+    #if DEBUG
+    /// `-routineDemo pdf`: the week's request to Documents/request.pdf, and with nine work lines to request-overflow.pdf
+    /// (a second page); `-routineDemo blank`: the blank form to request-blank.pdf too (docs/ui/weekly-request-pdf).
+    private func writeDebugPDFs() {
+        let mode = UserDefaults.standard.string(forKey: "routineDemo")
+        guard mode == "pdf" || mode == "blank", !embedded,
+              let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        try? RoutineReportFiles.request(job, request).data.write(to: docs.appendingPathComponent("request.pdf"))
+        var long = request
+        let line = long.work.first ?? .init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1", qty: 1, unit: "งาน")
+        long.work = (0..<9).map { i in var l = line; l.id = UUID(); l.description = "\(line.description) (\(i + 1))"; return l }
+        try? RoutineReportFiles.request(job, long).data.write(to: docs.appendingPathComponent("request-overflow.pdf"))
+        if mode == "blank" { try? RoutineReportFiles.requestBlank(job).data.write(to: docs.appendingPathComponent("request-blank.pdf")) }
+    }
+    #endif
+
+    /// The form of cards: the iPhone, and an iPad narrower than 1000 pt.
+    private var classic: some View {
         ScrollView {
             VStack(spacing: 16) {
                 weekBar
@@ -71,8 +153,125 @@ struct WeeklyRequestScreen: View {
             }
         }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
-        .onChange(of: week) { _, w in request = Self.load(job, w) }
     }
+
+    // MARK: one page
+
+    private var onePage: some View {
+        WeeklyRequestOnePage(
+            job: job, request: $request, settings: pageSettings, planned: planned, weeks: weekChoices, signature: signature,
+            editable: Self.demo ? request.isEditable(external: external) : editable,
+            mayAct: Self.demo || mayAct, mayWithdraw: (Self.demo || mayAct) && !external, demo: Self.demo,
+            actions: .init(save: { save(file: false) }, sign: { showSign = true }, clearSignature: { setSignature(nil) },
+                           preview: { showPDF = true }, send: sendFromPage,
+                           withdraw: { request.sendBack(); save(file: false) },
+                           week: { shift(7 * $0) }, openWeek: { week = MasterSchedule.weekStart($0) },
+                           toast: { t in withAnimation { toast = t } }),
+            embedded: embedded)
+            .id(request.id)
+            .task(id: request.id) { prepare() }
+            .sheet(isPresented: $showSign) {
+                RequestSignSheet(name: pageSettings.siteEngineer) { png, name in
+                    setSignature(png)
+                    if !name.isEmpty, !Self.demo { var s = job.routineSettings; s.siteEngineer = name; job.routineSettings = s }
+                }
+            }
+            .sheet(isPresented: $showPDF) {
+                RequestPDFSheet(job: job, request: request, week: Self.weekNumber(request), demo: Self.demo) { url in
+                    share = ReportShare(url: url)
+                }
+            }
+            .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+            .overlay(alignment: .top) { toastView }
+    }
+
+    /// The station's settings, or the board's example ones.
+    private var pageSettings: RoutineReport.Settings { Self.demo ? Self.demoSettings(job.routineSettings) : job.routineSettings }
+
+    /// Next week and the two before, each with its request's state (this week's as it stands on screen).
+    private var weekChoices: [WeeklyRequestOnePage.WeekChoice] {
+        (-2...0).map { n in
+            let ws = RoutineReport.add(Self.nextWeek, 7 * n)
+            let status: RoutineReport.WeeklyRequest.Status? = MasterSchedule.weekStart(ws) == week ? request.status
+                : Self.demo ? Self.demoRequest(ws, offset: n).status : job.weeklyRequest(for: ws)?.status
+            return .init(start: ws, status: status)
+        }
+    }
+
+    /// The week's MP lines at their places and its signature; a new draft takes them, assessed at the defaults.
+    private func prepare() {
+        planned = Self.demo ? Self.demoPlanned(week) : Self.atPlaces(WeeklyRequestStore.draft(job, week).work, job.routineSettings)
+        if Self.demo {
+            signature = nil
+        } else {
+            signature = job.requestSignature(request).map { .init(png: $0.data, at: $0.createdAt) }
+        }
+        if prepared != request.id, !stored, !Self.demo, request.status == .draft {
+            request.work = Self.atPlaces(request.work, job.routineSettings)
+            request.assessDefaults()
+        }
+        #if DEBUG
+        if prepared == nil { applyDemoState() }
+        #endif
+        prepared = request.id
+    }
+
+    /// The plan's lines at the places the station's settings give their task (`taskLocations`), one line per place.
+    static func atPlaces(_ lines: [RoutineReport.PlanLine], _ settings: RoutineReport.Settings) -> [RoutineReport.PlanLine] {
+        lines.flatMap { line -> [RoutineReport.PlanLine] in
+            guard line.location.isEmpty, let t = line.task, let places = settings.taskLocations[t.rawValue], !places.isEmpty else { return [line] }
+            return places.map { .init(task: t, description: line.description, location: $0, qty: line.qty, unit: line.unit, days: line.days) }
+        }
+    }
+
+    private func reload(_ w: Date) {
+        request = Self.demo ? Self.demoRequest(w, offset: Self.offset(w)) : Self.load(job, w)
+    }
+
+    /// Keeps the drawn signature for the week (it syncs and prints on R1), or removes it.
+    private func setSignature(_ png: Data?) {
+        signature = png.map { .init(png: $0, at: .now) }
+        if !Self.demo { job.setRequestSignature(png, for: request, context: context) }
+    }
+
+    /// `ส่งขออนุมัติ`: as the tab sends it (our engineer's send signs it), filing the PDF and showing it.
+    private func sendFromPage() {
+        request.send(by: permissions.email, signs: !external)
+        save(file: true)
+        showPDF = true
+    }
+
+    @ViewBuilder private var toastView: some View {
+        if let toast {
+            Text(toast).font(.sarabun(15, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.onMedia)
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(Theme.toast, in: Capsule())
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .task { try? await Task.sleep(for: .seconds(2)); withAnimation { self.toast = nil } }
+                .accessibilityIdentifier("requestToast")
+        }
+    }
+
+    #if DEBUG
+    /// `-requestState signed|sent|approved|empty|pdf` (the page opens the others: line2, weeks, worktime, tools, risk,
+    /// nodays, map). With `-requestDemo YES` nothing is kept.
+    private func applyDemoState() {
+        switch UserDefaults.standard.string(forKey: "requestState") ?? "" {
+        case "signed": setSignature(Self.demoSignature)
+        case "sent":
+            setSignature(Self.demoSignature)
+            request.send(by: permissions.email.isEmpty ? "engineer@tcroof.test" : permissions.email, signs: true)
+        case "approved":
+            setSignature(Self.demoSignature)
+            request.send(by: permissions.email, signs: true)
+            request.approve(by: pageSettings.inspector.isEmpty ? "ผู้ตรวจ กฟภ." : pageSettings.inspector, at: RoutineReport.add(request.weekStart, -2))
+        case "empty": request.work = []
+        case "pdf": showPDF = true
+        default: break
+        }
+    }
+    #endif
 
     private var weekBar: some View {
         HStack(spacing: 8) {
@@ -226,16 +425,19 @@ struct WeeklyRequestScreen: View {
     }
 
     private func save(file: Bool) {
+        guard !Self.demo else { return }
         WeeklyRequestStore.save(request, job: job, external: external, file: file, context: context)
     }
 
     private func exportPDF() {
         if let url = WeeklyRequestStore.pdfURL(job, request) { share = ReportShare(url: url) }
     }
+
+    /// ISO week of the request's Saturday, as the install page's other weeks.
+    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int { r.weekNumber }
 }
 
-/// What the request screen and the iPad install page's `คำขอรายสัปดาห์` tab share: the week's request (or its draft
-/// from the MP plan), keeping it, and its R1 PDF.
+/// The week's request (or its draft from the MP plan), keeping it, and its R1 PDF.
 @MainActor
 enum WeeklyRequestStore {
     static func draft(_ job: Job, _ week: Date) -> RoutineReport.WeeklyRequest {

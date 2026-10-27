@@ -414,7 +414,11 @@ extension SurveyHomeView {
             .padding(.top, 2)
             .accessibilityElement(children: .combine)
         }
-        if shown.isEmpty { empty } else { grid }
+        // stations with no survey here (added from their plan files) follow the survey cards in ทั้งหมด
+        let stations = filter == .all ? unsurveyedStations : []
+        if shown.isEmpty && stations.isEmpty { empty }
+        if !shown.isEmpty { grid }
+        if !stations.isEmpty { unsurveyedSection(stations) }
     }
 
     /// 60 pt (iPad 64), the board's gradient, no shadow.

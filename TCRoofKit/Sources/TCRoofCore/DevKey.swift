@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(CommonCrypto)
 import CommonCrypto
+#endif
 
 /// The developer key that opens จัดการผู้ใช้และสิทธิ์ (`config/devKey`): a PBKDF2-SHA256 hash of 6 digits and its salt,
 /// never the digits. A Maintainer sets it in the Firebase console (`tools/dev-key`), and only a Maintainer can read it
@@ -42,6 +44,7 @@ public struct DevKey: Equatable, Sendable {
     }
 
     public static func derive(_ digits: String, salt: Data, iterations: Int, length: Int = 32) -> Data {
+        #if canImport(CommonCrypto)
         let password = Array(digits.utf8)
         var out = [UInt8](repeating: 0, count: length)
         let status = salt.withUnsafeBytes { s in
@@ -55,6 +58,9 @@ public struct DevKey: Equatable, Sendable {
             }
         }
         return status == kCCSuccess ? Data(out) : Data()
+        #else
+        return PBKDF2Pure.sha256(Data(digits.utf8), salt: salt, iterations: iterations, length: length)
+        #endif
     }
 
     /// The digits give this key's hash (compared in constant time).
@@ -93,3 +99,29 @@ public struct DevKeyAttempts: Codable, Equatable, Sendable {
     /// The right key, or the lock ran out.
     public mutating func reset() { self = DevKeyAttempts() }
 }
+
+#if !canImport(CommonCrypto)
+/// RFC 8018 PBKDF2 with HMAC-SHA256 on `SHA256Pure`, for platforms without CommonCrypto (Linux test runs).
+enum PBKDF2Pure {
+    static func sha256(_ password: Data, salt: Data, iterations: Int, length: Int) -> Data {
+        guard iterations > 0, length > 0 else { return Data() }
+        var key = password.count > 64 ? SHA256Pure.hash(password) : password
+        key.append(Data(count: 64 - key.count))
+        let inner = Data(key.map { $0 ^ 0x36 }), outer = Data(key.map { $0 ^ 0x5c })
+        func hmac(_ m: Data) -> Data { SHA256Pure.hash(outer + SHA256Pure.hash(inner + m)) }
+        var out = Data()
+        var block: UInt32 = 1
+        while out.count < length {
+            var u = hmac(salt + withUnsafeBytes(of: block.bigEndian) { Data($0) })
+            var t = [UInt8](u)
+            for _ in 1..<iterations {
+                u = hmac(u)
+                for (i, b) in u.enumerated() { t[i] ^= b }
+            }
+            out.append(contentsOf: t)
+            block += 1
+        }
+        return out.prefix(length)
+    }
+}
+#endif

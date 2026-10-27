@@ -49,6 +49,14 @@ extension RoutineReportPages {
     static let fineFill = RGBA(hex: 0xB7DEE8), cloudFill = RGBA(hex: 0xD9D9D9), rainFill = RGBA(hex: 0xFF0000)
     static let hint = RGBA(hex: 0x767676)
 
+    /// The two title lines in the logo band: English (Helvetica bold) over Thai (Sarabun 15 bold).
+    struct FormTitles {
+        var en: String
+        var enSize: Double
+        var th: String
+        static let daily = FormTitles(en: "DAILY REPORT", enSize: 14, th: "รายงานการทำงานประจำวัน")
+    }
+
     /// What the header prints; nil fields draw the blank form's dotted lines.
     struct FormHeader {
         var contract: String
@@ -58,6 +66,9 @@ extension RoutineReportPages {
         var from: String
         var to: String
         var station: String?
+        var titles = FormTitles.daily
+        /// Sarabun after the date, as the weekly request's `(สัปดาห์ที่ 32)`.
+        var dateNote: String? = nil
     }
 
     // MARK: - Report
@@ -241,8 +252,8 @@ extension RoutineReportPages {
         // logo band, 76 px
         let mid = 41.5 + 38
         o.append(.photo(FormImage.tcLogo.photo, Box(x0 + 18, mid - 20, 40 * FormImage.tcLogo.aspect, 40)))
-        o.append(.runs([TextRun("DAILY REPORT", size: 14, bold: true, face: .helvetica)], at: Pt(Self.boardW / 2, mid - 11), align: .center))
-        o.append(.runs([TextRun("รายงานการทำงานประจำวัน", size: 15, bold: true)], at: Pt(Self.boardW / 2, mid + 9), align: .center))
+        o.append(.runs([TextRun(h.titles.en, size: h.titles.enSize, bold: true, face: .helvetica)], at: Pt(Self.boardW / 2, mid - 11), align: .center))
+        o.append(.runs([TextRun(h.titles.th, size: 15, bold: true)], at: Pt(Self.boardW / 2, mid + 9), align: .center))
         let peaW = 36 * FormImage.peaLogo.aspect
         o.append(.photo(FormImage.peaLogo.photo, Box(x1 - 18 - peaW, mid - 18, peaW, 36)))
         o.append(.photo(FormImage.pwaLogo.photo, Box(x1 - 18 - peaW - 8 - 40, mid - 20, 40, 40)))
@@ -270,7 +281,9 @@ extension RoutineReportPages {
         }
         o.append(Self.latin("DATE :", 10, bold: true, at: Pt(c2 + 8, line1)))
         o.append(.text("วันที่", at: Pt(c2 + 8, line2), size: 11, bold: true))
-        if let date = h.date {
+        if let date = h.date, let note = h.dateNote {
+            o.append(.runs([TextRun(date + " ", size: 12, bold: true, face: .helvetica), TextRun(note, size: 11)], at: Pt(c3 + 10, line1)))
+        } else if let date = h.date {
             o.append(Self.latin(date, 12, bold: true, at: Pt(c3 + 10, line1)))
         } else {
             o.append(Self.dotted(c3 + 10, line1 + 7, 140))

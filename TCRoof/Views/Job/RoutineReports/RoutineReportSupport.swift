@@ -15,8 +15,10 @@ extension Job {
     var dailyReports: [RoutineReport.Daily] { dailyLogs.compactMap(\.report) }
 
     func dailyLog(on date: Date) -> InstallLog? {
-        let key = RoutineReport.dayKey(date)
-        return dailyLogs.first { RoutineReport.dayKey($0.date) == key }
+        // the earliest daily report of that day, as `dailyLogs.first` gives, without sorting every log or making a day key
+        // per log (the station list asks this of every station on each redraw)
+        let cal = RoutineReport.calendar
+        return logs.filter { cal.isDate($0.date, inSameDayAs: date) && $0.reportJSON != nil }.min { $0.date < $1.date }
     }
 
     /// The station name printed on reports and file names.
@@ -170,6 +172,12 @@ enum RoutineReportFiles {
     static func blankForm(_ job: Job) -> Built {
         Built(pages: RoutineReportPages.dailyBlankForm(settings: job.routineSettings, measure: PDFRenderer.Measure()), images: [:],
               name: "แบบฟอร์มรายงานประจำวัน (เปล่า).pdf", folder: [], title: RoutineReport.Kind.daily.title)
+    }
+
+    /// The WORK REQUEST form blank, for filling in by hand (no button yet: docs/ui/weekly-request-pdf, open question 3).
+    static func requestBlank(_ job: Job) -> Built {
+        Built(pages: RoutineReportPages.requestBlankForm(settings: job.routineSettings, measure: PDFRenderer.Measure()), images: [:],
+              name: "แบบฟอร์มคำขอปฏิบัติงานรายสัปดาห์ (เปล่า).pdf", folder: [], title: RoutineReport.Kind.request.title)
     }
 
     static func daily(_ job: Job, log: InstallLog, samplePhotos: Int = 0) -> Built? {

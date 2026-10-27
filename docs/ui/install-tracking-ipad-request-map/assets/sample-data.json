@@ -1,0 +1,14 @@
+{
+  "_note": "Example data on the board (iPadWeeklyMap.dc.html inside the install tracking page). Never hard-code it; the app reads the job's weekly request, MP plan and RoutineReport.Settings.",
+  "title": "คำขอปฏิบัติงานสัปดาห์ที่ 32 (4 – 10 ส.ค. 2568)",
+  "station": "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย (ตัวอย่าง)",
+  "keyPlan": { "file": "keyplan-example.jpg", "places": ["หลังคา 1", "หลังคา 2", "หลังคา 3", "หลังคา 4", "หลังคา 5", "ถังน้ำใส 1", "ถังน้ำใส 2", "ห้องอินเวอร์เตอร์"] },
+  "week": { "number": 32, "workTime": "08:00–18:00" },
+  "team": { "manDays": 42, "days": 6, "crew": [{ "role": "ผู้ควบคุมงาน", "n": 1 }, { "role": "หัวหน้างาน", "n": 1 }, { "role": "ผู้ปฏิบัติงาน", "n": 5 }], "tools": 3 },
+  "lines": [
+    { "n": 1, "place": "หลังคา 1", "task": "ติดตั้งรางเก็บสายไฟกระแสตรง", "mp": "2.4", "days": ["จ 4", "อ 5", "พ 6"], "risks": [["การทำงานบนที่สูง", "สูง"], ["ไฟฟ้าช็อต / อาร์กแฟลช", "สูง"], ["วัตถุตกหล่น", "ปานกลาง"]] },
+    { "n": 2, "place": "ห้องอินเวอร์เตอร์", "task": "ติดตั้งรางเก็บสายไฟกระแสสลับ", "mp": "2.5", "days": ["พ 6", "พฤ 7"] },
+    { "n": 3, "place": "ถังน้ำใส 1", "days": 3 }
+  ],
+  "signer": { "name": "นายสมชาย ใจดี", "role": "SITE ENGINEER" }
+}

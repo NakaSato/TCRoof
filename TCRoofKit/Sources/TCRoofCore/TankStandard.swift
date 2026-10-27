@@ -71,13 +71,13 @@ public struct TankStandard: Codable, Equatable, Sendable {
         Field(key: \.moduleL, label: "แผงยาว", unit: "ม.", scale: 1, range: 1.5...2.6, step: 0.001, group: "แผง"),
         Field(key: \.moduleW, label: "แผงกว้าง", unit: "ม.", scale: 1, range: 0.9...1.4, step: 0.001, group: "แผง"),
         Field(key: \.moduleKW, label: "กำลังแผง", unit: "W", scale: 1000, range: 0.3...0.8, step: 0.005, group: "แผง"),
-        Field(key: \.hFront, label: "เสาหน้าสูง", unit: "ม.", scale: 1, range: 0.5...2.5, step: 0.05, group: "เสาและแถว"),
+        Field(key: \.hFront, label: "คานที่แนวขาหน้า สูง", unit: "ม.", scale: 1, range: 0.5...2.5, step: 0.05, group: "เสาและแถว"),
         Field(key: \.hBack, label: "เสาหลังสูง", unit: "ม.", scale: 1, range: 0.6...3.5, step: 0.05, group: "เสาและแถว"),
-        Field(key: \.postDY, label: "เสาหน้า → เสาหลัง", unit: "ม.", scale: 1, range: 1.5...4.5, step: 0.05, group: "เสาและแถว"),
+        Field(key: \.postDY, label: "แนวขาหน้า → เสาหลัง", unit: "ม.", scale: 1, range: 1.5...4.5, step: 0.05, group: "เสาและแถว"),
         Field(key: \.rowGap, label: "เสาหลัง → แถวถัดไป", unit: "ม.", scale: 1, range: 1.5...6, step: 0.05, group: "เสาและแถว"),
         Field(key: \.postDX, label: "ระยะคู่เสาตามแถว (สูงสุด)", unit: "ม.", scale: 1, range: 1.5...4, step: 0.05, group: "เสาและแถว"),
         Field(key: \.endOver, label: "รางยื่นพ้นเสาปลาย", unit: "ม.", scale: 1, range: 0...1, step: 0.05, group: "เสาและแถว"),
-        Field(key: \.frontOver, label: "เสาหน้า → ขอบแผงล่าง (ตามลาด)", unit: "ม.", scale: 1, range: 0...1.5, step: 0.01, group: "เสาและแถว"),
+        Field(key: \.frontOver, label: "แนวขาหน้า → ขอบแผงล่าง (ตามลาด)", unit: "ม.", scale: 1, range: 0...1.5, step: 0.01, group: "เสาและแถว"),
         Field(key: \.maxCantilever, label: "คู่เสาปลาย → ปลายโต๊ะ (สูงสุด)", unit: "ม.", scale: 1, range: 0.3...2, step: 0.05, group: "เสาและแถว"),
         Field(key: \.minPairGap, label: "ระยะคู่เสาต่ำสุด", unit: "ม.", scale: 1, range: 0.3...2, step: 0.05, group: "เสาและแถว"),
         Field(key: \.clearance, label: "ขอบถัง → แผง", unit: "ม.", scale: 1, range: 0.3...3, step: 0.05, group: "ระยะเว้น"),
@@ -96,7 +96,7 @@ public struct TankStandard: Codable, Equatable, Sendable {
             }
             return nil
         }
-        if hBack <= hFront + 0.05 { out.append("เสาหลังต้องสูงกว่าเสาหน้าอย่างน้อย 0.05 ม.") }
+        if hBack <= hFront + 0.05 { out.append("เสาหลังต้องสูงกว่าคานที่แนวขาหน้าอย่างน้อย 0.05 ม.") }
         if minPairGap > postDX { out.append("ระยะคู่เสาต่ำสุดต้องไม่เกินระยะคู่เสาตามแถว") }
         if moduleW > moduleL { out.append("แผงวางแนวตั้ง: ความยาวต้องไม่น้อยกว่าความกว้าง") }
         return out

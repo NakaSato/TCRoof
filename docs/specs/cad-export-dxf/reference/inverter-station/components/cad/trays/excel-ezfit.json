@@ -1,0 +1,780 @@
+{
+ "schemaVersion": 1,
+ "manufacturer": "Excel Electric Group",
+ "productLine": "EZ-FIT",
+ "finish": "Hot-dip Galvanized",
+ "source": "Electrical_Distribution_Excel_Electric_Group_EZ-FIT_Cable_Tray_2019.rvt",
+ "typeNaming": "<M|H><series><width>, e.g. MTX225 = M-series straight, 225 wide",
+ "notes": [
+  "The RVT lists available heights 25 and 50 mm but doesn't tie them to the M/H prefixes in readable form. heightMm is left null until confirmed (likely M = 25, H = 50).",
+  "Only MTX225 has a schedule weight in the file (4.400 kg/m, 2.95 m pieces)."
+ ],
+ "families": [
+  {
+   "code": "TX",
+   "kind": "straight",
+   "description": "Straight length",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_Electric_Group_EZ-FIT-Cable_Tray_Hot-dip Galvanized"
+   ],
+   "types": [
+    {
+     "type": "HTX50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HTX600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized",
+     "kgPerM": 4.4,
+     "sampleLengthM": 2.95
+    },
+    {
+     "type": "MTX300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MTX600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ],
+   "availableHeightsMm": [
+    25,
+    50
+   ],
+   "availableWidthsMm": [
+    50,
+    75,
+    100,
+    150,
+    225,
+    300,
+    450,
+    600
+   ],
+   "maxLengthPerPieceM": 2.95
+  },
+  {
+   "code": "FB",
+   "kind": "fitting",
+   "description": "Horizontal elbow 90°",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MFB-HFB_Channel-Elbow_90Deg"
+   ],
+   "types": [
+    {
+     "type": "HFB50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HFB600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MFB600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "HB",
+   "kind": "fitting",
+   "description": "Horizontal elbow 45°",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MHB-HHB_Channel-Elbow_45Deg"
+   ],
+   "types": [
+    {
+     "type": "HHB50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HHB600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MHB600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "ET",
+   "kind": "fitting",
+   "description": "Tee",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MET-HET_Channel-Tee"
+   ],
+   "types": [
+    {
+     "type": "HET50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HET600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MET600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "X",
+   "kind": "fitting",
+   "description": "Cross",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MX-HX_Channel-Cross"
+   ],
+   "types": [
+    {
+     "type": "HX50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HX600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MX600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RBI",
+   "kind": "fitting",
+   "description": "Vertical elbow 90° inside",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MRBI-HRBI_Channel-Vertical-Elbow_90Deg Inside"
+   ],
+   "types": [
+    {
+     "type": "MRBI225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RBO",
+   "kind": "fitting",
+   "description": "Vertical elbow 90° outside",
+   "revitFamilies": [
+    "Electrical_Distribution_Excel_MRBO-HRBO_Channel-Vertical-Elbow_90Deg Outside"
+   ],
+   "types": [
+    {
+     "type": "HRBO50",
+     "series": "H",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO75",
+     "series": "H",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO100",
+     "series": "H",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO150",
+     "series": "H",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO225",
+     "series": "H",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO300",
+     "series": "H",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO450",
+     "series": "H",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "HRBO600",
+     "series": "H",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO50",
+     "series": "M",
+     "widthMm": 50,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO75",
+     "series": "M",
+     "widthMm": 75,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO100",
+     "series": "M",
+     "widthMm": 100,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO150",
+     "series": "M",
+     "widthMm": 150,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO225",
+     "series": "M",
+     "widthMm": 225,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO300",
+     "series": "M",
+     "widthMm": 300,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO450",
+     "series": "M",
+     "widthMm": 450,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "MRBO600",
+     "series": "M",
+     "widthMm": 600,
+     "heightMm": null,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  }
+ ]
+}

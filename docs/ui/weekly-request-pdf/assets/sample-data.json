@@ -1,0 +1,23 @@
+{
+  "_note": "Example data on RptWeekly32.dc.html. Never hard-code it; the page reads RoutineReport.WeeklyRequest and the station's settings.",
+  "station": "สถานีผลิตน้ำโชคชัย การประปาส่วนภูมิภาคสาขาโชคชัย",
+  "kW": "171.00",
+  "date": "04–10 August 2025",
+  "week": 32,
+  "workingTime": "08.00 AM - 17.00 PM",
+  "from": "บริษัท ทีซี รีนิวอะเบิ้ล เอ็นเนอร์ยี่ จำกัด",
+  "to": "การไฟฟ้าส่วนภูมิภาค",
+  "manpower": [["ผู้ควบคุมงาน", 1], ["หัวหน้างาน", 1], ["ผู้ปฏิบัติงาน", 5]],
+  "manTotal": 7,
+  "tools": [["สว่านไร้สาย", 1], ["สว่านไฟฟ้า", 1], ["เครื่องมือช่าง", 1]],
+  "toolTotal": 3,
+  "work": [
+    ["ดำเนินการติดตั้งรางเก็บสายไฟกระแสตรง", "หลังคา 1-4, ถังน้ำใส 1-2", 1, "งาน"],
+    ["ดำเนินการติดตั้งรางเก็บสายไฟกระแสสลับ", "ห้องอินเวอร์เตอร์", 1, "งาน"],
+    ["ดำเนินการติดตั้งตู้ Fire Fighter Switch", "หลังคา 1-4, ถังน้ำใส 1-2", 1, "งาน"]
+  ],
+  "risk": [],
+  "siteEngineer": "ชื่อ-นามสกุล วิศวกร (placeholder)",
+  "inspector": "ชื่อ-นามสกุล ผู้ตรวจงาน (placeholder)",
+  "formRows": { "filled": { "crew": 8, "tools": 8, "work": 7, "risk": 4 }, "blank": { "crew": 11, "tools": 11, "work": 10, "risk": 4 } }
+}

@@ -24,6 +24,11 @@ struct InstallDailyData {
         let problem: String
         var id: Date { date }
 
+        /// Rounded actual minus rounded plan, in points: positive ahead (`เร็วกว่า`), negative behind; nil without both.
+        var delta: Int? {
+            guard let a = actual, let p = planned else { return nil }
+            return Int(a.rounded()) - Int(p.rounded())
+        }
         var needsWork: Bool { state == .today || state == .missing || state == .draft }
         var hasProblem: Bool { !problem.isEmpty }
     }

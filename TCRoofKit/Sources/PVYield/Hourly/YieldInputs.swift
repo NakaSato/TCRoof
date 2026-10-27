@@ -73,10 +73,14 @@ public struct ArrayFace: Codable, Sendable, Equatable, Identifiable {
     public var horizon: HorizonProfile?
     /// Overrides the system's Uc (W/m²K) for this face.
     public var uc: Double?
+    /// Hour by hour along the sun track (0–1): the share of the face's modules in the shadow of something standing on
+    /// the roof (C1's obstacles), which takes that share of the beam; nil is none.
+    public var beamShadeHourly: [Double]?
     public init(id: String, moduleCount: Int, tiltDeg: Double, azimuthDegTrueN: Double, nearShadingLossFrac: Double = 0,
-                horizon: HorizonProfile? = nil, uc: Double? = nil) {
+                horizon: HorizonProfile? = nil, uc: Double? = nil, beamShadeHourly: [Double]? = nil) {
         self.id = id; self.moduleCount = moduleCount; self.tiltDeg = tiltDeg; self.azimuthDegTrueN = azimuthDegTrueN
         self.nearShadingLossFrac = nearShadingLossFrac; self.horizon = horizon; self.uc = uc
+        self.beamShadeHourly = beamShadeHourly
     }
 }
 

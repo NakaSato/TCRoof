@@ -70,7 +70,8 @@ struct InstallPageData {
             let now = MasterSchedule.status(plan: plan, actual: actual, through: today)
             let weekAgo = MasterSchedule.status(plan: plan, actual: actual, through: today.adding(days: -7))
             tracking = InstallTracking(actual: now.actual, planned: now.planned, actualWeekAgo: weekAgo.actual,
-                                       start: job.installStart, due: job.installEnd, today: today)
+                                       start: job.installStart, due: job.installEnd, today: today,
+                                       earned: InstallTracking.earnedDate(plan: plan, actual: actual, done: now.actual, start: job.installStart))
             let g = InstallGantt(plan: plan, actual: actual,
                                  places: RoutineReport.places(reports: job.dailyReports, through: today, settings: job.routineSettings), today: today)
             gantt = g.rows.isEmpty ? nil : g

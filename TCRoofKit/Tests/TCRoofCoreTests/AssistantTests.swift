@@ -93,12 +93,15 @@ final class AssistantTests: XCTestCase {
         // task by task: 2.1 ends 6 มิ.ย., 2.3 after it
         XCTAssertEqual(b.projectedFinish, "2026-06-27")
         XCTAssertEqual(b.projectedSlipDays, 70)              // after the install end of 18 เม.ย.
-        // the install tracking page's figure: the period stretched by the SPI
+        // the install tracking page's figure: the due date moved by the days behind (earned schedule)
         let spi = try XCTUnwrap(b.spi)
         XCTAssertEqual(spi, (b.actualPercent / b.plannedPercent * 100).rounded() / 100, accuracy: 0.011)
         let t = InstallTracking(actual: MasterSchedule.status(plan: MasterSchedule.plan(job().input!), actual: job().actual, through: today).actual,
                                 planned: MasterSchedule.status(plan: MasterSchedule.plan(job().input!), actual: job().actual, through: today).planned,
-                                start: d(2026, 2, 1), due: d(2026, 4, 18), today: today)
+                                start: d(2026, 2, 1), due: d(2026, 4, 18), today: today,
+                                earned: InstallTracking.earnedDate(plan: MasterSchedule.plan(job().input!, calendar: cal), actual: job().actual,
+                                                                   done: MasterSchedule.status(plan: MasterSchedule.plan(job().input!), actual: job().actual, through: today).actual,
+                                                                   start: d(2026, 2, 1), calendar: cal))
         XCTAssertEqual(b.handoverForecast, ScheduleBrief.day(t.forecastEnd(calendar: cal), calendar: cal))
         XCTAssertEqual(b.handoverSlipDays, -t.slackDays(calendar: cal))
         XCTAssertTrue(b.handoverSlipDays > 0)

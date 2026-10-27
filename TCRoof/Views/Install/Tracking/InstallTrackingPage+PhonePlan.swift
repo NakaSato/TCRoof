@@ -32,7 +32,7 @@ extension InstallTrackingPage {
             phonePlanHeader(p)
             if planEditing { editStrip }
             Group {
-                if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
+                if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g, dayLimit: 31), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
             }
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

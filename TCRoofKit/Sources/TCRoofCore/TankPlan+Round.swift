@@ -31,7 +31,7 @@ extension TankPlan {
         tag("out")
         if details {
             o += sectionMarks(ox: ox, oy: oy, w: w, h: h)
-            tag("sect", text: "txt")
+            tag("sect")
         }
         // level tags in the four quadrants (inside the circle)
         if let e = v.number(Tank.Key.exposed) {

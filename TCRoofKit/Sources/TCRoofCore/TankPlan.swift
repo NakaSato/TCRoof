@@ -82,7 +82,7 @@ public struct TankPlan: Sendable {
             }
             tag("beam")
             o += Self.sectionMarks(ox: ox, oy: oy, w: w, h: h)
-            tag("sect", text: "txt")
+            tag("sect")
         }
         // level tags in the four quadrants
         if let e = v.number(Tank.Key.exposed) {

@@ -221,7 +221,8 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   reference (`b-3`, G-ANNO-TEXT). Lower case keeps it apart from the building's grid (A, B … and 1, 2 …). The plan's
   title moves down past the bubbles beyond a bottom eave. The PDF keeps only the panel layout: no grid, no tags, no
   schedule. Open: whether the team names the mounting grid differently (for example R1, R2 for rails).
-- **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
+- **Tank sections** (2026-10-22; sections 1–1 and 2–2 taken out of the DXF 2026-10-27, with the plan's cut marks: the
+  PDF keeps both): D1's DXF also carried, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
   (`tableSectionCAD`) and the longest table's back post line elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
   at x = 0, on S-TANK-SECT-E / C-TOPO-E / the PV layers by colour, their lengths, heights, spacings, post heights
@@ -260,6 +261,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   rafter's height over the front line). Their drawing's own conflicts (rafter drawn 4000 on plan too, schematic rail
   heights in the back view, unlabelled member sections) are listed in its README and layout JSON. Open: the member
   sections (post, strut, rafter, brace) are named nowhere in their drawings.
+- **Tank plan module** (2026-10-27, after the team's `reference/PV_570W.dxf`: a frame on a WIPEOUT, 2.19911 × 1.134 m,
+  the slope along x): every module on D1's plan is one INSERT of one block named for its power, `PV_570W`
+  (`TankDXF.moduleBlock`), written to a micrometre, in place of the per-size blocks with the cells drawing inside. Its
+  frame is the layout's module projected on plan: `moduleL` × cos(tilt) by `moduleW` (`Params.cellH` × `cellW`), so
+  at the team's 15° the ZXM7 570 W (2278 × 1134 mm) gives 2.20038 × 1.134; their block's 2.19911 is 1.3 mm shorter
+  (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
+  INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
+  The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.

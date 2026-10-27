@@ -148,7 +148,7 @@ struct JobEditorView: View {
         return detailSize.width > detailSize.height ? 2 : 1
     }
 
-    /// DEBUG `-surveyWideA1 YES`: the two-column D1 too, below its 1100 pt (the simulator can't be turned).
+    /// DEBUG `-surveyWideA1 YES`: the two-column C1 and D1 too, below their 1100 pt (the simulator can't be turned).
     var debugWide: Bool {
         #if DEBUG
         return UserDefaults.standard.bool(forKey: "surveyWideA1")
@@ -288,7 +288,7 @@ struct JobEditorView: View {
         } else if let m = cardRoof {
             AnyView(VStack(spacing: 12) {
                 RoofPageWide(job: $job, moduleID: m.id, width: min(detailSize.width, 1318 + 48) - (compact ? 32 : 48),
-                             stacked: compact || infoColumns != 2 || detailSize.width < 1100, request: $roofRequest)
+                             stacked: compact || infoColumns != 2 || (detailSize.width < 1100 && !debugWide), request: $roofRequest)
                     .id(m.id)
             }
             .padding(.horizontal, compact ? 16 : 24).padding(.vertical, 16)

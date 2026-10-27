@@ -28,6 +28,9 @@ public enum RoofMountYield {
         /// Roof (C1) sections in the job.
         public var roofSections: Int
         public var latitude: Double?, longitude: Double?
+        /// The roof's obstacles with a height and the modules they may shade; nil when none has a height (the figures
+        /// are then exactly those without obstacles).
+        public var shade: RoofObstacleShade? = nil
 
         public var modules: Int { faces.reduce(0) { $0 + $1.modules } }
         public var kWp: Double { Double(modules) * moduleWp / 1000 }
@@ -110,7 +113,7 @@ public enum RoofMountYield {
                       },
                       moduleWp: s.moduleWp, moduleLength: s.moduleLength, moduleWidth: s.moduleWidth,
                       inverterSizes: sizes, roofSections: max(1, job.modules.filter { $0.type == .roof }.count),
-                      latitude: gps?.lat, longitude: gps?.lon)
+                      latitude: gps?.lat, longitude: gps?.lon, shade: RoofObstacleShade(layout))
     }
 
     // MARK: - Equipment
@@ -160,20 +163,33 @@ public enum RoofMountYield {
 
     /// The hourly engine when it can run, else SolarModel. Slow on the first call at a site (the sun track):
     /// call it off the main thread.
-    public static func estimate(_ i: Inputs) -> Estimate {
-        guard i.modules > 0 else { return clearSky(i, reason: "ยังไม่มีแผง") }
-        guard let lat = i.latitude, let lon = i.longitude else { return clearSky(i, reason: "ยังไม่มีพิกัด A1") }
+    public static func estimate(_ i: Inputs) -> Estimate { run(i, shade: false).estimate }
+
+    /// The estimate and C1's shade card (`RoofShade`) from one sun track and one obstacle projection. Off the main
+    /// thread.
+    public static func estimateAndShade(_ i: Inputs) -> (estimate: Estimate, shade: RoofShade.Outcome) {
+        let r = run(i, shade: true)
+        return (r.estimate, r.shade ?? .unavailable(RoofShade.noLayout))
+    }
+
+    static func run(_ i: Inputs, shade wantShade: Bool) -> (estimate: Estimate, shade: RoofShade.Outcome?) {
+        guard i.modules > 0 else { return (clearSky(i, reason: "ยังไม่มีแผง"), .unavailable(RoofShade.noLayout)) }
+        guard let lat = i.latitude, let lon = i.longitude else { return (clearSky(i, reason: "ยังไม่มีพิกัด A1"), .unavailable(RoofShade.noGPS)) }
         guard let near = BundledWeather.nearest(latitude: lat, longitude: lon) else {
-            return clearSky(i, reason: "ยังไม่มีข้อมูลอากาศรายชั่วโมงของพื้นที่นี้")
+            return (clearSky(i, reason: "ยังไม่มีข้อมูลอากาศรายชั่วโมงของพื้นที่นี้"), .unavailable(RoofShade.noWeather))
         }
-        guard let cat = catalogModule(wp: i.moduleWp, length: i.moduleLength, width: i.moduleWidth),
-              let module = moduleSpec(catalogID: cat.id) else {
-            return clearSky(i, reason: String(format: "ยังไม่มีแบบจำลองแผง %.0f W", i.moduleWp))
+        guard let track = try? BundledWeather.track(near.dataset, latitude: lat, longitude: lon) else {
+            return (clearSky(i, reason: "อ่านข้อมูลอากาศไม่ได้"), .unavailable("อ่านข้อมูลอากาศไม่ได้"))
         }
-        guard let inv = inverters(i), let track = try? BundledWeather.track(near.dataset, latitude: lat, longitude: lon) else {
-            return clearSky(i, reason: "อ่านข้อมูลอากาศไม่ได้")
-        }
-        let faces = i.faces.map { ArrayFace(id: $0.id, moduleCount: $0.modules, tiltDeg: $0.tiltDeg, azimuthDegTrueN: $0.azimuthDeg) }
+        let module = catalogModule(wp: i.moduleWp, length: i.moduleLength, width: i.moduleWidth).flatMap { moduleSpec(catalogID: $0.id) }
+        // the obstacles' shade, once for the engine and the shade card
+        let beam = wantShade || module != nil ? i.shade?.hourly(track) ?? [:] : [:]
+        let shade: RoofShade.Outcome? = wantShade
+            ? .ready(RoofShade.make(i, track: track, shade: beam, weather: near.dataset.source + " " + near.dataset.place)) : nil
+        guard let module else { return (clearSky(i, reason: String(format: "ยังไม่มีแบบจำลองแผง %.0f W", i.moduleWp)), shade) }
+        guard let inv = inverters(i) else { return (clearSky(i, reason: "อ่านข้อมูลอากาศไม่ได้"), shade) }
+        let faces = i.faces.map { ArrayFace(id: $0.id, moduleCount: $0.modules, tiltDeg: $0.tiltDeg, azimuthDegTrueN: $0.azimuthDeg,
+                                            beamShadeHourly: beam[$0.id]) }
         let system = YieldSystem(module: module, inverter: inv.spec, inverterCount: inv.count, faces: faces)
         let r = YieldEngine.run(system, track: track)
         let dcTotal = r.faces.reduce(0) { $0 + $1.eDCIn }
@@ -183,7 +199,9 @@ public enum RoofMountYield {
             let mwh = dcTotal > 0 ? r.energies.eGrid * f.eDCIn / dcTotal / 1000 : 0
             return FaceYield(id: f.id, modules: f.modules, kWp: fk, mwh: mwh, kWhPerKWp: fk > 0 ? mwh * 1000 / fk : 0)
         }
-        var assumptions = ["ไม่คิดเงาบังใกล้ แผงสองหน้า และกระแส MPPT", "ค่าสูญเสียตามค่าเริ่มต้นของ PVYield"]
+        var assumptions = [i.shade == nil ? "ไม่คิดเงาบังใกล้ แผงสองหน้า และกระแส MPPT"
+                                          : "คิดเงาสิ่งกีดขวางบนหลังคาตามความสูง | ไม่คิดเงาอาคารรอบข้าง แผงสองหน้า และกระแส MPPT",
+                           "ค่าสูญเสียตามค่าเริ่มต้นของ PVYield"]
         if let a = inv.assumed { assumptions.insert(a, at: 0) }
         if module.stc.pNomW != i.moduleWp { assumptions.append(String(format: "แผง %.0f W", module.stc.pNomW)) }
         let d = near.dataset
@@ -199,7 +217,7 @@ public enum RoofMountYield {
         let years = r.ageing
         e.lifetimeMWh = years.reduce(0, +) / 1000
         e.lifetimeYears = years.count
-        return e
+        return (e, shade)
     }
 
     /// `YieldResult.lossDiagram`'s steps in Thai, in its order.
@@ -238,5 +256,13 @@ extension RoofMount {
         let s = site(job)
         let m = layout(v, latitude: s.latitude, longitude: s.longitude).layout
         return (m, RoofMountYield.estimate(RoofMountYield.inputs(m, job: job)))
+    }
+
+    /// `printed` with C1's shade card from the same run, for the report's shade pages.
+    public static func printedWithShade(_ v: Values, job: Job) -> (layout: RoofMountLayout, energy: RoofMountYield.Estimate, shade: RoofShade.Outcome) {
+        let s = site(job)
+        let m = layout(v, latitude: s.latitude, longitude: s.longitude).layout
+        let r = RoofMountYield.estimateAndShade(RoofMountYield.inputs(m, job: job))
+        return (m, r.estimate, r.shade)
     }
 }

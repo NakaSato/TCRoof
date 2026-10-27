@@ -170,8 +170,14 @@ extension RoofPageWide {
 
     var legendItems: [(LegendGlyph.Kind, String)] {
         if mode == .pv {
-            return [(.pv, "แผงโซลาร์"), (.blocked, "ด้านที่ไม่วาง / ตัดแผง"), (.keepOut, "เขตห้ามติด"), (.skyOK, "แผ่นใส"),
-                    (.gap, "เงาสิ่งกีดขวาง"), (.purlin, "แป | ราง | L-foot"), (.ridge, "สันหลังคา")]
+            // iPad: the shade card's moment on the plan (RoofPageWide+Shade)
+            let shade: [(LegendGlyph.Kind, String)] = narrow ? [] : [(.shadedModule, "แผงที่โดนเงา 21 ธ.ค. 09:00"), (.obstacleShadow, "เงาสิ่งกีดขวาง")]
+            // the 09:00–15:00 shade outline only shows while the layout avoids it; on iPad its row then reads apart from the
+            // moment's
+            let avoided: [(LegendGlyph.Kind, String)] = narrow ? [(.gap, "เงาสิ่งกีดขวาง")]
+                : mountChoice.avoidShade ? [(.gap, "เว้นเงา 09:00–15:00")] : []
+            return [(.pv, "แผงโซลาร์")] + shade + [(.blocked, "ด้านที่ไม่วาง / ตัดแผง"), (.keepOut, "เขตห้ามติด"), (.skyOK, "แผ่นใส")]
+                + avoided + [(.purlin, "แป | ราง | L-foot"), (.ridge, "สันหลังคา")]
         }
         let f = Roof.frame(values), pp = "แป @" + String(format: "%.2f", Roof.purlinSpacing(values))
         let two: [(LegendGlyph.Kind, String)] = f.isRafter ? [(.heavy, "อเส"), (.thin, "จันทัน @1.00")]
@@ -229,7 +235,7 @@ extension RoofPageWide {
     var planStage: some View {
         GeometryReader { geo in
             let plan = RoofPlan(values, mode: mode, chips: true, dragging: drag, highlight: member,
-                                mount: mode == .pv ? shownMount : nil, selected: selectedSlots, pairNumbers: true)
+                                mount: mode == .pv ? shownMount : nil, selected: selectedSlots, pairNumbers: true, shade: planShade)
             let fit = SketchFit(RoofPlan.width, RoofPlan.height, in: geo.size)
             ZStack(alignment: .topLeading) {
                 SketchCanvas(ops: plan.sketch.ops, fit: fit)

@@ -9,11 +9,12 @@ extension RoofPageWide {
     // MARK: section card
 
     @ViewBuilder var sectionCard: some View {
-        if mode == .pv { rowSectionCard } else { frameSectionCard }
+        if mode == .pv { if narrow { rowSectionCard } else { shadeCard } } else { frameSectionCard }
     }
 
-    /// The card's height: a row's section is closed until tapped on the panel layout, so it takes one row.
-    func sectionHeight(_ open: CGFloat) -> CGFloat { mode == .pv && !rowSectionOpen ? 70 : open }
+    /// The card's height: on iPhone a row's section is closed until tapped on the panel layout, so it takes one row; the
+    /// iPad's shade card takes the structure section's.
+    func sectionHeight(_ open: CGFloat) -> CGFloat { mode == .pv && narrow && !rowSectionOpen ? 70 : open }
 
     /// แผงบนหลังคา: the selected row along the slope (§5.4), closed until tapped.
     var rowSectionCard: some View {

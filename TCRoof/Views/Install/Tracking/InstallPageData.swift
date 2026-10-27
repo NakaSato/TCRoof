@@ -36,6 +36,8 @@ struct InstallPageData {
     var waitLabel: String?
     /// `แผนก่อสร้าง`: nil without an MP plan.
     var plan: InstallPlan?
+    /// Each install task's planned % by today, by raw value (the `Key Plan` view's late test).
+    var plannedByTask: [String: Double] = [:]
 
     struct CurveDay: Identifiable {
         let date: Date
@@ -68,6 +70,7 @@ struct InstallPageData {
         if let input = job.scheduleInput {
             let plan = MasterSchedule.plan(input), actual = job.scheduleActual
             let now = MasterSchedule.status(plan: plan, actual: actual, through: today)
+            plannedByTask = Dictionary(uniqueKeysWithValues: now.plannedByTask.map { ($0.key.rawValue, $0.value) })
             let weekAgo = MasterSchedule.status(plan: plan, actual: actual, through: today.adding(days: -7))
             tracking = InstallTracking(actual: now.actual, planned: now.planned, actualWeekAgo: weekAgo.actual,
                                        start: job.installStart, due: job.installEnd, today: today,

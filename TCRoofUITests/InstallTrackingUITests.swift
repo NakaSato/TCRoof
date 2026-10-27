@@ -48,6 +48,36 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: 8), "back should return to the page")
     }
 
+    /// `Key Plan` (docs/ui/install-tracking-ipad-keyplan): a pin selects its row, which offers `ย้ายจุดบนผัง`; on
+    /// `ยังไม่วาง`, `วางบนผัง` then a tap on the plan places the point and `วางแล้ว n/N` goes up.
+    func testKeyPlanSelectsAndPlaces() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        app.buttons.matching(NSPredicate(format: "label == %@", "Key Plan")).firstMatch.tap()
+        let chip = app.staticTexts["keyPlanPlaced"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 8), "Key Plan should show the วางแล้ว chip")
+        func placed() -> Int { Int(chip.label.split(separator: " ").last?.split(separator: "/").first ?? "") ?? -1 }
+        let before = placed()
+
+        let pin = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "จุด 2.1-4")).firstMatch
+        XCTAssertTrue(pin.waitForExistence(timeout: 8), "the plan should have pin 2.1-4")
+        pin.tap()
+        XCTAssertTrue(app.buttons["ย้ายจุดบนผัง"].waitForExistence(timeout: 5), "a pin should open its row with ย้ายจุดบนผัง")
+
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ยังไม่วาง")).firstMatch.tap()
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ยังไม่วางบนผัง")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "ยังไม่วาง should list an unplaced point")
+        row.tap()
+        let placeButton = app.buttons["วางบนผัง"]
+        XCTAssertTrue(placeButton.waitForExistence(timeout: 5), "an unplaced row should offer วางบนผัง")
+        placeButton.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["keyPlanPlacing"].waitForExistence(timeout: 5), "place mode should show its banner")
+        app.descendants(matching: .any)["keyPlanImage"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.85)).tap()
+        // every point at the placed location is placed with it, so the count goes up by one or more
+        let counted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in placed() > before }, object: nil)
+        XCTAssertEqual(XCTWaiter().wait(for: [counted], timeout: 5), .completed, "placing should count more points (was \(before))")
+    }
+
     /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6) is a tab of the page: a stage's chevron hides its sub-tasks,
     /// `ตาราง` shows the table and `แก้ไขแผน` pushes the MP plan screen.
     func testPlanTab() {

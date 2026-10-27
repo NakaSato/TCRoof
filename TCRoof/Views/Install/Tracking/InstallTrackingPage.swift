@@ -15,6 +15,8 @@ struct InstallTrackingPage: View {
     let job: Job
     @State var tab = Debug.tab
     @State var view = Debug.view
+    /// `Key Plan`'s settings with `-installDemo YES`: the board's example, kept in memory.
+    @State var keyDemo: RoutineReport.Settings?
     /// `แผนก่อสร้าง`'s `Gantt | ตาราง`.
     @State var planView = Debug.planView
     /// Stages opened or closed against their default: the running stage and the next start open, or none with
@@ -491,7 +493,7 @@ struct InstallTrackingPage: View {
 
     /// `-installTab overview|daily|plan|docs|request|weekly`, `-installReportWeek n`, `-installReportSlide 1…8`,
     /// `-installReportState ready|menu|pptx|sent`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
-    /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
+    /// `-installView gantt|curve|keyplan` (`-installKeyPlanState selected|placing|placed`), `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
     /// `-installScrollEnd YES`, `-installDetail YES`. Release builds get the defaults.
     enum Debug {

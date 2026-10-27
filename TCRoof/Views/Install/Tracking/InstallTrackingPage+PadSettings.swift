@@ -485,7 +485,7 @@ extension InstallTrackingPage {
             rowDivider(first)
             Button { padSheet = .person(email, role) } label: {
                 HStack(spacing: 14) {
-                    Text(String((name.isEmpty ? email : name).prefix(1)).uppercased()).font(.sarabunFixed(18, .bold))
+                    Text(Self.avatarLetters(name.isEmpty ? email : name, count: 1)).font(.sarabunFixed(18, .bold))
                         .foregroundStyle(Theme.onPrimary)
                         .frame(width: 44, height: 44).background(Self.ink(role.tone), in: Circle())
                         .accessibilityHidden(true)
@@ -503,6 +503,17 @@ extension InstallTrackingPage {
             .buttonStyle(.plain)
             .accessibilityIdentifier("padSettings.person.\(email)")
         }
+    }
+
+    /// The avatar's letters: the name's first `count` words without a title (นาย, น.ส. …), as `UserAdminStyle.initials`.
+    static func avatarLetters(_ name: String, count: Int) -> String {
+        var n = name.trimmingCharacters(in: .whitespaces)
+        for title in ["นางสาว", "น.ส.", "นาง", "นาย", "ดร.", "คุณ"] where n.hasPrefix(title) {
+            n = String(n.dropFirst(title.count)).trimmingCharacters(in: .whitespaces)
+            break
+        }
+        let letters = UserAdminStyle.initials(n.isEmpty ? name : n)
+        return String(letters.prefix(count))
     }
 
     /// An outlined `+ …` button.

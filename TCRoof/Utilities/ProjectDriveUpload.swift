@@ -175,6 +175,8 @@ enum ProjectDriveUpload {
                 progress(done, total)
             } catch { failure = failure ?? error }
         }
+        // a drawing's revision takes its file's Drive id, so the other devices can open it (ตั้งค่าโครงการ › แบบก่อสร้าง)
+        job.recordDrawingDriveIDs()
         if let failure { throw failure }
         if pendingCount(job) == 0 { forget(job) }
     }

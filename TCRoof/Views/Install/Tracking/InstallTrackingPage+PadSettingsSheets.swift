@@ -231,7 +231,7 @@ struct PadPersonSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
-                    Text(String((name.isEmpty ? email : name).prefix(2)).uppercased()).font(.sarabunFixed(30, .bold))
+                    Text(InstallTrackingPage.avatarLetters(name.isEmpty ? email : name, count: 2)).font(.sarabunFixed(30, .bold))
                         .foregroundStyle(Theme.onPrimary)
                         .frame(width: 84, height: 84).background(InstallTrackingPage.ink(role.tone), in: Circle())
                         .accessibilityHidden(true)
@@ -457,7 +457,8 @@ struct DrawingUploadSheet: View {
             heading("แบบที่จะอัปโหลด")
             FlowLayout(spacing: 10, lineSpacing: 10) {
                 ForEach(drawings) { d in
-                    chip(d.id + " " + d.title, on: upload.drawing == d.id) { upload.drawing = d.id }
+                    // the title without its bracketed English, as the board's chips
+                    chip(d.id + " " + (d.title.components(separatedBy: " (").first ?? d.title), on: upload.drawing == d.id) { upload.drawing = d.id }
                         .accessibilityIdentifier("padSheet.pick.\(d.id)")
                 }
                 chip("+ แบบใหม่", on: upload.drawing == nil, dashed: true) { upload.drawing = nil }

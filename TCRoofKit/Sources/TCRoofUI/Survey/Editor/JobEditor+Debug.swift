@@ -198,7 +198,8 @@ extension JobEditorView {
             for (free, h) in [(1366.0, 848.0), (1180.0, 636.0)] {
                 let page = InfoPageWide(job: .constant(sample), width: min(free, 1240 + 48) - 48, fillHeight: h - 32)
                     .environment(model).environment(\.horizontalSizeClass, .regular)
-                    .padding(.horizontal, 24).padding(.vertical, 16)
+                    // 1240 wide as in the editor (`JobEditor` caps the page at 1240 + 48)
+                    .padding(.horizontal, 24).padding(.vertical, 16).frame(maxWidth: 1240 + 48)
                     .frame(width: free, height: h, alignment: .top).background(Paper.page)
                 let r = ImageRenderer(content: page); r.scale = 1
                 if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("a1-\(Int(free))x\(Int(h)).png")) }

@@ -24,6 +24,8 @@ struct PWAPhoneTabs: View {
     /// The station whose daily report list the overview's strip opened.
     @State private var dailies: Job?
     @Query(sort: \Job.installStart) private var jobs: [Job]
+    /// Each station's summary, rebuilt only when what it reads changes (`InstallSummaryCache`).
+    @State private var summaryCache = InstallSummaryCache()
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.permissions) private var permissions
 
@@ -96,7 +98,7 @@ struct PWAPhoneTabs: View {
     private var overview: PWAOverviewHost {
         let installing = installing
         return PWAOverviewHost(
-            installStations: installing.map(\.installSummary),
+            installStations: summaryCache.summaries(installing),
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
@@ -146,7 +148,9 @@ extension Job {
         guard let input = scheduleInput else { return s }
         let cal = MasterSchedule.calendar, week = MasterSchedule.weekStart(.now)
         let weekEnd = cal.date(byAdding: .day, value: 6, to: week) ?? week
-        let plan = MasterSchedule.plan(input), status = MasterSchedule.status(plan: plan, actual: scheduleActual, through: .now)
+        // decoded once: status and the permits both read it
+        let actual = scheduleActual
+        let plan = MasterSchedule.plan(input), status = MasterSchedule.status(plan: plan, actual: actual, through: .now)
         let current = plan.first { p in
             guard p.weight > 0, let start = p.start, let end = p.end, start <= weekEnd, end >= week else { return false }
             return (status.actualByTask[p.task] ?? 0) < 99.95
@@ -154,7 +158,7 @@ extension Job {
         s.actual = status.actual
         s.plan = status.planned
         s.currentTask = current.map { "\($0.task.code) \($0.task.title)" } ?? ""
-        s.permits = InstallOverview.permits(RoutineReport.permits(plan: plan, actual: scheduleActual, at: .now))
+        s.permits = InstallOverview.permits(RoutineReport.permits(plan: plan, actual: actual, at: .now))
         return s
     }
 
@@ -169,5 +173,37 @@ extension Job {
         let ctx = stationContext, station = stationDocs, library = StationDocsStore.loadLibrary()
         let kinds = Set(StationDocs.packages(ctx).flatMap { StationDocs.papers(in: $0, ctx).map(\.id) })
         return kinds.compactMap(StationDocs.kind).filter { StationDocs.state($0, station: station, library: library).status == .signed }.count
+    }
+}
+
+/// The install overview's station summaries, kept per job and rebuilt only when what `Job.installSummary` reads has
+/// changed: the plan and its progress, the name, MP number, size, team, install dates, today's report and the day.
+/// Building all of them took about 0.1 s of main thread for 100 stations, on every redraw of the PWA home; with the
+/// cache a redraw rebuilds only the stations that changed (one, when sync saves one).
+@MainActor final class InstallSummaryCache {
+    private struct Stamp: Equatable {
+        let input: String?, actual: String?, name: String, mp: Int?, kWp: Double, team: String
+        let start: Date, days: Int, id: String, day: String, sent: Bool
+    }
+    private var entries: [PersistentIdentifier: (stamp: Stamp, summary: InstallStationSummary)] = [:]
+
+    func summaries(_ jobs: [Job]) -> [InstallStationSummary] {
+        let day = RoutineReport.dayKey(.now)
+        var kept: [PersistentIdentifier: (stamp: Stamp, summary: InstallStationSummary)] = [:]
+        let out = jobs.map { j in
+            let stamp = Stamp(input: j.scheduleInputJSON, actual: j.scheduleActualJSON, name: j.projectName, mp: j.mpNumber,
+                              kWp: j.capacityKW, team: j.team.rawValue, start: j.installStart, days: j.installDays,
+                              id: j.overviewID, day: day, sent: j.sentDailyReportToday)
+            let id = j.persistentModelID
+            if let e = entries[id], e.stamp == stamp {
+                kept[id] = e
+                return e.summary
+            }
+            let s = j.installSummary
+            kept[id] = (stamp, s)
+            return s
+        }
+        entries = kept
+        return out
     }
 }

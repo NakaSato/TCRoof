@@ -145,3 +145,14 @@ test('the phase summary', () => {
   assert.equal(s.tc_pct_kwp, 25);
   assert.deepEqual([s.ms_done, s.ms_tot, s.late, s.risk_high, s.kri_warn, s.cr_pending], [4, 14, 1, 1, 2, 1]);
 });
+
+test('the app jobs no row took, PWA first', () => {
+  const j = (id, name, kind, code) => core.jobSummary({ id, projectName: name, kind, capacityKW: 10,
+                                                       stationDocs: code ? JSON.stringify({ code }) : undefined });
+  const jobs = [j('H', 'บ้านคุณ ก', 'home'), j('B', 'ข สถานี', 'pwa'), j('T', 'ก สถานี', 'pwa', 'P3-001'), j('A', 'ทดสอบ', 'pwa')];
+  const list = core.unmatchedJobs(jobs, [{ job: jobs[3], how: 'ชื่อ' }, { job: null, how: 'ไม่พบงานในแอป' }], { B: { count: 3 } });
+  assert.deepEqual(list.map(r => r[0]), ['T', 'B', 'H']);
+  assert.deepEqual(list[1], ['B', 'ข สถานี', 'งาน PWA', 10, '', '', 3]);
+  assert.equal(list[0][4], 'P3-001');
+  assert.equal(list[2][2], 'งานบ้าน');
+});

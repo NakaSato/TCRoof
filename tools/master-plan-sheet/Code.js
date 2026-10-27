@@ -58,10 +58,14 @@ function pullFromApp() {
       written.forEach(function (k) { values[i][keys[k].col - c0] = row[k]; });
     });
     block.setValues(values);
+    writeUnmatched(tab, c1 + 2, first, unmatchedJobs(jobs, matches, stats));
 
     var found = matches.filter(function (m, i) { return m.job && String(ids[i] || '').trim(); }).length;
     var stations = ids.filter(function (id) { return String(id || '').trim(); }).length;
     var line = 'สำเร็จ: จับคู่ ' + found + ' / ' + stations + ' สถานี, งานในแอป ' + jobs.length + ', รายงานประจำวัน ' + logs.length;
+    // the app's days are Bangkok's: a sheet in another time zone shows them a day early
+    var tz = book.getSpreadsheetTimeZone();
+    if (tz !== 'Asia/Bangkok') line += ' | ⚠ เขตเวลาของชีตเป็น ' + tz + ' วันที่จะเลื่อน: ไฟล์ › การตั้งค่า › เขตเวลา เลือก (GMT+07:00) Bangkok';
     tab.getRange('B3').setValue(new Date());
     tab.getRange('B4').setValue(line);
     report('ดึงจาก TCRoof', line);
@@ -72,6 +76,16 @@ function pullFromApp() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** The app's jobs no station row took, as a list right of the tab's columns (rewritten every pull). */
+function writeUnmatched(tab, col, first, list) {
+  var width = 7, top = first - 2;
+  var old = Math.max(tab.getLastRow() - top + 1, 2);
+  tab.getRange(top, col, old, width).clearContent();
+  tab.getRange(top, col).setValue('งานในแอปที่ยังไม่จับคู่ ' + list.length + ' งาน: ใส่ id ในช่องเหลือง ‘กำหนดงานในแอปเอง’ ของแถวสถานีนั้น');
+  tab.getRange(top + 1, col, 1, width).setValues([['id', 'ชื่องานในแอป', 'ประเภท', 'kWp', 'รหัสสถานี', 'แผน MP', 'รายงานประจำวัน']]);
+  if (list.length) tab.getRange(top + 2, col, list.length, width).setValues(list);
 }
 
 /** The documents of a collection, with only `fields` (a projection keeps the large JSON out). */

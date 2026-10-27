@@ -119,4 +119,32 @@ final class InverterStationDXFTests: XCTestCase {
         XCTAssertTrue(s.row.items.allSatisfy { $0.h > 0.3 })
         XCTAssertEqual(s.row.items.first { $0.kind == .inverter }?.h ?? 0, Double(s.catalog.inverter(kw: 125).h) / 1000, accuracy: 1e-9)
     }
+
+    /// The shelter's members: the 6.0 × 2.5 m station (grid 1–4) has 8 columns, the edge beams on A and B, a tie beam
+    /// and a rafter on each of the 4 column lines, and 5 purlins over 7.0 m; each mark is tagged in both views and listed
+    /// in the member schedule. A station on a wall has none.
+    func testTheShelterMembersAreMarked() throws {
+        let s = station([125])
+        let m = Dictionary(uniqueKeysWithValues: InverterStationDXF.members(s).map { ($0.mark, $0) })
+        XCTAssertEqual(InverterStationDXF.members(s).map(\.mark), ["C1", "B1", "TB", "R1", "P1"])
+        let foot = InverterStationDXF.postFoot
+        XCTAssertEqual(m["C1"]?.count, 8)
+        XCTAssertEqual(m["C1"]?.length ?? 0, 4 * (3 - foot) + 4 * (2.75 - foot), accuracy: 1e-9)
+        XCTAssertEqual(m["B1"]?.count, 2); XCTAssertEqual(m["B1"]?.length ?? 0, 12, accuracy: 1e-9)
+        XCTAssertEqual(m["TB"]?.count, 4); XCTAssertEqual(m["TB"]?.length ?? 0, 10, accuracy: 1e-9)
+        // the rafter along its slope: 3.45 m across, 0.345 m fall
+        XCTAssertEqual(m["R1"]?.count, 4); XCTAssertEqual(m["R1"]?.length ?? 0, 4 * hypot(3.45, 0.345), accuracy: 1e-9)
+        XCTAssertEqual(m["P1"]?.count, 5); XCTAssertEqual(m["P1"]?.length ?? 0, 5 * 7.0, accuracy: 1e-9)
+
+        let d = InverterStationDXF.build(s).data
+        XCTAssertTrue(hasText(d, "ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE"))
+        XCTAssertTrue(hasText(d, InverterStationDXF.columnSize))
+        // the marks: front view C1, B1, R1, P1; side view C1, B1, TB, R1, P1; and one schedule row each
+        let texts = t.rawEntities(d).filter { $0.first?.1 == "TEXT" }.compactMap { t.value($0, "1") }
+        for (mark, n) in [("C1", 3), ("B1", 3), ("TB", 2), ("R1", 3), ("P1", 3)] {
+            XCTAssertEqual(texts.filter { $0 == mark }.count, n, mark)
+        }
+        XCTAssertTrue(InverterStationDXF.members(station([80], site: .indoor, length: 8)).isEmpty)
+        XCTAssertFalse(hasText(InverterStationDXF.build(station([80], site: .indoor, length: 8)).data, "ตารางชิ้นส่วนโครงสร้าง / MEMBER SCHEDULE"))
+    }
 }

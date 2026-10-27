@@ -61,9 +61,11 @@ final class TankSummaryTests: XCTestCase {
         XCTAssertEqual(polygons(try XCTUnwrap(TankPlan(box, details: true)).sketch), 0)
     }
 
-    func testTheDXFHasTheBeamsAndMarks() throws {
+    /// The DXF has the beams but not the 1–1 / 2–2 cut marks: the sections they point to are the PDF's only.
+    func testTheDXFHasTheBeamsAndNoCutMarks() throws {
         let out = try XCTUnwrap(TankDXF.build(TankDXFTests.sample()))
         XCTAssertTrue(out.layers.contains("S-TANK-BEAM-E"))
-        XCTAssertTrue(out.layers.contains("G-ANNO-SYMB"))
+        XCTAssertFalse(out.layers.contains("G-ANNO-SYMB"))
+        XCTAssertTrue(TankPlan(TankDXFTests.sample(), details: true)!.tags.contains("sect"), "the PDF's plan keeps them")
     }
 }

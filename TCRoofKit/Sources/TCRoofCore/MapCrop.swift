@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 
 /// Part of the A1 satellite map used as the report picture (docs/ui/survey-a1 SPEC §3), in % of the map.
 /// Kept in the job as `mapCrop` = "x,y,w,h". A job without it uses the whole picture.

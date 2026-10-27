@@ -105,21 +105,22 @@ extension TankDXF {
 
 extension TankDXF {
     /// The footing schedule beside the mounting plan, its top-left corner at `o` (metres): a line per letter line with
-    /// the footings' references, the footing, the post height and the count, and the total.
+    /// the footings' references, the footing, what stands on it (the back line's post and its height, or the front
+    /// line's V of struts) and the count, and the total.
     static func footingSchedule(_ dxf: inout SketchDXF, _ l: TankLayout, _ g: TankMountGrid, at o: (Double, Double)) {
         let p = l.params
-        // footings per letter line: their pair numbers and post height (posts alternate front, back)
-        var lines: [String: (numbers: [Int], height: Double)] = [:]
+        // footings per letter line: their pair numbers and what stands on them (footings alternate front, back)
+        var lines: [String: (numbers: [Int], on: String)] = [:]
         for t in l.builtTables {
             for (i, q) in t.posts.enumerated() {
                 guard let ref = g.ref(q), let dash = ref.lastIndex(of: "-"), let n = Int(ref[ref.index(after: dash)...]) else { continue }
                 let name = String(ref[..<dash])
-                lines[name, default: ([], i % 2 == 0 ? p.hFront : p.hBack)].numbers.append(n)
+                lines[name, default: ([], i % 2 == 0 ? "ขาค้ำ V" : String(format: "เสา %.2f ม.", p.hBack))].numbers.append(n)
             }
         }
         let size = String(format: "%.0f × %.0f มม.", p.footing * 1000, p.footing * 1000)
         let cols: [Double] = [0, 1.6, 5.4, 8.6, 10.8, 12.4], rh = 0.5, th = 0.22
-        let head = ["แนว", "ตำแหน่งฐานราก", "ฐานราก", "สูงเสา (ม.)", "จำนวน"]
+        let head = ["แนว", "ตำแหน่งฐานราก", "ฐานราก", "บนฐาน", "จำนวน"]
         var rows: [[String]] = []
         var total = 0
         for line in g.letters {
@@ -127,7 +128,7 @@ extension TankDXF {
             let ns = Array(Set(e.numbers)).sorted()
             total += e.numbers.count
             rows.append([line.name, ranges(ns) { "\(line.name)-\($0)" }.joined(separator: ", "), size,
-                         String(format: "%.2f", e.height), "\(e.numbers.count)"])
+                         e.on, "\(e.numbers.count)"])
         }
         rows.append(["", "รวม / Total", "", "", "\(total)"])
         let L = CADLayers.roofTable, w = cols.last!

@@ -96,6 +96,38 @@ final class WBSTicksTests: XCTestCase {
         // a file the app never wrote: its Y rows are added, dated today without a date, and nothing is taken away
         let first = MasterSchedule.mergingTicks([:], fileDone: ["2.1.1"], dates: [:], base: nil, by: "pm@tcroof.test", today: day(20))
         XCTAssertEqual(first.ticks["2.1.1"]?.at, day(20))
+        // that day is only the import's: export writes no date for it
+        XCTAssertEqual(first.ticks["2.1.1"]?.undated, true)
+        XCTAssertNil(r.ticks["2.1.2"]?.undated, "a row with its date is dated")
+    }
+
+    /// A tick saved before `undated` existed reads as dated, and a dated tick writes as before.
+    func testOlderTicksRead() throws {
+        let old = try JSONDecoder().decode(MasterSchedule.WBSTick.self, from: Data(#"{"by":"a@tcroof.test","at":0}"#.utf8))
+        XCTAssertNil(old.undated)
+        XCTAssertFalse(String(decoding: try JSONEncoder().encode(tick(7)), as: UTF8.self).contains("undated"))
+    }
+
+    /// รับเฉพาะความก้าวหน้า takes the rows' owner and evidence changed in Excel since the kept file, a blanked cell too;
+    /// what the file didn't change stays the job's.
+    func testTheFilesTextsComeInWhereTheyChanged() {
+        func row(_ code: String, _ who: String?, _ evidence: String?) -> MasterSchedule.WorkItem {
+            var i = MasterSchedule.WorkItem(code: code, title: code, weight: 1)
+            i.responsible = who; i.evidence = evidence
+            return i
+        }
+        let base = [row("1.1", "เปรม", "บันทึกการประชุม"), row("1.2", "บีม", "TC-PML-001"), row("1.3", "วศ.", nil)]
+        // the job changed 1.3's owner in the app after the export
+        let local = [base[0], base[1], row("1.3", "สมชาย", nil)]
+        // in Excel: 1.1's owner became a role and its evidence was emptied; 1.2 untouched; 1.3 as exported
+        let file = [row("1.1", "วศ.", nil), base[1], base[2], row("9.9", "x", "y")]
+        let r = MasterSchedule.mergingText(local, file: file, base: base)
+        XCTAssertEqual(r.items, [row("1.1", "วศ.", nil), base[1], row("1.3", "สมชาย", nil)])
+        XCTAssertEqual(r.changed, 2)
+        // no kept file: whatever the file says otherwise
+        let first = MasterSchedule.mergingText(local, file: file, base: nil)
+        XCTAssertEqual(first.items[2].responsible, "วศ.")
+        XCTAssertEqual(first.changed, 3)
     }
 
     func testRowsThatWeighNothingBookNothing() {

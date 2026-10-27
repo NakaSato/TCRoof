@@ -155,7 +155,9 @@ final class MPWorkbookUITests: XCTestCase {
 
         app.buttons["ไฟล์ Excel"].firstMatch.tap()
         app.buttons["นำเข้าไฟล์แผน (Excel)…"].firstMatch.tap()
-        let confirm = app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"]
+        // the export wrote this station into the file's PROJECT line (`ProjectSetup`), so it no longer warns that the
+        // file is another station's; either confirmation offers รับเฉพาะความก้าวหน้า
+        let confirm = app.alerts.firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 10))
         XCTAssertTrue(confirm.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ไม่มีช่องที่เปลี่ยนตามไฟล์")).firstMatch.exists,
                       "the confirmation should say the file wasn't changed since the export")

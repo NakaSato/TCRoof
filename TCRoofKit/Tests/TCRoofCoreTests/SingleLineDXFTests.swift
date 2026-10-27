@@ -3,7 +3,7 @@ import XCTest
 
 /// docs/specs/cad-export-dxf phase 2: the SLD as DXF at A3 paper scale.
 final class SingleLineDXFTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
 
     func testLayersAndPaperScale() {
         let out = SingleLineDXF.build(SingleLineTests.fixture())

@@ -96,7 +96,7 @@ All pure functions, unit-tested. Numbers in brackets are the design sample (2 ×
   - for each inverter: INVERTER No.i (catalog depth) — gap 0.47 — DC-DB-0i (0.28) — gap 0.47 before the next inverter
 - **Row length:** `row = acW + 0.24 + meterW + 0.45 + Σ(invW + 0.47 + dcW) + (n − 1) × 0.47` [6.77 m].
 - **Minimum room:** length = `row + 2.25`, rounded up to 0.5 m; width shown as 2.5 m [9.5 × 2.5 m].
-- **Columns:** automatic spans are `2.5, k × (L − 5)/k, 2.5` with `k = ceil((L − 5)/2.5)` [2.50 · 2.25 · 2.25 · 2.50].
+- **Columns:** automatic spans follow the team's stations (`docs/specs/cad-export-dxf/reference/inverter-station`, 2026-10-27): end spans 2.0 and the inside ones equal, none over 2.5, `k = ceil((L − 4)/2.5)` inside spans (6.0 → 2.00 · 2.00 · 2.00, 9.0 → 2.00 · 2.50 · 2.50 · 2.00); where they would come out under 2.0, one column fewer with 2.5 inside and the ends evened out [2.25 · 2.50 · 2.50 · 2.25]; up to 5 m two equal spans (one up to 2.5). Until 2026-10-27 the rule was `2.5, k × (L − 5)/k, 2.5`.
   - The user edits the spans as chips (select, − / + 0.05 m, 0.5–6.0 m), `+ เพิ่มช่วง` (max 10), `ลบช่วงที่เลือก`, `EQ เท่ากัน`, `คืนค่าอัตโนมัติ`.
   - The last span is always `L − Σ others` and is read-only. It must be ≥ 0.5 m, else the chip turns red and the status reads `ระยะช่วงเสารวมเกินความยาวห้อง`.
 - **Frame and tray band:**

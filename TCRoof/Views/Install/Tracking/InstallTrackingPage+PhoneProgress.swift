@@ -53,7 +53,7 @@ extension InstallTrackingPage {
 
     /// `คาดส่งมอบ 24/10 ตามกำหนด` green, or red `คาดส่งมอบ 30/10 | ช้า n วัน`.
     private func forecastChip(_ t: InstallTracking) -> some View {
-        let slack = t.slackDays(), end = ThaiFormat.dayMonth.string(from: t.forecastEnd())
+        let slack = t.slackDays(), end = Self.forecastDay(t)
         return toneChip(slack < 0 ? "คาดส่งมอบ \(end) | ช้า \(-slack) วัน" : "คาดส่งมอบ \(end) ตามกำหนด", slack < 0 ? .danger : .ok)
     }
 
@@ -68,7 +68,7 @@ extension InstallTrackingPage {
     // MARK: Gantt
 
     private func phoneGantt(_ g: InstallGantt, data: InstallPageData) -> some View {
-        let axis = InstallAxis(g), cw = Self.phoneColumn(axis)
+        let axis = InstallAxis(g, dayLimit: 31), cw = Self.phoneColumn(axis)
         let width = cw * CGFloat(axis.columns.count)
         let milestones = data.plan?.milestones ?? []
         let todayIndex = axis.columns.firstIndex { axis.unit == .day ? MasterSchedule.calendar.isDate($0, inSameDayAs: axis.today) : axis.contains(axis.today, week: $0) }

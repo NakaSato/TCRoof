@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "id": "pwa-inverter-station-shelter-125k-40k",
+  "name": "Inverter station with shelter (EXL-HV) — MAX 125KTL3-X LV + 40KTL3-X",
+  "nameTh": "สถานีอินเวอร์เตอร์มีหลังคา 2 เครื่อง",
+  "units": "mm",
+  "source": "fd337b54-Inverter_EXL-HV.dxf",
+  "originNote": "frontView.xMm from grid line 1 (or first rack post for wallRack); elevationMm from finished ground to bottom of equipment",
+  "structure": {
+    "type": "shelter",
+    "shelter": true,
+    "gridXMm": [
+      0,
+      2000,
+      4500,
+      7000,
+      9000
+    ],
+    "gridYMm": [
+      0,
+      2500
+    ],
+    "gridLabelsX": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "gridLabelsY": [
+      "A",
+      "B"
+    ],
+    "column": "steel-column-150",
+    "basePlate": "base-plate-200",
+    "eaveHeightHighMm": 3000,
+    "eaveHeightLowMm": 2750,
+    "roof": "mono-pitch",
+    "rackPostsXMm": [
+      1100,
+      3100,
+      4500,
+      5600,
+      7000,
+      8100
+    ],
+    "rackHeightMm": 2000,
+    "door": "door-swing-1100"
+  },
+  "equipment": [
+    {
+      "tag": "SOLAR AC-DB-01",
+      "componentId": "solar-ac-db",
+      "frontView": {
+        "xMm": 1150,
+        "elevationMm": 598,
+        "widthMm": 899,
+        "heightMm": 1400
+      }
+    },
+    {
+      "tag": "SOLAR METER-DB-01",
+      "componentId": "solar-meter-db",
+      "frontView": {
+        "xMm": 2266,
+        "elevationMm": 1248,
+        "widthMm": 630,
+        "heightMm": 750
+      }
+    },
+    {
+      "tag": "INVERTER No.01",
+      "componentId": "growatt-max-125ktl3-lv",
+      "frontView": {
+        "xMm": 3315,
+        "elevationMm": 1409,
+        "widthMm": 970,
+        "heightMm": 640
+      }
+    },
+    {
+      "tag": "SOLAR DC-DB-01",
+      "componentId": "solar-dc-db",
+      "frontView": {
+        "xMm": 4700,
+        "elevationMm": 998,
+        "widthMm": 700,
+        "heightMm": 1000
+      }
+    },
+    {
+      "tag": "INVERTER No.02",
+      "componentId": "growatt-40ktl3-x",
+      "frontView": {
+        "xMm": 6010,
+        "elevationMm": 1454,
+        "widthMm": 580,
+        "heightMm": 600
+      }
+    },
+    {
+      "tag": "SOLAR DC-DB-02",
+      "componentId": "solar-dc-db",
+      "frontView": {
+        "xMm": 7200,
+        "elevationMm": 998,
+        "widthMm": 700,
+        "heightMm": 1000
+      }
+    }
+  ],
+  "cableways": [
+    {
+      "componentId": "ac-cable-ladder-200x100",
+      "route": "TYPE C cabinet → injection point"
+    },
+    {
+      "componentId": "ac-perforated-tray-200x100",
+      "route": "inverters → SOLAR AC-DB-01"
+    },
+    {
+      "componentId": "dc-perforated-tray-100x100",
+      "route": "PV array → DC-DB-01 / DC-DB-02 → inverters"
+    }
+  ],
+  "lighting": [
+    {
+      "componentId": "t8-led-lamp",
+      "count": 3
+    }
+  ],
+  "existing": [
+    {
+      "componentId": "existing-type-c-cabinet"
+    }
+  ]
+}

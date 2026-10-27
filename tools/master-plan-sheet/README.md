@@ -17,6 +17,10 @@ account's **Cloud Datastore User** role instead of Viewer (the project's owner h
 no MP plan yet: in the app, its `ตั้งค่าแผน › เริ่มจากแม่แบบ` opens on its own plan file (found by its code) and keeps
 its dates and progress.
 
+Every pull also rewrites a hidden `_app` tab: every job Firestore holds, one row each (id, name, kind, status, job
+code, station code, kWp, MP plan and %, IEC, daily reports, signed, latest report, last change, and the station row it
+pairs with), so what the app has can be read from the sheet alone, through Drive, without access to Firebase.
+
 ## What the `TCRoof` tab gets
 
 Each station row is paired with a job in the app (`จับคู่โดย`): the job id typed in the yellow `กำหนดงานในแอปเอง`, else

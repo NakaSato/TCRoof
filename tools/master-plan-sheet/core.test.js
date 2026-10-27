@@ -181,3 +181,21 @@ test('a new station job is the app\'s job document, and only unmatched station r
                    { job: null, how: 'ไม่พบงานในแอป' }, { job: null, how: 'ชื่อซ้ำ 2 งาน: ใส่รหัสงานเอง' }];
   assert.deepEqual(core.rowsToCreate(rows, matches).map(r => r.code), ['P3-005']);
 });
+
+test('the _app tab lists every job, its plan, reports and the row it pairs with', () => {
+  const p = plans['P3-001'];
+  const a = core.jobSummary({ id: 'A', projectName: 'สถานีผลิตจ่ายน้ำแม่ข่ายชัยบาดาล', kind: 'pwa', status: 'confirmed', code: 'TCR2569-12345',
+                              capacityKW: 163.02, stationDocs: JSON.stringify({ code: 'P3-001' }), iecState: 'open',
+                              scheduleInput: p.scheduleInput, scheduleActual: p.scheduleActual, updated: new Date('2026-10-27T01:00:00Z') });
+  const h = core.jobSummary({ id: 'H', projectName: 'Google', kind: 'home', status: 'interested', code: 'TCR2569-1', capacityKW: 15 });
+  const rows = [{ code: 'P3-001', name: 'x' }];
+  const matches = core.matchRows(rows, [a, h]);
+  const out = core.appTabRows([h, a], matches, rows, { A: { count: 2, signed: 1, last: new Date('2026-10-26T17:00:00Z'), updated: null } });
+  assert.equal(out.length, 2);
+  assert.equal(out[0].length, core.APP_TAB_HEADER.length);
+  assert.deepEqual(out[0].slice(0, 12), ['A', 'สถานีผลิตจ่ายน้ำแม่ข่ายชัยบาดาล', 'งาน PWA', 'ลูกค้ายืนยันติดตั้ง', 'TCR2569-12345', 'P3-001',
+                                         163.02, 'มี', 97.5, 'กำลังทดสอบ', 2, 1]);
+  assert.equal(out[0][14], 'P3-001', 'paired with the P3-001 row');
+  assert.deepEqual(out[1].slice(0, 9), ['H', 'Google', 'งานบ้าน', 'ลูกค้าสนใจติดตั้ง', 'TCR2569-1', '', 15, '', '']);
+  assert.equal(out[1][14], '');
+});

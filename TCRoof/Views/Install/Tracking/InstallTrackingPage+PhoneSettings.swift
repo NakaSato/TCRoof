@@ -28,9 +28,12 @@ extension InstallTrackingPage {
     private var people: Int { Set(job.teamMembers + job.externals + [job.supervisorEmail].compactMap { $0 }.filter { !$0.isEmpty }).count }
 
     /// `จ – ส`: the site's working weekdays, as a range when they run on.
-    private var weekdaysSummary: String {
+    private var weekdaysSummary: String { Self.weekdaysSummary(job.routineSettings.workingWeekdays) }
+
+    /// `จ – ส`: `Calendar` weekdays (1 = Sunday) as a range when they run on, else listed (the iPad tab shares it).
+    static func weekdaysSummary(_ set: Set<Int>) -> String {
         let names = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
-        let days = job.routineSettings.workingWeekdays.sorted()
+        let days = set.sorted()
         guard let first = days.first, let last = days.last else { return "–" }
         if days.count > 2, last - first + 1 == days.count { return names[first - 1] + " – " + names[last - 1] }
         return days.map { names[$0 - 1] }.joined(separator: " ")

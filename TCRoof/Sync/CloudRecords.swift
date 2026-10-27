@@ -79,6 +79,8 @@ extension Job: CloudSynced {
         var stationDocs: String?
         /// The Weekly Reports sent (`Job.weeklySentJSON`); nil from app versions without it, which keeps the device's.
         var weeklySent: String?
+        /// The construction drawings (`Job.drawingsJSON`); nil from app versions without them, which keeps the device's.
+        var drawings: String?
         /// The plan file's WBS rows (`Job.scheduleWBS`, `[]` for none) and the ticked rows (`Job.wbsTicks`, `{}` for
         /// none), always written so a cleared list reaches the other devices; nil from app versions without them.
         var scheduleWBS, wbsTicks: String?
@@ -118,6 +120,7 @@ extension Job: CloudSynced {
                scheduleInput: scheduleInputJSON, scheduleActual: scheduleActualJSON,
                scheduleWorkbookDriveID: scheduleWorkbookDriveID, scheduleWorkbookName: scheduleWorkbookDriveID == nil ? nil : scheduleWorkbookName,
                routineSettings: routineSettingsJSON, weeklyRequests: weeklyRequestsJSON, stationDocs: stationDocsJSON, weeklySent: weeklySentJSON,
+               drawings: drawingsJSON,
                scheduleWBS: scheduleWBSJSON ?? "[]", wbsTicks: wbsTicksJSON ?? "{}", kind: kind.rawValue,
                iecReport: iecReportJSON, iecState: iecReport?.lockState.rawValue, externals: externals,
                supervisor: supervisorEmail ?? "", teamMembers: teamMembers, latitude: latitude, longitude: longitude)
@@ -186,6 +189,7 @@ extension Job: CloudSynced {
         }
         if let v = r.stationDocs { stationDocsJSON = v }
         if let v = r.weeklySent { weeklySentJSON = v }
+        if let v = r.drawings { drawingsJSON = v }
         applyWBS(r)
         if let v = r.iecReport {
             iecReportJSON = v

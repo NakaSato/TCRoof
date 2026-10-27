@@ -167,6 +167,9 @@ final class Job {
     /// Encoded `[RoutineReport.WeeklySent]`: the Weekly Reports (R3) sent from the iPad install page, one per week; nil
     /// until one is sent, and on jobs from before it.
     var weeklySentJSON: String?
+    /// Encoded `[StationDrawing]`: the station's construction drawings and their revisions (the iPad install page's
+    /// `ตั้งค่าโครงการ`); nil until one is uploaded, and on jobs from before it.
+    var drawingsJSON: String?
     /// Encoded `[MasterSchedule.WorkItem]`: the plan file's work breakdown (docs/specs/project-plan-wbs.md), kept beside
     /// the plan rather than inside `scheduleInputJSON`, so a device on an older build that saves the plan leaves it be.
     var scheduleWBSJSON: String?

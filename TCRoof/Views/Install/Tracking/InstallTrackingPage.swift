@@ -7,7 +7,7 @@ import ExcelExport
 /// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
 /// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request, weekly }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request, weekly, settings }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
@@ -103,6 +103,13 @@ struct InstallTrackingPage: View {
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?
     @State var phoneSheet: PhoneSheet?
+    /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the category shown, the edits not saved yet, the
+    /// open sheet, where the person was going when asked about unsaved edits, and `-installDemo YES`'s station.
+    @State var padCategory = Debug.padCategory
+    @State var settingsDraft = SettingsDraft()
+    @State var padSheet: PadSettingsSheet?
+    @State var leaving: Leave?
+    @State var padDemo = PadSettingsDemo.initial
 
     var body: some View {
         let data = self.data
@@ -157,6 +164,8 @@ struct InstallTrackingPage: View {
                         applyRequestState()
                         #endif
                     }
+            } else if tab == .settings {
+                padSettingsTab(data)
             } else {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -172,7 +181,7 @@ struct InstallTrackingPage: View {
                             planTab(data)
                         case .docs:
                             docsTab()
-                        case .request, .weekly:
+                        case .request, .weekly, .settings:
                             EmptyView()
                         }
                     }
@@ -195,6 +204,31 @@ struct InstallTrackingPage: View {
         }
         .background(Theme.phonePage.ignoresSafeArea())
         .padDock(fade: nil)
+        .alert("ยังไม่ได้บันทึกการแก้ไข", isPresented: Binding(get: { leaving != nil }, set: { if !$0 { leaving = nil } })) {
+            Button("บันทึก") { saveSettingsDraft(); go(leaving) }
+            Button("ทิ้ง", role: .destructive) { settingsDraft = SettingsDraft(); go(leaving) }
+            Button("อยู่ต่อ", role: .cancel) { leaving = nil }
+        } message: {
+            Text("แก้ไข \(settingsChanges.count) รายการในตั้งค่าโครงการ")
+        }
+    }
+
+    /// Where the page goes from `ตั้งค่าโครงการ`: another tab, a pushed screen, or back to the list.
+    enum Leave: Equatable { case tab(Tab), route(Route), back }
+
+    /// Goes there, asking first while `ตั้งค่าโครงการ` holds edits not saved.
+    func leave(to target: Leave) {
+        if tab == .settings, !settingsChanges.isEmpty { leaving = target } else { go(target) }
+    }
+
+    private func go(_ target: Leave?) {
+        leaving = nil
+        switch target {
+        case .tab(let t): tab = t
+        case .route(let r): route = r
+        case .back: dismiss()
+        case nil: break
+        }
     }
 
     var data: InstallPageData {
@@ -307,7 +341,7 @@ struct InstallTrackingPage: View {
 
     private func header(_ data: InstallPageData) -> some View {
         HStack(spacing: 14) {
-            Button { dismiss() } label: {
+            Button { leave(to: .back) } label: {
                 Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
                     .frame(width: 44, height: 44)
                     .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -377,7 +411,8 @@ struct InstallTrackingPage: View {
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
          Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
-         Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan)]
+         Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan),
+         Item(id: "settings", title: "ตั้งค่าโครงการ", symbol: "gearshape", tab: .settings)]
     }
 
     private func tabBar(_ data: InstallPageData) -> some View {
@@ -385,7 +420,7 @@ struct InstallTrackingPage: View {
             ForEach(items(data)) { item in
                 let on = item.tab != nil && item.tab == tab
                 Button {
-                    if let t = item.tab { tab = t } else { route = item.route }
+                    if let t = item.tab { leave(to: .tab(t)) } else if let r = item.route { leave(to: .route(r)) }
                 } label: {
                     HStack(spacing: 7) {
                         Image(systemName: item.symbol).font(.system(size: 16, weight: .semibold))
@@ -488,7 +523,8 @@ struct InstallTrackingPage: View {
 
     // MARK: DEBUG
 
-    /// `-installTab overview|daily|plan|docs|request|weekly`, `-installReportWeek n`, `-installReportSlide 1…8`,
+    /// `-installTab overview|daily|plan|docs|request|weekly|settings`, `-installSettings team|header|drawings|routine|connection|reference`,
+    /// `-installSettingsState edit|dirty|history|upload|person`, `-installReportWeek n`, `-installReportSlide 1…8`,
     /// `-installReportState ready|menu|pptx|sent`, `-installRequestWeek n`, `-installRequestState …`, `-installDocsPackage building|grid_connection|pk2`, `-installDocsPaper <kind id>`,
     /// `-installView gantt|curve`, `-installPlanView gantt|table`, `-installPlanCollapsed
     /// YES`, `-installStage n`, `-installDemo YES`, `-installSheet actions|<tile id>`, `-installSite info|risk|labour`,
@@ -528,7 +564,12 @@ struct InstallTrackingPage: View {
         static let settings = UserDefaults.standard.string(forKey: "installTab") == "settings" || settingsCategory != nil
         static let settingsCategory = UserDefaults.standard.string(forKey: "installSettings").flatMap(SettingsCategory.init)
         static let planEdit = UserDefaults.standard.bool(forKey: "installPlanEdit")
+        /// iPad: `-installSettings team|header|drawings|routine|connection|reference` picks `ตั้งค่าโครงการ`'s category.
+        static let padCategory = UserDefaults.standard.string(forKey: "installSettings").flatMap(PadSettingsCategory.init) ?? .team
+        /// iPad, with `-installDemo YES`: `-installSettingsState edit|dirty|history|upload|person` opens states 09–13.
+        static let settingsState = UserDefaults.standard.string(forKey: "installSettingsState")
         #else
+        static let padCategory = PadSettingsCategory.team
         static let phoneTab = PhoneTab.overview
         static let settings = false
         static let settingsCategory: SettingsCategory? = nil

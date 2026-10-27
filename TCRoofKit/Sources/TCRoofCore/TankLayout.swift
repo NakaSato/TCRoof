@@ -334,7 +334,8 @@ public struct TankLayout: Sendable {
     /// nil and where it failed when no pair fits. `free` says whether a pair at x with its footings at `ys` is clear.
     static func pairs(_ a: Double, _ b: Double, _ ys: [Double], _ p: Params, free: (Double, [Double]) -> Bool) -> (xs: [Double]?, fail: Double) {
         let len = b - a, k = max(1, Int(((len - 2 * p.endOver) / p.postDX).rounded(.up))) + 1
-        let even = (0..<k).map { a + p.endOver + (len - 2 * p.endOver) * Double($0) / Double(k - 1) }
+        let span: Double = len - 2 * p.endOver
+        let even: [Double] = (0..<k).map { (i: Int) -> Double in a + p.endOver + span * Double(i) / Double(k - 1) }
         if len > 2 * p.endOver, even.allSatisfy({ free($0, ys) }) { return (even, 0) }
         guard var x = grid(a, a + p.maxCantilever).filter({ free($0, ys) }).min(by: { abs($0 - a - p.endOver) < abs($1 - a - p.endOver) })
         else { return (nil, a + p.cellW / 2) }

@@ -59,7 +59,7 @@ final class RoofComponentsTests: XCTestCase {
     }
 
     func testTheExportUsesTheTeamsBlocks() throws {
-        let t = SketchDXFTests(), v = roof(), d = RoofDXF.build(v, parts: [.section]).data, raw = t.rawEntities(d)
+        let t = DXFRead(), v = roof(), d = RoofDXF.build(v, parts: [.section]).data, raw = t.rawEntities(d)
         let purlins = raw.filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "RF_PURLIN_C" }
         XCTAssertEqual(purlins.count, RoofSection.structure(v).cuts.filter { $0.row == 1 }.count)
         XCTAssertTrue(purlins.allSatisfy { t.value($0, "8") == "S-ROOF-PURL-E" })

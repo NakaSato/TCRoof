@@ -3,7 +3,9 @@ import XCTest
 
 /// C1 "ส่งออก CAD" (docs/ui/survey-c1 `cadBuild`): a DXF R2000 file with the design's layers.
 final class RoofDXFTests: XCTestCase {
-    func roof() -> Values {
+    func roof() -> Values { Self.roof() }
+    /// The sample roof, shared with the other DXF tests.
+    static func roof() -> Values {
         var v = Values()
         v["spansX"] = .text("1.5,4,4,4,4,1.5"); v["spansY"] = .text("1.5,4.5,4,4.5,1.5")
         Roof.setRidge(&v, .h); Roof.setFrame(&v, .pratt)
@@ -29,7 +31,7 @@ final class RoofDXFTests: XCTestCase {
         }
         XCTAssertFalse(out.layers.contains("P-MODL-N"))
         // every layer is declared once in the LAYER table
-        let t = SketchDXFTests()
+        let t = DXFRead()
         // layers 0 and Defpoints, and the drawing's
         XCTAssertEqual(t.tableCount(l, "LAYER"), out.layers.count + 2)
         XCTAssertEqual(out.entities, t.records(out.data).count)
@@ -47,7 +49,7 @@ final class RoofDXFTests: XCTestCase {
 
     /// The plan's slope arrows reach the file, and every arrow carries its slope, not only the first pair.
     func testSlopeArrowsAreNumbered() throws {
-        let v = roof(), t = SketchDXFTests(), plan = RoofDXF.build(v, parts: [.plan]).data
+        let v = roof(), t = DXFRead(), plan = RoofDXF.build(v, parts: [.plan]).data
         let ents = t.entities(plan)
         let slope = String(data: RoofDXF.tis620("ลาด"), encoding: .isoLatin1)!
         let labels = ents.filter { $0.first?.1 == "TEXT" && t.value($0, "1")?.hasPrefix(slope) == true }
@@ -66,7 +68,7 @@ final class RoofDXFTests: XCTestCase {
 
     /// The purlins are steel: a thin C-100x50x20x2.3 wall, one closed polyline filled solid, in the block and on screen.
     func testPurlinsAreSteel() throws {
-        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.section]).data
+        let t = DXFRead(), d = RoofDXF.build(roof(), parts: [.section]).data
         // the block's definition, from its name to its ENDBLK
         let l = lines(d), start = try XCTUnwrap(l.indices.first { l[$0] == "RF_PURLIN_C" && l[$0 - 1] == "2" && l[$0 - 2] == "AcDbBlockBegin" })
         let block = Array(l[start..<(l[start...].firstIndex(of: "ENDBLK") ?? l.endIndex)])
@@ -126,16 +128,16 @@ final class RoofDXFTests: XCTestCase {
             let xs = f.numbers.map { f.face.plan($0.at, 0).x }
             XCTAssertEqual(xs, xs.sorted(), "face \(f.face.id)")
         }
-        let raw = SketchDXFTests().rawEntities(RoofDXF.build(v, parts: [.plan, .pv]).data)
+        let raw = DXFRead().rawEntities(RoofDXF.build(v, parts: [.plan, .pv]).data)
         func texts(_ layer: String) -> Set<String> {
-            Set(raw.filter { $0.first?.1 == "TEXT" && SketchDXFTests().value($0, "8") == layer }.compactMap { SketchDXFTests().value($0, "1") })
+            Set(raw.filter { $0.first?.1 == "TEXT" && DXFRead().value($0, "8") == layer }.compactMap { DXFRead().value($0, "1") })
         }
         let bubbles = texts("G-GRID")
         for name in letters { XCTAssertTrue(bubbles.contains(name), name) }
         let tags = texts("G-ANNO-TEXT")
         for r in refs.compactMap({ $0 }) { XCTAssertTrue(tags.contains(r), r) }
         // the layout is its own drawing under the structure plan's title, and its title sits under every one of its bubbles
-        let t = SketchDXFTests(), named = { (s: String) in String(data: RoofDXF.tis620(s), encoding: .isoLatin1)! }
+        let t = DXFRead(), named = { (s: String) in String(data: RoofDXF.tis620(s), encoding: .isoLatin1)! }
         let structure = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (t.value($0, "1") ?? "").contains("Pratt") })
         let layout = try XCTUnwrap(raw.first { $0.first?.1 == "TEXT" && (t.value($0, "1") ?? "").hasPrefix(named("แปลนจัดวางแผง")) })
         let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("TC_PV_MODULE") }
@@ -172,7 +174,7 @@ final class RoofDXFTests: XCTestCase {
     /// As the team's own drawings come: every layer's lineweight Default, the display off, and concrete cut by the
     /// section hatched AR-CONC.
     func testNoLineweightsAndConcreteHatch() throws {
-        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.plan, .section]).data, l = lines(d)
+        let t = DXFRead(), d = RoofDXF.build(roof(), parts: [.plan, .section]).data, l = lines(d)
         let layers = l.indices.filter { l[$0] == "AcDbLayerTableRecord" }
         XCTAssertFalse(layers.isEmpty)
         for i in layers { XCTAssertEqual(t.after(l, i, "370"), "-3") }
@@ -191,7 +193,7 @@ final class RoofDXFTests: XCTestCase {
     /// Each PV module is one INSERT of a block of its size holding a frameless WIPEOUT, the team's cells and the frame
     /// as a closed polyline; no loose wipeout is left on the module layer.
     func testModulesAreOneBlockEach() throws {
-        let t = SketchDXFTests(), d = RoofDXF.build(roof(), parts: [.pv]).data, raw = t.rawEntities(d)
+        let t = DXFRead(), d = RoofDXF.build(roof(), parts: [.pv]).data, raw = t.rawEntities(d)
         let modules = raw.filter { $0.first?.1 == "INSERT" && t.value($0, "2")?.hasPrefix("TC_PV_MODULE_") == true }
         XCTAssertFalse(modules.isEmpty)
         XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "P-MODL-N" })
@@ -206,7 +208,7 @@ final class RoofDXFTests: XCTestCase {
     func testStructureScheduleDetailsAndMarks() throws {
         var v = roof()
         v["comp2"] = .text("C100x50x20x3.2")
-        let t = SketchDXFTests(), raw = t.rawEntities(RoofDXF.build(v, parts: [.plan, .section, .table]).data)
+        let t = DXFRead(), raw = t.rawEntities(RoofDXF.build(v, parts: [.plan, .section, .table]).data)
         func texts(_ layer: String) -> [String] {
             raw.filter { $0.first?.1 == "TEXT" && t.value($0, "8") == layer }.compactMap { t.value($0, "1") }
         }

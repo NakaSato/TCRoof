@@ -3,7 +3,7 @@ import XCTest
 
 /// The team's tank mounting components, taken one by one from their section drawings, as editable blocks in the tank DXF.
 final class TankComponentsTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
 
     /// Every component ships, true size in metres, with something to draw.
     func testComponentsLoad() throws {

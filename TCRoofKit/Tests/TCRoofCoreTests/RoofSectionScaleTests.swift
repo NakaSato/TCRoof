@@ -5,7 +5,7 @@ import XCTest
 /// boxed eave or beam at the post heads), every measure a live DIMENSION. The page's section keeps its level marks.
 final class RoofSectionScaleTests: XCTestCase {
     func roof(_ f: RoofFrame, clear: Double = 5.5) -> Values {
-        var v = RoofDXFTests().roof()
+        var v = RoofDXFTests.roof()
         Roof.setFrame(&v, f); v[Roof.Key.clearHeight] = .text(String(clear))
         return v
     }
@@ -49,7 +49,7 @@ final class RoofSectionScaleTests: XCTestCase {
     }
 
     func testTheDXFWritesTheSectionsDimensions() throws {
-        let t = SketchDXFTests()
+        let t = DXFRead()
         let out = RoofDXF.build(roof(.pratt), parts: [.section])
         let dims = t.rawEntities(out.data).filter { $0.first?.1 == "DIMENSION" }
         XCTAssertEqual(dims.count, RoofSection(roof(.pratt), trueScale: true).dimensions.count)
@@ -60,5 +60,11 @@ final class RoofSectionScaleTests: XCTestCase {
         // the roof structure only: no level marks, no loose lines or texts on the DIM layer, and no title
         XCTAssertFalse(t.rawEntities(out.data).contains { t.value($0, "8") == "G-ANNO-DIMS" && ["LINE", "TEXT"].contains($0.first?.1 ?? "") })
         XCTAssertFalse(t.rawEntities(out.data).contains { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-ANNO-TEXT" })
+        // the member numbers ①–⑦ of the member schedule, in ink on their own layer: each row the frame draws, once
+        let s = RoofSection(roof(.pratt), trueScale: true, ink: true)
+        let marks = t.rawEntities(out.data).filter { $0.first?.1 == "TEXT" && t.value($0, "8") == "G-ANNO-MARK" }.compactMap { t.value($0, "1") }
+        XCTAssertFalse(s.callouts.isEmpty)
+        XCTAssertEqual(marks.sorted(), s.callouts.keys.sorted().map(String.init))
+        XCTAssertEqual(t.rawEntities(out.data).filter { $0.first?.1 == "CIRCLE" && t.value($0, "8") == "G-ANNO-MARK" }.count, s.callouts.count)
     }
 }

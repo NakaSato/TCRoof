@@ -6,7 +6,7 @@ final class NorthArrowTests: XCTestCase {
     func text(_ d: Data) -> [String] { String(data: d, encoding: .isoLatin1)!.components(separatedBy: "\r\n") }
     /// The INSERTs of the arrow: their rotation (group 50, 0 when absent) and scale (group 41, 1 when absent).
     func arrows(_ d: Data) -> [(rotation: Double, scale: Double)] {
-        SketchDXFTests().rawEntities(d).filter { $0.first?.1 == "INSERT" && $0.contains { $0.0 == "2" && $0.1 == NorthArrow.blockName } }.map { e in
+        DXFRead().rawEntities(d).filter { $0.first?.1 == "INSERT" && $0.contains { $0.0 == "2" && $0.1 == NorthArrow.blockName } }.map { e in
             (Double(e.first { $0.0 == "50" }?.1 ?? "0") ?? 0, Double(e.first { $0.0 == "41" }?.1 ?? "1") ?? 1)
         }
     }

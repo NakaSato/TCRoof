@@ -89,13 +89,43 @@ extension MPWorkbook {
         }
     }
 
-    /// The rows the sheet marks done: `Y` in `เสร็จ (Y · S)`, with the `เสร็จ` date where there is one.
+    /// The first row under the header whose WBS cell is text but not a code (`Inverter station (งาน 2.5.1)`): the list
+    /// ends there, and the tables under it begin. `Int.max` for a sheet with nothing under the list.
+    static func listEnd(_ s: Sheet, _ h: WBSHeader) -> Int {
+        s.texts(col: h.code).first { $0.row > h.row
+            && $0.text.trimmingCharacters(in: .whitespacesAndNewlines).range(of: #"^\d+(\.\d+)*$"#, options: .regularExpression) == nil
+        }?.row ?? .max
+    }
+
+    /// The Inverter station table's own `เสร็จ (Y)` column (its header row starts `ขั้นงาน`): its steps' ticks sit
+    /// there, not in the list's `เสร็จ (Y · S)`. Nil for a sheet without the table.
+    static func stationMark(_ s: Sheet, _ h: WBSHeader) -> (row: Int, col: Int)? {
+        func clean(_ t: String) -> String { t.trimmingCharacters(in: .whitespacesAndNewlines) }
+        guard let head = s.texts.filter({ $0.row > h.row && clean($0.text).hasPrefix("ขั้นงาน") }).min(by: { $0.row < $1.row }),
+              let mark = s.texts.first(where: { $0.row == head.row && clean($0.text).hasPrefix("เสร็จ (Y") }) else { return nil }
+        return (head.row, mark.col)
+    }
+
+    /// Where a row's tick goes: the list's `เสร็จ (Y · S)` with its `เสร็จ` date, or for a step of the Inverter station
+    /// table (`2.5.1.1`) that table's own `เสร็จ (Y)`, which has no date. A table further down whose rows also start
+    /// with a code (P4-001's drawings per task) has no ticks.
+    static func tickCells(_ s: Sheet, _ h: WBSHeader) -> [(code: String, row: Int, mark: Int, date: Int?)] {
+        let station = stationMark(s, h)
+        return codeRows(s, h).compactMap { r in
+            if let station, r.row > station.row {
+                return r.code.split(separator: ".").count >= 4 ? (r.code, r.row, station.col, nil) : nil
+            }
+            return h.doneMark.map { (r.code, r.row, $0, h.doneDate) }
+        }
+    }
+
+    /// The rows the sheet marks done: `Y` in `เสร็จ (Y · S)` (or the Inverter station table's `เสร็จ (Y)`), with the
+    /// `เสร็จ` date where there is one.
     static func wbsDone(_ s: Sheet, _ h: WBSHeader, _ cal: Calendar) -> (codes: Set<String>, dates: [String: Date]) {
-        guard let mark = h.doneMark else { return ([], [:]) }
         var codes = Set<String>(), dates: [String: Date] = [:]
-        for r in codeRows(s, h) where s.text(mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y" {
+        for r in tickCells(s, h) where s.text(r.mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y" {
             codes.insert(r.code)
-            if let col = h.doneDate, let d = s.date(col, r.row, cal) { dates[r.code] = d }
+            if let col = r.date, let d = s.date(col, r.row, cal) { dates[r.code] = d }
         }
         return (codes, dates)
     }

@@ -122,11 +122,27 @@ final class TankLayoutTests: XCTestCase {
         XCTAssertEqual(l.cuts.count, 4)
     }
 
+    /// The team's tank-roof drawing (reference/tank-roof, 40 × 26 m, 240 modules): X braces on the back line in every
+    /// other bay and the last, 30 sets over its seven tables of 8, 9, 9, 9, 9, 8 and 4 frames; 56 posts, 112 footings
+    /// and 168 struts.
+    func testBracingFollowsTheTeamsDrawing() {
+        XCTAssertEqual(TankLayout.bracedBays(0), []); XCTAssertEqual(TankLayout.bracedBays(1), [0])
+        XCTAssertEqual(TankLayout.bracedBays(2), [0, 1]); XCTAssertEqual(TankLayout.bracedBays(3), [0, 2])
+        XCTAssertEqual(TankLayout.bracedBays(7), [0, 2, 4, 6]); XCTAssertEqual(TankLayout.bracedBays(8), [0, 2, 4, 6, 7])
+        let tables = [8, 9, 9, 9, 9, 8, 4].map { TankLayout.TableBOM(columns: 20, length: 23, pairs: $0) }
+        XCTAssertEqual(tables.map(\.braces).reduce(0, +), 30)
+        XCTAssertEqual(tables.map(\.posts).reduce(0, +), 56)
+        XCTAssertEqual(tables.map(\.footings).reduce(0, +), 112)
+        XCTAssertEqual(tables.map { $0.sideBraces + $0.struts }.reduce(0, +), 168)
+    }
+
     func testBOMRulesPerTable() {
         let q = TankLayout.TableBOM(columns: 6, length: 6.904, pairs: 4)
-        XCTAssertEqual(q.modules, 12); XCTAssertEqual(q.posts, 8); XCTAssertEqual(q.footings, 8); XCTAssertEqual(q.rafters, 4)
+        // one post per pair (the back one), a footing at both ends of the frame, X braces in bays 1 and 3 of 3
+        XCTAssertEqual(q.modules, 12); XCTAssertEqual(q.posts, 4); XCTAssertEqual(q.footings, 8); XCTAssertEqual(q.rafters, 4)
         XCTAssertEqual(q.railLength, 4 * 6.904, accuracy: 1e-9); XCTAssertEqual(q.railClamps, 16)
-        XCTAssertEqual(q.midClamps, 20); XCTAssertEqual(q.endClamps, 8); XCTAssertEqual(q.braces, 6); XCTAssertEqual(q.groundLugs, 1)
+        XCTAssertEqual(q.midClamps, 20); XCTAssertEqual(q.endClamps, 8); XCTAssertEqual(q.braces, 2); XCTAssertEqual(q.groundLugs, 1)
+        XCTAssertEqual(q.bases, 8); XCTAssertEqual(q.anchors, 16); XCTAssertEqual(q.sideBraces, 8); XCTAssertEqual(q.struts, 4)
         let none = TankLayout.TableBOM(columns: 0, length: 0, pairs: 0)
         XCTAssertEqual(none.posts, 0); XCTAssertEqual(none.endClamps, 0); XCTAssertEqual(none.groundLugs, 0); XCTAssertEqual(none.braces, 0)
         let v = tank(), l = TankLayout(v, params: TankLayout.auto(v))!

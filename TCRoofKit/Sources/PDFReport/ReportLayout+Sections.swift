@@ -123,7 +123,7 @@ extension ReportLayout {
 
     /// C1 section A-A across the full width, titled with the frame type; replaces the generic truss diagram.
     func roofSectionUnit(_ d: Values) -> Unit {
-        let W = Self.cw, sec = RoofSection(d, callouts: false).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 16
+        let W = Self.cw, sec = RoofSection(d, ink: true).sketch, k = (W - 16) / sec.width, h = Self.band + 6 + sec.height * k + 16
         var o = box("รูปตัด A-A | " + Roof.frame(d).title + " (หน่วย ม.)", height: h)
         o += sec.translated(8, Self.band + 6, scale: k)
         // where the pitch came from (auto-drawing §4.4), its check, and the note every drawing carries
@@ -394,7 +394,7 @@ extension ReportLayout {
             out.append(Unit(h: sh, ops: s))
             if let front = TankDrawings.tableFront(l) {
                 let kf = (W - 16) / front.width, fh = Self.band + 6 + front.height * kf + 4
-                var f = box("รูปด้านหน้าโต๊ะแผง", height: fh)
+                var f = box("รูปด้านแนวเสาหลัง", height: fh)
                 f += front.translated(8, Self.band + 6, scale: kf)
                 out.append(Unit(h: fh, ops: f))
             }

@@ -25,11 +25,14 @@ final class MPWorkbookFlow {
         var then: URL?
     }
     struct SharedFile: Identifiable { let id = UUID(); let url: URL }
+    /// The kept file's project facts, for `ตั้งค่าโครงการจากไฟล์…`.
+    struct SetupReview: Identifiable { let id = UUID(); let setup: ProjectSetup }
 
     var importing = false
     var pending: Pending?
     var message: Message?
     var shared: SharedFile?
+    var setupReview: SetupReview?
     /// The confirmation is the iPhone install page's sheet (`MPImportSheet`) rather than the alert. A file that names
     /// another station says so there, and its `เลือกสถานีอื่น…` hands over to the alert, which offers that station.
     var confirmsInSheet = false
@@ -56,16 +59,34 @@ final class MPWorkbookFlow {
         }
     }
 
-    func apply(_ p: Pending, to job: Job, context: ModelContext) {
-        Self.install(p.imported, data: p.data, name: p.name, on: job)
+    /// `setup`: the file's project facts to take as well (`ProjectSetup`); none for a file of another station.
+    func apply(_ p: Pending, to job: Job, context: ModelContext, setup: Set<ProjectSetup.Field> = []) {
+        Self.install(p.imported, data: p.data, name: p.name, on: job, setup: setup)
         try? context.save()
+    }
+
+    /// The facts an import takes without asking: the ones that fill a field the job leaves empty, when the file is
+    /// this station's (`mismatch`). A file of another station gives none.
+    func defaultSetup(_ p: Pending, job: Job, stations: [Job]) -> Set<ProjectSetup.Field> {
+        guard mismatch(p, job: job, stations: stations) == nil else { return [] }
+        return ProjectSetup.defaultFields(job.setupChanges(p.imported.setup))
+    }
+
+    /// `ตั้งค่าโครงการจากไฟล์…`: the kept file's facts against the job's, to take what the import didn't.
+    func reviewSetup(_ job: Job) {
+        guard let data = job.scheduleWorkbook, let r = try? MPWorkbook.read(data) else {
+            message = Message(title: "ยังไม่มีไฟล์แผน", text: "นำเข้าไฟล์แผน (Excel) ของสถานีก่อน")
+            return
+        }
+        setupReview = SetupReview(setup: r.setup)
     }
 
     /// The plan from the file replaces the job's; the file's actual replaces the job's when it has any points, else the
     /// job keeps what it has booked (as the confirmation says), each task keeping its % done under the file's weight,
     /// and takes the file's actual start and finish dates where it has them. The file is kept on the job and goes up to
-    /// Drive on the next save (`PhotoSync`).
-    static func install(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) {
+    /// Drive on the next save (`PhotoSync`). `setup` takes those of the file's project facts too (`ProjectSetup`).
+    static func install(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job,
+                        setup: Set<ProjectSetup.Field> = []) {
         let old = job.scheduleInput, new = imported.input
         job.scheduleInput = new
         let fileActual = imported.actual
@@ -99,6 +120,7 @@ final class MPWorkbookFlow {
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
+        if !setup.isEmpty { job.takeSetup(imported.setup, fields: setup) }
     }
 
     /// The job's progress with a file's taken in (`Actual.merging`): only what was changed in the file since the app
@@ -114,17 +136,21 @@ final class MPWorkbookFlow {
                                           weights: weights)
     }
 
-    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`merged`); the job keeps its plan, and the
-    /// file becomes the kept original. Returns how many task-weeks and dates changed.
+    /// รับเฉพาะความก้าวหน้า: a file updated in Excel gives only its progress (`merged`), its ticks, and the rows'
+    /// `ผู้รับผิดชอบ` and `หลักฐาน` changed in Excel since (`MasterSchedule.mergingText`); the job keeps its plan, and the
+    /// file becomes the kept original. Returns how many task-weeks, dates, ticks and texts changed.
     @discardableResult
     static func takeProgress(_ imported: MPWorkbook.Imported, data: Data, name: String, on job: Job) -> Int {
         let (a, changed) = merged(imported, into: job)
         if a != job.scheduleActual { job.scheduleActual = a }
+        let (rows, edited) = MasterSchedule.mergingText(job.scheduleWBS, file: imported.wbs,
+                                                        base: job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).wbs })
+        if rows != job.scheduleWBS { job.scheduleWBS = rows }
         let ticked = takeTicks(imported, on: job)
         job.scheduleWorkbook = data
         job.scheduleWorkbookName = name
         job.scheduleWorkbookDriveID = nil
-        return changed + ticked
+        return changed + ticked + edited
     }
 
     /// The WBS rows ticked or unticked in the file since the app exported it (`MasterSchedule.mergingTicks`: the
@@ -161,11 +187,12 @@ final class MPWorkbookFlow {
         return nil
     }
 
-    /// What the import will do, for its confirmation.
-    func summary(_ p: Pending, job: Job) -> String {
+    /// What the import will do, for its confirmation. `fills`: the project facts it takes (`defaultSetup`).
+    func summary(_ p: Pending, job: Job, fills: Int = 0) -> String {
         let r = p.imported
         var lines: [String] = []
         if let project = r.project { lines.append(project) }
+        if fills > 0 { lines.append("นำเข้า: เติมข้อมูลโครงการที่ยังว่าง \(fills) ช่องตามไฟล์") }
         lines.append("\(r.tasks.count) งาน | ติดตั้ง \(r.input.installStart.thaiShort) – \(r.input.installEnd.thaiShort)")
         let weeks = Set(r.actual.points.values.flatMap(\.keys)).count
         if weeks > 0 {
@@ -201,7 +228,9 @@ final class MPWorkbookFlow {
     func export(_ job: Job) {
         guard let original = job.scheduleWorkbook, let input = job.scheduleInput else { return }
         do {
-            let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks)
+            // the station's facts go into the file's station lines too, so a plan begun from another station's file names this one
+            let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks,
+                                            setup: ProjectSetup(job.setupTarget))
             let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let url = dir.appendingPathComponent(MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName))
@@ -267,12 +296,12 @@ private struct MPWorkbookModifier: ViewModifier {
                         flow.pending = nil
                         // that station's own plan and progress would be replaced: ask again, about it
                         if fits.scheduleInput != nil { retarget = Retarget(pending: p, job: fits); return }
-                        flow.apply(p, to: fits, context: context)
+                        flow.apply(p, to: fits, context: context, setup: flow.defaultSetup(p, job: fits, stations: jobs.pwaStations))
                         flow.message = .init(title: "นำเข้าแล้ว", text: "แผนจากไฟล์อยู่ที่ \(label(fits)) ไม่ใช่สถานีที่เปิดอยู่")
                     }
                 }
                 Button(other == nil ? "นำเข้า" : "นำเข้าที่สถานีนี้") {
-                    flow.apply(p, to: job, context: context)
+                    flow.apply(p, to: job, context: context, setup: flow.defaultSetup(p, job: job, stations: jobs.pwaStations))
                     flow.pending = nil
                 }
                 if job.scheduleInput != nil {
@@ -287,13 +316,13 @@ private struct MPWorkbookModifier: ViewModifier {
                     Text("ไฟล์: \(other.file)\nสถานีนี้: \(label(job))"
                          + (other.fits.map { "\nไฟล์ตรงกับ \(label($0))" } ?? "") + "\n\n" + flow.summary(p, job: job))
                 } else {
-                    Text(flow.summary(p, job: job))
+                    Text(flow.summary(p, job: job, fills: flow.defaultSetup(p, job: job, stations: jobs.pwaStations).count))
                 }
             }
             .alert(retarget.map { "นำเข้าที่ \(label($0.job))" } ?? "", isPresented: Binding(get: { retarget != nil }, set: { if !$0 { retarget = nil } }),
                    presenting: retarget) { r in
                 Button("นำเข้า") {
-                    flow.apply(r.pending, to: r.job, context: context)
+                    flow.apply(r.pending, to: r.job, context: context, setup: flow.defaultSetup(r.pending, job: r.job, stations: jobs.pwaStations))
                     retarget = nil
                     flow.message = .init(title: "นำเข้าแล้ว", text: "แผนจากไฟล์อยู่ที่ \(label(r.job)) ไม่ใช่สถานีที่เปิดอยู่")
                 }
@@ -313,6 +342,7 @@ private struct MPWorkbookModifier: ViewModifier {
                 }
             } message: { m in Text(m.text) }
             .sheet(item: $flow.shared) { f in ActivitySheet(items: [f.url]).presentationDetents([.medium, .large]) }
+            .sheet(item: $flow.setupReview) { r in ProjectSetupSheet(job: job, setup: r.setup) }
     }
 }
 
@@ -325,6 +355,10 @@ struct MPWorkbookMenuItems: View {
     var body: some View {
         if canImport {
             Button { flow.startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down") }
+        }
+        if canImport, job.scheduleWorkbook != nil {
+            Button { flow.reviewSetup(job) } label: { Label("ตั้งค่าโครงการจากไฟล์…", systemImage: "list.bullet.clipboard") }
+                .accessibilityIdentifier("mpWorkbook.setup")
         }
         Button { flow.export(job) } label: {
             Label(job.scheduleWorkbookDownloading ? "ส่งออกไฟล์แผน (กำลังดาวน์โหลดจาก Drive…)"

@@ -28,6 +28,8 @@ struct InverterPageWide: View {
     @State var spanSel = 0
     @State var showPlan = false
     @State var viewing: Photo?
+    @State var dxfShare: DXFShare?
+    @State var dxfError: String?
 
     var leftWidth: CGFloat { min(460, max(400, width * 0.33)) }
     /// iPhone: asides under labels, a shorter photo, rows that sit side by side on iPad one above the other.
@@ -74,6 +76,8 @@ struct InverterPageWide: View {
         .foregroundStyle(Theme.navy)
         .sheet(item: $viewing) { p in if let img = model.image(p, in: job.id) { PhotoViewer(image: img, title: "พื้นที่ติดตั้งอินเวอร์เตอร์") } }
         .fullScreenCover(isPresented: $showPlan) { PlanViewer(sketch: InverterStationDrawing.sketch(station), title: planTitle) }
+        .sheet(item: $dxfShare) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
+        .errorAlert($dxfError)
         .alert("ระยะด้านนี้ (ม.)", isPresented: Binding(get: { editingEdge != nil }, set: { if !$0 { editingEdge = nil } })) {
             TextField("เช่น 9.5", text: $edgeText).keyboardType(.decimalPad)
             Button("ตกลง") { saveEdge() }

@@ -3,7 +3,7 @@ import XCTest
 
 /// docs/specs/cad-export-dxf phase 3: the D1 tank plan as DXF at real scale.
 final class TankDXFTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
     var fixtures: URL { URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures") }
 
     /// Preset 0 with its standard points, a level, an azimuth and a wall type.
@@ -65,10 +65,15 @@ final class TankDXFTests: XCTestCase {
     }
 
     func testNoBackgroundAndNoColours() throws {
-        let v = Self.sample(), (TW, _) = spans(v)
+        let v = Self.sample()
         let ents = t.entities(try XCTUnwrap(TankDXF.build(v)).data)
-        // the white background rect spans the whole sketch, well outside the tank and its chains
-        let far = ents.filter { e in ["10", "11"].contains { c in t.value(e, c).flatMap(Double.init).map { $0 < -30 || $0 > TW + 30 } ?? false } }
+        // the white background rect spans the whole sketch, well outside the tank and its chains on both sides (the right
+        // has the roof beam plan, TankFramingTests, so the left side tells)
+        func outside(_ e: [(String, String)], _ c: String) -> Bool {
+            guard let x = t.value(e, c).flatMap(Double.init) else { return false }
+            return x < -30
+        }
+        let far = ents.filter { e in outside(e, "10") || outside(e, "11") }
         XCTAssertTrue(far.isEmpty)
         XCTAssertNil(ents.first { t.value($0, "62") != nil }, "layer colours only")
         XCTAssertNil(TankDXF.build(Values()))
@@ -83,47 +88,44 @@ final class TankDXFTests: XCTestCase {
         XCTAssertTrue(out.layers.contains("P-MODL-N"))
         XCTAssertTrue(out.layers.contains("P-TABL-N"))
         // one INSERT of the module block per panel switched on
-        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "P-MODL-N" && $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }.count, l.count)
+        XCTAssertEqual(t.entities(out.data).filter { layerOf($0) == "P-MODL-N" && $0.first?.1 == "INSERT" && t.value($0, "2") == "PV_570W" }.count, l.count)
         XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("P-MODL-N"))
     }
 
-    /// Sections 1–1 and 2–2, the module rows' section and the table's front elevation sit under the plan, to scale in
-    /// metres, with their measures as live DIMENSIONs.
+    /// The module rows' section and the back post line's elevation sit under the plan, to scale in metres, with their
+    /// measures as live DIMENSIONs; the tank's sections 1–1 and 2–2 are the PDF's only.
     func testSectionsUnderThePlan() throws {
         var v = Self.sample(layout: true); v[Tank.Key.height] = .text("4.5")
-        let H = try XCTUnwrap(Tank.height(v)), (TW, _) = spans(v)
         let l = try XCTUnwrap(TankLayout.current(v))
         let out = try XCTUnwrap(TankDXF.build(v))
-        XCTAssertTrue(out.layers.contains("S-TANK-SECT-E"))
         let recs = t.rawEntities(out.data), dims = recs.filter { $0.first?.1 == "DIMENSION" }
         let plan = try XCTUnwrap(TankPlan(v, details: true)).dimensions.count
-        let sections = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) } + [TankDrawings.tableSectionCAD(l.params)]
-            + [TankDrawings.tableFrontCAD(l)].compactMap { $0 }
-        XCTAssertEqual(sections.count, 4)
+        let sections = [TankDrawings.tableSectionCAD(l.params)] + [TankDrawings.tableFrontCAD(l)].compactMap { $0 }
+        XCTAssertEqual(sections.count, 2)
         // the plan's chains twice (the module plan and the mounting plan), the mounting plan's own, the sections'
         let chains: Int = l.builtTables.map { (t: TankLayout.Table) -> Int in t.pairs + 1 }.reduce(0, +)
         let postLines: Set<Int> = Set(l.builtTables.flatMap { (t: TankLayout.Table) -> [Int] in t.posts.map { Int(($0.y * 1000).rounded()) } })
         let mounting = chains + postLines.count + 1
         // and the two footing details' (0.30 each way on the plan, 0.30 × 0.15 on DETAIL 1)
-        XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +) + 4)
-        // both tank sections' heights read H (metres), live
+        // and the roof beam plan's (every span each way and the two sizes, TankFramingTests)
+        let beamPlan = Tank.spans(v).x.count + Tank.spans(v).y.count + 2
+        XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +) + 4 + beamPlan)
+        // the tank's own sections 1–1 and 2–2 stay in the PDF: no tank height dimension, no cut marks
         let key = String(data: SketchDXF.tis620("สูง <>"), encoding: .isoLatin1)!
-        let heights = dims.filter { t.value($0, "1") == key }
-        XCTAssertEqual(heights.count, 2)
-        XCTAssertTrue(heights.allSatisfy { abs(abs(t.double($0, "24") - t.double($0, "23")) - H) < 1e-3 })
-        // the section lengths are the tank's: section 2–2 cuts across Σ spansX
-        XCTAssertTrue(dims.contains { abs(abs(t.double($0, "14") - t.double($0, "13")) - TW) < 1e-3 && t.value($0, "50") == "0" })
+        XCTAssertFalse(dims.contains { t.value($0, "1") == key })
+        XCTAssertFalse(recs.contains { t.value($0, "8") == "G-ANNO-SYMB" })
+        XCTAssertNotNil(TankDrawings.sectionCAD(v, across: false), "the PDF's section is still there")
         // the rows' spacings read the layout's
         XCTAssertTrue(dims.contains { abs(abs(t.double($0, "14") - t.double($0, "13")) - l.params.rowGap) < 1e-3 })
-        // everything they add is below the plan: the tank's top-left corner is (0, TH), its sketch's lowest text a few m below 0
-        let planBottom = try XCTUnwrap(recs.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }.map { t.double($0, "20") }.min())
-        let sectionLines = recs.filter { t.value($0, "8") == "S-TANK-SECT-E" }
-        XCTAssertFalse(sectionLines.isEmpty)
-        XCTAssertTrue(sectionLines.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
+        // everything they add is below the plan
+        let planBottom = try XCTUnwrap(recs.filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "PV_570W" }.map { t.double($0, "20") }.min())
+        let rafters = recs.filter { t.value($0, "8") == "P-RAFT-N" && $0.first?.1 == "LWPOLYLINE" && t.double($0, "20") < 0 }
+        XCTAssertFalse(rafters.isEmpty)
+        XCTAssertTrue(rafters.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
     }
 
-    /// The mounting plan beside the module plan, as the team draws it: a footing block at every post, the rafters,
-    /// rails and bracing as members on WIPEOUTs, a chain along each table and one across the post lines.
+    /// The mounting plan beside the module plan, as the team draws it: a footing block at every support point, the
+    /// rafters, rails and the back line's X braces as members on WIPEOUTs, a chain along each table and one across the post lines.
     func testMountingPlan() throws {
         let v = Self.sample(layout: true), l = try XCTUnwrap(TankLayout.current(v))
         XCTAssertEqual(l.turn % 2, 0, "rows along x in the sample")
@@ -136,8 +138,10 @@ final class TankDXFTests: XCTestCase {
         func members(_ layer: String) -> Int { recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == layer && t.double($0, "10") > 40 }.count }
         XCTAssertEqual(members("P-RAFT-N"), pairs)
         XCTAssertEqual(members("P-RAIL-N"), 4 * tables.count)
-        let braces = tables.map { 2 * max(0, $0.pairs - 1) }.reduce(0, +)
+        // an X on the back line in every other bay and the last, two members side by side on plan
+        let braces = tables.map { 2 * TankLayout.bracedBays(max(0, $0.pairs - 1)).count }.reduce(0, +)
         XCTAssertEqual(members("P-BRAC-N"), braces)
+        XCTAssertEqual(braces, 2 * l.bom.braces)
         // each member on its own WIPEOUT
         XCTAssertEqual(recs.filter { $0.first?.1 == "WIPEOUT" }.count, pairs + 4 * tables.count + braces)
         // the footing block: the footing square (300 mm), base plate and post
@@ -175,12 +179,50 @@ final class TankDXFTests: XCTestCase {
         XCTAssertNil(TankDrawings.sectionCAD(w, across: false))
     }
 
-    /// Each module is an INSERT of one PV_MODULE block; the table outlines are closed polylines.
+    /// The module block is the team's `PV_570W.dxf` (reference/): a frame on a WIPEOUT, the slope along x, as long as
+    /// the module projected on plan by the tilt and as wide as the module; every module on is one INSERT of it, turned
+    /// a quarter where the slope runs up the plan, covering exactly its panel.
+    func testTheModuleBlockMeasuresTheModuleOnPlan() throws {
+        let v = Self.sample(layout: true), l = try XCTUnwrap(TankLayout.current(v)), p = l.params
+        XCTAssertEqual(p.moduleKW, 0.57, accuracy: 1e-9)
+        let out = try XCTUnwrap(TankDXF.build(v)), lines = t.lines(out.data)
+        // the block: one closed frame and one WIPEOUT, moduleL × cos(tilt) by moduleW
+        let begin = try XCTUnwrap(lines.indices.first { lines[$0] == "PV_570W" && lines[$0 - 2] == "AcDbBlockBegin" })
+        let end = try XCTUnwrap(lines[begin...].firstIndex(of: "ENDBLK"))
+        let body = Array(lines[begin..<end])
+        XCTAssertEqual(body.filter { $0 == "WIPEOUT" }.count, 1)
+        XCTAssertEqual(body.filter { $0 == "LWPOLYLINE" }.count, 1)
+        let poly = try XCTUnwrap(body.firstIndex(of: "LWPOLYLINE"))
+        let xs = body[poly...].indices.filter { body[$0] == " 10" || body[$0] == "10" }.prefix(4).map { Double(body[$0 + 1].trimmingCharacters(in: .whitespaces))! }
+        let ys = body[poly...].indices.filter { body[$0] == " 20" || body[$0] == "20" }.prefix(4).map { Double(body[$0 + 1].trimmingCharacters(in: .whitespaces))! }
+        let L = p.moduleL * cos(p.tilt * .pi / 180)
+        XCTAssertEqual(xs.max()! - xs.min()!, L, accuracy: 1e-4)
+        XCTAssertEqual(ys.max()! - ys.min()!, p.moduleW, accuracy: 1e-4)
+        XCTAssertEqual(L, p.cellH, accuracy: 1e-9)
+        // the team's block at their 15°: 2.19911 × 1.134 m (ZXM7 570 W, 2278 × 1134 mm)
+        var q = p; q.hBack = q.hFront + q.postDY * tan(15 * .pi / 180)
+        XCTAssertEqual(q.tilt, 15, accuracy: 1e-9)
+        XCTAssertEqual(q.cellH, 2.19911, accuracy: 0.002)
+        XCTAssertEqual(q.cellW, 1.134, accuracy: 1e-9)
+        // every INSERT covers its panel: at its lower-left corner, or turned 90° at its lower-right one
+        let (_, TH) = spans(v)
+        let inserts = t.rawEntities(out.data).filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "PV_570W" }
+        let panels = l.builtTables.flatMap(\.panels).filter(\.on)
+        XCTAssertEqual(inserts.count, panels.count)
+        for e in inserts {
+            let x = t.double(e, "10"), y = t.double(e, "20"), turned = abs((Double(t.value(e, "50") ?? "0") ?? 0) - 90) < 1e-6
+            let box = turned ? (x - p.cellW, y, x, y + L) : (x, y, x + L, y + p.cellW)
+            XCTAssertTrue(panels.contains { abs($0.x - box.0) < 1e-3 && abs((TH - $0.y - $0.h) - box.1) < 1e-3
+                && abs($0.x + $0.w - box.2) < 1e-3 && abs((TH - $0.y) - box.3) < 1e-3 }, "\(x) \(y)")
+        }
+    }
+
+    /// Each module is an INSERT of the PV_570W block; the table outlines are closed polylines.
     func testModulesAreBlocks() throws {
         let v = Self.sample(layout: true)
         let l = try XCTUnwrap(TankLayout.current(v)), out = try XCTUnwrap(TankDXF.build(v))
         let raw = t.rawEntities(out.data)
-        let modules = raw.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }
+        let modules = raw.filter { $0.first?.1 == "INSERT" && t.value($0, "2") == "PV_570W" }
         XCTAssertEqual(modules.count, l.count)
         XCTAssertTrue(modules.allSatisfy { t.value($0, "8") == "P-MODL-N" })
         // on the plan (the sections under it draw their posts on the same layer)

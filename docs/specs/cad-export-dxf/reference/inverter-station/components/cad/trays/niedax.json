@@ -1,0 +1,7418 @@
+{
+ "schemaVersion": 1,
+ "manufacturer": "Niedax GmbH & Co. KG",
+ "website": "https://www.niedax.de/en/home/",
+ "productDatabase": "https://products.niedax.de/",
+ "bimContact": "bim@niedax-group.com",
+ "etimClass": "EC000047",
+ "source": "Electrical_Distribution_Niedax_Cable_Trays_2022.rvt",
+ "typeNaming": "<CODE> <height>.<width> [F = hot-dip galvanized | E3/E5 = stainless]; no suffix = pre-galvanized",
+ "notes": [
+  "Sizes, finishes, family names and sample weights come straight from the Revit content.",
+  "sheetThicknessMmEstimated is derived from the schedule kg/m (steel 7.85, ~15 % open area for perforated) and is not a catalogue value.",
+  "'perforated' is inferred: RLU/RSU weigh ~15 % more than RL/RS of the same size at the same derived thickness, consistent with unperforated bases. Confirm against the Niedax catalogue."
+ ],
+ "families": [
+  {
+   "code": "2986",
+   "kind": "support",
+   "description": "Profile",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_2986_Profile"
+   ],
+   "finishes": [],
+   "types": []
+  },
+  {
+   "code": "HU5050",
+   "kind": "support",
+   "description": "Ceiling-Bracket",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_HU5050_Ceiling-Bracket"
+   ],
+   "finishes": [],
+   "types": []
+  },
+  {
+   "code": "KTA",
+   "kind": "support",
+   "description": "Wall-Bracket",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_KTA_Wall-Bracket"
+   ],
+   "finishes": [
+    "Pre Galvanized",
+    "Stainless Steel E3",
+    "Stainless Steel E5"
+   ],
+   "types": [
+    {
+     "type": "KTA 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 100 E5",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "KTA 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 200 E5",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "KTA 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 300 E5",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "KTA 350",
+     "heightMm": null,
+     "widthMm": 350,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 400 E5",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "KTA 450",
+     "heightMm": null,
+     "widthMm": 450,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 500 E5",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "KTA 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "KTA 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "KTA 600 E5",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E5"
+    }
+   ]
+  },
+  {
+   "code": "KU5050",
+   "kind": "support",
+   "description": "Head-Plate",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_KU5050_Head-Plate"
+   ],
+   "finishes": [],
+   "types": []
+  },
+  {
+   "code": "RA",
+   "kind": "accessory",
+   "description": "Connector",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RA_Connector"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RA 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RA 60.050",
+     "heightMm": 60,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RA 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RA 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RA 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RA 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RA 110.050",
+     "heightMm": 110,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RA 110.050 E3",
+     "heightMm": 110,
+     "widthMm": 50,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RA 110.050 F",
+     "heightMm": 110,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RA+RAW",
+   "kind": "fitting",
+   "description": "Reducer 300mm",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RA+RAW_Reducer_300mm"
+   ],
+   "finishes": [],
+   "types": []
+  },
+  {
+   "code": "RAW",
+   "kind": "accessory",
+   "description": "Connector",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RAW_Connector"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RAW 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RAW 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RAW 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RAW 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RAW 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RAW 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RAW 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 110.100 E3",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RAW 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RAW 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RAW 110.300 E3",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RAW 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RBA",
+   "kind": "fitting",
+   "description": "Channel-Elbow",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RBA_Channel-Elbow"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RBA 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBA 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBA 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RBAD",
+   "kind": "cover",
+   "description": "Cover for RBA",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RBAD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RBAD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBAD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBAD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RBADV",
+   "kind": "cover",
+   "description": "Cover for RBA (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RBADV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RBADV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RBADV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RBADV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RD",
+   "kind": "cover",
+   "description": "Cover for straight trays",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RD 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 50 F",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 550 E3",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RD 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RDV",
+   "kind": "cover",
+   "description": "Cover for straight trays (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3",
+    "Stainless Steel E5"
+   ],
+   "types": [
+    {
+     "type": "RDV 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 50 F",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 100 E5",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RDV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 200 E5",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RDV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 300 E5",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RDV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 400 E5",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RDV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 550 E3",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RDV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RDV 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RDV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "REK",
+   "kind": "fitting",
+   "description": "Channel-Elbow",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_REK_Channel-Elbow"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3",
+    "Stainless Steel E5"
+   ],
+   "types": [
+    {
+     "type": "REK 60",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "REK 60 E3",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "REK 60 E5",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "REK 60 F",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RES",
+   "kind": "fitting",
+   "description": "Channel-Elbow",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RES_Channel-Elbow"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RES 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.400 E3",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RES 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RES 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RES 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RESD",
+   "kind": "cover",
+   "description": "Cover for RES",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RESD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RESD 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESD 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RESDV",
+   "kind": "cover",
+   "description": "Cover for RES (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RESDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RESDV 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESDV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESDV 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RESDV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RESK",
+   "kind": "fitting",
+   "description": "Channel-Elbow",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RESK_Channel-Elbow"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RESK 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESK 35.050 F",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESK 50.050",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESK 50.050 F",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RESK 50.075",
+     "heightMm": 50,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESK 50.100",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RESKD",
+   "kind": "cover",
+   "description": "Cover for RESK",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RESKD_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RESKD 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESKD 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESKD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RESKDV",
+   "kind": "cover",
+   "description": "Cover for RESK (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RESKDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RESKDV 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESKDV 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RESKDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RFD",
+   "kind": "fitting",
+   "description": "Channel-Vertical-Elbow-Outside",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RFD_Channel-Vertical-Elbow-Outside"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RFD 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RFD 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFD 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RFSDDV",
+   "kind": "cover",
+   "description": "Cover for RFS (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RFSDDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RFSDDV 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RFSDDV 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RGV",
+   "kind": "accessory",
+   "description": "Angle-Connector",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RGV_Angle-Connector",
+    "Electrical_Distribution_Niedax_RGV_Connector"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RGV 35",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RGV 60",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RGV 60 E3",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RGV 60 F",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RGV 85",
+     "heightMm": null,
+     "widthMm": 85,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RGV 85 F",
+     "heightMm": null,
+     "widthMm": 85,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RGV 110",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RGV 110 E3",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RGV 110 F",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RKS",
+   "kind": "fitting",
+   "description": "Channel-Cross",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RKS_Channel-Cross"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RKS 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKS 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKS 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RKSD",
+   "kind": "cover",
+   "description": "Cover for RKS",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RKSD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RKSD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RKSDV",
+   "kind": "cover",
+   "description": "Cover for RKS (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RKSDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RKSDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RKSDV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RKSDV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RL",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RL_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RL_Cable-Tray_Pre Galvanized",
+    "Electrical_Distribution_Niedax_RL_Cable-Tray_Stainless Steel E3"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RL 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-50x35"
+    },
+    {
+     "type": "RL 35.050 F",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-50x35"
+    },
+    {
+     "type": "RL 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x35"
+    },
+    {
+     "type": "RL 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-150x35"
+    },
+    {
+     "type": "RL 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x35"
+    },
+    {
+     "type": "RL 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-250x35"
+    },
+    {
+     "type": "RL 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x35"
+    },
+    {
+     "type": "RL 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x35"
+    },
+    {
+     "type": "RL 50.050",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-50x50"
+    },
+    {
+     "type": "RL 50.050 F",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-50x50"
+    },
+    {
+     "type": "RL 50.075",
+     "heightMm": 50,
+     "widthMm": 75,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-75x50"
+    },
+    {
+     "type": "RL 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RL 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RL 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-150x60"
+    },
+    {
+     "type": "RL 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RL 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RL 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-250x60"
+    },
+    {
+     "type": "RL 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 3.061,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RL 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 3.368,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RL 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RL 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RL 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RL 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-500x60",
+     "kgPerM": 4.025,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RL 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RL 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RL 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RL 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RL 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x85"
+    },
+    {
+     "type": "RL 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x85"
+    },
+    {
+     "type": "RL 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x85"
+    },
+    {
+     "type": "RL 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x85"
+    },
+    {
+     "type": "RL 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x85"
+    },
+    {
+     "type": "RL 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x85"
+    },
+    {
+     "type": "RL 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x85"
+    },
+    {
+     "type": "RL 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x85"
+    },
+    {
+     "type": "RL 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x85"
+    },
+    {
+     "type": "RL 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x85"
+    },
+    {
+     "type": "RL 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x85"
+    },
+    {
+     "type": "RL 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x85"
+    },
+    {
+     "type": "RL 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x110"
+    },
+    {
+     "type": "RL 110.100 E3",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-100x110"
+    },
+    {
+     "type": "RL 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x110"
+    },
+    {
+     "type": "RL 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x110"
+    },
+    {
+     "type": "RL 110.200 E3",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-200x110"
+    },
+    {
+     "type": "RL 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x110"
+    },
+    {
+     "type": "RL 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x110"
+    },
+    {
+     "type": "RL 110.300 E3",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-300x110"
+    },
+    {
+     "type": "RL 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x110"
+    },
+    {
+     "type": "RL 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x110"
+    },
+    {
+     "type": "RL 110.400 E3",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-400x110"
+    },
+    {
+     "type": "RL 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x110"
+    },
+    {
+     "type": "RL 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x110"
+    },
+    {
+     "type": "RL 110.500 E3",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-500x110"
+    },
+    {
+     "type": "RL 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x110"
+    },
+    {
+     "type": "RL 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-550x110"
+    },
+    {
+     "type": "RL 110.550 E3",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-550x110"
+    },
+    {
+     "type": "RL 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-550x110"
+    },
+    {
+     "type": "RL 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x110"
+    },
+    {
+     "type": "RL 110.600 E3",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-600x110"
+    },
+    {
+     "type": "RL 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x110"
+    }
+   ],
+   "availableHeightsMm": [
+    35,
+    50,
+    60,
+    85,
+    110
+   ],
+   "availableWidthsMm": [
+    50,
+    75,
+    100,
+    150,
+    200,
+    250,
+    300,
+    400,
+    500,
+    550,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": true
+  },
+  {
+   "code": "RLC",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLC_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RLC 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-70x60"
+    },
+    {
+     "type": "RLC 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RLC 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-120x60"
+    },
+    {
+     "type": "RLC 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-150x60"
+    },
+    {
+     "type": "RLC 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RLC 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-250x60"
+    },
+    {
+     "type": "RLC 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 3.104,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLC 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RLC 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RLC 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    }
+   ],
+   "availableHeightsMm": [
+    60
+   ],
+   "availableWidthsMm": [
+    70,
+    100,
+    120,
+    150,
+    200,
+    250,
+    300,
+    400,
+    500,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": true
+  },
+  {
+   "code": "RLCPV",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLCPV_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Pre Galvanized (OV)"
+   ],
+   "types": [
+    {
+     "type": "RLCPV 85.100 OV",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-100x85"
+    },
+    {
+     "type": "RLCPV 85.200 OV",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-200x85"
+    },
+    {
+     "type": "RLCPV 85.300 OV",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-300x85"
+    },
+    {
+     "type": "RLCPV 85.400 OV",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-400x85"
+    },
+    {
+     "type": "RLCPV 85.500 OV",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-500x85"
+    },
+    {
+     "type": "RLCPV 85.600 OV",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized (OV)",
+     "geometryId": "perforated-tray-600x85"
+    }
+   ],
+   "standardLengthM": 6.0,
+   "perforated": true
+  },
+  {
+   "code": "RLU",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLU_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RLU_Cable-Tray_Pre Galvanized",
+    "Electrical_Distribution_Niedax_RLU_Cable-Tray_Stainless Steel E3"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RLU 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x35"
+    },
+    {
+     "type": "RLU 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-150x35"
+    },
+    {
+     "type": "RLU 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x35"
+    },
+    {
+     "type": "RLU 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-250x35"
+    },
+    {
+     "type": "RLU 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x35"
+    },
+    {
+     "type": "RLU 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x35"
+    },
+    {
+     "type": "RLU 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RLU 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RLU 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RLU 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-150x60"
+    },
+    {
+     "type": "RLU 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RLU 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RLU 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RLU 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-250x60"
+    },
+    {
+     "type": "RLU 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 3.586,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLU 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 2.92,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLU 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 3.947,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLU 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RLU 60.400 E3",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RLU 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RLU 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RLU 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RLU 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RLU 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x60"
+    },
+    {
+     "type": "RLU 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-600x60"
+    },
+    {
+     "type": "RLU 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x60"
+    },
+    {
+     "type": "RLU 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x85"
+    },
+    {
+     "type": "RLU 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x85"
+    },
+    {
+     "type": "RLU 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x85"
+    },
+    {
+     "type": "RLU 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x85"
+    },
+    {
+     "type": "RLU 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x85"
+    },
+    {
+     "type": "RLU 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x85"
+    },
+    {
+     "type": "RLU 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x85"
+    },
+    {
+     "type": "RLU 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x85"
+    },
+    {
+     "type": "RLU 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x85"
+    },
+    {
+     "type": "RLU 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x85"
+    },
+    {
+     "type": "RLU 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x85"
+    },
+    {
+     "type": "RLU 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x85"
+    },
+    {
+     "type": "RLU 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x110"
+    },
+    {
+     "type": "RLU 110.100 E3",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-100x110"
+    },
+    {
+     "type": "RLU 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x110"
+    },
+    {
+     "type": "RLU 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x110"
+    },
+    {
+     "type": "RLU 110.200 E3",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-200x110"
+    },
+    {
+     "type": "RLU 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x110"
+    },
+    {
+     "type": "RLU 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x110"
+    },
+    {
+     "type": "RLU 110.300 E3",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-300x110"
+    },
+    {
+     "type": "RLU 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x110"
+    },
+    {
+     "type": "RLU 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x110"
+    },
+    {
+     "type": "RLU 110.400 E3",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-400x110"
+    },
+    {
+     "type": "RLU 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x110"
+    },
+    {
+     "type": "RLU 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x110"
+    },
+    {
+     "type": "RLU 110.500 E3",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-500x110"
+    },
+    {
+     "type": "RLU 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x110"
+    },
+    {
+     "type": "RLU 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-550x110"
+    },
+    {
+     "type": "RLU 110.550 E3",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-550x110"
+    },
+    {
+     "type": "RLU 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-550x110"
+    },
+    {
+     "type": "RLU 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x110"
+    },
+    {
+     "type": "RLU 110.600 E3",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3",
+     "geometryId": "solid-tray-600x110"
+    },
+    {
+     "type": "RLU 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x110"
+    }
+   ],
+   "availableHeightsMm": [
+    35,
+    60,
+    85,
+    110
+   ],
+   "availableWidthsMm": [
+    100,
+    150,
+    200,
+    250,
+    300,
+    400,
+    500,
+    550,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": false
+  },
+  {
+   "code": "RLUC",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLUC_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RLUC 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-70x60"
+    },
+    {
+     "type": "RLUC 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RLUC 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-120x60"
+    },
+    {
+     "type": "RLUC 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-150x60"
+    },
+    {
+     "type": "RLUC 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RLUC 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-250x60"
+    },
+    {
+     "type": "RLUC 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 3.623,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLUC 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RLUC 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RLUC 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x60"
+    }
+   ],
+   "availableHeightsMm": [
+    60
+   ],
+   "availableWidthsMm": [
+    70,
+    100,
+    120,
+    150,
+    200,
+    250,
+    300,
+    400,
+    500,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": false
+  },
+  {
+   "code": "RLV",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLV_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RLV 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-150x60",
+     "kgPerM": 1.597,
+     "sampleLengthM": 6.0
+    }
+   ],
+   "availableHeightsMm": [
+    60
+   ],
+   "availableWidthsMm": [
+    150
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 0.75,
+   "perforated": true
+  },
+  {
+   "code": "RLVC",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RLVC_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RLVC_Cable-Tray_Pre Galvanized",
+    "Electrical_Distribution_Niedax_RLVC_Cable-Tray_Stainless Steel E3"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RLVC 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RLVC 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RLVC 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RLVC 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RLVC 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RLVC 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x60",
+     "kgPerM": 2.054,
+     "sampleLengthM": 0.9
+    },
+    {
+     "type": "RLVC 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 2.432,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLVC 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 2.619,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RLVC 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 2.675,
+     "sampleLengthM": 29.78
+    },
+    {
+     "type": "RLVC 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RLVC 60.400 E3",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RLVC 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RLVC 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RLVC 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RLVC 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RLVC 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RLVC 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RLVC 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    }
+   ],
+   "availableHeightsMm": [
+    60
+   ],
+   "availableWidthsMm": [
+    100,
+    200,
+    300,
+    400,
+    500,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": true
+  },
+  {
+   "code": "RS",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RS_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RS_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RS 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RS 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x60"
+    },
+    {
+     "type": "RS 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RS 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x60"
+    },
+    {
+     "type": "RS 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 4.511,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RS 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x60",
+     "kgPerM": 4.96,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RS 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RS 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x60"
+    },
+    {
+     "type": "RS 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RS 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x60"
+    },
+    {
+     "type": "RS 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RS 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x60"
+    },
+    {
+     "type": "RS 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x85"
+    },
+    {
+     "type": "RS 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x85"
+    },
+    {
+     "type": "RS 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x85"
+    },
+    {
+     "type": "RS 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x85"
+    },
+    {
+     "type": "RS 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x85"
+    },
+    {
+     "type": "RS 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x85"
+    },
+    {
+     "type": "RS 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x85"
+    },
+    {
+     "type": "RS 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x85"
+    },
+    {
+     "type": "RS 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x85"
+    },
+    {
+     "type": "RS 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x85"
+    },
+    {
+     "type": "RS 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x85"
+    },
+    {
+     "type": "RS 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x85"
+    },
+    {
+     "type": "RS 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x110"
+    },
+    {
+     "type": "RS 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x110"
+    },
+    {
+     "type": "RS 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-200x110"
+    },
+    {
+     "type": "RS 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-200x110"
+    },
+    {
+     "type": "RS 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-300x110"
+    },
+    {
+     "type": "RS 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-300x110"
+    },
+    {
+     "type": "RS 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-400x110"
+    },
+    {
+     "type": "RS 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-400x110"
+    },
+    {
+     "type": "RS 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-500x110"
+    },
+    {
+     "type": "RS 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-500x110"
+    },
+    {
+     "type": "RS 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-550x110"
+    },
+    {
+     "type": "RS 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-550x110"
+    },
+    {
+     "type": "RS 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-600x110"
+    },
+    {
+     "type": "RS 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-600x110"
+    }
+   ],
+   "availableHeightsMm": [
+    60,
+    85,
+    110
+   ],
+   "availableWidthsMm": [
+    100,
+    200,
+    300,
+    400,
+    500,
+    550,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.5,
+   "perforated": true
+  },
+  {
+   "code": "RSD",
+   "kind": "fitting",
+   "description": "Channel-Vertical-Elbow-Inside",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RSD_Channel-Vertical-Elbow-Inside"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RSD 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RSD 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RSD 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RSU",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RSU_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RSU_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RSU 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RSU 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x60"
+    },
+    {
+     "type": "RSU 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RSU 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x60"
+    },
+    {
+     "type": "RSU 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 5.299,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RSU 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x60",
+     "kgPerM": 5.827,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RSU 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RSU 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x60"
+    },
+    {
+     "type": "RSU 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RSU 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x60"
+    },
+    {
+     "type": "RSU 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x60"
+    },
+    {
+     "type": "RSU 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x60"
+    },
+    {
+     "type": "RSU 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x85"
+    },
+    {
+     "type": "RSU 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x85"
+    },
+    {
+     "type": "RSU 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x85"
+    },
+    {
+     "type": "RSU 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x85"
+    },
+    {
+     "type": "RSU 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x85"
+    },
+    {
+     "type": "RSU 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x85"
+    },
+    {
+     "type": "RSU 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x85"
+    },
+    {
+     "type": "RSU 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x85"
+    },
+    {
+     "type": "RSU 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x85"
+    },
+    {
+     "type": "RSU 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x85"
+    },
+    {
+     "type": "RSU 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x85"
+    },
+    {
+     "type": "RSU 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x85"
+    },
+    {
+     "type": "RSU 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-100x110"
+    },
+    {
+     "type": "RSU 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-100x110"
+    },
+    {
+     "type": "RSU 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-200x110"
+    },
+    {
+     "type": "RSU 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-200x110"
+    },
+    {
+     "type": "RSU 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-300x110"
+    },
+    {
+     "type": "RSU 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-300x110"
+    },
+    {
+     "type": "RSU 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-400x110"
+    },
+    {
+     "type": "RSU 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-400x110"
+    },
+    {
+     "type": "RSU 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-500x110"
+    },
+    {
+     "type": "RSU 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-500x110"
+    },
+    {
+     "type": "RSU 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-550x110"
+    },
+    {
+     "type": "RSU 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-550x110"
+    },
+    {
+     "type": "RSU 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized",
+     "geometryId": "solid-tray-600x110"
+    },
+    {
+     "type": "RSU 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "solid-tray-600x110"
+    }
+   ],
+   "availableHeightsMm": [
+    60,
+    85,
+    110
+   ],
+   "availableWidthsMm": [
+    100,
+    200,
+    300,
+    400,
+    500,
+    550,
+    600
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.5,
+   "perforated": false
+  },
+  {
+   "code": "RSV",
+   "kind": "straight",
+   "description": "Cable-Tray",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RSV_Cable-Tray_Hot-dip Galvanized",
+    "Electrical_Distribution_Niedax_RSV_Cable-Tray_Pre Galvanized"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RSV 50.050",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-50x50"
+    },
+    {
+     "type": "RSV 50.050 E3",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-50x50"
+    },
+    {
+     "type": "RSV 50.050 F",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-50x50"
+    },
+    {
+     "type": "RSV 50.100",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Pre Galvanized",
+     "geometryId": "perforated-tray-100x50",
+     "kgPerM": 1.622,
+     "sampleLengthM": 6.0
+    },
+    {
+     "type": "RSV 50.100 E3",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3",
+     "geometryId": "perforated-tray-100x50"
+    },
+    {
+     "type": "RSV 50.100 F",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized",
+     "geometryId": "perforated-tray-100x50"
+    }
+   ],
+   "availableHeightsMm": [
+    50
+   ],
+   "availableWidthsMm": [
+    50,
+    100
+   ],
+   "standardLengthM": 6.0,
+   "sheetThicknessMmEstimated": 1.0,
+   "perforated": true
+  },
+  {
+   "code": "RTA",
+   "kind": "fitting",
+   "description": "Channel-Tee",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTA_Channel-Tee"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RTA 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.070",
+     "heightMm": 60,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.120",
+     "heightMm": 60,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.400 E3",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.100 E3",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.200 E3",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.300 E3",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.400 E3",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.500 E3",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.550 E3",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTA 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTA 110.600 E3",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTA 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTAD",
+   "kind": "cover",
+   "description": "Cover for RTA",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTAD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RTAD 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAD 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTAD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTADV",
+   "kind": "cover",
+   "description": "Cover for RTA (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTADV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RTADV 70",
+     "heightMm": null,
+     "widthMm": 70,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 100 E3",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 120",
+     "heightMm": null,
+     "widthMm": 120,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 200 E3",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 300 E3",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 400 E3",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 500 E3",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 550 E3",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTADV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTADV 600 E3",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RTADV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTAK",
+   "kind": "fitting",
+   "description": "Channel-Tee",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTAK_Channel-Tee"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTAK 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAK 35.050 F",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAK 50.050",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAK 50.050 F",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTAK 50.075",
+     "heightMm": 50,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAK 50.100",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTAKD",
+   "kind": "cover",
+   "description": "Cover for RTAK",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTAKD_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTAKD 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAKD 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAKD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTAKDV",
+   "kind": "cover",
+   "description": "Cover for RTAK (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTAKDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTAKDV 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAKDV 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTAKDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTS",
+   "kind": "fitting",
+   "description": "Channel-Tee",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTS_Channel-Tee"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTS 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.150 F",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTS 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTS 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTSD",
+   "kind": "cover",
+   "description": "Cover for RTS",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTSD_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTSD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSD 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSD 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTSDV",
+   "kind": "cover",
+   "description": "Cover for RTS (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTSDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTSDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 100 F",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 150",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 150 F",
+     "heightMm": null,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 200",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 200 F",
+     "heightMm": null,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 250",
+     "heightMm": null,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 300",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 300 F",
+     "heightMm": null,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 400",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 400 F",
+     "heightMm": null,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 500",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 500 F",
+     "heightMm": null,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 550",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 550 F",
+     "heightMm": null,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSDV 600",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSDV 600 F",
+     "heightMm": null,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTSK",
+   "kind": "fitting",
+   "description": "Channel-Tee",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTSK_Channel-Tee"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTSK 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSK 35.050 F",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RTSK 50.100",
+     "heightMm": 50,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTSKD",
+   "kind": "cover",
+   "description": "Cover for RTSK",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTSKD_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTSKD 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSKD 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSKD 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RTSKDV",
+   "kind": "cover",
+   "description": "Cover for RTSK (DV variant)",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RTSKDV_Channel-Cover"
+   ],
+   "finishes": [
+    "Pre Galvanized"
+   ],
+   "types": [
+    {
+     "type": "RTSKDV 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSKDV 75",
+     "heightMm": null,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RTSKDV 100",
+     "heightMm": null,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RV",
+   "kind": "accessory",
+   "description": "Union-Connector",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RV_Union-Connector"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3"
+   ],
+   "types": [
+    {
+     "type": "RV 35.050",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.050 F",
+     "heightMm": 35,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.100",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.100 F",
+     "heightMm": 35,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.150",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.150 F",
+     "heightMm": 35,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.200",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.200 F",
+     "heightMm": 35,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.250",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.250 F",
+     "heightMm": 35,
+     "widthMm": 250,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.300",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.300 F",
+     "heightMm": 35,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 35.400",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 35.400 F",
+     "heightMm": 35,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 50.050",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 50.050 F",
+     "heightMm": 50,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 50.075",
+     "heightMm": 50,
+     "widthMm": 75,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.100",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.100 E3",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.100 F",
+     "heightMm": 60,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 60.150",
+     "heightMm": 60,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.200",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.200 E3",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.200 F",
+     "heightMm": 60,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 60.250",
+     "heightMm": 60,
+     "widthMm": 250,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.300",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.300 E3",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.300 F",
+     "heightMm": 60,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 60.400",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.400 E3",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.400 F",
+     "heightMm": 60,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 60.500",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.500 E3",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.500 F",
+     "heightMm": 60,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 60.600",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 60.600 E3",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 60.600 F",
+     "heightMm": 60,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.100",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.100 F",
+     "heightMm": 85,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.200",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.200 F",
+     "heightMm": 85,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.300",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.300 F",
+     "heightMm": 85,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.400",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.400 F",
+     "heightMm": 85,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.500",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.500 F",
+     "heightMm": 85,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 85.600",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 85.600 F",
+     "heightMm": 85,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.100",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.100 E3",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.100 F",
+     "heightMm": 110,
+     "widthMm": 100,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.150",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.150 F",
+     "heightMm": 110,
+     "widthMm": 150,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.200",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.200 E3",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.200 F",
+     "heightMm": 110,
+     "widthMm": 200,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.300",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.300 E3",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.300 F",
+     "heightMm": 110,
+     "widthMm": 300,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.400",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.400 E3",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.400 F",
+     "heightMm": 110,
+     "widthMm": 400,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.500",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.500 E3",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.500 F",
+     "heightMm": 110,
+     "widthMm": 500,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.550",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.550 E3",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.550 F",
+     "heightMm": 110,
+     "widthMm": 550,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RV 110.600",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RV 110.600 E3",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RV 110.600 F",
+     "heightMm": 110,
+     "widthMm": 600,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RVV",
+   "kind": "accessory",
+   "description": "Horizontal Angle Connector",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RVV_Horizontal_Angle_Connector"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3",
+    "Stainless Steel E5"
+   ],
+   "types": [
+    {
+     "type": "RVV 35",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RVV 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RVV 50 E3",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RVV 50 E5",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RVV 50 F",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "RW",
+   "kind": "accessory",
+   "description": "Divider",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_RW_Divider"
+   ],
+   "finishes": [
+    "Hot-dip Galvanized",
+    "Pre Galvanized",
+    "Stainless Steel E3",
+    "Stainless Steel E5"
+   ],
+   "types": [
+    {
+     "type": "RW 35",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RW 35 E3",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RW 35 E5",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RW 35 F",
+     "heightMm": null,
+     "widthMm": 35,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RW 50",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RW 50 E3",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RW 50 F",
+     "heightMm": null,
+     "widthMm": 50,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RW 60",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RW 60 E3",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RW 60 E5",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RW 60 F",
+     "heightMm": null,
+     "widthMm": 60,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RW 85",
+     "heightMm": null,
+     "widthMm": 85,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RW 85 E3",
+     "heightMm": null,
+     "widthMm": 85,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RW 85 F",
+     "heightMm": null,
+     "widthMm": 85,
+     "finish": "Hot-dip Galvanized"
+    },
+    {
+     "type": "RW 110",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Pre Galvanized"
+    },
+    {
+     "type": "RW 110 E3",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Stainless Steel E3"
+    },
+    {
+     "type": "RW 110 E5",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Stainless Steel E5"
+    },
+    {
+     "type": "RW 110 F",
+     "heightMm": null,
+     "widthMm": 110,
+     "finish": "Hot-dip Galvanized"
+    }
+   ]
+  },
+  {
+   "code": "U5050",
+   "kind": "support",
+   "description": "Profile",
+   "revitFamilies": [
+    "Electrical_Distribution_Niedax_U5050_Profile"
+   ],
+   "finishes": [],
+   "types": []
+  }
+ ]
+}

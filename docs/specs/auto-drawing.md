@@ -143,7 +143,10 @@ A true-scale cut across the ridge, in the design's fixed 760 × 250 viewBox:
   (`max(3, round(slope length / purlin spacing))` per side), and the fascia at each eave.
 - Dimensions: the panel chain per half ("8 × 1.00 = 8.00"), the span "16 (จากแปลน)", the overhang at each eave, the
   clear height, the rise "R 2.14" and the heel depth on the right, and the slope arc with "15°".
-- Callouts ①–⑦ in red, one per member row the frame draws. `highlight` fills the chosen row's callout.
+- Callouts ①–⑦ in red, one per member row the frame draws. `highlight` fills the chosen row's callout. The PDF and
+  the DXF print the same callouts in ink (`RoofSection(ink: true)`, 2026-10-27), so each one reads against its row of
+  the member schedule; the DXF puts them on `G-ANNO-MARK`. The NO.224 form's drawing box, which has no schedule, keeps
+  the section without them.
 - `tags` name each op's CAD layer (`SECTION`, `DIM`, `GRID`). The page makes the overhang and clear-height labels tappable.
 
 Line weights: chords 6 pt dark with a 3.6 pt light core, web 3.2 / 1.3, columns 7 / 4.4, sheet 1.1, dimensions 0.8,
@@ -426,6 +429,10 @@ colours (§4.2); the tank plan keeps 690 pt and the look below.
 - **Tags:** numbered squares 1–7 at the first occurrence of each member, moved along their leader in 6 pt steps (at most
   8 tries) to avoid overlaps. A legend lists them ("1 แป · C-100x50x20x3.2 @1.00 ม."); a missing member shows
   "— ไม่ได้ระบุ —".
+  Each listed member's number is also marked on the drawing (2026-10-27, `MeasuredRoofSection.callouts`): a circle
+  with a leader and arrowhead to the member, the roof's members (แป, จันทัน, เชิงชาย) from a row over the roof and the
+  frame's (ขื่อ, ดั้ง, ค้ำยัน) from one under the tie beam. อเส isn't drawn in the section, nor a flat roof's frame or a
+  shed's king post and struts, so those keep their number in the list only.
 - **Title strip:** "รูปตัดโครงหลังคา — {section title}" · "หน่วย: ม. · มาตราส่วนโดยประมาณ". Footnote:
   "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง", after the assumed values and warnings.
 - **Section layout, top to bottom:** title strip 28 pt; section fitted to `W − 128` × `min(0.36·W, 250)`; dimension

@@ -108,7 +108,7 @@ final class IECReportPerformanceTests: XCTestCase {
     func testDecodeAndEncode100Times() throws {
         let data = try JSONEncoder().encode(try sample())
         print("IEC report JSON: \(data.count) bytes")
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+        measuring([XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
             for _ in 0..<100 {
                 let r = try! JSONDecoder().decode(IECReport.self, from: data)
                 _ = try! JSONEncoder().encode(r)
@@ -118,7 +118,7 @@ final class IECReportPerformanceTests: XCTestCase {
 
     func testDerivedValues100Times() throws {
         let r = try sample()
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+        measuring([XCTClockMetric(), XCTCPUMetric()]) {
             for _ in 0..<100 {
                 _ = r.readings; _ = r.photos; _ = r.missing; _ = r.completion
                 for inv in r.inverters {
@@ -128,4 +128,19 @@ final class IECReportPerformanceTests: XCTestCase {
             }
         }
     }
+}
+
+#if os(Linux)
+// swift-corelibs-xctest has no XCTMetric: time only.
+private struct XCTClockMetric {}
+private struct XCTCPUMetric {}
+private struct XCTMemoryMetric {}
+#endif
+
+extension XCTestCase {
+    #if os(Linux)
+    fileprivate func measuring(_ metrics: [Any], _ block: () -> Void) { measure(block: block) }
+    #else
+    fileprivate func measuring(_ metrics: [XCTMetric], _ block: () -> Void) { measure(metrics: metrics, block: block) }
+    #endif
 }

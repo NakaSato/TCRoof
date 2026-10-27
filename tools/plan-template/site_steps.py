@@ -5,13 +5,13 @@ The workbook's `จุดติดตั้ง` sheet keeps, in columns Z–AD (
 of 2.1.1–2.1.7 for every site type; the 20 import files carry only the generic list. This writes them to
 TCRoofKit/Sources/ExcelExport/Resources/site-steps.json for `MPTemplates.siteSteps`.
 
-    python3 -I tools/plan-template/site_steps.py ["Project_Plan_TCRoof/แม่แบบโครงการ TCRoof (ทุกกรณี).xlsx"]
+    python3 -I tools/plan-template/site_steps.py ["Project_Plan_TCRoof/3_แม่แบบ 20 กรณี/แม่แบบโครงการ TCRoof (ทุกกรณี).xlsx"]
 """
 import html, json, re, sys, zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-src = Path(sys.argv[1]) if len(sys.argv) > 1 else root / "Project_Plan_TCRoof" / "แม่แบบโครงการ TCRoof (ทุกกรณี).xlsx"
+src = Path(sys.argv[1]) if len(sys.argv) > 1 else root / "Project_Plan_TCRoof" / "3_แม่แบบ 20 กรณี" / "แม่แบบโครงการ TCRoof (ทุกกรณี).xlsx"
 out = root / "TCRoofKit/Sources/ExcelExport/Resources/site-steps.json"
 
 z = zipfile.ZipFile(src)

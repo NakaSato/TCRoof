@@ -269,8 +269,9 @@ struct DebugScreen: View {
                     job.scheduleWorkbook = nil; job.scheduleWorkbookName = nil; job.scheduleWorkbookDriveID = nil
                 } else { job.seedMPDemo() }
                 if let id = d.string(forKey: "mpTemplate"), job.scheduleInput == nil,
-                   let c = MPTemplates.cases().first(where: { $0.id == id }),
-                   let r = try? MPTemplates.plan(c, kickoff: MasterSchedule.calendar.startOfDay(for: .now)) {
+                   let c = (MPTemplates.cases() + MPTemplates.installCases()).first(where: { $0.id == id }),
+                   let r = try? MPTemplates.plan(c, kickoff: MasterSchedule.calendar.startOfDay(for: .now),
+                                                 people: ProjectSetup(job.setupTarget)) {
                     MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP (แม่แบบ \(c.id)).xlsx", on: job)
                 }
                 if let codes = d.string(forKey: "mpTickWBS") {

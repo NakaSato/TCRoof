@@ -443,7 +443,7 @@ struct InstallTrackingPage: View {
             }
             out.append(Cell(label: "กำหนดการ", value: title, ink: ink, note: (t.variance > 0 ? "+" : "") + "\(t.variance)%", weight: 0.85))
             let slack = t.slackDays()
-            out.append(Cell(label: "คาดส่งมอบ", value: ThaiFormat.dayMonth.string(from: t.forecastEnd()),
+            out.append(Cell(label: "คาดส่งมอบ", value: Self.forecastDay(t),
                             ink: slack < 0 ? Theme.dangerText : slack == 0 ? Theme.pending : Theme.navy,
                             note: slack < 0 ? "ช้า \(-slack) วัน" : slack == 0 ? "ตามกำหนดพอดี" : "ตามกำหนด เผื่อ \(slack) วัน", weight: 1.12))
             if let spi = t.spi {

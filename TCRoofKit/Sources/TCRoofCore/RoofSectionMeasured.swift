@@ -261,6 +261,73 @@ public enum MeasuredRoofSection {
         return m
     }
 
+    // MARK: member marks
+
+    /// Where the member named `name` is drawn (metres), and whether its mark goes over the roof (the roof's members) or
+    /// under the tie beam; nil for a member the section doesn't draw (อเส, a flat roof's frame) or a name it doesn't know.
+    static func target(_ name: String, _ i: Input, eave e: Double, base: Double) -> (at: Pt, over: Bool)? {
+        typealias S = StructureSection
+        func size(_ n: String) -> S.Size? { i.members.first { $0.name == n }.flatMap { S.Size.read($0.size) } }
+        let B = i.span, h = B / 2, t = i.rise / max(i.run, 1e-9), cs = 1 / (1 + t * t).squareRoot()
+        let raf = size("จันทัน") ?? .c(0.15), tie = size("ขื่อ") ?? .c(0.1), purlin = size("แป") ?? .c(0.1)
+        let line = roofLine(i, eave: e)
+        /// The rafter's underside at x (the roof line).
+        func under(_ x: Double) -> Double {
+            for k in 0..<(line.count - 1) where x >= line[k].x - 1e-9 && x <= line[k + 1].x + 1e-9 {
+                let a = line[k], b = line[k + 1], f = (x - a.x) / max(b.x - a.x, 1e-9)
+                return a.y + f * (b.y - a.y)
+            }
+            return e
+        }
+        let gableLike = i.shape == .gable || i.shape == .hip
+        switch (name, i.shape) {
+        case (_, .flat): return nil
+        case ("จันทัน", _):
+            let x = i.shape == .shed ? 0.3 * B : 0.25 * h
+            return (Pt(x, under(x) + raf.depth / (2 * cs)), true)
+        case ("แป", _):
+            let want = i.shape == .shed ? 0.78 * B : 0.8 * h
+            guard let p = purlins(i, eave: e).min(by: { abs($0.x - want) < abs($1.x - want) }) else { return nil }
+            return (Pt(p.x, p.y + raf.depth / cs + purlin.profile.h / 2), true)
+        case ("เชิงชาย", _):
+            return (Pt(-i.overhang, under(-i.overhang) - 0.05), true)
+        case ("ขื่อ", _):
+            return (Pt(0.72 * B, e - tie.depth / 2), false)
+        case ("ดั้ง", _) where gableLike || i.shape == .curved:
+            return (Pt(h, e + 0.3 * i.rise), false)
+        case ("ค้ำยัน", _) where gableLike:
+            return (Pt(1.25 * h, e + i.rise / 4), false)
+        default:
+            return nil
+        }
+    }
+
+    /// The listed members' numbers: a circle with the member's number, its leader and arrowhead to the member; the
+    /// roof's members from a band over the roof, the rest from one under the tie beam, spread so no two circles touch.
+    static func callouts(_ i: Input, eave e: Double, base: Double, into d: inout StructureSection.Drawn, _ P: (Pt) -> Pt,
+                         top: Double, floor: Double) {
+        var over: [(Int, Pt)] = [], under: [(Int, Pt)] = []
+        for (n, m) in i.members.enumerated() {
+            guard let t = target(m.name, i, eave: e, base: base) else { continue }
+            if t.over { over.append((n + 1, P(t.at))) } else { under.append((n + 1, P(t.at))) }
+        }
+        let r = 8.0, gap = 2 * r + 6, low = min(P(Pt(0, e)).y + 34, floor - r - 4)
+        func place(_ list: [(Int, Pt)], y: Double, lean: Double) {
+            var x = -Double.infinity
+            for (n, t) in list.sorted(by: { $0.1.x < $1.1.x }) {
+                x = max(t.x + lean, x + gap, r + 4)
+                let b = Pt(x, y), dx = t.x - b.x, dy = t.y - b.y, l = max(hypot(dx, dy), 1), ux = dx / l, uy = dy / l, al = 6.0, aw = 2.2
+                d.add(.line(Pt(b.x + ux * r, b.y + uy * r), Pt(t.x - ux * al, t.y - uy * al), width: 0.8, color: dimC), "CALLOUT")
+                d.add(.polygon([t, Pt(t.x - ux * al - uy * aw, t.y - uy * al + ux * aw), Pt(t.x - ux * al + uy * aw, t.y - uy * al - ux * aw)],
+                               stroke: nil, fill: dimC), "CALLOUT")
+                d.add(.circle(b, r: r, stroke: dimC, fill: .white, width: 1), "CALLOUT")
+                d.add(.text(String(n), at: b, size: 9.5, bold: true, color: dimC, align: .center), "CALLOUT")
+            }
+        }
+        place(over, y: top, lean: -18)
+        place(under, y: low, lean: 16)
+    }
+
     // MARK: drawing
 
     static let ink = RGBA(hex: 0x1A1D22), dimC = RGBA(hex: 0x16325C), red = RGBA(hex: 0xD9453B)
@@ -272,7 +339,9 @@ public enum MeasuredRoofSection {
         let model = structure(i, eave: e, known: known)
         // the frame and its overhang dimensions (a curved roof's tips stop at the posts)
         let ext = model.extent, base = known ? 0 : e - 0.8, minX = min(ext.minX, -o), maxX = max(ext.maxX, B + o)
-        let marks = (W - 150)...(W - 12), areaL = 24.0, areaR = marks.lowerBound - 20, areaH = 200.0, y0 = 40.0
+        let marks = (W - 150)...(W - 12), areaL = 24.0, areaR = marks.lowerBound - 20, areaH = 200.0
+        // the drawing comes down a row when members are marked over the roof, so their circles clear the title
+        let marksOver = i.members.contains { target($0.name, i, eave: e, base: base)?.over == true }, y0 = marksOver ? 56.0 : 40.0
         let k = min((areaR - areaL) / max(maxX - minX, 1e-6), areaH / max(ext.maxY - base, 1e-6))
         let x0 = areaL + ((areaR - areaL) - (maxX - minX) * k) / 2
         func P(_ p: Pt) -> Pt { Pt(x0 + (p.x - minX) * k, y0 + (ext.maxY - p.y) * k) }
@@ -284,6 +353,8 @@ public enum MeasuredRoofSection {
         let floor = P(Pt(0, base)).y
         model.draw(into: &d, P, scale: k, marks: marks, gridTop: nil, floor: floor, ground: known, text: 8.5)
         if !known { d.add(.text("ไม่ทราบความสูงชายคา", at: Pt(X(B / 2), floor - 10), size: 8.5, color: red, align: .center), nil) }
+        // each listed member's number, on the member it names (the list under the drawing reads the same numbers)
+        callouts(i, eave: e, base: base, into: &d, P, top: y0 - 18, floor: floor)
 
         // the spans under it
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {

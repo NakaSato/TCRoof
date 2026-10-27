@@ -1,6 +1,6 @@
 # Project plan WBS in the app
 
-The team's plan files (`Project_Plan_TCRoof/`, 20 cases P9-001…020) carry two plans: the hidden `Weekly PLAN` sheet
+The team's plan files (`Project_Plan_TCRoof/`: the 102 stations' own, and the 20 install cases P9-001…020 in `3_แม่แบบ 20 กรณี`) carry two plans: the hidden `Weekly PLAN` sheet
 with the 18 MP tasks, which the app reads today (`MPWorkbook`, `MPTemplates`), and the visible `แผนโครงการ` sheet with
 the work breakdown under them. This spec brings the work breakdown into the app in four steps.
 
@@ -29,8 +29,8 @@ Header row 7 (the row of the `WBS` cell) under a row of groups:
 Columns are found by these texts, not by letter. Every one of them holds values, no formulas.
 
 The table ends at the first non-code text in column A. Below it, the Inverter station's own breakdown (2.5.1.1–2.5.1.6,
-as % of 2.5.1, the same six steps in every case) joins the list after 2.5.1 (step 4); the installation points are left
-out.
+as % of 2.5.1, the same six steps in every case) joins the list after 2.5.1 (step 4); the installation points are not
+WBS rows: they are read as project facts (`ProjectSetup.points`, see below).
 
 Numbering is the app's: the sheet's 1.1–3.2 are `MasterSchedule.Task.code`, so a row belongs to the task its first two
 code parts name (`2.5.3` → 2.5 Inverter). Grid connection 1.7 has no line of its own, only 1.7.1–1.7.6. Part 0
@@ -87,7 +87,33 @@ cells, so the app fills them.
 - Import (a whole plan or `รับเฉพาะความก้าวหน้า`) reads the `Y` rows and their dates (`Imported.wbsDone`) and takes only
   the rows ticked or unticked in Excel since that record (else since the file the job keeps), in the importer's name
   (`MasterSchedule.mergingTicks`, `MPWorkbookFlow.takeTicks`); a tick made in the app after the export stays.
-- The Inverter station table's steps have no such cells, so their ticks stay in the app and out of the record.
+- The Inverter station table's steps have no cells in that column: their ticks go in the table's own `เสร็จ (Y)` column
+  (its header row starts `ขั้นงาน`, `MPWorkbook.stationMark` / `tickCells`), which has no date, and join the record like
+  the others. A station file carries them (P3-001: its 15 list rows and the 6 steps).
+- A plan moved from another station's file (`MPTemplates.plan` with a kickoff) takes none of that station's ticks
+  (`wbsDone`, `wbsBase` empty); its first export clears their `Y`.
+- A `Y` the file has without a `เสร็จ` date comes in dated the import's day for the booking, marked `undated`
+  (`WBSTick.undated`), and export leaves its date cell as the file has it: a station's own file comes back byte for byte.
+  Only the list's rows above the tables take ticks; a table further down whose rows also start with a code (P4-001's
+  drawings per task) has none.
+- `รับเฉพาะความก้าวหน้า` also takes the rows' `ผู้รับผิดชอบ` and `หลักฐาน / เลขที่เอกสาร` changed in Excel since the kept
+  file, an emptied cell included (`MasterSchedule.mergingText`); the rest of the plan stays the job's. A whole import
+  takes the file's rows as they are.
+
+### People in `ผู้รับผิดชอบ`
+
+The 20 cases name a role in each row (`วศ.`, `Admin`, `ผรม.`, with `วศ.01` / `ผรม. 01` as examples); the 102 station files
+name that station's people in the same rows (`เปรม`, `บีม`, `ผรม. B`), always the set-up line's. `wbs-roles.json`
+(`tools/plan-template/wbs_roles.py` from the cases) gives each row's role (`MPTemplates.roles`; the utility's rows,
+`กฟภ.` and `พพ.`, have none), and `WBSPeopleExcelTests` holds every station file to it.
+
+- The set-up line is the file's word on its people: a person taken out of it isn't read back from `รหัส` (which still
+  gives the code).
+- Export (with the job's facts) writes the job's people: a row naming a person takes the job's for its role, or the role
+  when the job has no one for it; a row naming the role stays (the team may prefer roles). The set-up and `รหัส` lines
+  take out whom the job has no one for (`ProjectSetup.rewrite(line:dropPeople:)`).
+- A plan moved from another station's file names the job's people, else the roles, in the app's rows too
+  (`MPTemplates.plan(…, people:)`, `withPeople`); an Inverter station step takes its row's.
 
 ## Step 4: the rest
 
@@ -106,13 +132,23 @@ cells, so the app fills them.
   2.5.1 (`30% ของ 2.5.1` in its note), and adds the table's `รูปแบบ` line (type and size) to 2.5.1's note. A row with
   rows under it (`parentCodes`) is their sum: `bookWBS` skips it and the checklist shows it as a heading with its steps
   indented. A plan imported before this has no steps until it is imported again.
-- Installation points: left out. They are the template's own figures per site type (points, panels, kWp, standard
-  designs); a real station's come from its survey.
+- Installation points: not WBS rows. The station files that fill the table (`ประเภทหน้างาน` | `จุด` | `แผง` | `kWp`)
+  give them as `ProjectSetup.points`, which an import can take as the daily reports' locations (`<type> 1…n`); a real
+  station's figures still come from its survey.
+- Project facts (built): the sheet's title and set-up lines, the points and the Inverter station's type are the file's
+  `ProjectSetup` (TCRoofCore/ProjectSetup.swift, `MPWorkbook+Setup`): an import fills the job's empty facts from them,
+  `ตั้งค่าโครงการจากไฟล์…` offers the rest, and export writes the job's facts back into those lines.
 - Per site type (built): the site types share every date; what differs is 2.1's sub-tasks, named and split in the full
   workbook's `จุดติดตั้ง` sheet (columns Z–AD). `tools/plan-template/site_steps.py` writes them to ExcelExport's
   `site-steps.json`, and `MPWorkbook.read` gives a template file's 2.1.1–2.1.7 its site type's titles and shares of 2.1
   (`MPTemplates.applySite`, the type from the sheet's title), so `เริ่มจากแม่แบบ` and an import of a template file both
   get them. Run the script again when the workbook's table changes.
+- Install cases (built): the 20 cases (`3_แม่แบบ 20 กรณี`, `MPTemplates.installCases`) are a station's plan when it has no
+  file of its own: `เริ่มจากแม่แบบ`'s `แม่แบบตามกรณี` picks one by the station's main site type (most kWp, else its
+  daily-report locations), zero export and size (`MPTemplates.suggest`), always moved to the kickoff. Beyond 2.1, the
+  cases differ only in the permits: ≥ 200 kVA weighs 1.5 พค.2 at 1 (1.4 and 1.7 give 0.5 each) and opens its sub-tasks;
+  LV marks 0.2.7 and 2.8.1 / 2.8.2 / 2.8.6 (22 kV) not for the station. Their figures are an example's
+  (`ProjectSetup.isTemplate`): none is taken, and the station's export writes its own over them.
 
 ## Decisions (2026-10-26)
 

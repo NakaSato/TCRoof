@@ -276,7 +276,7 @@ extension TankPageWide {
             ("กำลังรวม", String(format: "%.1f kWp", l.kWp)),
             ("แถว | โต๊ะแผง", "\(l.rows) | \(l.builtTables.count)"),
             ("ระยะห่างแถว", String(format: "%.2f ม.", l.params.rowGap) + (l.params.rowGap > l.params.standardGap + 1e-6 ? "" : " (มาตรฐาน)")),
-            ("เสา + โครงหน้า", "\(b.posts)"),
+            ("เสาแนวหลัง", "\(b.posts)"),
             ("ฐานราก", "\(b.footings) จุด"),
             ("ราง (4 เส้น)", "\(Int(b.railLength.rounded())) ม."),
             ("Mid / End clamp", "\(b.midClamps) / \(b.endClamps)"),
@@ -337,7 +337,7 @@ extension TankPageWide {
                 // the panel underside above the vent, less the vent's height
                 checkRow("ใต้คานเหนือปล่อง (แผงทับได้)", c.ventHeadroom.map { String(format: "%.2f ม.", $0) } ?? "ไม่มีปล่องใต้แผง", ok: c.ventsOK, first: true)
                 checkRow("ขอบถังถึงขอบแผง ≥ " + String(format: "%.2f ม.", l.params.clearance), c.edge.map { String(format: "%.2f ม.", $0) } ?? "-", ok: c.edgeOK)
-                checkRow("ขาโครงสร้างไม่ชนสิ่งกีดขวาง", "เสา \(c.posts) ต้น | ตัดแผง \(c.cutColumns) คอลัมน์", ok: c.legsOK)
+                checkRow("ขาโครงสร้างไม่ชนสิ่งกีดขวาง", "ขา \(c.posts) จุด | ตัดแผง \(c.cutColumns) คอลัมน์", ok: c.legsOK)
             }
             Button { drawingOpen = true } label: {
                 Text("ดูแบบ \(Self.drawingRef) | ภาพตัดโต๊ะแผง | ฐานเสา").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)

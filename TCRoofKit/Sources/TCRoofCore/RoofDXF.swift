@@ -21,6 +21,7 @@ public enum RoofDXF {
         "SECTION_MARK": CADLayers.sectionMark, "DIM": CADLayers.dim, "TEXT": CADLayers.text, "PV": CADLayers.pvModule,
         "PV_RAIL": CADLayers.pvRail, "PV_FOOT": CADLayers.pvFoot, "PV_CUT": CADLayers.pvCut, "KEEPOUT": CADLayers.pvKeepout,
         "SECTION": CADLayers.roofSection, "TABLE": CADLayers.roofTable, "LEVEL": CADLayers.dim, "CAP": CADLayers.roofSection,
+        "CALLOUT": CADLayers.memberMark,
     ]
     static func layer(_ key: String) -> SketchDXF.Layer { standard[key] ?? CADLayers.text }
     /// Every dimension's text height (m), the team's 0.16.
@@ -234,7 +235,7 @@ public enum RoofDXF {
         }
         if parts.contains(.section) {
             // to scale, the ground at the clear height, so its measures are live DIMENSIONs (not the sketch's lines)
-            let s = RoofSection(v, trueScale: true, callouts: false), top = parts.contains(.plan) ? -2.5 : 0
+            let s = RoofSection(v, trueScale: true, ink: true), top = parts.contains(.plan) ? -2.5 : 0
             let ts: (Pt) -> (Double, Double) = { p in ((p.x - s.ridgeX) / s.scale + L.lx / 2, top - p.y / s.scale) }
             // the purlins and the ridge cap as the team's own blocks (RoofComponents), the cap only near the pitch it is drawn at
             let blocks: (purlin: String?, cap: String?) = RoofComponents.shared.map { $0.define(&dxf) } ?? (nil, nil)

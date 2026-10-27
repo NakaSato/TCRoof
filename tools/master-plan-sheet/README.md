@@ -6,7 +6,7 @@ columns were laid out for it; this fills them.
 
 | Menu `TCRoof ›` | What it does | Automatic |
 |---|---|---|
-| `ดึงข้อมูลตอนนี้` | Reads the app's jobs and daily reports from Firestore and writes the `TCRoof` tab's blue columns | every 5 minutes |
+| `ดึงข้อมูลตอนนี้` | Reads the app's jobs and daily reports from Firestore and writes the `TCRoof` tab's blue columns, and lists the app jobs no row took to the right of them (their ids go in a row's yellow cell) | every 5 minutes |
 | `บันทึกประวัติตอนนี้` | Adds this week's station rows to `ประวัติรายสัปดาห์` and a phase line to `ประวัติสรุป` (the same day again replaces them) | Mondays 08:00 |
 
 The sheet only reads from the app: nothing it holds goes back to Firestore. Columns are found through `_keys`.
@@ -49,3 +49,6 @@ daily 08:00 summary).
 `node --test tools/master-plan-sheet/core.test.js` checks `Core.js` (the calculations, no Google APIs) against
 `fixtures/plans.json`: P3-001's plan and an in-app plan as the app encodes them (Swift's `JSONEncoder`), with the points,
 % and finish days the app works out. `Code.js` (menus, Firestore, writing the sheet) runs only in Apps Script.
+
+The sheet's own time zone must be Bangkok (File › Settings › Time zone: (GMT+07:00) Bangkok): the app's days are
+Bangkok's, and a sheet in another zone shows them a day early. `B4` warns when it isn't.

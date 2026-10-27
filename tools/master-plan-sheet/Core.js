@@ -188,6 +188,22 @@ function matchRows(rows, jobs) {
   });
 }
 
+/**
+ * The app's jobs no row took, for the list beside the tab (so their ids can go in a row's yellow cell): PWA jobs first,
+ * then by name. Each as [id, name, kind, kWp, station code, has a plan, daily reports].
+ */
+function unmatchedJobs(jobs, matches, stats) {
+  var taken = {};
+  matches.forEach(function (m) { if (m.job) taken[m.job.id] = true; });
+  return jobs.filter(function (j) { return !taken[j.id]; })
+    .sort(function (a, b) { return (a.kind === 'pwa' ? 0 : 1) - (b.kind === 'pwa' ? 0 : 1) || a.name.localeCompare(b.name); })
+    .map(function (j) {
+      var s = (stats || {})[j.id];
+      return [j.id, j.name, j.kind === 'pwa' ? 'งาน PWA' : j.kind === 'home' ? 'งานบ้าน' : j.kind, j.kWp || '',
+              j.codes.join(', '), j.doc && j.doc.scheduleInput ? 'มี' : '', s ? s.count : 0];
+    });
+}
+
 /** The daily reports per job: how many, the latest day, and how many the engineer signed. */
 function logStats(logs) {
   var out = {};
@@ -273,6 +289,6 @@ function phaseSummary(stations, previousCOD, risks, changes) {
 if (typeof module !== 'undefined') {
   module.exports = { SWIFT_EPOCH: SWIFT_EPOCH, TASKS: TASKS, swiftDate: swiftDate, millisDate: millisDate, taskWeight: taskWeight,
                      progress: progress, fsDocuments: fsDocuments, fsValue: fsValue, normalizeName: normalizeName,
-                     jobSummary: jobSummary, matchRows: matchRows, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
+                     jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
                      phaseSummary: phaseSummary };
 }

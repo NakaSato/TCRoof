@@ -7,6 +7,7 @@ import ExcelExport
 /// นำเข้าไฟล์แผนหลายสถานี: many stations' plan files at once (`MPWorkbook`). Each file is matched to a PWA station by the
 /// station its `PROJECT` line names, its kWp and an MP number in its name (`MPWorkbook.match`); the team checks or
 /// changes each pick, then every file with a station is imported as one would be on its own (`MPWorkbookFlow.install`).
+/// A file going to the station it was matched to also fills the project facts that station leaves empty (`ProjectSetup`).
 struct MPBulkImportSheet: View {
     /// One picked file.
     struct Item: Identifiable {
@@ -19,6 +20,8 @@ struct MPBulkImportSheet: View {
         /// Matching stations, best first.
         let ranked: [PersistentIdentifier]
         var job: PersistentIdentifier?
+        /// The station the file was matched to (`MPWorkbook.match`), before any change of pick.
+        var matched: PersistentIdentifier? = nil
     }
 
     let stations: [Job]
@@ -45,8 +48,9 @@ struct MPBulkImportSheet: View {
                 let imported = try MPWorkbook.read(data)
                 let station = MPWorkbook.station(project: imported.project, fileName: name)
                 let m = MPWorkbook.match(station, among: candidates)
+                let pick = m.pick.flatMap { byKey[$0] }
                 return Item(name: name, data: data, imported: imported, error: nil, station: station,
-                            ranked: m.ranked.compactMap { byKey[$0] }, job: m.pick.flatMap { byKey[$0] })
+                            ranked: m.ranked.compactMap { byKey[$0] }, job: pick, matched: pick)
             } catch {
                 return Item(name: name, data: nil, imported: nil, error: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription,
                             station: MPWorkbook.station(project: nil, fileName: name), ranked: [], job: nil)
@@ -179,7 +183,9 @@ struct MPBulkImportSheet: View {
             if progressOnly && j.scheduleInput != nil {
                 MPWorkbookFlow.takeProgress(imported, data: data, name: it.name, on: j)
             } else {
-                MPWorkbookFlow.install(imported, data: data, name: it.name, on: j)
+                // the file is this station's own (matched, not picked by hand): it fills the facts the station leaves empty
+                let setup = it.matched != nil && it.matched == it.job ? ProjectSetup.defaultFields(j.setupChanges(imported.setup)) : []
+                MPWorkbookFlow.install(imported, data: data, name: it.name, on: j, setup: setup)
             }
             n += 1
         }

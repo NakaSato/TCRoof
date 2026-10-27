@@ -118,6 +118,9 @@ extension InstallTrackingPage {
                         Menu {
                             if permissions.can(.mpSetup) {
                                 Button { startImport() } label: { Label("นำเข้าไฟล์แผน (.xlsx)", systemImage: "square.and.arrow.down") }
+                                if job.scheduleWorkbook != nil {
+                                    Button { workbook.reviewSetup(job) } label: { Label("ตั้งค่าโครงการจากไฟล์…", systemImage: "list.bullet.clipboard") }
+                                }
                             }
                             Button { workbook.export(job) } label: {
                                 Label(job.scheduleWorkbook == nil ? "ส่งออก Excel (นำเข้าไฟล์ก่อน)" : "ส่งออก Excel", systemImage: "square.and.arrow.up")

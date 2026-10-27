@@ -29,8 +29,8 @@ Header row 7 (the row of the `WBS` cell) under a row of groups:
 Columns are found by these texts, not by letter. Every one of them holds values, no formulas.
 
 The table ends at the first non-code text in column A. Below it, the Inverter station's own breakdown (2.5.1.1–2.5.1.6,
-as % of 2.5.1, the same six steps in every case) joins the list after 2.5.1 (step 4); the installation points are left
-out.
+as % of 2.5.1, the same six steps in every case) joins the list after 2.5.1 (step 4); the installation points are not
+WBS rows: they are read as project facts (`ProjectSetup.points`, see below).
 
 Numbering is the app's: the sheet's 1.1–3.2 are `MasterSchedule.Task.code`, so a row belongs to the task its first two
 code parts name (`2.5.3` → 2.5 Inverter). Grid connection 1.7 has no line of its own, only 1.7.1–1.7.6. Part 0
@@ -87,7 +87,11 @@ cells, so the app fills them.
 - Import (a whole plan or `รับเฉพาะความก้าวหน้า`) reads the `Y` rows and their dates (`Imported.wbsDone`) and takes only
   the rows ticked or unticked in Excel since that record (else since the file the job keeps), in the importer's name
   (`MasterSchedule.mergingTicks`, `MPWorkbookFlow.takeTicks`); a tick made in the app after the export stays.
-- The Inverter station table's steps have no such cells, so their ticks stay in the app and out of the record.
+- The Inverter station table's steps have no cells in that column: their ticks go in the table's own `เสร็จ (Y)` column
+  (its header row starts `ขั้นงาน`, `MPWorkbook.stationMark` / `tickCells`), which has no date, and join the record like
+  the others. A station file carries them (P3-001: its 15 list rows and the 6 steps).
+- A plan moved from another station's file (`MPTemplates.plan` with a kickoff) takes none of that station's ticks
+  (`wbsDone`, `wbsBase` empty); its first export clears their `Y`.
 
 ## Step 4: the rest
 
@@ -106,8 +110,12 @@ cells, so the app fills them.
   2.5.1 (`30% ของ 2.5.1` in its note), and adds the table's `รูปแบบ` line (type and size) to 2.5.1's note. A row with
   rows under it (`parentCodes`) is their sum: `bookWBS` skips it and the checklist shows it as a heading with its steps
   indented. A plan imported before this has no steps until it is imported again.
-- Installation points: left out. They are the template's own figures per site type (points, panels, kWp, standard
-  designs); a real station's come from its survey.
+- Installation points: not WBS rows. The station files that fill the table (`ประเภทหน้างาน` | `จุด` | `แผง` | `kWp`)
+  give them as `ProjectSetup.points`, which an import can take as the daily reports' locations (`<type> 1…n`); a real
+  station's figures still come from its survey.
+- Project facts (built): the sheet's title and set-up lines, the points and the Inverter station's type are the file's
+  `ProjectSetup` (TCRoofCore/ProjectSetup.swift, `MPWorkbook+Setup`): an import fills the job's empty facts from them,
+  `ตั้งค่าโครงการจากไฟล์…` offers the rest, and export writes the job's facts back into those lines.
 - Per site type (built): the site types share every date; what differs is 2.1's sub-tasks, named and split in the full
   workbook's `จุดติดตั้ง` sheet (columns Z–AD). `tools/plan-template/site_steps.py` writes them to ExcelExport's
   `site-steps.json`, and `MPWorkbook.read` gives a template file's 2.1.1–2.1.7 its site type's titles and shares of 2.1

@@ -39,7 +39,9 @@ public enum MPTemplates {
     /// Every file in `folder` whose title names its station or case, by code. Reads only each file's shared strings,
     /// not its sheets.
     public static func cases(in folder: URL? = bundled) -> [Case] {
-        guard let folder, let urls = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+        // resolved first: Linux Foundation lists nothing in a folder reached through a link (its test bundle keeps one)
+        guard let folder = folder?.resolvingSymlinksInPath(),
+              let urls = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
         else { return [] }
         return urls.filter { $0.pathExtension == "xlsx" }.compactMap { url -> Case? in
             guard let data = try? Data(contentsOf: url), let strings = (try? ZipArchive(data))?.string("xl/sharedStrings.xml")
@@ -124,6 +126,11 @@ public enum MPTemplates {
         // export writes the MP plan only: the WBS sheet keeps the template's dates, so its rows move here
         var moved = try MPWorkbook.read(out.data, calendar: cal)
         moved.wbs = moved.wbs.map { $0.shifted(days: days, calendar: cal) }
+        // no progress: the rows that station marked done are its own, not ticks for the station taking the plan (an
+        // empty base also keeps the import from taking back that station's earlier ticks); its export clears their Y
+        moved.wbsDone = []
+        moved.wbsDoneDates = [:]
+        moved.wbsBase = []
         return (out.data, moved)
     }
 }

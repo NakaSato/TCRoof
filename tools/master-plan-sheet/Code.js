@@ -40,7 +40,7 @@ function pullFromApp() {
     var ids = read('id'), names = read('name'), kwps = read('kwp'), overrides = read('override');
     var rows = ids.map(function (id, i) { return { code: id, name: names[i], kWp: kwps[i], override: overrides[i] }; });
 
-    var jobs = firestoreQuery('jobs', ['projectName', 'code', 'capacityKW', 'kind', 'stationDocs', 'scheduleInput',
+    var jobs = firestoreQuery('jobs', ['projectName', 'code', 'capacityKW', 'kind', 'status', 'stationDocs', 'scheduleInput',
                                        'scheduleActual', 'iecState']).map(jobSummary);
     var logs = firestoreQuery('installLogs', ['jobID', 'date', 'engineerSignedAt'],
                               { unaryFilter: { field: { fieldPath: 'report' }, op: 'IS_NOT_NULL' } });
@@ -62,6 +62,7 @@ function pullFromApp() {
     });
     block.setValues(values);
     writeUnmatched(tab, c1 + 2, first, unmatchedJobs(jobs, matches, stats));
+    writeAppTab(book, appTabRows(jobs, matches, rows, stats), logs.length);
 
     var found = matches.filter(function (m, i) { return m.job && String(ids[i] || '').trim(); }).length;
     var stations = ids.filter(function (id) { return String(id || '').trim(); }).length;
@@ -79,6 +80,21 @@ function pullFromApp() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * `_app`: every job Firestore holds, one row each (`appTabRows`), rewritten every pull, so what the app has can be read
+ * from the sheet alone. Made hidden the first time.
+ */
+function writeAppTab(book, list, logCount) {
+  var sheet = book.getSheetByName('_app');
+  if (!sheet) { sheet = book.insertSheet('_app', book.getNumSheets()); sheet.hideSheet(); }
+  sheet.clearContents();
+  sheet.getRange(1, 1).setValue('งานทั้งหมดใน Firebase (' + project() + ') ดึงโดยสคริปต์ทุกรอบ ห้ามแก้ไข');
+  sheet.getRange(2, 1, 1, 2).setValues([['ดึงล่าสุด', new Date()]]);
+  sheet.getRange(2, 3, 1, 2).setValues([['งาน ' + list.length, 'รายงานประจำวัน ' + logCount]]);
+  sheet.getRange(3, 1, 1, APP_TAB_HEADER.length).setValues([APP_TAB_HEADER]);
+  if (list.length) sheet.getRange(4, 1, list.length, APP_TAB_HEADER.length).setValues(list);
 }
 
 /** The app's jobs no station row took, as a list right of the tab's columns (rewritten every pull). */

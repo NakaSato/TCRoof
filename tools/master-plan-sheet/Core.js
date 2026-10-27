@@ -204,6 +204,29 @@ function unmatchedJobs(jobs, matches, stats) {
     });
 }
 
+/** Every app job as one row of the `_app` tab, the header first: PWA jobs first, then by name. */
+var APP_TAB_HEADER = ['id', 'ชื่องานในแอป', 'ประเภท', 'สถานะ', 'รหัสงาน', 'รหัสสถานี', 'kWp', 'แผน MP', '% MP',
+                      'IEC', 'รายงานประจำวัน', 'ลงนามแล้ว', 'รายงานล่าสุด', 'แก้ล่าสุด', 'แถวในชีต'];
+
+function appTabRows(jobs, matches, rows, stats) {
+  var rowOf = {};
+  matches.forEach(function (m, i) { if (m.job) rowOf[m.job.id] = String(rows[i].code || '').trim(); });
+  var status = { interested: 'ลูกค้าสนใจติดตั้ง', confirmed: 'ลูกค้ายืนยันติดตั้ง', installing: 'กำลังติดตั้ง', completed: 'ติดตั้งเสร็จ' };
+  return jobs.slice()
+    .sort(function (a, b) { return (a.kind === 'pwa' ? 0 : 1) - (b.kind === 'pwa' ? 0 : 1) || a.name.localeCompare(b.name); })
+    .map(function (j) {
+      var d = j.doc || {}, s = (stats || {})[j.id];
+      var p = progress(d.scheduleInput, d.scheduleActual);
+      var station = (parseJSON(d.stationDocs) || {}).code || '';
+      var updated = d.updated;
+      if (s && s.updated && (!updated || s.updated > updated)) updated = s.updated;
+      return [j.id, j.name, j.kind === 'pwa' ? 'งาน PWA' : j.kind === 'home' ? 'งานบ้าน' : (j.kind || ''),
+              status[d.status] || d.status || '', d.code || '', station, j.kWp || '', p ? 'มี' : '', p ? p.pct : '',
+              iecLabel(d.iecState), s ? s.count : 0, s ? s.signed : 0, s && s.last ? s.last : '', updated || '',
+              rowOf[j.id] || ''];
+    });
+}
+
 /**
  * A new PWA job for a station row, as the app's job document (`Job.Record`, TCRoof/Sync/CloudRecords.swift): the
  * station's code as the job's code (so the sheet and `MPTemplates.best` find it by code), its name, `กปภ.สาขา<branch>`
@@ -325,6 +348,6 @@ function phaseSummary(stations, previousCOD, risks, changes) {
 if (typeof module !== 'undefined') {
   module.exports = { SWIFT_EPOCH: SWIFT_EPOCH, TASKS: TASKS, swiftDate: swiftDate, millisDate: millisDate, taskWeight: taskWeight,
                      progress: progress, fsDocuments: fsDocuments, fsValue: fsValue, normalizeName: normalizeName,
-                     jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, newJobFields: newJobFields, rowsToCreate: rowsToCreate, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
+                     jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, appTabRows: appTabRows, APP_TAB_HEADER: APP_TAB_HEADER, newJobFields: newJobFields, rowsToCreate: rowsToCreate, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
                      phaseSummary: phaseSummary };
 }

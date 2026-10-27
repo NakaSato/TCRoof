@@ -40,6 +40,13 @@ public extension Assistant {
             messages = [.system(Self.systemPrompt(today: now(), focus: focus))]
         }
 
+        /// Carries on a conversation saved on the device (`History`), only while nothing has been asked here yet; the
+        /// system prompt stays this session's, with today's date.
+        public func restore(_ history: [Message]) {
+            guard messages.count == 1, proposals.isEmpty else { return }
+            messages += history.filter { $0.role != .system }
+        }
+
         /// Sends `text` and returns once the model answers in words.
         @discardableResult
         public func send(_ text: String) async throws -> Message {

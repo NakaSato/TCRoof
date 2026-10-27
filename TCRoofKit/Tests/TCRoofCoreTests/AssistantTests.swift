@@ -340,3 +340,88 @@ final class AssistantTests: XCTestCase {
         XCTAssertEqual(s.trimmed().count, s.messages.count)
     }
 }
+
+// MARK: History kept on the device
+
+extension AssistantTests {
+    private func folder() -> URL {
+        let u = FileManager.default.temporaryDirectory.appendingPathComponent("assistant-history-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: u) }
+        return u
+    }
+
+    @MainActor
+    func testAConversationIsSavedAndCarriesOnInANewSession() async throws {
+        let stub = Stub([
+            calls([("get_schedule", #"{"job":"189"}"#)]),
+            .init(role: .assistant, content: "2.1 ช้ากว่าแผน"),
+            .init(role: .assistant, content: "ต้องเพิ่มช่างอีก 2 คน"),
+        ])
+        let j = job()
+        let s = Assistant.Session(transport: stub, focus: j, jobs: { [j] }, now: { self.today })
+        try await s.send("MP 189 เป็นอย่างไร")
+        let h = Assistant.History(folder: folder())
+        h.save(s.history, account: "A@tc.test", focus: j.id, now: today)
+
+        // nothing saved for another account or the all-stations chat
+        XCTAssertNil(h.load(account: "b@tc.test", focus: j.id, now: today))
+        XCTAssertNil(h.load(account: "a@tc.test", focus: nil, now: today))
+        let saved = try XCTUnwrap(h.load(account: "a@tc.test", focus: j.id, now: today))
+        XCTAssertEqual(saved.messages.map(\.role), [.user, .assistant, .tool, .assistant])
+        // the tool result is kept short, as a later question sends it
+        XCTAssertEqual(saved.messages[2].content, Assistant.Session.droppedResult)
+        XCTAssertEqual(saved.messages[1].toolCalls?.first?.function.name, "get_schedule")
+
+        let next = Assistant.Session(transport: stub, focus: j, jobs: { [j] }, now: { self.today })
+        next.restore(saved.messages)
+        try await next.send("ต้องทำอะไร")
+        let sent = await stub.requests
+        XCTAssertEqual(sent.last?.messages.map(\.role), [.system, .user, .assistant, .tool, .assistant, .user])
+        XCTAssertEqual(sent.last?.messages[1].content, "MP 189 เป็นอย่างไร")
+
+        // too old: starts over; cleared: gone
+        XCTAssertNil(h.load(account: "a@tc.test", focus: j.id, now: today.addingTimeInterval(31 * 86_400)))
+        h.clear(account: "a@tc.test", focus: j.id)
+        XCTAssertNil(h.load(account: "a@tc.test", focus: j.id, now: today))
+    }
+
+    @MainActor
+    func testAnOpenCardIsSavedAsNotSaved() async throws {
+        let stub = Stub([
+            calls([("propose_progress", #"{"job":"189","task":"2.1","percent":45}"#)]),
+            .init(role: .assistant, content: "เสนอ 45% รอยืนยัน"),
+        ])
+        let j = job()
+        let s = Assistant.Session(transport: stub, jobs: { [j] }, now: { self.today })
+        try await s.send("อัปเดต 2.1")
+        let last = try XCTUnwrap(s.history.last)
+        XCTAssertEqual(last.role, .user)
+        XCTAssertTrue(last.content!.hasPrefix("[ระบบ]"))
+        XCTAssertTrue(last.content!.hasSuffix("ไม่ได้บันทึก"))
+
+        // a restored session has no cards, and doesn't take a history once asked
+        let next = Assistant.Session(transport: stub, jobs: { [j] }, now: { self.today })
+        next.restore(s.history)
+        XCTAssertTrue(next.proposals.isEmpty)
+        XCTAssertEqual(next.messages.count, 1 + s.history.count)
+        next.restore(s.history)
+        XCTAssertEqual(next.messages.count, 1 + s.history.count)
+    }
+
+    @MainActor
+    func testHistoryKeepsWholeTurnsUpToTheLimit() {
+        let s = Assistant.Session(transport: Stub([]), jobs: { [] }, now: { self.today })
+        var old: [Assistant.Message] = []
+        for i in 0..<120 {
+            old.append(.user("q\(i)"))
+            old.append(.init(role: .assistant, content: nil, toolCalls: [.init(id: "c\(i)", name: "list_stations", arguments: "{}")]))
+            old.append(.tool("c\(i)", "{}"))
+            old.append(.init(role: .assistant, content: "a\(i)"))
+        }
+        s.restore(old)
+        let h = s.history
+        XCTAssertLessThanOrEqual(h.count, Assistant.History.maxMessages)
+        XCTAssertEqual(h.first?.role, .user)
+        XCTAssertEqual(h.last?.content, "a119")
+    }
+}

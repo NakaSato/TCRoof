@@ -58,6 +58,42 @@ final class AssistantUITests: XCTestCase {
         shot("05-saved")
     }
 
+    /// The conversation is kept on the device (`-assistantKeepHistory YES` with the stand-in): after a relaunch the
+    /// answer is back with `ต่อจากบทสนทนาเมื่อ …`, and `เริ่มใหม่` clears it for the next launch too.
+    func testConversationIsKeptOnTheDevice() {
+        let args = ["-screen", "assistant", "-assistantDemo", "YES", "-assistantKeepHistory", "YES", "-noNotificationPrompt", "YES"]
+        let app = XCUIApplication()
+        app.launchArguments = args
+        app.launch()
+        let behind = app.buttons["สถานีไหนช้ากว่าแผน"]
+        let restart = app.buttons["เริ่มใหม่"]
+        if !behind.waitForExistence(timeout: slow) {
+            // a run before left a conversation
+            XCTAssertTrue(restart.waitForExistence(timeout: 5))
+            restart.tap()
+            XCTAssertTrue(behind.waitForExistence(timeout: 5))
+        }
+        behind.tap()
+        let answer = app.staticTexts.matching(identifier: "assistantAnswer").firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 15), "the stand-in should answer")
+        let text = answer.label
+
+        app.terminate()
+        app.launch()
+        let again = app.staticTexts.matching(identifier: "assistantAnswer").firstMatch
+        XCTAssertTrue(again.waitForExistence(timeout: slow), "the answer should be back after a relaunch")
+        XCTAssertEqual(again.label, text)
+        XCTAssertTrue(app.descendants(matching: .any)["assistantRestored"].firstMatch.exists, "the restored note")
+        XCTAssertFalse(behind.exists)
+        shot("06-restored")
+
+        restart.tap()
+        XCTAssertTrue(behind.waitForExistence(timeout: 5))
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(behind.waitForExistence(timeout: slow), "cleared: a new chat after a relaunch")
+    }
+
     /// The strategy chips: priorities, a recovery what-if, the look-ahead, the papers and IEC test (`get_project`), and
     /// a re-plan card, dismissed so the demo station keeps its plan.
     func testStrategyChips() {

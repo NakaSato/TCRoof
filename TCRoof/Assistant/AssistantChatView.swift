@@ -5,7 +5,8 @@ import TCRoofCore
 
 /// ผู้ช่วยโครงการ (docs/specs/project-assistant-qwen.md §4): a chat about the PWA stations' MP plans. The model reads
 /// the plans through `Assistant.Toolbox` on this device and proposes changes as cards; a card's `ยืนยัน` saves it the way
-/// บันทึกความก้าวหน้า does. Shown only with `assistant.use`.
+/// บันทึกความก้าวหน้า does. Shown only with `assistant.use`. The conversation is kept on this device, per account and per
+/// station it was opened from (`Assistant.History.device`), and carries on when the chat opens again.
 struct AssistantChatView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.permissions) private var permissions
@@ -15,6 +16,8 @@ struct AssistantChatView: View {
     @State private var draft = ""
     @State private var sending = false
     @State private var failure: String?
+    /// When the conversation shown was saved, if it was carried on from an earlier opening.
+    @State private var restoredAt: Date?
     @FocusState private var typing: Bool
     /// A confirmed card that books a construction task at 100 % without its install photos, held while the warning asks.
     @State private var photoCheck: [MPMissingPhotos] = []
@@ -54,6 +57,7 @@ struct AssistantChatView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 12) {
                             intro
+                            restoredNote
                             ForEach(lines) { line in row(line) }
                             // confirmed only once the answer is done, so the note follows the model's words
                             ForEach(session.proposals) { p in AssistantProposalCard(action: p, confirm: { confirm(p) },
@@ -97,6 +101,45 @@ struct AssistantChatView: View {
                 context.assistantProjects().first { $0.overviewID == job.id }
                     .map { $0.assistantProject(library: StationDocsStore.loadLibrary()) }
             }
+            restoreHistory()
+        }
+        .onDisappear { saveHistory() }
+    }
+
+    // MARK: history
+
+    /// Off for the demo stand-in, so its UI tests start from the chips, unless `-assistantKeepHistory YES`.
+    private var keepsHistory: Bool {
+        #if DEBUG
+        let d = UserDefaults.standard
+        return !d.bool(forKey: "assistantDemo") || d.bool(forKey: "assistantKeepHistory")
+        #else
+        true
+        #endif
+    }
+
+    private var historyFocus: String? { focus?.overviewID }
+
+    private func restoreHistory() {
+        guard keepsHistory, lines.isEmpty,
+              let saved = Assistant.History.device.load(account: permissions.email, focus: historyFocus) else { return }
+        session.restore(saved.messages)
+        restoredAt = saved.savedAt
+    }
+
+    private func saveHistory() {
+        guard keepsHistory, !lines.isEmpty else { return }
+        Assistant.History.device.save(session.history, account: permissions.email, focus: historyFocus)
+    }
+
+    @ViewBuilder private var restoredNote: some View {
+        if let restoredAt, !lines.isEmpty {
+            Label("ต่อจากบทสนทนาเมื่อ \(ThaiFormat.longTime.string(from: restoredAt)) | เก็บไว้ในเครื่องนี้ กด เริ่มใหม่ เพื่อล้าง",
+                  systemImage: "clock.arrow.circlepath")
+                .font(.sarabun(13, relativeTo: .caption)).foregroundStyle(Theme.inkMuted)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier("assistantRestored")
         }
     }
 
@@ -234,7 +277,7 @@ struct AssistantChatView: View {
         guard !t.isEmpty, !sending else { return }
         draft = ""; failure = nil; sending = true
         Task {
-            defer { sending = false }
+            defer { sending = false; saveHistory() }
             do { try await session.send(t) } catch { failure = error.localizedDescription }
         }
     }
@@ -261,10 +304,12 @@ struct AssistantChatView: View {
             return
         }
         session.resolve(action.id, confirmed: confirmed)
+        saveHistory()
     }
 
     private func restart() {
-        failure = nil; draft = ""
+        failure = nil; draft = ""; restoredAt = nil
+        if keepsHistory { Assistant.History.device.clear(account: permissions.email, focus: historyFocus) }
         session = Self.makeSession(transport, focus: focus, source: source)
     }
 }
@@ -371,4 +416,10 @@ private struct AssistantPrompts: View {
             }
         }
     }
+}
+
+extension Assistant.History {
+    /// This device's saved conversations, in Application Support (never synced).
+    static let device = Assistant.History(folder: URL.applicationSupportDirectory
+        .appendingPathComponent("Assistant", isDirectory: true).appendingPathComponent("History", isDirectory: true))
 }

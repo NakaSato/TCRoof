@@ -57,6 +57,8 @@ enum LocalData {
         for folder in ["Permits", "StationDocs"] {
             try? FileManager.default.removeItem(at: docs.appendingPathComponent(folder, isDirectory: true))
         }
+        // the assistant's conversations name stations and their numbers
+        Assistant.History.device.removeAll()
         d.removeObject(forKey: wipeKey)
     }
 }

@@ -62,6 +62,20 @@ public enum CADLayers {
     public static let tankSection = SketchDXF.Layer("S-TANK-SECT-E", aci: 7, lineweight: 35, description: "รูปตัดถัง พื้น ผนัง เสา ฐานราก (เดิม) / Tank sections (existing)")
     public static let tankSoil = SketchDXF.Layer("C-TOPO-E", aci: 32, lineweight: 25, description: "ดินและระดับดิน / Soil and ground line")
 
+    // B2 inverter station (`InverterStationDXF`, after the team's reference/inverter-station drawings)
+    public static let stationColumn = SketchDXF.Layer("S-COLS-N", aci: 7, lineweight: 35, description: "เสาเหล็กสถานี Inverter (ใหม่) / Station columns (new)")
+    public static let stationBeam = SketchDXF.Layer("S-BEAM-N", aci: 5, lineweight: 35, description: "คาน จันทันเหล็ก (ใหม่) / Station beams and rafters (new)")
+    public static let stationPurlin = SketchDXF.Layer("S-ROOF-PURL-N", aci: 30, lineweight: 18, description: "แปหลังคา (ใหม่) / Station purlins (new)")
+    public static let stationRoof = SketchDXF.Layer("A-ROOF-N", aci: 7, lineweight: 25, description: "หลังคาเมทัลชีท (ใหม่) / Metal sheet roof (new)")
+    public static let stationRack = SketchDXF.Layer("S-FRAM-N", aci: 4, lineweight: 25, description: "โครงเหล็กยึดตู้และอินเวอร์เตอร์ (ใหม่) / Equipment rack (new)")
+    public static let stationFooting = SketchDXF.Layer("S-FTNG-N", aci: 3, lineweight: 25, description: "ฐานเสาและแผ่นเหล็ก (ใหม่) / Post bases and base plates (new)")
+    public static let stationEquipment = SketchDXF.Layer("E-EQPM-N", aci: 5, lineweight: 35, description: "ตู้ไฟฟ้าและอินเวอร์เตอร์ (ใหม่) / Cabinets and inverters (new)")
+    public static let stationTray = SketchDXF.Layer("E-CTRY-N", aci: 3, lineweight: 25, description: "รางเคเบิล AC / DC และ Cable ladder (ใหม่) / Cable trays and ladder (new)")
+    public static let stationLight = SketchDXF.Layer("E-LITE-N", aci: 2, lineweight: 18, description: "โคมไฟ (ใหม่) / Lighting (new)")
+    public static let stationDoor = SketchDXF.Layer("A-DOOR-N", aci: 6, lineweight: 25, description: "ประตู (ใหม่) / Door (new)")
+    public static let stationWall = SketchDXF.Layer("A-WALL-E", aci: 8, lineweight: 50, description: "ผนังอาคาร (เดิม) / Building wall (existing)")
+    public static let stationArea = SketchDXF.Layer("A-AREA-E", aci: 8, linetype: .hidden, lineweight: 18, description: "พื้นที่ที่วัดได้ (เดิม) / Measured area (existing)")
+
     // A2 site plan
     public static let siteBuilding = SketchDXF.Layer("A-BLDG-E", aci: 4, lineweight: 35, description: "อาคาร (เดิม) / Buildings (existing)")
     public static let sitePVArea = SketchDXF.Layer("P-AREA-N", aci: 5, lineweight: 25, description: "พื้นที่ติดตั้งแผงบนอาคาร / PV area on buildings")
@@ -90,6 +104,8 @@ public enum CADLayers {
         pvModule, pvKeepout, pvCableTray, pvRail, pvCut, pvFoot, pvTable, pvRafter, pvBrace, pvFooting,
         pvWalkway, walkRail, walkFoot, pvLifeline, lifeRail, lifeSupport, pvAccess,
         tankOutline, tankBeam, tankBeamPlan, tankSection, tankSoil,
+        stationColumn, stationBeam, stationPurlin, stationRoof, stationRack, stationFooting, stationEquipment, stationTray,
+        stationLight, stationDoor, stationWall, stationArea,
         siteBuilding, sitePVArea, sitePanelArea, siteCable, siteSymbol, siteCrane, siteShade, siteShape,
         sldLine, sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed, sldText, sldOther,
     ]
@@ -119,7 +135,7 @@ public enum CADLayers {
 
     /// The layers that carry hatches in the exports (their `HATC` layers are in the standards file too).
     public static let hatched: [SketchDXF.Layer] = [obstacle, roofSection, pvModule, pvCableTray, pvFooting, pvWalkway, lifeRail, pvAccess,
-                                                     tankSection, tankSoil, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
+                                                     tankSection, tankSoil, stationWall, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
 
     /// The layers whose texts take their own `TEXT` layer (the single line diagram's meanings).
     public static let annotated: [SketchDXF.Layer] = [sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed]

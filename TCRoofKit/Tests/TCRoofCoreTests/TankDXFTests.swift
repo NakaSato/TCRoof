@@ -3,7 +3,7 @@ import XCTest
 
 /// docs/specs/cad-export-dxf phase 3: the D1 tank plan as DXF at real scale.
 final class TankDXFTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
     var fixtures: URL { URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures") }
 
     /// Preset 0 with its standard points, a level, an azimuth and a wall type.
@@ -68,7 +68,11 @@ final class TankDXFTests: XCTestCase {
         let v = Self.sample(), (TW, _) = spans(v)
         let ents = t.entities(try XCTUnwrap(TankDXF.build(v)).data)
         // the white background rect spans the whole sketch, well outside the tank and its chains
-        let far = ents.filter { e in ["10", "11"].contains { c in t.value(e, c).flatMap(Double.init).map { $0 < -30 || $0 > TW + 30 } ?? false } }
+        func outside(_ e: [(String, String)], _ c: String) -> Bool {
+            guard let x = t.value(e, c).flatMap(Double.init) else { return false }
+            return x < -30 || x > TW + 30
+        }
+        let far = ents.filter { e in outside(e, "10") || outside(e, "11") }
         XCTAssertTrue(far.isEmpty)
         XCTAssertNil(ents.first { t.value($0, "62") != nil }, "layer colours only")
         XCTAssertNil(TankDXF.build(Values()))

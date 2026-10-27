@@ -62,7 +62,7 @@ final class InverterStationTests: XCTestCase {
         let s = InverterStation(sizes: [60, 60], width: 2.5, length: 9.5)
         XCTAssertEqual(s.used, 6.77, accuracy: 1e-9)
         XCTAssertEqual(s.minLength, 9.5)
-        XCTAssertEqual(s.spans.map { InverterStation.r2($0) }, [2.5, 2.25, 2.25, 2.5])
+        XCTAssertEqual(s.spans.map { InverterStation.r2($0) }, [2.25, 2.5, 2.5, 2.25])
         XCTAssertEqual(s.walkway, 1.48, accuracy: 1e-9)
         XCTAssertTrue(s.isOK)
         XCTAssertEqual(s.status, "ครบช่องบังคับแล้ว | พื้นที่พอสำหรับ 2 เครื่อง")
@@ -100,8 +100,25 @@ final class InverterStationTests: XCTestCase {
         XCTAssertEqual(s.spans.count, 4)
         for v in s.spans { XCTAssertEqual(v, 2.375, accuracy: 0.006) }
         s.userSpans = nil
-        XCTAssertEqual(s.spans.map { InverterStation.r2($0) }, [2.5, 2.25, 2.25, 2.5])
-        XCTAssertEqual(InverterStation.autoSpans(4.5), [4.5])
+        XCTAssertEqual(s.spans.map { InverterStation.r2($0) }, [2.25, 2.5, 2.5, 2.25])
+    }
+
+    /// The automatic column spans follow the team's stations (reference/inverter-station's templates).
+    func testAutoSpansFollowTheTeam() {
+        func r(_ L: Double) -> [Double] { InverterStation.autoSpans(L).map { InverterStation.r2($0) } }
+        XCTAssertEqual(r(6), [2, 2, 2], "pwa-inverter-station-shelter-125k: grid 0, 2000, 4000, 6000")
+        XCTAssertEqual(r(9), [2, 2.5, 2.5, 2], "pwa-inverter-station-shelter-125k-40k: grid 0, 2000, 4500, 7000, 9000")
+        XCTAssertEqual(r(9.5), [2.25, 2.5, 2.5, 2.25])
+        XCTAssertEqual(r(7), [2.25, 2.5, 2.25])
+        XCTAssertEqual(r(11), [2, 2.33, 2.33, 2.33, 2])
+        XCTAssertEqual(r(4.5), [2.25, 2.25])
+        XCTAssertEqual(r(2.5), [2.5])
+        // every length the page allows: spans add up, none over 2.5 m, none under 1.5 m
+        for i in 0...24 {
+            let L = InverterStation.lengthRange.lowerBound + Double(i) * InverterStation.lengthStep, s = InverterStation.autoSpans(L)
+            XCTAssertEqual(s.reduce(0, +), L, accuracy: 1e-9)
+            XCTAssertTrue(s.allSatisfy { $0 <= 2.5 + 1e-9 && $0 >= 1.5 - 1e-9 }, "\(L): \(s)")
+        }
     }
 
     func testStepSizes() {

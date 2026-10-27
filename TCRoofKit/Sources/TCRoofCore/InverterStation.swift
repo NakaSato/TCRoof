@@ -212,12 +212,21 @@ public struct InverterStation: Hashable, Sendable {
 
     // MARK: outdoor columns
 
-    /// `2.5, k × (L − 5)/k, 2.5` with k = ceil((L − 5)/2.5); `[L]` for a room of 5 m or less.
+    /// The team's column spans (reference/inverter-station's templates: 6.0 m → 2.0 · 2.0 · 2.0, 9.0 m → 2.0 · 2.5 · 2.5 ·
+    /// 2.0): end spans of 2.0 m and the inside ones equal, none over 2.5 m. Where the inside ones would come out under
+    /// 2.0 m, one column fewer: inside spans of 2.5 m and the ends evened out (9.5 m → 2.25 · 2.5 · 2.5 · 2.25), as long
+    /// as the ends stay within 2.5 m. Up to 5 m, two equal spans (one up to 2.5 m).
     public static func autoSpans(_ L: Double) -> [Double] {
-        let mid = L - 5
-        guard mid > 0 else { return [L] }
-        let k = max(1, Int(((mid / 2.5 * 1e6).rounded() / 1e6).rounded(.up)))
-        return [2.5] + Array(repeating: mid / Double(k), count: k) + [2.5]
+        let end = 2.0, most = 2.5
+        func up(_ x: Double) -> Int { Int(((x * 1e6).rounded() / 1e6).rounded(.up)) }
+        let mid = L - 2 * end
+        guard mid > 1e-9 else { return L <= most + 1e-9 ? [L] : [L / 2, L / 2] }
+        let k = max(1, up(mid / most))
+        if mid / Double(k) < end - 1e-9 {
+            let e = (L - Double(k - 1) * most) / 2
+            if e <= most + 1e-9 { return [e] + Array(repeating: most, count: k - 1) + [e] }
+        }
+        return [end] + Array(repeating: mid / Double(k), count: k) + [end]
     }
     static func r2(_ x: Double) -> Double { (x * 100).rounded() / 100 }
     /// The spans the surveyor sets (all but the last).

@@ -123,7 +123,7 @@ public enum TankDrawings {
         var items: [(Swatch, String)] = [
             ({ c in [.rect(Box(c.x - 7, c.y - 4, 14, 8), stroke: panel, fill: panel.withAlpha(0.12), width: 0.5)] }, "แผง (ฉายลงแปลน) \(l.count)"),
             ({ c in [.rect(Box(c.x - r, c.y - r, 2 * r, 2 * r), stroke: nil, fill: post)] },
-             String(format: "เสา + ฐานคอนกรีต %.0f×%.0f×150 มม. %d", p.footing * 1000, p.footing * 1000, b.posts)),
+             String(format: "จุดรองรับ + ฐานคอนกรีต %.0f×%.0f×150 มม. %d", p.footing * 1000, p.footing * 1000, b.footings)),
             ({ c in [.line(Pt(c.x - 7, c.y), Pt(c.x + 7, c.y), width: 0.7, color: ink)] }, "คานเอียง (rafter) \(b.rafters)"),
             ({ c in [.line(Pt(c.x - 7, c.y), Pt(c.x + 7, c.y), width: 0.5, color: navy)] }, String(format: "ราง %.1f ม.", b.railLength)),
             ({ c in [.circle(c, r: dot, stroke: nil, fill: ok)] }, "จุดยึดราง (rail clamp) \(b.railClamps)"),
@@ -248,9 +248,10 @@ public enum TankDrawings {
 
     // MARK: table rows
 
-    /// The standard side section of two rows (§5): the roof slab, footings, front and back posts with their heights, a
-    /// brace, the two modules down the slope, the spacings 2.80 / 2.70 / 2.80 and a vent under the first row with its
-    /// clearance. Drawn from the layout's parameters.
+    /// The standard side section of two rows (§5), as the team's frame (reference/tank-roof `Side_View.dxf`): the roof
+    /// slab, a footing on both post lines, the back (high) post, the front foot's V of two struts and the back diagonal
+    /// up to the rafter, the rafter's heights over the two lines, the two modules down the slope, the spacings
+    /// 2.80 / 2.70 / 2.80 and a vent under the first row with its clearance. Drawn from the layout's parameters.
     public static func tableSection(_ p: TankLayout.Params, width W: Double = 760) -> Sketch { tableSectionCAD(p, width: W).sketch }
 
     /// The row section as the DXF draws it: to scale, the spacings and post heights as dimensions.
@@ -269,11 +270,17 @@ public enum TankDrawings {
         let fw = p.footing * k, structureStart = o.count
         for row in 0..<2 {
             let front = Double(row) * p.rowPitch, back = front + p.postDY
-            for (x, h) in [(front, p.hFront), (back, p.hBack)] {
+            for x in [front, back] {
                 o.append(.rect(Box(X(x) - fw / 2, roofY - 0.15 * k, fw, 0.15 * k), stroke: ink, fill: concrete, width: 0.6))
-                o.append(.line(Pt(X(x), roofY - 0.15 * k), Pt(X(x), Y(h)), width: 2.2, color: post))
             }
-            o.append(.line(Pt(X(front), Y(0.2)), Pt(X(back), Y(p.hBack - 0.25)), width: 0.8, color: post, dash: [4, 2]))
+            // the back post; the rafter over the two lines; the front foot's V and the back diagonal up to it
+            o.append(.line(Pt(X(back), roofY - 0.15 * k), Pt(X(back), Y(p.hBack)), width: 2.2, color: post))
+            let f = TankComponents.frame(p)
+            func onRafter(_ d: Double) -> Pt { Pt(X(front + d * p.cosT), Y(p.hFront + d * p.cosT * p.tanT)) }
+            o.append(.line(onRafter(f.rafter.0), onRafter(f.rafter.1), width: 1.4, color: post))
+            for (x, d) in [(front, f.inner), (front, f.outer), (back, f.back)] {
+                o.append(.line(Pt(X(x), Y(0.15)), onRafter(d), width: 1, color: post))
+            }
             // the two modules: lower edge `frontIn` south of the front post, along the tilt
             let a = front - p.frontIn, b = a + p.depth
             let ya = p.hFront - p.frontIn * p.tanT, yb = ya + p.depth * p.tanT
@@ -313,7 +320,7 @@ public enum TankDrawings {
         o.append(.text(String(format: "ปล่อง %.2f", p.ventH), at: Pt(X(vx + vw) + 4, Y(p.ventH * 0.4)), size: 8.5, color: vent))
         o.append(.text(String(format: "ปล่องระบายอยู่ใต้แผงได้เมื่อเหลือช่องว่าง ≥ %.2f ม. (ในรูป %.2f ม.)", p.underClear, room), at: Pt(16, h0 - 24),
                        size: 8.5, color: room >= p.underClear ? ok : vent))
-        o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา | ค้ำ X ทุกช่วงเสา | ราง 4 เส้นต่อโต๊ะ | แผง 2 แผงตามแนวลาด",
+        o.append(.text(String(format: "ฐานราก %.0f×%.0f×150 มม. ยึดพื้นหลังคา | เสาแนวหลัง ขาหน้าค้ำรูปตัว V | ค้ำ X แนวเสาหลังเว้นช่วง | ราง 4 เส้นต่อโต๊ะ | แผง 2 แผงตามแนวลาด",
                               p.footing * 1000, p.footing * 1000), at: Pt(16, h0 - 10), size: 8.5, color: muted))
         let sketch = Sketch(width: W, height: h0, ops: o)
         return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps,
@@ -324,14 +331,14 @@ public enum TankDrawings {
 // MARK: - Front elevation
 
 extension TankDrawings {
-    /// The front elevation of one table (docs/specs/tank-mounting-layout.md §5), seen from the low side: the slab,
-    /// footings, front posts with the back posts behind, X bracing in every bay, the 4 rails, the modules (those
-    /// switched off as outlines), the bay spacings, the cantilevers and the length. The longest built table; nil
-    /// without one.
+    /// The elevation of one table's back (high) post line (docs/specs/tank-mounting-layout.md §5, the team's
+    /// `Back_Side.dxf` in reference/tank-roof), x along the table as on the plan: the slab, footings, the back posts,
+    /// X bracing in every other bay and the last (`TankLayout.bracedBays`), the 4 rails, the modules (those switched
+    /// off as outlines), the bay spacings, the cantilevers and the length. The longest built table; nil without one.
+    /// (`tableFront`: the front line has no post of its own, only the feet of the struts.)
     public static func tableFront(_ l: TankLayout, width W: Double = 760) -> Sketch? { tableFrontCAD(l, width: W)?.sketch }
 
-    /// The front elevation as the DXF draws it: to scale, the bays, cantilevers, length and front post height as
-    /// dimensions.
+    /// The elevation as the DXF draws it: to scale, the bays, cantilevers, length and back post height as dimensions.
     public static func tableFrontCAD(_ l: TankLayout, width W: Double = 760) -> SectionCAD? {
         let p = l.params
         guard let t = l.builtTables.max(by: { $0.columns < $1.columns }) else { return nil }
@@ -348,30 +355,19 @@ extension TankDrawings {
         func X(_ m: Double) -> Double { x0 + m * k }
         func Y(_ m: Double) -> Double { roofY - m * k }
         var o: [DrawOp] = [.rect(Box(0, 0, W, h0), stroke: nil, fill: .white)]
-        o.append(.text("รูปด้านหน้าโต๊ะแผง แถว \(t.row + 1) | \(t.columns) คอลัมน์ × 2 แผง | หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
+        o.append(.text("รูปด้านแนวเสาหลัง แถว \(t.row + 1) | \(t.columns) คอลัมน์ × 2 แผง | หน่วย ม.", at: Pt(16, 16), size: 12, bold: true, color: ink))
         // slab
         o.append(.rect(Box(X(-0.6), roofY, (L + 1.2) * k, 7), stroke: ink, fill: concrete, width: 0.8))
-        // posts: the back one behind, lighter; footings
-        let fw = max(3, p.footing * k), structureStart = o.count
-        for x in xs {
-            o.append(.rect(Box(X(x) - fw / 2, roofY - max(2, 0.15 * k), fw, max(2, 0.15 * k)), stroke: ink, fill: concrete, width: 0.6))
-            o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hBack)), width: 1.2, color: post.withAlpha(0.45)))
-            o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hFront)), width: 2, color: post))
-        }
-        // X bracing in every bay
-        for (x1, x2) in zip(xs, xs.dropFirst()) {
-            o.append(.line(Pt(X(x1), Y(0.15)), Pt(X(x2), Y(p.hFront - 0.1)), width: 0.7, color: post, dash: [4, 2]))
-            o.append(.line(Pt(X(x1), Y(p.hFront - 0.1)), Pt(X(x2), Y(0.15)), width: 0.7, color: post, dash: [4, 2]))
-        }
-        let structure = Set(structureStart..<o.count)
-        // modules: lower and upper, seen from the front; off panels as outlines
+        // modules: lower and upper, behind the back posts, as the team's hidden outlines (light where switched on)
         let on = Set(t.panels.filter(\.on).map(\.key)), mid = ya + (p.cellH + p.moduleGap * p.cosT / 2) * p.tanT
         for c in 0..<t.columns {
             let cx = Double(c) * (p.cellW + p.moduleGap)
             for (k2, lo, hi) in [(1, ya, mid), (0, mid, yb)] {
                 let key = "\(t.row).\(t.index).\(c).\(k2)", lit = on.contains(key)
-                o.append(.rect(Box(X(cx), Y(hi), p.cellW * k, (hi - lo) * k), stroke: lit ? .white : panel,
-                               fill: lit ? panel : nil, width: lit ? 0.6 : 0.8))
+                let b = Box(X(cx), Y(hi), p.cellW * k, (hi - lo) * k)
+                if lit { o.append(.rect(b, stroke: nil, fill: panel.withAlpha(0.14))) }
+                o.append(.polyline([Pt(b.x, b.y), Pt(b.maxX, b.y), Pt(b.maxX, b.maxY), Pt(b.x, b.maxY), Pt(b.x, b.y)], width: lit ? 0.7 : 0.5,
+                                   color: lit ? panel : panel.withAlpha(0.5), dash: [4, 2]))
             }
         }
         // the 4 rails, two under each module, the length of the table
@@ -379,6 +375,20 @@ extension TankDrawings {
             let y = ya + f * p.depth * p.tanT
             o.append(.line(Pt(X(0), Y(y)), Pt(X(L), Y(y)), width: 0.9, color: RGBA(hex: 0x94A3B8)))
         }
+        // the back posts on their footings
+        let fw = max(3, p.footing * k), structureStart = o.count
+        for x in xs {
+            o.append(.rect(Box(X(x) - fw / 2, roofY - max(2, 0.15 * k), fw, max(2, 0.15 * k)), stroke: ink, fill: concrete, width: 0.6))
+            o.append(.line(Pt(X(x), roofY), Pt(X(x), Y(p.hBack)), width: 2, color: post))
+        }
+        // X bracing in every other bay and the last, between the team's nodes
+        let lo = TankComponents.xLow, hi = TankComponents.xHigh(p)
+        for i in TankLayout.bracedBays(max(0, xs.count - 1)) {
+            let x1 = xs[i], x2 = xs[i + 1]
+            o.append(.line(Pt(X(x1), Y(lo)), Pt(X(x2), Y(hi)), width: 0.9, color: post))
+            o.append(.line(Pt(X(x1), Y(hi)), Pt(X(x2), Y(lo)), width: 0.9, color: post))
+        }
+        let structure = Set(structureStart..<o.count)
         // dimensions: the cantilevers and bays, then the length
         var dims: [SketchDXF.Dimension] = [], dimOps: Set<Int> = []
         func dimH(_ a: Double, _ b: Double, _ y: Double, _ label: String) {
@@ -393,11 +403,11 @@ extension TankDrawings {
         for (u, w) in zip(marks, marks.dropFirst()) where w - u > 1e-6 { dimH(u, w, roofY + 26, String(format: "%.2f", w - u)) }
         dimH(0, L, roofY + 48, String(format: "ยาว %.2f", L))
         dimOps.insert(o.count)
-        o.append(.text(String(format: "%.2f", p.hFront), at: Pt(X(0) - 6, Y(p.hFront / 2)), size: 9, bold: true, color: dim, align: .right))
-        dims.append(.init(Pt(X(0), roofY), Pt(X(0), Y(p.hFront)), at: Pt(X(0) - 14, 0), vertical: true, text: String(format: "%.2f", p.hFront), size: 9))
+        o.append(.text(String(format: "%.2f", p.hBack), at: Pt(X(0) - 6, Y(p.hBack / 2)), size: 9, bold: true, color: dim, align: .right))
+        dims.append(.init(Pt(X(0), roofY), Pt(X(0), Y(p.hBack)), at: Pt(X(0) - 14, 0), vertical: true, text: String(format: "%.2f", p.hBack), size: 9))
         let bays = zip(xs, xs.dropFirst()).map { $1 - $0 }
-        o.append(.text(String(format: "เสา %d คู่ (หน้า %.2f / หลัง %.2f ม.) | ช่วงเสามากสุด %.2f ม. | ค้ำ X ทุกช่วงเสา แนวหน้าและแนวหลัง | ราง 4 เส้น | ฐานราก %.0f×%.0f×150 มม. ทุกเสา",
-                              xs.count, p.hFront, p.hBack, bays.max() ?? 0, p.footing * 1000, p.footing * 1000),
+        o.append(.text(String(format: "เสาแนวหลัง %d ต้น สูง %.2f ม. | ช่วงเสามากสุด %.2f ม. | ค้ำ X %d ชุด เว้นช่วงและช่วงสุดท้าย | ราง 4 เส้น | ฐานราก %.0f×%.0f×150 มม. ทุกจุดรองรับ",
+                              xs.count, p.hBack, bays.max() ?? 0, TankLayout.bracedBays(max(0, xs.count - 1)).count, p.footing * 1000, p.footing * 1000),
                        at: Pt(16, h0 - 10), size: 8.5, color: muted))
         let sketch = Sketch(width: W, height: h0, ops: o)
         return SectionCAD(sketch: sketch, k: k, origin: Pt(X(0), roofY), dimensions: dims, dimensionOps: dimOps,

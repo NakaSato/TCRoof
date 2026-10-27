@@ -30,7 +30,7 @@ final class TankTrueSouthTests: XCTestCase {
             let g = TankLayout.SouthGeometry(size: TankPoints.tankSize(v)!, azimuth: 0, openings: TankLayout.openings(v), params: p)
             let (s, _) = g.layout(gap: p.rowGap, offX: p.clearance + p.offX, offY: p.clearance + p.offY, wallOffset: 0)
             XCTAssertEqual(s.count, wall.count, "points \(points)")
-            XCTAssertEqual(s.posts.count, wall.bom.posts, "points \(points)")
+            XCTAssertEqual(s.posts.count, wall.bom.footings, "points \(points)")
             XCTAssertEqual(s.cutColumns, wall.checks.cutColumns)
             XCTAssertEqual(s.tables, wall.builtTables.count)
         }

@@ -1,0 +1,240 @@
+{
+  "_note": "Example values from the board iPadA3.dc.html. The app reads the job's meter values, trafos (Transformer / Board / Breaker) and SiteSync. Every list and standard value below is a board example to confirm with the team (CLAUDE_CODE_TASK.md §6). Never hard-code the example answers.",
+  "header": {
+    "title": "A3 หม้อแปลง · MDB",
+    "titleLV": "A3 มิเตอร์แรงต่ำ · MDB",
+    "subtitle": "แบบสำรวจ NO.224 · GRF2567-23407",
+    "step": "3/13"
+  },
+  "flowCard": {
+    "title": "ผังการจ่ายไฟ",
+    "flow": "มิเตอร์ → หม้อแปลง → ตู้ MDB",
+    "flowLV": "มิเตอร์แรงต่ำ 0.4 kV → ตู้ MDB · ไม่มีหม้อแปลง",
+    "a2Button": "A2 ใส่จากภาพ A2 (was: ดึงจากภาพ A2 · 4 รายการ ▾)",
+    "removedSubtitle": "กรอกทุกอย่างในผังนี้ ·"
+  },
+  "meter": {
+    "kV": [
+      "0.4",
+      "22",
+      "33"
+    ],
+    "lvChip": "0.4 kV ไม่มีหม้อแปลง",
+    "meterSizes": [
+      "15(45) A",
+      "30(100) A",
+      "50(150) A",
+      "CT"
+    ],
+    "ctExample": "400/5 A"
+  },
+  "transformer": {
+    "sizes_kVA": [
+      50,
+      100,
+      160,
+      250,
+      315,
+      400,
+      500,
+      630,
+      800,
+      1000,
+      1250,
+      1500,
+      2000,
+      2500
+    ],
+    "standardOnPick": {
+      "voltage": "22k/230-400",
+      "vectorGroup": "Dyn11",
+      "impedance_pct": "4 (≤ 630 kVA) / 6 (> 630 kVA)"
+    },
+    "hint": "In LV ≈ kVA × 1000 / (√3 × 400)",
+    "plateExample": "630 kVA: values read from the nameplate photo",
+    "menus": {
+      "voltage": [
+        "22k/230-400",
+        "33k/230-400",
+        "24k/230-400",
+        "12k/230-400",
+        "11k/230-400"
+      ],
+      "vectorGroup": [
+        "Dyn11",
+        "Dyn1",
+        "Dyn5",
+        "YNyn0",
+        "Dd0"
+      ],
+      "impedance_pct": [
+        "4",
+        "6"
+      ],
+      "brand": [
+        "Tirathai",
+        "QTC",
+        "Charoenchai (CTE)",
+        "ABB",
+        "Siemens",
+        "Kyowa",
+        "อื่น ๆ"
+      ],
+      "year": "this year (พ.ศ.) back 30 years"
+    }
+  },
+  "mainBreaker": {
+    "AT": [
+      100,
+      125,
+      160,
+      200,
+      225,
+      250,
+      300,
+      320,
+      400,
+      500,
+      630,
+      700,
+      800,
+      1000,
+      1250,
+      1600,
+      2000,
+      2500,
+      3200,
+      4000
+    ],
+    "AF": {
+      "list": [
+        100,
+        125,
+        160,
+        250,
+        400,
+        630,
+        800,
+        1000,
+        1250,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000
+      ],
+      "auto": "อัตโนมัติ = the smallest AF ≥ AT unless set"
+    },
+    "Icu_kA": [
+      25,
+      36,
+      42,
+      50,
+      65,
+      70,
+      85,
+      100,
+      150
+    ],
+    "brand": [
+      "Schneider",
+      "ABB",
+      "Siemens",
+      "Mitsubishi",
+      "LS",
+      "Eaton",
+      "Hitachi",
+      "Fuji",
+      "อื่น ๆ"
+    ],
+    "custom": "+ เพิ่ม (type a value not in the list)",
+    "brandModel": "ยี่ห้อ (menu) + รุ่น (text), was one field ยี่ห้อ / รุ่น"
+  },
+  "subBreakers": {
+    "hint": "แตะแถวเพื่อแก้ AT/AF/Icu/ยี่ห้อ/สภาพ",
+    "editor": "CB ลูกย่อย n · AT / AF (อัตโนมัติ) / Icu / ยี่ห้อ menus, + เพิ่ม, สภาพ ดี / พอใช้ / ชำรุด, เสร็จ",
+    "rows": [
+      [
+        "400AT/400AF",
+        "36kA",
+        "Schneider",
+        "ดี"
+      ],
+      [
+        "250AT/250AF",
+        "25kA",
+        "LS",
+        "ชำรุด · ก้านโยกหัก"
+      ],
+      [
+        "100AT/100AF",
+        "?kA",
+        "ยี่ห้อ ?",
+        ""
+      ]
+    ],
+    "missing": "Icu or brand missing: red",
+    "AT": [
+      16,
+      20,
+      25,
+      32,
+      40,
+      50,
+      63,
+      80,
+      100,
+      125,
+      160,
+      200,
+      225,
+      250,
+      300,
+      320,
+      400,
+      500,
+      630,
+      800
+    ],
+    "AF": [
+      63,
+      100,
+      125,
+      160,
+      250,
+      400,
+      630,
+      800
+    ],
+    "Icu_kA": [
+      10,
+      15,
+      18,
+      25,
+      36,
+      42,
+      50,
+      65,
+      70,
+      85,
+      100
+    ]
+  },
+  "bottom": {
+    "missingPhotos": "ยังขาดภาพ: TX 1 (1) · MDP-1 (1) · TX 5 (4) · ไปต่อได้ แล้วค่อยกลับมาเติม",
+    "saved": "บันทึกร่างแล้ว"
+  },
+  "zoom": {
+    "levels": [
+      0.5,
+      0.6,
+      0.66,
+      0.8,
+      0.9,
+      1,
+      1.25,
+      1.5
+    ],
+    "default": 0.66
+  }
+}

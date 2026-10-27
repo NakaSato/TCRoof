@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "pwa-inverter-station-internal-80k",
+  "name": "Internal inverter station (EXL-LV) — MAX 80KTL3 LV",
+  "nameTh": "สถานีอินเวอร์เตอร์ภายในอาคาร (ติดผนังเดิม)",
+  "units": "mm",
+  "source": "1751d41a-Internal_Inverter_Station_EXL-LV.dxf",
+  "originNote": "frontView.xMm from grid line 1 (or first rack post for wallRack); elevationMm from finished ground to bottom of equipment",
+  "structure": {
+    "type": "wallRack",
+    "shelter": false,
+    "against": "existing wall",
+    "postsXMm": [
+      0,
+      1000,
+      2000,
+      3000,
+      4400,
+      5500
+    ],
+    "rackLengthMm": 5500,
+    "rackHeightMm": 2000,
+    "sideDepthMm": 853,
+    "foundation": "concrete-footing-200x100"
+  },
+  "equipment": [
+    {
+      "tag": "SOLAR AC-DB-01",
+      "componentId": "solar-ac-db",
+      "frontView": {
+        "xMm": 52,
+        "elevationMm": 597,
+        "widthMm": 899,
+        "heightMm": 1400
+      }
+    },
+    {
+      "tag": "SOLAR METER-DB-01",
+      "componentId": "solar-meter-db",
+      "frontView": {
+        "xMm": 1185,
+        "elevationMm": 1247,
+        "widthMm": 630,
+        "heightMm": 750
+      }
+    },
+    {
+      "tag": "SOLAR SEM-DB",
+      "componentId": "solar-sem-db",
+      "frontView": {
+        "xMm": 2185,
+        "elevationMm": 1247,
+        "widthMm": 630,
+        "heightMm": 750
+      }
+    },
+    {
+      "tag": "INVERTER No.1",
+      "componentId": "growatt-max-80ktl3-lv",
+      "frontView": {
+        "xMm": 3279,
+        "elevationMm": 1487,
+        "widthMm": 860,
+        "heightMm": 628
+      }
+    },
+    {
+      "tag": "SOLAR DC-DB-01",
+      "componentId": "solar-dc-db",
+      "frontView": {
+        "xMm": 4600,
+        "elevationMm": 997,
+        "widthMm": 700,
+        "heightMm": 1000
+      }
+    }
+  ],
+  "cableways": [
+    {
+      "componentId": "ac-cable-ladder-200x100",
+      "route": "TYPE C cabinet → injection point"
+    },
+    {
+      "componentId": "ac-perforated-tray-100x100",
+      "route": "AC-DB / METER-DB / SEM-DB interconnect"
+    },
+    {
+      "componentId": "ac-perforated-tray-200x100",
+      "route": "inverter → AC-DB (top run)"
+    },
+    {
+      "componentId": "dc-perforated-tray-100x100",
+      "route": "PV array → DC-DB"
+    }
+  ],
+  "lighting": [],
+  "existing": [
+    {
+      "componentId": "existing-type-c-cabinet"
+    }
+  ]
+}

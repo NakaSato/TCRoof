@@ -108,6 +108,7 @@ struct DailyAckCard: View {
             .buttonStyle(.plain)
             .accessibilityLabel("ล้างลายเซ็นรับทราบ")
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("dailyAckSigned")
     }
 

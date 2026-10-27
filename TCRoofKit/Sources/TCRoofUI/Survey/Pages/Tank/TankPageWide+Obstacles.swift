@@ -17,14 +17,15 @@ extension TankPageWide {
         })
     }
 
-    /// iPad: the plan card on the left and the selected point on the right; one column in portrait.
+    /// iPad (docs/ui/survey-d1-obstacles-ipad): the plan with its legend on the left, the segment and the selected point
+    /// on the right (`TankPageWide+ObstaclesPad`); one column in portrait.
     @ViewBuilder var padObstacleStep: some View {
         let next = nextButton("ถัดไป | จัดแผง ›") { withAnimation { tab = 3 } }
         if stacked {
             obstacleSheets(ScrollView {
                 VStack(spacing: 14) {
-                    AnyView(obstaclePlanCard).frame(maxWidth: 640)
-                    if !obsShade { AnyView(pointCard).frame(maxWidth: 640) }
+                    AnyView(padPointColumn).frame(maxWidth: 640)
+                    AnyView(padObstaclePlanCard).frame(maxWidth: 640)
                     next.frame(maxWidth: 640)
                 }
                 .frame(maxWidth: .infinity)
@@ -33,15 +34,15 @@ extension TankPageWide {
             .scrollIndicators(.hidden))
         } else {
             obstacleSheets(HStack(alignment: .top, spacing: gap) {
-                ScrollView { AnyView(obstaclePlanCard).frame(maxWidth: 680).frame(maxWidth: .infinity) }.scrollIndicators(.hidden)
+                ScrollView { AnyView(padObstaclePlanCard) }.scrollIndicators(.hidden)
                 ScrollView {
                     VStack(spacing: 12) {
-                        if !obsShade { AnyView(pointCard) }
+                        AnyView(padPointColumn)
                         next
                     }
                 }
                 .scrollIndicators(.hidden)
-                .frame(width: 360)
+                .frame(width: 380)
             }
             .frame(maxHeight: .infinity))
         }
@@ -181,7 +182,7 @@ extension TankPageWide {
     /// `บนหลังคา | 15 จุด` / `เงาบัง | <answer>`
     var obstacleSegment: some View {
         let n = TankPoints.points(values).count, shade = values.choice("shade")
-        let items = [(false, "บนหลังคา | \(n) จุด"), (true, "เงาบัง" + (shade.map { " | " + $0 } ?? ""))]
+        let items = [(false, "บนหลังคา | \(n) จุด"), (true, shadeSegmentText ?? "เงาบัง" + (shade.map { " | " + $0 } ?? ""))]
         return HStack(spacing: 3) {
             ForEach(items, id: \.0) { item in
                 let on = obsShade == item.0

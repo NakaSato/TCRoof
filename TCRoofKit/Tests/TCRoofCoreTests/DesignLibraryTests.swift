@@ -7,7 +7,8 @@ final class DesignLibraryTests: XCTestCase {
     var url: URL!
 
     override func setUp() {
-        url = FileManager.default.temporaryDirectory.appendingPathComponent("designs-\(UUID().uuidString).json")
+        // a folder of its own: the roof designs go to a fixed name beside the file (DesignLibrary.roofURL)
+        url = FileManager.default.temporaryDirectory.appendingPathComponent("designs-\(UUID().uuidString)/designs.json")
         DesignLibrary.shared.configure(url: url)
         DesignLibrary.shared.reset()
     }

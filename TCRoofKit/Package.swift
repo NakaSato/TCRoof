@@ -22,9 +22,10 @@ let package = Package(
     targets: [
         // raw deflate / inflate / crc32 from the system zlib (iOS SDK and Linux both ship it)
         .target(name: "CZlib", linkerSettings: [.linkedLibrary("z")]),
-        .target(name: "TCRoofCore", dependencies: ["PVYield", "ModuleRules"], resources: [.process("Resources/equipment-catalog.json"), .process("Resources/icl-site-items.json"), .process("Resources/walkway-detail.json"), .process("Resources/tank-components.json"), .process("Resources/roof-components.json"), .process("Resources/north-arrow.json"), .process("Resources/public-holidays.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
-        // PlanTemplates links to Project_Plan_TCRoof's import files (`MPTemplates`), copied in as a folder
-        .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources"), .copy("PlanTemplates")]),
+        .target(name: "TCRoofCore", dependencies: ["PVYield", "ModuleRules"], resources: [.process("Resources/equipment-catalog.json"), .process("Resources/icl-site-items.json"), .process("Resources/walkway-detail.json"), .process("Resources/tank-components.json"), .process("Resources/station-components.json"), .process("Resources/roof-components.json"), .process("Resources/north-arrow.json"), .process("Resources/public-holidays.json"), .copy("Resources/pv-modules"), .copy("Resources/PermitForms")]),
+        // PlanTemplates links to Project_Plan_TCRoof's import files (`MPTemplates`), CaseTemplates to its 20 install cases;
+        // both copied in as folders
+        .target(name: "ExcelExport", dependencies: ["TCRoofCore", "CZlib"], resources: [.process("Resources"), .copy("PlanTemplates"), .copy("CaseTemplates")]),
         .target(name: "PDFReport", dependencies: ["TCRoofCore"], resources: [.process("Resources")]),
         .target(name: "DriveSync", dependencies: ["TCRoofCore"]),
         .target(name: "TCRoofUI", dependencies: ["TCRoofCore", "ExcelExport", "PDFReport", "DriveSync", "ModuleRules"], resources: [.process("Resources")]),

@@ -179,6 +179,8 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
     /// 3P / 4P
     public var poles = ""
     public var brand = ""
+    /// รุ่น of the main breaker, split from `brand` on the iPad A3 page; empty for older jobs (their model is in `brand`).
+    public var model = ""
     public var breakers: [Breaker] = []
     public var condition = ""
     public var conditionNote = ""
@@ -202,6 +204,7 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         icu = try c.decodeIfPresent(String.self, forKey: .icu) ?? ""
         poles = try c.decodeIfPresent(String.self, forKey: .poles) ?? ""
         brand = try c.decodeIfPresent(String.self, forKey: .brand) ?? ""
+        model = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
         breakers = try c.decodeIfPresent([Breaker].self, forKey: .breakers) ?? []
         condition = try c.decodeIfPresent(String.self, forKey: .condition) ?? ""
         conditionNote = try c.decodeIfPresent(String.self, forKey: .conditionNote) ?? ""
@@ -209,6 +212,12 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         photos = try c.decodeIfPresent([Photo].self, forKey: .photos) ?? []
         busbar = try c.decodeIfPresent(String.self, forKey: .busbar) ?? ""
         ground = try c.decodeIfPresent(String.self, forKey: .ground) ?? ""
+    }
+    /// What used to be one `ยี่ห้อ / รุ่น` field: the brand, then the model when there is one. Readers that printed
+    /// `brand` print this, so their cells and labels stay where they were.
+    public var brandModel: String {
+        let b = brand.trimmingCharacters(in: .whitespaces), m = model.trimmingCharacters(in: .whitespaces)
+        return m.isEmpty ? b : b.isEmpty ? m : b + " " + m
     }
 }
 

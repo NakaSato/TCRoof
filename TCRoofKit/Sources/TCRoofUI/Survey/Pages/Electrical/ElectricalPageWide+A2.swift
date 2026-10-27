@@ -40,22 +40,40 @@ extension ElectricalPageWide {
             let linked = items.filter(\.status.isLinked).count
             let tint = conflicts > 0 ? Theme.pending : Theme.primary
             Button { showA2.toggle() } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "link").font(.system(size: 15, weight: .semibold))
-                    Text(conflicts > 0 ? "ดึงจากภาพ A2 | ต่างกัน \(conflicts)" : "ดึงจากภาพ A2 | \(linked) รายการ")
-                        .font(.sarabunFixed(narrow ? 14 : 16, .bold)).lineLimit(1)
-                    Text("▾").font(.sarabunFixed(12))
+                if narrow {
+                    HStack(spacing: 8) {
+                        Image(systemName: "link").font(.system(size: 15, weight: .semibold))
+                        Text(conflicts > 0 ? "ดึงจากภาพ A2 | ต่างกัน \(conflicts)" : "ดึงจากภาพ A2 | \(linked) รายการ")
+                            .font(.sarabunFixed(14, .bold)).lineLimit(1)
+                        Text("▾").font(.sarabunFixed(12))
+                    }
+                    .foregroundStyle(tint)
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(conflicts > 0 ? Theme.pendingSoft : Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(conflicts > 0 ? Theme.warning : Theme.primary.opacity(0.3)))
+                } else {
+                    compactA2Label(conflicts: conflicts)
                 }
-                .foregroundStyle(tint)
-                .padding(.horizontal, 14).frame(minHeight: 44)
-                .background(conflicts > 0 ? Theme.pendingSoft : Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(conflicts > 0 ? Theme.warning : Theme.primary.opacity(0.3)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("ข้อมูลที่ดึงจากภาพ A2")
+            .accessibilityLabel(narrow ? "ข้อมูลที่ดึงจากภาพ A2"
+                                : conflicts > 0 ? "ดึงจากภาพ A2 | ต่างกัน \(conflicts) รายการ" : "ดึงจากภาพ A2 | \(linked) รายการ")
             .popover(isPresented: narrow ? .constant(false) : $showA2, arrowEdge: .top) { a2Panel.frame(width: 440) }
             .sheet(isPresented: narrow ? $showA2 : .constant(false)) { a2Panel.presentationDetents([.medium, .large]) }
         }
+    }
+
+    /// iPad (docs/ui/survey-a3-ipad-v3 §1.1): `A2 ใส่จากภาพ A2`, orange with `ต่างกัน n` while values differ.
+    func compactA2Label(conflicts: Int) -> some View {
+        HStack(spacing: 8) {
+            A2Badge()
+            Text("ใส่จากภาพ A2").font(.sarabunFixed(16, .bold)).lineLimit(1)
+            if conflicts > 0 { Text("ต่างกัน \(conflicts)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.pending).lineLimit(1) }
+        }
+        .foregroundStyle(Theme.primary)
+        .padding(.horizontal, 14).frame(minHeight: 44)
+        .background(conflicts > 0 ? Theme.pendingSoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(conflicts > 0 ? Theme.warning : Theme.primary.opacity(0.35)))
     }
 
     var a2Panel: some View {

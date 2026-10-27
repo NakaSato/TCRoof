@@ -324,8 +324,8 @@ Read-only; switching view keeps the selection.
 | **Plan** | tank outline and bays, openings, panels, cut columns, row guides, posts, slope tag (§4.1) | on screen |
 | **Plan** (printed) | as above plus rails, rafters, footings, rail clamps (green), ground lug per table (red), north arrow, legend with the counts | yes, `TankDrawings.layoutPlan(structure: true)` over `TankLayout.structure` (the PDF; the counts are the BOQ's). The flagged posts of the prototype don't occur: a post that would touch an opening cuts its column instead |
 | **DXF** | D1's `ส่งออก DXF` adds the layout: layer `PV` (each panel on), `PV_GROUP` (each table's outline and a footing circle per post) | yes, `TankDXF` |
-| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, post heights 1.00 / 2.00, braces, the two modules, a vent under the panels with the clearance note | yes, `TankDrawings.tableSection` (B1-C3 sheet, PDF) |
-| **Front elevation** | one table: posts and spacing, X bracing, 4 rails, modules, footing note | yes, `TankDrawings.tableFront` (the longest table; B1-C3 sheet, PDF) |
+| **Side section** | two rows with 2.80 / 2.70 / 2.80 and the total, the rafter's heights 1.00 / 2.00 over the two lines, the back post, the front foot's V of struts and the back diagonal (the team's frame, `reference/tank-roof`), the two modules, a vent under the panels with the clearance note | yes, `TankDrawings.tableSection` (B1-C3 sheet, PDF) |
+| **Back post line elevation** (`รูปด้านแนวเสาหลัง`) | one table: back posts and spacing, X bracing in every other bay and the last, 4 rails, modules behind as hidden outlines, footing note | yes, `TankDrawings.tableFront` (the longest table; B1-C3 sheet, PDF) |
 
 Footer on all printed sheets: "สร้างอัตโนมัติจากข้อมูลสำรวจ ไม่ใช่แบบก่อสร้าง · ตรวจน้ำหนักบนพื้นหลังคาถังกับวิศวกรโครงสร้าง".
 

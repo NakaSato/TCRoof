@@ -36,8 +36,8 @@ struct InfoPageWide: View {
     static let inputRadius: CGFloat = 12
     static let columnGap: CGFloat = 20
 
-    /// The location card (720 of the design's 1240); narrower when the sidebar is open.
-    var locationWidth: CGFloat { min(720, max(360, (width - Self.columnGap) * 0.58)) }
+    /// The location card (720 of the design's 1240, so 720 of the 1220 left after the gap); narrower when the sidebar is open.
+    var locationWidth: CGFloat { min(720, max(360, (width - Self.columnGap) * 720 / 1220)) }
     /// Width of the column holding the document, project and area boxes.
     var mainWidth: CGFloat { twoColumns ? width - Self.columnGap - locationWidth : width }
     /// iPhone width: the document row splits in two and the GPS button keeps only its icon.
@@ -86,7 +86,7 @@ struct InfoPageWide: View {
     // MARK: right column
 
     var documentBox: some View {
-        A1Card(title: "เอกสาร") {
+        A1Card(title: "เอกสาร", titleWeight: .semibold) {
             // narrow (iPad portrait beside the sidebar): number and REV over date and engineer
             if phone {
                 RatioRow(weights: [1, 0.7], spacing: 10) {
@@ -109,7 +109,7 @@ struct InfoPageWide: View {
     /// Project and coordinator in one card; in landscape its rows spread over the height the column leaves
     /// (the design's `justify-content: space-between`, at least 14 apart).
     var projectCoordinatorBox: some View {
-        A1Card(title: "โครงการ | ผู้ประสานงาน", spacing: 0) {
+        A1Card(title: "โครงการ | ผู้ประสานงาน", spacing: 0, titleWeight: .semibold) {
             let gap = Spacer(minLength: 14)
             gap
             field("projectName") { textInput("projectName") }
@@ -148,7 +148,7 @@ struct InfoPageWide: View {
             HStack(spacing: 6) {
                 Text(t.isEmpty ? "เลือกวันที่" : ISODate.thai(t)).foregroundStyle(t.isEmpty ? Theme.inkMuted : Theme.navy).lineLimit(1)
                 Spacer(minLength: 4)
-                A2Icon(name: "ui-calendar", fallback: "calendar", size: compact ? 16 : 20).foregroundStyle(Theme.primary)
+                A2Icon(name: "ui-calendar", fallback: "calendar", size: compact ? 16 : 18).foregroundStyle(Theme.primary)
             }
             .inputBox(calc: calc("date"), focused: showDate, minHeight: compact ? 44 : 50, trailing: compact ? 12 : 14,
                       leading: compact ? 12 : 14, fontSize: compact ? 16 : 17, stroke: compact ? 0.35 : 0.45, radius: compact ? 10 : Self.inputRadius)
@@ -217,7 +217,7 @@ struct InfoPageWide: View {
         return HStack(spacing: 4) {
             TextField("0xx-xxx-xxxx", text: text("phone")).keyboardType(.phonePad).focused($focus, equals: "phone")
             Button { if let u = URL(string: "tel:" + digits) { openURL(u) } } label: {
-                A2Icon(name: "ui-phone", fallback: "phone", size: 20).foregroundStyle(Theme.primary).frame(width: 40, height: 44)
+                A2Icon(name: "ui-phone", fallback: "phone", size: 18).foregroundStyle(Theme.primary).frame(width: 40, height: 44)
             }
             .disabled(digits.isEmpty)
             .accessibilityLabel("โทรหาผู้ประสานงาน")
@@ -289,7 +289,8 @@ struct FieldLabel: View {
 
     @ViewBuilder var regularBody: some View {
         let important = title == nil && spec.label.hasPrefix("**")
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+        // the design's `.g-label { gap: 8px }` between the label and its `*`
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title ?? spec.label.replacingOccurrences(of: "**", with: ""))
                 .font(.sarabunFixed(17, .semibold)).lineLimit(1).minimumScaleFactor(0.75).layoutPriority(1)
             if !spec.optional { Text("*").font(.sarabunFixed(17, .semibold)).foregroundStyle(Theme.danger) }
@@ -325,12 +326,15 @@ struct A1Card<Content: View>: View {
     var spacing: CGFloat = 14
     /// Top and bottom padding (พื้นที่ติดตั้ง: 14).
     var vertical: CGFloat = 16
+    /// A1's cards are 18 semibold, as their labels (docs/ui/survey-a1-ipad-v2); A4 keeps bold.
+    var titleWeight: Font.Weight = .bold
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: spacing) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title).font(.sarabunFixed(18, .bold))
-                if required { Text("*").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.danger) }
+            // the `*` sits 8 after the title, as on the labels
+            HStack(alignment: .firstTextBaseline, spacing: required ? 8 : 6) {
+                Text(title).font(.sarabunFixed(18, titleWeight))
+                if required { Text("*").font(.sarabunFixed(18, titleWeight)).foregroundStyle(Theme.danger) }
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).font(.footnote).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8) }
             }

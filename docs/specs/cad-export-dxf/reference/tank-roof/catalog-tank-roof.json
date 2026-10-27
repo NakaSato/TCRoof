@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "units": "mm",
+  "extends": "catalog.json",
+  "generatedFrom": [
+    "Top.dxf",
+    "Back_Side.dxf",
+    "Side_View.dxf"
+  ],
+  "layouts": [
+    "roofs/pwa-tank-roof-40x26-240.json"
+  ],
+  "components": [
+    {
+      "id": "inverter-symbol-plan",
+      "kind": "annotation",
+      "name": "Inverter location symbol",
+      "views": {
+        "plan": {
+          "svg": "svg/inverter-symbol-plan-plan.svg",
+          "dxfBlock": "TCR_INVERTER_SYMBOL_PLAN_PLAN",
+          "bboxMm": {
+            "width": 1938,
+            "height": 1938
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "G$C144A2F4D"
+          }
+        }
+      }
+    },
+    {
+      "id": "tank-roof-hatch-1000",
+      "kind": "existing",
+      "name": "Tank roof hatch 1000 x 1000",
+      "nameTh": "ฝาช่องเปิดหลังคาถัง",
+      "dimensionsMm": {
+        "width": 1000,
+        "depth": 1000
+      },
+      "notes": "Existing; keep clear. Drawn as plain 1 m squares (grey) on the roof-outline layer; hatch vs. manhole not labelled.",
+      "views": {
+        "plan": {
+          "svg": "svg/tank-roof-hatch-1000-plan.svg",
+          "dxfBlock": "TCR_TANK_ROOF_HATCH_1000_PLAN",
+          "bboxMm": {
+            "width": 1000,
+            "height": 1000
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "LWPOLYLINE colour 8 on 'กรอบหลังคา'"
+          }
+        }
+      }
+    },
+    {
+      "id": "tank-roof-vent-1600",
+      "kind": "existing",
+      "name": "Tank roof vent D1600",
+      "nameTh": "ช่องระบายอากาศหลังคาถัง",
+      "dimensionsMm": {
+        "diameter": 1600
+      },
+      "notes": "Existing; four circles R800 on the roof-outline layer, unlabelled (vent/ventilator assumed).",
+      "views": {
+        "plan": {
+          "svg": "svg/tank-roof-vent-1600-plan.svg",
+          "dxfBlock": "TCR_TANK_ROOF_VENT_1600_PLAN",
+          "bboxMm": {
+            "width": 1600,
+            "height": 1600
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "CIRCLE colour 8 on 'กรอบหลังคา'"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-mount-strut-foot-ag5-b03",
+      "kind": "mounting",
+      "name": "Front strut foot bracket AG5-B03",
+      "nameTh": "ขายึดฐานค้ำยันด้านหน้า AG5-B03",
+      "dimensionsMm": {
+        "width": 115,
+        "height": 85
+      },
+      "notes": "Supplier block 'AG5-B03'; base of the two front struts.",
+      "views": {
+        "elevation": {
+          "svg": "svg/pv-mount-strut-foot-ag5-b03-elevation.svg",
+          "dxfBlock": "TCR_PV_MOUNT_STRUT_FOOT_AG5_B03_ELEVATION",
+          "bboxMm": {
+            "width": 115,
+            "height": 85
+          },
+          "source": {
+            "file": "Side_View.dxf",
+            "block": "AG5-B03"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-mount-rail-48",
+      "kind": "mounting",
+      "name": "PV module rail 48 wide (plan, 1000 module)",
+      "nameTh": "รางยึดแผง กว้าง 48 มม.",
+      "dimensionsMm": {
+        "width": 48
+      },
+      "lengthsDrawnMm": [
+        9512,
+        18744,
+        23360
+      ],
+      "notes": "Drawn 48.1 wide. 2 per module column, 1400 apart, 400 in from the module edges. Run length = rows x 1154 pitch + overhang.",
+      "views": {
+        "plan": {
+          "svg": "svg/pv-mount-rail-48-plan.svg",
+          "dxfBlock": "TCR_PV_MOUNT_RAIL_48_PLAN",
+          "bboxMm": {
+            "width": 1000,
+            "height": 48
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "LWPOLYLINE colour 2 on 'MT PV Tank'"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-mount-x-bracing",
+      "kind": "mounting",
+      "name": "PV mounting X-bracing (one bay)",
+      "nameTh": "ค้ำยันไขว้ 1 ช่วงเสา",
+      "dimensionsMm": {
+        "bay": 2700,
+        "lowNode": 376,
+        "highNode": 1890,
+        "planMemberWidth": 40,
+        "planPairCentres": 152,
+        "planLength": 2747
+      },
+      "notes": "Plan shows the two diagonals as 40-wide members 152 c/c; elevation shows an X between posts from z=376 to 1890, in alternate bays on one post line. Member section not labelled.",
+      "views": {
+        "elevation": {
+          "svg": "svg/pv-mount-x-bracing-elevation.svg",
+          "dxfBlock": "TCR_PV_MOUNT_X_BRACING_ELEVATION",
+          "bboxMm": {
+            "width": 2781,
+            "height": 1514
+          },
+          "source": {
+            "file": "Back_Side.dxf",
+            "block": "*U6"
+          }
+        },
+        "plan": {
+          "svg": "svg/pv-mount-bracing-pair-plan.svg",
+          "dxfBlock": "TCR_PV_MOUNT_BRACING_PAIR_PLAN",
+          "bboxMm": {
+            "width": 192,
+            "height": 1000
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "LWPOLYLINE colour 4 on 'MT PV Tank'"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-mount-frame",
+      "kind": "mounting",
+      "name": "PV mounting frame, 15 deg, 2 modules portrait",
+      "nameTh": "โครงขาตั้งแผง เอียง 15 องศา",
+      "tiltDeg": 15.0,
+      "postLineSpacingMm": 2800,
+      "baysAlongYMm": 2700,
+      "members": {
+        "rafter": {
+          "lengthMm": 4000
+        },
+        "rearPost": {
+          "heightFromSlabMm": 1998
+        },
+        "struts": [
+          {
+            "lengthMm": 2038,
+            "from": "rear foot"
+          },
+          {
+            "lengthMm": 1396,
+            "from": "front foot"
+          },
+          {
+            "lengthMm": 1148,
+            "from": "front foot"
+          }
+        ]
+      },
+      "modulesPerFrame": 2,
+      "moduleLowEdgeZMm": 985,
+      "moduleTopEdgeZMm": 2247,
+      "footings": "2 x concrete-topping-300x300x150",
+      "notes": "Assembled from Side_View.dxf. Member sections and connection hardware are not labelled.",
+      "views": {
+        "section": {
+          "svg": "svg/pv-mount-frame-section.svg",
+          "dxfBlock": "TCR_PV_MOUNT_FRAME_SECTION",
+          "bboxMm": {
+            "width": 4434,
+            "height": 2247
+          },
+          "source": {
+            "file": "Side_View.dxf",
+            "block": "*U11 *U13 *U15 *U17 *U21 AG5-B03 G$C519ED97B A$C72243465"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-mount-rafter-4000",
+      "kind": "mounting",
+      "name": "PV mounting rafter 4000 (plan)",
+      "nameTh": "คานรับรางแผง ยาว 4.0 ม.",
+      "dimensionsMm": {
+        "length": 4000,
+        "planLengthDrawn": 4000,
+        "width": 50
+      },
+      "notes": "True length 4000 at 15 deg (Side_View); high end z=2091, low end z=1055, 457 overhang past the front strut. Plan also draws it 4000 (not projected).",
+      "views": {
+        "plan": {
+          "svg": "svg/pv-mount-rafter-4000-plan.svg",
+          "dxfBlock": "TCR_PV_MOUNT_RAFTER_4000_PLAN",
+          "bboxMm": {
+            "width": 4000,
+            "height": 50
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "LWPOLYLINE colour 1 on 'MT PV Tank'"
+          }
+        },
+        "section": {
+          "svg": "svg/pv-mount-frame-section.svg",
+          "dxfBlock": "TCR_PV_MOUNT_FRAME_SECTION",
+          "bboxMm": {
+            "width": 4434,
+            "height": 2247
+          },
+          "source": {
+            "file": "Side_View.dxf",
+            "block": "*U11 + struts + feet"
+          }
+        }
+      },
+      "tiltDeg": 15.0
+    },
+    {
+      "id": "pv-mount-post-300",
+      "kind": "mounting",
+      "name": "PV mounting support point, 300 base plate (plan)",
+      "nameTh": "เสาขาตั้งโครงแผงพร้อมเพลทฐาน 300",
+      "dimensionsMm": {
+        "width": 300,
+        "depth": 300
+      },
+      "basePlateMm": {
+        "width": 299,
+        "depth": 299
+      },
+      "cleatMm": {
+        "width": 150,
+        "depth": 112,
+        "cornerRadius": 15,
+        "slots": {
+          "count": 2,
+          "widthMm": 14,
+          "lengthMm": 49,
+          "spacingMm": 114
+        }
+      },
+      "columnMm": {
+        "note": "two 50 x 50 boxes with a 12 gap between flanges at ±22 / ±26; reads as 2 x C-channel back-to-back, section not labelled",
+        "elevationWidth": 50
+      },
+      "notes": "Plan symbol G$C91944CF8 marks every support point: on the rear (high) line it is a vertical post 1998 from slab (AG2-B02 foot), on the front line a single foot (AG5-B03) carrying two struts. Inserted at 270 deg; mirrored on TF/TG. Both sit on 300x300x150 concrete toppings.",
+      "views": {
+        "plan": {
+          "svg": "svg/pv-mount-post-300-plan.svg",
+          "dxfBlock": "TCR_PV_MOUNT_POST_300_PLAN",
+          "bboxMm": {
+            "width": 299,
+            "height": 299
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "G$C91944CF8"
+          }
+        },
+        "elevation": {
+          "svg": "svg/pv-mount-post-elevation.svg",
+          "dxfBlock": "TCR_PV_MOUNT_POST_ELEVATION",
+          "bboxMm": {
+            "width": 50,
+            "height": 1851
+          },
+          "source": {
+            "file": "Back_Side.dxf",
+            "block": "LWPOLYLINE colour 7"
+          }
+        }
+      },
+      "heightMm": {
+        "rearPostFromSlab": 1998,
+        "rearPostAboveTopping": 1851,
+        "sources": [
+          "Side_View.dxf",
+          "Back_Side.dxf"
+        ]
+      }
+    },
+    {
+      "id": "pv-mount-foot-bracket-ag2-b02",
+      "kind": "mounting",
+      "name": "Post foot bracket AG2-B02",
+      "nameTh": "ขายึดฐานเสา AG2-B02",
+      "dimensionsMm": {
+        "width": 153,
+        "height": 85
+      },
+      "notes": "Supplier block named 'AG2-B02正视图' (front view); inserted at 0.001 (source in mm). Matches the 150x112 slotted cleat in plan.",
+      "views": {
+        "elevation": {
+          "svg": "svg/pv-mount-foot-bracket-ag2-b02-elevation.svg",
+          "dxfBlock": "TCR_PV_MOUNT_FOOT_BRACKET_AG2_B02_ELEVATION",
+          "bboxMm": {
+            "width": 153,
+            "height": 85
+          },
+          "source": {
+            "file": "Back_Side.dxf",
+            "block": "AG2-B02正视图"
+          }
+        }
+      }
+    },
+    {
+      "id": "pv-module-plan-2199x1134",
+      "kind": "pvModule",
+      "name": "PV module (plan, as drawn 2199 x 1134)",
+      "moduleSpec": "components/modules/znshine-zxm7-uhldd144-570.json",
+      "dimensionsMm": {
+        "width": 2199,
+        "depth": 1134
+      },
+      "notes": "Drawn 2199 x 1134 in plan = 2280 x cos 15 deg; ZXM7-UHLDD144 is 2278 x 1134. Portrait, 2 up the slope.",
+      "views": {
+        "plan": {
+          "svg": "svg/pv-module-plan-2199x1134-plan.svg",
+          "dxfBlock": "TCR_PV_MODULE_PLAN_2199X1134_PLAN",
+          "bboxMm": {
+            "width": 2199,
+            "height": 1134
+          },
+          "source": {
+            "file": "Top.dxf",
+            "block": "LWPOLYLINE on 'PV'"
+          }
+        }
+      }
+    },
+    {
+      "id": "concrete-topping-300x300x150",
+      "kind": "structure",
+      "name": "Concrete topping 300x300x150",
+      "nameTh": "ฐานคอนกรีตทับหน้า 300x300x150",
+      "dimensionsMm": {
+        "width": 300,
+        "depth": 300,
+        "height": 150
+      },
+      "notes": "Labelled 'CONCRETE TOPPING 300X300X150 mm.' under every post; cast on the tank roof slab.",
+      "views": {
+        "elevation": {
+          "svg": "svg/concrete-topping-300x300x150-elevation.svg",
+          "dxfBlock": "TCR_CONCRETE_TOPPING_300X300X150_ELEVATION",
+          "bboxMm": {
+            "width": 300,
+            "height": 150
+          },
+          "source": {
+            "file": "Back_Side.dxf",
+            "block": "LWPOLYLINE colour 256 + HATCH"
+          }
+        }
+      }
+    }
+  ]
+}

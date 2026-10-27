@@ -3,15 +3,15 @@ import XCTest
 
 /// C1's walkways drawn as the team's walkway detail, and the detail sheet beside the PV plan.
 final class RoofWalkwayTests: XCTestCase {
-    let t = SketchDXFTests()
+    let t = DXFRead()
     func roof(every n: Int) -> Values {
-        var v = RoofDXFTests().roof()
+        var v = RoofDXFTests.roof()
         var c = RoofMount.choice(v); c.walkwayEvery = n; RoofMount.setChoice(&v, c)
         return v
     }
 
     func roofCentre() -> Values {
-        var v = RoofDXFTests().roof()
+        var v = RoofDXFTests.roof()
         var c = RoofMount.choice(v); c.walkwayCentre = true; RoofMount.setChoice(&v, c)
         return v
     }
@@ -41,7 +41,7 @@ final class RoofWalkwayTests: XCTestCase {
             XCTAssertEqual(w.v1, f.face.slopeLength - RoofWalkway.band / 2, accuracy: 1e-6, "it meets the ridge walkway")
         }
         // older choices without it keep their digest; the DXF draws it with the detail
-        XCTAssertFalse(RoofMount.choice(RoofDXFTests().roof()).walkwayCentre)
+        XCTAssertFalse(RoofMount.choice(RoofDXFTests.roof()).walkwayCentre)
         // and one walkway along the ridge, centred on it, from the access landing at its left end (by default) to 0.50 m
         // in from the other; the modules keep clear of its band
         let ridge = try XCTUnwrap(ws.filter(\.ridge).first)
@@ -80,7 +80,7 @@ final class RoofWalkwayTests: XCTestCase {
         let lastWalk = try XCTUnwrap(p.tags.lastIndex(of: "walkway")), firstLabel = try XCTUnwrap(p.tags.firstIndex(of: "facelabel"))
         XCTAssertLessThan(lastWalk, firstLabel)
         // without walkways: none, and the plan as before
-        let plain = RoofDXFTests().roof()
+        let plain = RoofDXFTests.roof()
         let q = RoofPlan(plain, mode: .pv, mount: RoofMount.layout(plain, latitude: 15).layout)
         XCTAssertFalse(q.tags.contains("walkway")); XCTAssertFalse(q.tags.contains("access"))
         // the CAD export draws its own, so the plan's are left out of it
@@ -124,7 +124,7 @@ final class RoofWalkwayTests: XCTestCase {
         let e = RoofMount.layout(roof(every: 3), latitude: 15).layout.quantities.walkway
         XCTAssertEqual(e.ladders, 1); XCTAssertEqual(e.cagedLadders, 0)
         // none without walkways, and no line
-        let plain = RoofDXFTests().roof()
+        let plain = RoofDXFTests.roof()
         XCTAssertEqual(RoofMount.layout(plain, latitude: 15).layout.quantities.walkway, RoofWalkwayQuantities([]))
         XCTAssertEqual(RoofMount.walkwayLine(RoofMount.layout(plain, latitude: 15).layout.quantities), "")
     }

@@ -48,15 +48,35 @@ public struct TankComponents: Decodable, Sendable {
     public static let modulePlanDrawn = (w: 0.992, h: 1.956)
 
     /// The members drawn as closed polylines (stretched in CAD by their grips): post, rafter and brace widths (m), and
-    /// where the braces meet the rafter (m along it from the front / back post), measured on the team's section 1:
-    /// the front brace 0.565 m up from the low post, the back brace 1.40 m down from the high post, and the outer strut
-    /// from the low post's foot to the rafter 0.60 m past the post.
+    /// where the struts meet the rafter (m along it from the front line / the back post), measured on the team's
+    /// section 1 (and `Side_View.dxf`'s nodes 1.40 / 1.00 / 1.10): the V's inner leg 0.565 m up from the front line,
+    /// the back diagonal 1.40 m down from the post, the V's outer leg 0.60 m down past the front line.
     public static let post = 0.05, rafter = 0.075, brace = 0.045, braceFront = 0.565, braceBack = 1.40, strutReach = 0.60
-    /// The rafter past the front (low) post and past the back (high) post, along it: 0.82 + 2.90 + 0.28 = 4.00 m on the
+    /// The rafter past the front (low) line and past the back (high) post, along it: 0.82 + 2.90 + 0.28 = 4.00 m on the
     /// team's section; kept 0.05 m inside the modules where a layout's modules end sooner.
     public static let rafterFront = 0.82, rafterBack = 0.28
     /// The module drawing's own length: the block is stretched along the slope to the layout's module.
     public static let moduleDrawn = 2.28
+    /// The X bracing on the back post line between the team's nodes (`Back_Side.dxf`): 0.376 m above the slab and
+    /// 0.108 m under the post's top (1.890 on their 1.998 m post).
+    public static let xLow = 0.376, xBelowTop = 0.108
+    public static func xHigh(_ p: TankLayout.Params) -> Double { max(xLow + 0.2, p.hBack - xBelowTop) }
+
+    /// The team's frame (reference/tank-roof `Side_View.dxf`, section 1): one vertical post on the back (high) line;
+    /// on the front (low) line one foot carrying a V of two struts, its inner leg to the rafter `braceFront` up the slope
+    /// and its outer leg `strutReach` down it; a diagonal from the back post's foot to the rafter `braceBack` down from
+    /// the post. Distances along the rafter's underside from where it passes over the front line (up the slope +), with
+    /// the rafter's own ends, kept 0.05 m inside the modules where a layout's modules end sooner.
+    public struct Frame: Sendable {
+        public var rafter: (Double, Double)
+        public var inner, outer, back: Double
+    }
+    public static func frame(_ p: TankLayout.Params) -> Frame {
+        let along = p.postDY / cos(p.tilt * .pi / 180)
+        let lowEdge = -p.frontOver, highEdge = lowEdge + 2 * p.moduleL + p.moduleGap
+        let r0 = max(-rafterFront, lowEdge + 0.05), r1 = min(along + rafterBack, highEdge - 0.05)
+        return Frame(rafter: (r0, r1), inner: braceFront, outer: max(-strutReach, r0 + 0.05), back: along - braceBack)
+    }
 
     /// Defines every component's block once (an identical body is reused), or only those of `only`, and returns the
     /// names.
@@ -101,31 +121,31 @@ public struct TankComponents: Decodable, Sendable {
         dxf.polyline(l, [(a.0 + nx, a.1 + ny), (b.0 + nx, b.1 + ny), (b.0 - nx, b.1 - ny), (a.0 - nx, a.1 - ny)], closed: true)
     }
 
-    /// The module rows' section from the components (the tank DXF's row section), `o` the first row's front post at the
-    /// roof: per post the concrete topping and the side base on the slab and the post up to the rafter; the rafter along
-    /// the tilt over the post tops; the two braces; and the two modules with their rail clamps on the rafter.
+    /// The module rows' section from the components (the tank DXF's row section), `o` the first row's front line at
+    /// the roof, as the team's frame (`frame`): on both lines the concrete topping, the side base and the M12; the back
+    /// post up to the rafter; the rafter along the tilt; the front foot's V of two struts and the back diagonal; and the
+    /// two modules with their rail clamps on the rafter.
     public func rowSection(_ dxf: inout SketchDXF, _ p: TankLayout.Params, origin o: (Double, Double)) {
-        let t = p.tilt * .pi / 180, c = cos(t), s = sin(t), T = Self.self
-        let along = p.postDY / c
+        let t = p.tilt * .pi / 180, c = cos(t), s = sin(t), T = Self.self, f = T.frame(p)
         for row in 0..<2 {
             let x0 = o.0 + Double(row) * p.rowPitch
             // the rafter's underside runs through the post tops
             let top = (x0, o.1 + p.hFront)
             func under(_ d: Double) -> (Double, Double) { (top.0 + d * c, top.1 + d * s) }
             func over(_ d: Double) -> (Double, Double) { let q = under(d); return (q.0 - T.rafter * s, q.1 + T.rafter * c) }
-            for (x, h) in [(x0, p.hFront), (x0 + p.postDY, p.hBack)] {
+            let xb = x0 + p.postDY
+            for x in [x0, xb] {
                 insert(&dxf, "topping", at: (x, o.1))
                 insert(&dxf, "base_side", at: (x, o.1))
                 insert(&dxf, "anchor_m12", at: (x, o.1))
-                dxf.polyline(CADLayers.pvTable, [(x - T.post / 2, o.1 + 0.15), (x + T.post / 2, o.1 + 0.15), (x + T.post / 2, o.1 + h), (x - T.post / 2, o.1 + h)], closed: true)
             }
-            let lowEdge = -p.frontOver, highEdge = lowEdge + 2 * p.moduleL + p.moduleGap
-            let r0 = max(-T.rafterFront, lowEdge + 0.05), r1 = min(along + T.rafterBack, highEdge - 0.05)
-            dxf.polyline(CADLayers.pvRafter, [under(r0), under(r1), over(r1), over(r0)], closed: true)
-            T.member(&dxf, CADLayers.pvBrace, (x0 + T.post, o.1 + 0.15), under(T.braceFront), width: T.brace)
-            T.member(&dxf, CADLayers.pvBrace, (x0 + p.postDY - T.post, o.1 + 0.15), under(along - T.braceBack), width: T.brace)
-            // the outer strut, from the low post's foot out to the rafter (inside its end)
-            T.member(&dxf, CADLayers.pvBrace, (x0 - T.post, o.1 + 0.15), under(max(-T.strutReach, r0 + 0.05)), width: T.brace)
+            dxf.polyline(CADLayers.pvTable, [(xb - T.post / 2, o.1 + 0.15), (xb + T.post / 2, o.1 + 0.15), (xb + T.post / 2, o.1 + p.hBack),
+                                             (xb - T.post / 2, o.1 + p.hBack)], closed: true)
+            dxf.polyline(CADLayers.pvRafter, [under(f.rafter.0), under(f.rafter.1), over(f.rafter.1), over(f.rafter.0)], closed: true)
+            // the V from the one front foot (no post there), and the back diagonal from the post's foot
+            T.member(&dxf, CADLayers.pvBrace, (x0 + T.brace / 2, o.1 + 0.15), under(f.inner), width: T.brace)
+            T.member(&dxf, CADLayers.pvBrace, (x0 - T.brace / 2, o.1 + 0.15), under(f.outer), width: T.brace)
+            T.member(&dxf, CADLayers.pvBrace, (xb - T.post, o.1 + 0.15), under(f.back), width: T.brace)
             // the two modules up the slope, each stretched to the layout's module length
             for m in 0..<2 {
                 let d = -p.frontOver + Double(m) * (p.moduleL + p.moduleGap)
@@ -134,19 +154,20 @@ public struct TankComponents: Decodable, Sendable {
         }
     }
 
-    /// The table's front elevation from the components, `o` its west end at the roof and `xs` its post pairs along it:
-    /// per post the topping and the front base on the slab and the front post up to its top, and the X bracing in every
-    /// bay as members.
+    /// The table's back post line elevation from the components, `o` its west end at the roof and `xs` its post pairs
+    /// along it: per post the topping and the front view of its base (AG2-B02) on the slab and the back post up to its
+    /// top, and the X bracing as members in the bays the team braces (`TankLayout.bracedBays`), between their nodes.
     public func frontElevation(_ dxf: inout SketchDXF, _ p: TankLayout.Params, posts xs: [Double], origin o: (Double, Double)) {
         let T = Self.self
         for x in xs {
             insert(&dxf, "topping", at: (o.0 + x, o.1))
             insert(&dxf, "base_front", at: (o.0 + x, o.1))
             dxf.polyline(CADLayers.pvTable, [(o.0 + x - T.post / 2, o.1 + 0.15), (o.0 + x + T.post / 2, o.1 + 0.15),
-                                             (o.0 + x + T.post / 2, o.1 + p.hFront), (o.0 + x - T.post / 2, o.1 + p.hFront)], closed: true)
+                                             (o.0 + x + T.post / 2, o.1 + p.hBack), (o.0 + x - T.post / 2, o.1 + p.hBack)], closed: true)
         }
-        for (a, b) in zip(xs, xs.dropFirst()) {
-            let lo = o.1 + 0.25, hi = o.1 + p.hFront - 0.1
+        for i in TankLayout.bracedBays(max(0, xs.count - 1)) {
+            let a = xs[i], b = xs[i + 1]
+            let lo = o.1 + T.xLow, hi = o.1 + T.xHigh(p)
             T.member(&dxf, CADLayers.pvBrace, (o.0 + a + T.post, lo), (o.0 + b - T.post, hi), width: 0.04)
             T.member(&dxf, CADLayers.pvBrace, (o.0 + a + T.post, hi), (o.0 + b - T.post, lo), width: 0.04)
         }

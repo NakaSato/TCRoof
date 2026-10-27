@@ -8,7 +8,8 @@ import ExcelExport
 /// this station's own (by its code, else its name) and searchable by code, station or สาขา, HV / LV and size. It goes on the
 /// job as an import of that file would (`MPWorkbookFlow.install`): kept with the file's dates and progress
 /// (`ใช้วันและความคืบหน้าตามไฟล์`), or moved to a kickoff with no progress; booked progress stays under the new weights, and the
-/// file becomes the station's plan workbook for export.
+/// file becomes the station's plan workbook for export. The station's own file also fills the project facts it leaves
+/// empty (`ProjectSetup`: สาขา, Inverter, กันย้อน, PPIM, วิศวกร, ผรม. …); another station's gives none.
 struct MPTemplateSheet: View {
     @Bindable var job: Job
     /// The kickoff and size the setup sheet has so far.
@@ -90,9 +91,9 @@ struct MPTemplateSheet: View {
                             Text("เลือกสถานีด้านบน").foregroundStyle(Theme.inkMuted)
                         }
                     } footer: {
-                        if job.scheduleInput != nil {
-                            Text("แทนแผน MP เดิมของสถานีนี้ ความก้าวหน้าที่บันทึกไว้คงอยู่ตามน้ำหนักใหม่")
-                        }
+                        Text([job.scheduleInput != nil ? "แทนแผน MP เดิมของสถานีนี้ ความก้าวหน้าที่บันทึกไว้คงอยู่ตามน้ำหนักใหม่" : nil,
+                              pickedID != nil && pickedID == own ? "ข้อมูลโครงการที่ยังว่าง (สาขา Inverter กันย้อน PPIM วิศวกร ผรม.) เติมตามไฟล์ของสถานี" : nil]
+                            .compactMap { $0 }.joined(separator: "\n"))
                     }
                 }
             }
@@ -162,7 +163,10 @@ struct MPTemplateSheet: View {
             defer { working = false }
             do {
                 let r = try await Task.detached { try MPTemplates.plan(c, kickoff: keep ? nil : kickoff) }.value
-                MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP \(job.stationName) (\(keep ? "" : "แม่แบบ ")\(c.id)).xlsx", on: job)
+                // the station's own file fills its empty project facts; another station's are not this one's
+                let setup = c.id == own ? ProjectSetup.defaultFields(job.setupChanges(r.imported.setup)) : []
+                MPWorkbookFlow.install(r.imported, data: r.data, name: "แผนงาน MP \(job.stationName) (\(keep ? "" : "แม่แบบ ")\(c.id)).xlsx",
+                                       on: job, setup: setup)
                 try? context.save()
                 if let new = job.scheduleInput { applied(new) }
                 dismiss()

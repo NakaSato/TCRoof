@@ -274,11 +274,11 @@ struct MPSetupSheet: View {
                 }
                 PadSection("แม่แบบโครงการ") {
                     Button { choosingTemplate = true } label: {
-                        Label("เริ่มจากแม่แบบ (20 กรณีติดตั้ง)", systemImage: "doc.on.doc")
+                        Label("เริ่มจากแม่แบบ (แผนของ 102 สถานี)", systemImage: "doc.on.doc")
                     }
                     .accessibilityIdentifier("mpSetup.template")
                 } footer: {
-                    Text("แผนตามประเภทหน้างาน กันย้อน และขนาด inverter เลื่อนตามวัน Kick off")
+                    Text("แผนจากไฟล์ของสถานีเอง (วันและความคืบหน้าตามไฟล์) หรือของสถานีอื่นเลื่อนตามวัน Kick off")
                 }
                 if input.fixed != nil {
                     PadSection("แผนจากไฟล์ Excel") {
@@ -336,7 +336,11 @@ struct MPSetupSheet: View {
                 }
             }
             .sheet(isPresented: $choosingTemplate) {
-                MPTemplateSheet(job: job, input: input) { input = $0 }
+                MPTemplateSheet(job: job, input: input) { new in
+                    input = new
+                    // the station's own file may have filled the job's inverter size: the form's copy follows, so saving keeps it
+                    if inverterKW == nil { inverterKW = job.inverterKW }
+                }
             }
             .navigationTitle(job.scheduleInput == nil ? "สร้างแผน MP" : "ตั้งค่าแผน MP")
             .navigationBarTitleDisplayMode(.inline)

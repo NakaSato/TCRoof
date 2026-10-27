@@ -20,7 +20,9 @@ final class WBSTicksExcelTests: XCTestCase {
         let real = try Data(contentsOf: XCTUnwrap(MPTemplates.cases().first { $0.id == "P3-001" }).url)
         let file = try MPWorkbook.read(real)
         XCTAssertTrue(file.wbsDone.contains("1.1"), "Kick Off is done")
-        XCTAssertEqual(file.wbsDone.count, 15)
+        // 15 rows of the list, and the Inverter station's 6 steps in its own table's `เสร็จ (Y)`
+        XCTAssertEqual(file.wbsDone.count, 21)
+        XCTAssertEqual(file.wbsDone.filter { $0.hasPrefix("2.5.1.") }.count, 6)
     }
 
     func testTicksGoIntoTheSheetAndComeBack() throws {
@@ -29,16 +31,16 @@ final class WBSTicksExcelTests: XCTestCase {
         XCTAssertEqual(file.wbsDone, [])
         XCTAssertEqual(file.wbsBase ?? [], [], "nothing ticked at the clearing export")
 
-        // the Inverter station table's rows have no เสร็จ cells: 2.5.1.2's tick stays in the app, out of the record
+        // the Inverter station table's step goes into that table's `เสร็จ (Y)`, which has no date column
         let ticks = ["2.1.1": MasterSchedule.WBSTick(by: "a@tcroof.test", at: day(7)),
                      "2.2.3": MasterSchedule.WBSTick(by: "b@tcroof.test", at: day(9)),
                      "2.5.1.2": MasterSchedule.WBSTick(by: "b@tcroof.test", at: day(9))]
         let out = try MPWorkbook.export(original, input: file.input, actual: file.actual, ticks: ticks)
-        XCTAssertEqual(out.changedCells, 4, "a Y and a date per row")
+        XCTAssertEqual(out.changedCells, 5, "a Y and a date per row of the list, a Y for the station's step")
         let back = try MPWorkbook.read(out.data)
-        XCTAssertEqual(back.wbsDone, ["2.1.1", "2.2.3"])
+        XCTAssertEqual(back.wbsDone, ["2.1.1", "2.2.3", "2.5.1.2"])
         XCTAssertEqual(back.wbsDoneDates, ["2.1.1": day(7), "2.2.3": day(9)])
-        XCTAssertEqual(back.wbsBase, ["2.1.1", "2.2.3"])
+        XCTAssertEqual(back.wbsBase, ["2.1.1", "2.2.3", "2.5.1.2"])
         XCTAssertEqual(back.input, file.input, "the plan is as it was")
         XCTAssertEqual(back.wbs.count, file.wbs.count)
 

@@ -35,24 +35,24 @@ public enum TankDXF {
         // the panel layout is in tank metres from the same corner (TankLayoutPlan draws it on the plan's frame)
         if let l = TankLayout.current(v) {
             func p(_ x: Double, _ y: Double) -> (Double, Double) { (x, TH - y) }
+            let m = moduleBlock(&dxf, l.params)
             for t in l.builtTables {
                 dxf.polyline(pvGroup, [p(t.x, t.y), p(t.x + t.w, t.y), p(t.x + t.w, t.y + t.h), p(t.x, t.y + t.h)], closed: true)
-                // each module an INSERT of one block per size on plan (its lower-left corner the base point)
+                // each module an INSERT of the team's module block (`moduleBlock`), turned where the slope runs up the plan
                 for q in t.panels where q.on {
-                    let name = String(format: "PV_MODULE_%.0fx%.0f", q.w * 1000, q.h * 1000)
-                    // a WIPEOUT under the outline hides the beams and grid the module covers, as on the printed plan
-                    // with the team's PV panel block inside (TK_MODULE_PLAN, its cells), stretched to this module
-                    let panel = TankComponents.shared.flatMap { c -> String? in c.define(&dxf); return TankComponents.names["module_plan"]?.block }
-                    dxf.block(name) { d in
-                        let r = [(0.0, 0.0), (q.w, 0), (q.w, q.h), (0, q.h)]
-                        d.wipeout(pv, r)
-                        if let panel {
-                            d.insert(pv, panel, at: (0, 0), xScale: q.w / TankComponents.modulePlanDrawn.w, yScale: q.h / TankComponents.modulePlanDrawn.h)
-                        } else {
-                            d.polyline(pv, r, closed: true)
+                    let (a, b) = (p(q.x, q.y + q.h), p(q.x + q.w, q.y + q.h))
+                    if abs(q.w - m.length) < 1e-3 && abs(q.h - m.width) < 1e-3 {
+                        dxf.insert(pv, m.name, at: a)
+                    } else if abs(q.h - m.length) < 1e-3 && abs(q.w - m.width) < 1e-3 {
+                        dxf.insert(pv, m.name, at: b, rotation: 90)
+                    } else {
+                        // a module of another size (none today): a frame on its WIPEOUT of its own size
+                        let name = dxf.block(String(format: "PV_MODULE_%.0fx%.0f", q.w * 1000, q.h * 1000)) { d in
+                            let r = [(0.0, 0.0), (q.w, 0), (q.w, q.h), (0, q.h)]
+                            d.wipeout(pv, r); d.polyline(pv, r, closed: true)
                         }
+                        dxf.insert(pv, name, at: a)
                     }
-                    dxf.insert(pv, name, at: p(q.x, q.y + q.h))
                 }
                 for q in t.posts { dxf.circle(pvGroup, p(q.x, q.y), r: l.params.footing / 2) }
             }
@@ -118,6 +118,24 @@ public enum TankDXF {
         // under them, the footing details (plan and DETAIL 1) at 1:10
         if let comps, let params { comps.details(&dxf, origin: (0, top), footing: params.footing) }
         return dxf.output
+    }
+
+    /// The module on plan as the team's `PV_570W.dxf` (reference/) draws it: one block `PV_<W>W` (`PV_570W`), a frame on
+    /// a WIPEOUT that hides the beams and grid under it, its lower-left corner the base point, the slope along x. Its
+    /// size is the layout's module projected on plan: the length down the slope times cos(tilt) by the width (2.278 m
+    /// at 15° → 2.200 × 1.134, the team's block 2.199 × 1.134), so a module's block measures what it covers on the
+    /// roof.
+    static func moduleBlock(_ dxf: inout SketchDXF, _ p: TankLayout.Params) -> (name: String, length: Double, width: Double) {
+        let L = p.cellH, W = p.cellW
+        let name = dxf.block(String(format: "PV_%.0fW", p.moduleKW * 1000)) { d in
+            // to a micrometre, so the frame measures the module exactly
+            d.fine = true
+            let r = [(0.0, 0.0), (L, 0), (L, W), (0, W)]
+            d.wipeout(pv, r)
+            d.polyline(pv, r, closed: true)
+            d.fine = false
+        }
+        return (name, L, W)
     }
 
     /// The post base the team draws at every post (their mounting plan's block): the footing square, the base plate and

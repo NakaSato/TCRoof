@@ -261,6 +261,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   rafter's height over the front line). Their drawing's own conflicts (rafter drawn 4000 on plan too, schematic rail
   heights in the back view, unlabelled member sections) are listed in its README and layout JSON. Open: the member
   sections (post, strut, rafter, brace) are named nowhere in their drawings.
+- **Tank plan module** (2026-10-27, after the team's `reference/PV_570W.dxf`: a frame on a WIPEOUT, 2.19911 × 1.134 m,
+  the slope along x): every module on D1's plan is one INSERT of one block named for its power, `PV_570W`
+  (`TankDXF.moduleBlock`), written to a micrometre, in place of the per-size blocks with the cells drawing inside. Its
+  frame is the layout's module projected on plan: `moduleL` × cos(tilt) by `moduleW` (`Params.cellH` × `cellW`), so
+  at the team's 15° the ZXM7 570 W (2278 × 1134 mm) gives 2.20038 × 1.134; their block's 2.19911 is 1.3 mm shorter
+  (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
+  INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
+  The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.

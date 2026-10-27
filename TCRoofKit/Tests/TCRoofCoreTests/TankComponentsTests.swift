@@ -59,10 +59,10 @@ final class TankComponentsTests: XCTestCase {
         let foot = try XCTUnwrap(lines.indices.first { lines[$0] == "TC_FOOTING_300" && lines[$0 - 2] == "AcDbBlockBegin" })
         let end = try XCTUnwrap(lines[foot...].firstIndex(of: "ENDBLK"))
         XCTAssertTrue(lines[foot..<end].contains("TK_BASE_PLAN"))
-        // each plan module block holds the team's PV panel block, stretched to the module
-        let pv = try XCTUnwrap(lines.indices.first { lines[$0].hasPrefix("PV_MODULE_") && lines[$0 - 2] == "AcDbBlockBegin" })
+        // the plan's modules are the team's PV_570W block (a frame on a WIPEOUT, TankDXFTests), not the cells drawing
+        let pv = try XCTUnwrap(lines.indices.first { lines[$0] == "PV_570W" && lines[$0 - 2] == "AcDbBlockBegin" })
         let pvEnd = try XCTUnwrap(lines[pv...].firstIndex(of: "ENDBLK"))
-        XCTAssertTrue(lines[pv..<pvEnd].contains("TK_MODULE_PLAN"))
+        XCTAssertFalse(lines[pv..<pvEnd].contains("TK_MODULE_PLAN"))
         // concrete as AR-CONC, with its line families
         XCTAssertTrue(lines.contains("AR-CONC"))
         // members are closed polylines, so they stretch by their grips: the rows' posts, rafters and braces

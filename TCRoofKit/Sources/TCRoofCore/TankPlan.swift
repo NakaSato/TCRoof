@@ -72,7 +72,7 @@ public struct TankPlan: Sendable {
 
         tag("out")
         if details {
-            // beams: a band 0.30 m wide (assumed) on every inner grid line, as on the กปภ. sheets
+            // beams: a band `beam` wide (0.20, the team's beam plan) on every inner grid line, as on the กปภ. sheets
             let half = max(1.2, Self.beam / 2 * k), beam = RGBA(hex: 0x9AA8BA)
             for x in xs.dropFirst().dropLast() {
                 for d in [-half, half] { o.append(.line(Pt(ox + x * k + d, oy + 3), Pt(ox + x * k + d, oy + h - 3), width: 0.4, color: beam, dash: [3, 2])) }
@@ -192,8 +192,8 @@ public struct TankPlan: Sendable {
         dimensions = dims
     }
 
-    /// The beams' width on the plan (m), assumed.
-    public static let beam = 0.30
+    /// The beams' width on the plan (m): the team's reference beam plan (`TankFraming`, 0.20).
+    public static let beam = TankFraming.beamWidth
 
     /// Section marks: 1–1 cuts at half of the width (seen towards the left), 2–2 at half of the length (seen up).
     static func sectionMarks(ox: Double, oy: Double, w: Double, h: Double) -> [DrawOp] {

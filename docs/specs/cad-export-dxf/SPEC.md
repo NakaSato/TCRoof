@@ -269,6 +269,19 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
   INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
   The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
+- **Tank roof beam plan** (2026-10-27, after the team's `reference/Tank_Truss.dxf` / `.dwg`: a 40 × 24 m tank on a
+  4.00 m grid, B1 0.20 m on the perimeter wall line and B2 0.20 m on every interior line, a mark per span, 4.00 chains
+  and the 40.00 / 24.00 overall): D1's DXF draws it for any rectangular tank from its own spans (`TankFraming`), right
+  of the other plans with grid line A level with the module plan's: the B1 outer edge as one closed polyline and every
+  other beam edge between the faces of the beams crossing it, so the junctions read clean (the reference drew each
+  beam as a full-length rectangle, crossing every other one, and several twice); a B1 / B2 mark on every span beside
+  its beam towards the inside and along it; the grid's centre lines with a bubble at both ends (1, 2, 3 … and A, B, C …,
+  as the module plan names them); the span chains and the overall sizes on top and on the left as DIMENSIONs; the title
+  `แปลนคานหลังคาถัง / ROOF BEAM PLAN` with the width and the note; and to its right `ตารางคาน / BEAM SCHEDULE` (mark,
+  location, width × depth `0.20 × ตามแบบ`, spans, length centre to centre, the total) with three notes. Layers: the
+  beams S-BEAM-E (existing, continuous lines as the team draws them; the module plan keeps S-TANK-BEAM-E hidden), marks G-ANNO-TEXT, grid G-GRID, chains G-ANNO-DIMS, the
+  schedule G-ANNO-SCHD. A round tank (ring beams) has none. The module plan's beams (`TankPlan.beam`) are 0.20 m too.
+  Open: the beams' depth and whether some tanks carry a third mark (a deeper beam on a column line).
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.
@@ -282,7 +295,7 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   non-plot layer, named so), `G-DETL`; the existing roof `S-ROOF-OTLN | RIDG | FRAM | PURL | SECT-E`, `S-COLS-E`,
   `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `P-MODL-N`, `P-MODL-KEEP-N`, `P-CTRY-N`, `P-RAIL-N`, `P-RAIL-CUTS-N`, `P-FOOT-N`,
   `P-TABL-N`, `P-RAFT-N`, `P-BRAC-N`, `P-FTNG-N`, `P-WALK-N` (`-RAIL-N`, `-FOOT-N`), `P-LIFE-N` (`-RAIL-N`, `-SUPT-N`),
-  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E`, `C-TOPO-E`; the site `A-BLDG-E`, `P-AREA-N`,
+  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E` (and the roof beam plan's continuous `S-BEAM-E`), `C-TOPO-E`; the site `A-BLDG-E`, `P-AREA-N`,
   `P-AREA-DRAW-N`, `E-CABL-N`, `E-EQPM-E`, `C-ACCS-T`, `C-SHAD-E`, `C-BNDY-E`; the single line diagram `E-SLDG-E | N`,
   `E-SLDG-OKAY | WARN | MISS | ASSM | TEXT | OTHR`, `E-SLDG-POLE-E`. Every object is ByLayer (no colour on an entity):
   a part drawn in another colour has its own layer, and a single line text whose colour means something goes on that

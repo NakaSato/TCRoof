@@ -56,6 +56,9 @@ public enum CADLayers {
     // existing tank
     public static let tankOutline = SketchDXF.Layer("S-TANK-OTLN-E", aci: 7, lineweight: 50, description: "ขอบถังน้ำใส (เดิม) / Tank outline (existing)")
     public static let tankBeam = SketchDXF.Layer("S-TANK-BEAM-E", aci: 8, linetype: .hidden, lineweight: 25, description: "คานหลังคาถัง (เดิม) / Tank roof beams (existing)")
+    /// The roof beam plan's beams (`TankFraming`), continuous as the team draws them; the module plan keeps
+    /// `tankBeam`'s hidden lines under the slab.
+    public static let tankBeamPlan = SketchDXF.Layer("S-BEAM-E", aci: 7, lineweight: 35, description: "คานหลังคาถัง แปลนคาน (เดิม) / Tank roof beams, beam plan (existing)")
     public static let tankSection = SketchDXF.Layer("S-TANK-SECT-E", aci: 7, lineweight: 35, description: "รูปตัดถัง พื้น ผนัง เสา ฐานราก (เดิม) / Tank sections (existing)")
     public static let tankSoil = SketchDXF.Layer("C-TOPO-E", aci: 32, lineweight: 25, description: "ดินและระดับดิน / Soil and ground line")
 
@@ -86,7 +89,7 @@ public enum CADLayers {
         obstacle, roofSkylight, roofOutline, roofRidge, roofTruss, roofPost, roofPurlin, roofSection,
         pvModule, pvKeepout, pvCableTray, pvRail, pvCut, pvFoot, pvTable, pvRafter, pvBrace, pvFooting,
         pvWalkway, walkRail, walkFoot, pvLifeline, lifeRail, lifeSupport, pvAccess,
-        tankOutline, tankBeam, tankSection, tankSoil,
+        tankOutline, tankBeam, tankBeamPlan, tankSection, tankSoil,
         siteBuilding, sitePVArea, sitePanelArea, siteCable, siteSymbol, siteCrane, siteShade, siteShape,
         sldLine, sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed, sldText, sldOther,
     ]

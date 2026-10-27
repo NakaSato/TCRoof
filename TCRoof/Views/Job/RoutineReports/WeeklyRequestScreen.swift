@@ -25,9 +25,16 @@ struct WeeklyRequestScreen: View {
     @State private var showPDF = false
     @State private var toast: String?
     @State private var prepared: String?
+    /// Inside the install tracking page's `คำขอรายสัปดาห์` tab: always the one-page layout, without its own header.
+    private let embedded: Bool
+    /// Told the week shown whenever it changes, so the host keeps its own week in step.
+    private let onWeek: ((Date) -> Void)?
 
-    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!) {
+    init(job: Job, week: Date = RoutineReport.calendar.date(byAdding: .day, value: 7, to: .now)!, embedded: Bool = false,
+         onWeek: ((Date) -> Void)? = nil) {
         self.job = job
+        self.embedded = embedded
+        self.onWeek = onWeek
         var ws = MasterSchedule.weekStart(week)
         #if DEBUG
         // `-requestWeek 0|-1|-2`: next week or one of the two before
@@ -73,15 +80,40 @@ struct WeeklyRequestScreen: View {
     private var editable: Bool { mayAct && request.isEditable(external: external) }
 
     var body: some View {
-        GeometryReader { g in
-            if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+        Group {
+            if embedded {
                 onePage
             } else {
-                classic
+                GeometryReader { g in
+                    if !isPhone && (g.size.width >= 1000 || Self.forceOnePage) {
+                        onePage
+                    } else {
+                        classic
+                    }
+                }
             }
         }
-        .onChange(of: week) { _, w in reload(w) }
+        .onChange(of: week) { _, w in reload(w); onWeek?(w) }
+        #if DEBUG
+        .task { writeDebugPDFs() }
+        #endif
     }
+
+    #if DEBUG
+    /// `-routineDemo pdf`: the week's request to Documents/request.pdf, and with nine work lines to request-overflow.pdf
+    /// (a second page); `-routineDemo blank`: the blank form to request-blank.pdf too (docs/ui/weekly-request-pdf).
+    private func writeDebugPDFs() {
+        let mode = UserDefaults.standard.string(forKey: "routineDemo")
+        guard mode == "pdf" || mode == "blank", !embedded,
+              let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        try? RoutineReportFiles.request(job, request).data.write(to: docs.appendingPathComponent("request.pdf"))
+        var long = request
+        let line = long.work.first ?? .init(task: .panels, description: "ติดตั้งแผง", location: "หลังคา 1", qty: 1, unit: "งาน")
+        long.work = (0..<9).map { i in var l = line; l.id = UUID(); l.description = "\(line.description) (\(i + 1))"; return l }
+        try? RoutineReportFiles.request(job, long).data.write(to: docs.appendingPathComponent("request-overflow.pdf"))
+        if mode == "blank" { try? RoutineReportFiles.requestBlank(job).data.write(to: docs.appendingPathComponent("request-blank.pdf")) }
+    }
+    #endif
 
     /// The form of cards: the iPhone, and an iPad narrower than 1000 pt.
     private var classic: some View {
@@ -134,7 +166,8 @@ struct WeeklyRequestScreen: View {
                            preview: { showPDF = true }, send: sendFromPage,
                            withdraw: { request.sendBack(); save(file: false) },
                            week: { shift(7 * $0) }, openWeek: { week = MasterSchedule.weekStart($0) },
-                           toast: { t in withAnimation { toast = t } }))
+                           toast: { t in withAnimation { toast = t } }),
+            embedded: embedded)
             .id(request.id)
             .task(id: request.id) { prepare() }
             .sheet(isPresented: $showSign) {
@@ -401,9 +434,7 @@ struct WeeklyRequestScreen: View {
     }
 
     /// ISO week of the request's Saturday, as the install page's other weeks.
-    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int {
-        Calendar(identifier: .iso8601).component(.weekOfYear, from: r.date(ofDay: 5))
-    }
+    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int { r.weekNumber }
 }
 
 /// The week's request (or its draft from the MP plan), keeping it, and its R1 PDF.

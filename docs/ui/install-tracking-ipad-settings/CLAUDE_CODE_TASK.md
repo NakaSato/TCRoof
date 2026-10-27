@@ -4,6 +4,12 @@ Board: `iPadInstallSettings.dc.html` (open it in a browser next to `grf.css`). S
 are in `states/`, `preview.png` is state 01 at 1 ×. Example values are in `assets/sample-data.json`: they are
 examples, never hard-code them.
 
+> **Board refreshed 28 ต.ค. 2569.** The board and `states/` were re-exported from the design canvas. The tab's content
+> (categories, rows, sheets, the unsaved bar) is unchanged from the first hand-off; what changed on the board is
+> page-wide and **not part of this task**: the header is 74 pt, the toast is the shared dark toast with an icon, and
+> the `คำขอรายสัปดาห์` tab now links the one-page request. Don't change the header, the toast or the other tabs here.
+> The branch also carries `main` as of this date, so the tab bar you add to is the current one (7 items, no settings).
+
 ## 1. Goal
 
 The iPad install tracking page (`InstallTrackingPage`) gets an in-page tab `ตั้งค่าโครงการ` (gear icon, the last item

@@ -1,0 +1,23 @@
+{
+  "_note": "Example data shown on the board (iPadInstallDaily.dc.html, tab รายงานประจำวัน). Never hard-code it; the app reads InstallDailyData(job:).",
+  "station": "การประปาบ้านโป่ง (ตัวอย่าง)",
+  "today": "2569-09-30",
+  "kpis": [
+    { "label": "ส่งแล้ว", "value": "4 / 6 วัน", "note": "นับถึงเมื่อวาน" },
+    { "label": "รอลงนาม · รับทราบ", "value": "1 · 2", "note": "ร่าง 29/9 · ผู้ตรวจยังไม่รับทราบ 26, 28/9" },
+    { "label": "วันนี้ 30/9", "value": "ยังไม่ส่ง", "note": "ส่งก่อน 18:00" },
+    { "label": "คน-วันรวม", "value": "38", "note": "เฉลี่ย 7.6 คน/วันที่ทำงาน" },
+    { "label": "หยุดเพราะฝน", "value": "1 วัน", "note": "พยากรณ์ 2–3/10 ฝน 60–70% (the app has no forecast source; keep its own note)" }
+  ],
+  "filters": { "all": 7, "todo": 2, "problem": 2 },
+  "rows": [
+    { "date": "พ. 30/9", "state": "ยังไม่ส่ง", "crew": null, "work": "ยังไม่ได้ทำรายงานวันนี้", "actual": null, "planned": 52, "chip": "แผน 52%", "action": "ทำรายงานวันนี้" },
+    { "date": "อ. 29/9", "state": "ร่าง", "crew": 7, "actual": 47, "planned": 44, "chip": "+3 เร็วกว่า", "problem": "ร่างยังไม่ลงชื่อ · ขาดรูป 2 รูป", "action": "ทำต่อ · ส่ง" },
+    { "date": "จ. 28/9", "state": "ส่งแล้ว", "crew": 9, "actual": 40, "planned": 36, "chip": "+4 เร็วกว่า", "ack": "ผู้ตรวจ รอ 2 วัน" },
+    { "date": "อา. 27/9", "state": "หยุดงาน", "crew": null, "actual": 20, "planned": 26, "chip": "-6 ช้ากว่า", "problem": "ฝนตกทั้งช่วงทำงาน · แนวทาง: ย้ายงานไปวันจันทร์" },
+    { "date": "ส. 26/9", "state": "ส่งแล้ว", "crew": 8, "actual": 20, "planned": 18, "chip": "+2 เร็วกว่า", "ack": "ผู้ตรวจ รอ 4 วัน" },
+    { "date": "ศ. 25/9", "state": "ส่งแล้ว", "crew": 8, "actual": 12, "planned": 10, "chip": "+2 เร็วกว่า" },
+    { "date": "พฤ. 24/9", "state": "ส่งแล้ว", "crew": 6, "actual": 5, "planned": 4, "chip": "+1 เร็วกว่า" }
+  ],
+  "photoQuota": "x/4 on the board is illustrative only; there is no quota in the data"
+}

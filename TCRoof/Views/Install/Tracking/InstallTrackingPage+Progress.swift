@@ -3,10 +3,11 @@ import TCRoofUI
 import TCRoofCore
 
 /// `ความคืบหน้าเทียบแผน` (docs/ui/install-tracking-ipad-v2 §2–3): the Gantt of the MP plan's install tasks over a day
-/// (or, past a month, a week) axis, or the station's S-curve by day, behind a `Gantt | S-Curve` switch. The card ends
+/// (or, past a month, a week) axis, the station's S-curve by day, or the key plan (`InstallTrackingPage+KeyPlan`),
+/// behind a `Gantt | S-Curve | Key Plan` switch. The card ends
 /// above the dock and its rows scroll inside it under the pinned day header. A task row opens its sheet.
 extension InstallTrackingPage {
-    enum ProgressView: String { case gantt, curve }
+    enum ProgressView: String { case gantt, curve, keyplan }
 
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
@@ -23,7 +24,11 @@ extension InstallTrackingPage {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 10) {
             progressHeader(data, g)
-            if view == .gantt { ganttGrid(g, nonWorking: data.nonWorking) } else { curvePanel(data) }
+            switch view {
+            case .gantt: ganttGrid(g, nonWorking: data.nonWorking)
+            case .curve: curvePanel(data)
+            case .keyplan: keyPlanPanel(data)
+            }
         }
         .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 8)
         .frame(height: fittedHeight, alignment: .top)
@@ -46,13 +51,22 @@ extension InstallTrackingPage {
                 }
             }
             Spacer(minLength: 8)
-            (view == .gantt ? AnyView(ganttLegend) : AnyView(curveLegend)).padding(.top, 10)
-            TCCountSegments([.init("Gantt"), .init("S-Curve")],
-                            selection: Binding(get: { view == .gantt ? 0 : 1 }, set: { view = $0 == 0 ? .gantt : .curve }), equalWidths: false)
+            switch view {
+            case .gantt: ganttLegend.padding(.top, 10)
+            case .curve: curveLegend.padding(.top, 10)
+            case .keyplan:
+                keyPlanLegend.padding(.top, 10)
+                keyPlanChip(keyPlanModel(data)).padding(.top, 8)
+            }
+            TCCountSegments([.init("Gantt"), .init("S-Curve"), .init("Key Plan")],
+                            selection: Binding(get: { Self.views.firstIndex(of: view) ?? 0 }, set: { view = Self.views[$0] }), equalWidths: false)
                 .fixedSize()
                 .accessibilityLabel("มุมมองความคืบหน้า")
         }
     }
+
+    /// The switch's order.
+    static let views: [ProgressView] = [.gantt, .curve, .keyplan]
 
     /// The forecast end as `6/10`, or `6/10/2570` when it falls in another year than the due date.
     static func forecastDay(_ t: InstallTracking) -> String {

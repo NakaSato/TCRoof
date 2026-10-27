@@ -126,8 +126,8 @@ final class TankDXFTests: XCTestCase {
         XCTAssertTrue(sectionLines.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
     }
 
-    /// The mounting plan beside the module plan, as the team draws it: a footing block at every post, the rafters,
-    /// rails and bracing as members on WIPEOUTs, a chain along each table and one across the post lines.
+    /// The mounting plan beside the module plan, as the team draws it: a footing block at every support point, the
+    /// rafters, rails and the back line's X braces as members on WIPEOUTs, a chain along each table and one across the post lines.
     func testMountingPlan() throws {
         let v = Self.sample(layout: true), l = try XCTUnwrap(TankLayout.current(v))
         XCTAssertEqual(l.turn % 2, 0, "rows along x in the sample")
@@ -140,8 +140,10 @@ final class TankDXFTests: XCTestCase {
         func members(_ layer: String) -> Int { recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == layer && t.double($0, "10") > 40 }.count }
         XCTAssertEqual(members("P-RAFT-N"), pairs)
         XCTAssertEqual(members("P-RAIL-N"), 4 * tables.count)
-        let braces = tables.map { 2 * max(0, $0.pairs - 1) }.reduce(0, +)
+        // an X on the back line in every other bay and the last, two members side by side on plan
+        let braces = tables.map { 2 * TankLayout.bracedBays(max(0, $0.pairs - 1)).count }.reduce(0, +)
         XCTAssertEqual(members("P-BRAC-N"), braces)
+        XCTAssertEqual(braces, 2 * l.bom.braces)
         // each member on its own WIPEOUT
         XCTAssertEqual(recs.filter { $0.first?.1 == "WIPEOUT" }.count, pairs + 4 * tables.count + braces)
         // the footing block: the footing square (300 mm), base plate and post

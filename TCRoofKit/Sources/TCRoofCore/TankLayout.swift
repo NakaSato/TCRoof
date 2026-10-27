@@ -87,26 +87,36 @@ public struct TankLayout: Sendable {
 
     public struct TableBOM: Hashable, Sendable {
         public var modules, posts, footings, rafters, railClamps, midClamps, endClamps, braces, groundLugs: Int
-        /// The team's section 1 and detail 1: an aluminium base at every post on its concrete topping (`footings`), two
-        /// M12 expansion bolts per base (its two slots), the front and back braces of every post pair's frame and its
-        /// outer strut.
+        /// The team's frame (section 1, detail 1 and their tank-roof drawings, `reference/tank-roof`): per post pair
+        /// one vertical post on the back (high) line, and on the front (low) line one foot carrying a V of two struts;
+        /// an aluminium base on a concrete topping at both (`footings`: AG2-B02 under the post, AG5-B03 under the V),
+        /// two M12 expansion bolts per base (its two slots), the back diagonal and the V's inner leg (`sideBraces`) and
+        /// its outer leg (`struts`).
         public var bases = 0, anchors = 0, sideBraces = 0, struts = 0
         public var railLength: Double
         /// One table of `columns` × 2 modules, `length` m long, on `pairs` post pairs.
         public init(columns c: Int, length: Double, pairs: Int) {
             modules = 2 * c
-            posts = 2 * pairs; footings = posts; rafters = pairs
+            posts = pairs; footings = 2 * pairs; rafters = pairs
             railLength = c > 0 ? 4 * length : 0
             // rails × rafters
             railClamps = 4 * pairs
             // 2 per module joint per module row; 2 per end per module row
             midClamps = 2 * max(0, c - 1) * 2
             endClamps = c > 0 ? 2 * 2 * 2 : 0
-            // X in every post bay, front and back lines
-            braces = 2 * max(0, pairs - 1)
+            // an X on the back line in every other bay and the last (`bracedBays`)
+            braces = TankLayout.bracedBays(max(0, pairs - 1)).count
             groundLugs = c > 0 ? 1 : 0
-            bases = posts; anchors = 2 * posts; sideBraces = 2 * pairs; struts = pairs
+            bases = footings; anchors = 2 * bases; sideBraces = 2 * pairs; struts = pairs
         }
+    }
+
+    /// The bays of a table's back (high) post line that carry an X brace, as the team braces them: the first and every
+    /// other one after it, and the last so both ends are braced (8 bays: 1, 3, 5, 7 and 8). Indices from 0.
+    public static func bracedBays(_ bays: Int) -> [Int] {
+        guard bays > 0 else { return [] }
+        let every = Array(stride(from: 0, to: bays, by: 2))
+        return every.last == bays - 1 ? every : every + [bays - 1]
     }
     public struct BOM: Hashable, Sendable {
         public var posts = 0, footings = 0, rafters = 0, railClamps = 0, midClamps = 0, endClamps = 0, braces = 0, groundLugs = 0

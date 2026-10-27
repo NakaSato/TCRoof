@@ -141,9 +141,12 @@ public enum TankDXF {
     }
 
     /// The mounting plan beside the module plan, `dx` metres to the right (docs/specs/cad-export-dxf, Tank mounting plan):
-    /// per table the rafters (50 mm members up the slope at each post pair), the four rails and the bracing between
-    /// posts along the front and back lines, each on a WIPEOUT, the footing block at every post, a dimension chain along
+    /// per table the rafters (50 mm members up the slope at each post pair), the four rails and the X braces on the
+    /// back post line in every other bay and the last (`TankLayout.bracedBays`), each on a WIPEOUT, the footing block at every post, a dimension chain along
     /// each table (cantilever, bays, cantilever) beyond its low edge, and one across the post lines from wall to wall.
+    /// The two members of an X brace on plan, centre to centre (the team's `Top.dxf`).
+    static let braceGap = 0.152
+
     static func mountingPlan(_ dxf: inout SketchDXF, _ l: TankLayout, dx: Double, TH: Double) {
         let p = l.params, fr = TankLayout.Frame(q: l.turn, W: l.size.w, H: l.size.h)
         func at(_ q: Pt) -> (Double, Double) { (dx + q.x, TH - q.y) }
@@ -163,9 +166,17 @@ public enum TankDXF {
             let s = l.structure(t)
             for r in s.rafters { member(CADLayers.pvRafter, at(r.0), at(r.1), width: 0.05) }
             for r in s.rails { member(CADLayers.pvRail, at(r.0), at(r.1), width: 0.05) }
-            // bracing between neighbouring pairs, front line and back line
+            // the X braces on the back (high) line in the bays the team braces, each X seen from above as the team's
+            // pair of members 40 mm wide, 152 mm apart either side of the post line
             let front = stride(from: 0, to: t.posts.count, by: 2).map { t.posts[$0] }, back = stride(from: 1, to: t.posts.count, by: 2).map { t.posts[$0] }
-            for line in [front, back] { for (a, b) in zip(line, line.dropFirst()) { member(CADLayers.pvBrace, at(a), at(b), width: 0.04) } }
+            for i in TankLayout.bracedBays(max(0, back.count - 1)) {
+                let a = at(back[i]), b = at(back[i + 1]), L = hypot(b.0 - a.0, b.1 - a.1)
+                guard L > 1e-6 else { continue }
+                let n = (-(b.1 - a.1) / L * braceGap / 2, (b.0 - a.0) / L * braceGap / 2)
+                for side in [1.0, -1.0] {
+                    member(CADLayers.pvBrace, (a.0 + side * n.0, a.1 + side * n.1), (b.0 + side * n.0, b.1 + side * n.1), width: 0.04)
+                }
+            }
             for q in t.posts { dxf.insert(CADLayers.pvFooting, footing, at: at(q), rotation: turn) }
             // the chain along the table, beyond its low edge: from its west end over each post pair to its east end
             let b = fr.rect(TankPoints.Rect(x: t.x, y: t.y, w: t.w, h: t.h))

@@ -233,8 +233,8 @@ final class TankLayoutPDFTests: XCTestCase {
         let units = ReportLayout(job: Job.new(template: JobTemplate.all[2]), header: ReportHeader()).tankLayoutUnits(v)
         let texts = units.flatMap(\.ops).compactMap { op -> String? in if case .text(let t, _, _, _, _, _, _) = op { return t }; return nil }
         XCTAssertTrue(texts.contains("ภาพตัดโต๊ะแผง"))
-        XCTAssertTrue(texts.contains("รูปด้านหน้าโต๊ะแผง"))
-        XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านหน้าโต๊ะแผง แถว ") })
+        XCTAssertTrue(texts.contains("รูปด้านแนวเสาหลัง"))
+        XCTAssertTrue(texts.contains { $0.hasPrefix("รูปด้านแนวเสาหลัง แถว ") })
         // the plan prints with its structure legend
         XCTAssertTrue(texts.contains { $0.hasPrefix("จุดยึดราง (rail clamp) ") })
     }

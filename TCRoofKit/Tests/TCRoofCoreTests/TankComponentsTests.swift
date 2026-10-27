@@ -20,12 +20,13 @@ final class TankComponentsTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(c["topping"]).hatches.first?.pattern, "AR-CONC")
     }
 
-    /// The BOQ counts what the section draws: a base and two M12 bolts at every post, two side braces and a strut per
-    /// post pair.
+    /// The BOQ counts what the section draws: one post per post pair (the back one), a base and two M12 bolts at both
+    /// of its footings, the back diagonal and the V's two legs.
     func testTheBOQCountsTheComponents() throws {
         let l = try XCTUnwrap(TankLayout.current(TankDXFTests.sample(layout: true))), b = l.bom
         let pairs = l.builtTables.map(\.pairs).reduce(0, +)
-        XCTAssertEqual(b.bases, b.posts); XCTAssertEqual(b.anchors, 2 * b.posts)
+        XCTAssertEqual(b.posts, pairs); XCTAssertEqual(b.footings, 2 * pairs)
+        XCTAssertEqual(b.bases, b.footings); XCTAssertEqual(b.anchors, 2 * b.footings)
         XCTAssertEqual(b.sideBraces, 2 * pairs); XCTAssertEqual(b.struts, pairs)
         XCTAssertTrue(l.boqLine.contains("พุก M12 \(b.anchors)")); XCTAssertTrue(l.boqLine.contains("ค้ำยื่น \(b.struts)"))
     }
@@ -45,7 +46,7 @@ final class TankComponentsTests: XCTestCase {
         // the rows' section: two rows, two posts and two modules each
         XCTAssertEqual(count("TK_MODULE_SIDE"), 4)
         XCTAssertEqual(count("TK_BASE_SIDE"), 4); XCTAssertEqual(count("TK_ANCHOR_M12"), 4)
-        // the front elevation: a base and a topping at every post pair of the longest table
+        // the back line's elevation: a base and a topping at every post pair of the longest table
         let front = try XCTUnwrap(TankDrawings.tableFrontCAD(l)).posts.count
         XCTAssertEqual(count("TK_BASE_FRONT"), front)
         XCTAssertEqual(count("TK_TOPPING"), 4 + front)
@@ -66,15 +67,27 @@ final class TankComponentsTests: XCTestCase {
         XCTAssertTrue(lines.contains("AR-CONC"))
         // members are closed polylines, so they stretch by their grips: the rows' posts, rafters and braces
         let recs = t.records(out.data)
+        // one post a row (the back one, up to the back line's height), none on the front line
+        let p = l.params, tilt = p.tilt * .pi / 180
+        func xs(_ r: [(String, String)]) -> [Double] { r.filter { $0.0 == "10" }.map { Double($0.1)! } }
+        func ys(_ r: [(String, String)]) -> [Double] { r.filter { $0.0 == "20" }.map { Double($0.1)! } }
+        let base = t.double(try XCTUnwrap(inserts.first { t.value($0, "2") == "TK_BASE_SIDE" }), "20")
+        let posts = recs.filter { r in
+            r.first?.1 == "LWPOLYLINE" && t.value(r, "8") == "P-TABL-N"
+                && abs((ys(r).min() ?? 0) - (base + 0.15)) < 1e-3 && abs((ys(r).max() ?? 0) - (base + p.hBack)) < 1e-3
+        }
+        XCTAssertEqual(posts.map { ((xs($0).min()! + xs($0).max()!) / 2 * 100).rounded() / 100 }.sorted(), [p.postDY, p.rowPitch + p.postDY])
+        XCTAssertFalse(recs.contains { r in
+            r.first?.1 == "LWPOLYLINE" && t.value(r, "8") == "P-TABL-N" && abs((ys(r).max() ?? 0) - (base + p.hFront)) < 1e-3
+        }, "no post on the front line")
         let rafters = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "P-RAFT-N" && t.double($0, "20") < 0 }
         XCTAssertEqual(rafters.count, 2)
         XCTAssertTrue(rafters.allSatisfy { t.value($0, "70") == "1" })
-        // as the team's section 1 measures them: three braces a row (front, back and the outer strut), the rafter
-        // inside the modules, the front brace on the rafter 0.565 m up from the low post
+        // as the team's section measures them: three struts a row (the V's two legs and the back diagonal), the rafter
+        // inside the modules, the V's inner leg on the rafter 0.565 m up from the front line; on the back line's
+        // elevation two members an X in every other bay and the last
         let braces = recs.filter { $0.first?.1 == "LWPOLYLINE" && t.value($0, "8") == "P-BRAC-N" && t.double($0, "20") < 0 }
-        XCTAssertEqual(braces.count, 3 * 2 + 2 * max(0, front - 1))
-        let p = l.params, tilt = p.tilt * .pi / 180
-        func xs(_ r: [(String, String)]) -> [Double] { r.filter { $0.0 == "10" }.map { Double($0.1)! } }
+        XCTAssertEqual(braces.count, 3 * 2 + 2 * TankLayout.bracedBays(max(0, front - 1)).count)
         let first = try XCTUnwrap(rafters.min { (xs($0).min() ?? 0) < (xs($1).min() ?? 0) })
         let lo = try XCTUnwrap(xs(first).min()), hi = try XCTUnwrap(xs(first).max())
         XCTAssertGreaterThanOrEqual(lo, -p.frontOver * cos(tilt) - 0.1)

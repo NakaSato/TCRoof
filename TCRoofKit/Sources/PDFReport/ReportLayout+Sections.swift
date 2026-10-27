@@ -394,7 +394,7 @@ extension ReportLayout {
             out.append(Unit(h: sh, ops: s))
             if let front = TankDrawings.tableFront(l) {
                 let kf = (W - 16) / front.width, fh = Self.band + 6 + front.height * kf + 4
-                var f = box("รูปด้านหน้าโต๊ะแผง", height: fh)
+                var f = box("รูปด้านแนวเสาหลัง", height: fh)
                 f += front.translated(8, Self.band + 6, scale: kf)
                 out.append(Unit(h: fh, ops: f))
             }

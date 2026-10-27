@@ -183,13 +183,14 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   side along the module's, stretched to the module on plan, on its WIPEOUT; a roof file defines only that block of the
   tank components. The BOQ counts the walkways (`RoofWalkwayQuantities`, `RoofMount.walkwayLine`: length, HDG
   gratings, cross rails and their L-feet, lifeline and supports, cable tray and PPR, caged or eave ladders) on the roof
-  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per post and two side braces
-  and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line. Open: whether the team keeps the eave
+  page, in the PDF and in the Excel's row 39; the tank's BOM adds a base and two M12 bolts per footing and two side
+  braces and a strut per post pair (`TableBOM`), on the tank page and in its BOQ line (one post per pair since the
+  tank-roof frame, below). Open: whether the team keeps the eave
   ladder for hip roofs.
 - **Tank mounting plan** (2026-10-22, after the team's `Mounting_plan.dxf`): with a layout, D1's DXF has a second
   plan to the right of the module plan: the tank plan again (outline, grid, hatched openings, span chains) with, per
   table, the rafters (50 mm members up the slope at every post pair, P-RAFT-N, red), the four rails (P-RAIL-N,
-  yellow) and the bracing between neighbouring posts on the front and back lines (P-BRAC-N, cyan), each on its own
+  yellow) and the X braces on the back line (P-BRAC-N, cyan; every other bay since the tank-roof frame), each on its own
   WIPEOUT; the team's footing block at every post (`TC_FOOTING_<mm>`: the footing square at `footing`, the base plate,
   the C post's flanges and the two 50 mm plates; P-FTNG-N, green); a dimension chain along each table beyond its
   low edge (cantilever, bays, cantilever) and one across the post lines from wall to wall. No modules are drawn there.
@@ -202,7 +203,8 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   posts and the front elevation the longest table's numbers, as bubbles under their lowest dimension, so a section
   reads against the plan.
   Beside the mounting plan, a footing schedule (G-ANNO-SCHD): a line per letter line with its footings' references
-  (`A-1…A-14`), the footing size, the post height (the row's front or back post) and the count, and the total.
+  (`A-1…A-14`), the footing size, what stands on it (the back post and its height, or the front line's V) and the
+  count, and the total.
 - **Roof structure drawing** (2026-10-22): the plan's words reach the DXF: the T1 marks on the trusses, the slope
   labels, `สันหลังคา`, obstacle labels and the purlin callout (`แป @1.00` with its ticks) on G-ANNO-TEXT, and the
   section mark's letters and arrows on G-ANNO-SYMB. Section A-A's member callouts ①–⑦ (bubble, number, leader and
@@ -221,7 +223,7 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   schedule. Open: whether the team names the mounting grid differently (for example R1, R2 for rails).
 - **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
-  (`tableSectionCAD`) and the longest table's front elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
+  (`tableSectionCAD`) and the longest table's back post line elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
   at x = 0, on S-TANK-SECT-E / C-TOPO-E / the PV layers by colour, their lengths, heights, spacings, post heights
   and bays as live DIMENSIONs.
 - **Tank mounting components** (2026-10-22, after the team's `Tank mounting Section 1.dxf`, `Section 2.dxf` and
@@ -242,6 +244,22 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   module) and, under the sections at 1:10, DETAIL CONCRETE TOPPING and DETAIL 1 with their dimensions and labels.
   Posts, rafters and braces are closed polylines (50, 75 and 45 mm), stretched by their grips. The PDF keeps its own
   drawings. Run the tool again when a reference drawing changes.
+- **Tank-roof frame** (2026-10-27, after the team's tank-roof drawings `Top.dxf`, `Back_Side.dxf` and `Side_View.dxf`
+  of a 40 × 26 m tank with 240 modules, in `reference/tank-roof/`: their blocks as `tcroof-tank-mount-blocks.dxf`,
+  SVGs, the catalog, the layout as JSON with its BOQ and the extraction scripts): the frame follows their drawing,
+  in the DXF, the PDF, the B1-C3 sheet and the BOQ. Per post pair one vertical post on the back (high) line; on the
+  front (low) line no post, one foot (AG5-B03) carrying a V of two struts to the rafter (`TankComponents.frame`: the
+  inner leg 0.565 m up the rafter from the front line, the outer leg 0.60 m down it, the back diagonal 1.40 m down
+  from the post). X braces only on the back line, in every other bay and the last (`TankLayout.bracedBays`: 8 bays
+  give 1, 3, 5, 7, 8; their drawing's 30 sets), between 0.376 m above the slab and 0.108 m under the post's top;
+  on the mounting plan each X is the team's pair of 40 mm members 152 mm apart either side of the line. The
+  elevation under the sections is the back post line's (`รูปด้านแนวเสาหลัง`: back posts, the braced bays, the modules
+  behind as dashed hidden outlines); the footing schedule says what stands on each line (`เสา 2.00 ม.` or
+  `ขาค้ำ V`). BOQ: `เสา` = post pairs (back posts only), `ฐานราก` and `ฐานเสา` = 2 per pair, M12 2 per base,
+  `ค้ำโครงข้าง` 2 and `ค้ำยื่น` 1 per pair, `ค้ำ X` = braced bays. The heights stay the standard's (`hFront` is the
+  rafter's height over the front line). Their drawing's own conflicts (rafter drawn 4000 on plan too, schematic rail
+  heights in the back view, unlabelled member sections) are listed in its README and layout JSON. Open: the member
+  sections (post, strut, rafter, brace) are named nowhere in their drawings.
 - **Metres** (2026-10-22): the roof, tank and site plan DXFs are drawn in metres (1 unit = 1 m, `$INSUNITS` 6), so
   CAD's distance and list commands read metres and the dimensions read their length as it is (DIMLFAC 1, two
   decimals). `millimetres: true` (and the roof sheet's mm switch) still writes 1 unit = 1 mm; the golden files use it.

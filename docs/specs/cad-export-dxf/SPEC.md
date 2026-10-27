@@ -221,7 +221,8 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   reference (`b-3`, G-ANNO-TEXT). Lower case keeps it apart from the building's grid (A, B … and 1, 2 …). The plan's
   title moves down past the bubbles beyond a bottom eave. The PDF keeps only the panel layout: no grid, no tags, no
   schedule. Open: whether the team names the mounting grid differently (for example R1, R2 for rails).
-- **Tank sections** (2026-10-22): D1's DXF also carries, under the plan and to scale in metres, sections 1–1 and 2–2
+- **Tank sections** (2026-10-22; sections 1–1 and 2–2 taken out of the DXF 2026-10-27, with the plan's cut marks: the
+  PDF keeps both): D1's DXF also carried, under the plan and to scale in metres, sections 1–1 and 2–2
   (`TankDrawings.sectionCAD`, when the tank has a height), and with a layout the module rows' section
   (`tableSectionCAD`) and the longest table's back post line elevation (`tableFrontCAD`): the PDF's drawings, each with its zero
   at x = 0, on S-TANK-SECT-E / C-TOPO-E / the PV layers by colour, their lengths, heights, spacings, post heights

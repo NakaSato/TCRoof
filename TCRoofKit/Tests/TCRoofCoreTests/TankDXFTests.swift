@@ -91,39 +91,34 @@ final class TankDXFTests: XCTestCase {
         XCTAssertFalse(try XCTUnwrap(TankDXF.build(Self.sample())).layers.contains("P-MODL-N"))
     }
 
-    /// Sections 1–1 and 2–2, the module rows' section and the table's front elevation sit under the plan, to scale in
-    /// metres, with their measures as live DIMENSIONs.
+    /// The module rows' section and the back post line's elevation sit under the plan, to scale in metres, with their
+    /// measures as live DIMENSIONs; the tank's sections 1–1 and 2–2 are the PDF's only.
     func testSectionsUnderThePlan() throws {
         var v = Self.sample(layout: true); v[Tank.Key.height] = .text("4.5")
-        let H = try XCTUnwrap(Tank.height(v)), (TW, _) = spans(v)
         let l = try XCTUnwrap(TankLayout.current(v))
         let out = try XCTUnwrap(TankDXF.build(v))
-        XCTAssertTrue(out.layers.contains("S-TANK-SECT-E"))
         let recs = t.rawEntities(out.data), dims = recs.filter { $0.first?.1 == "DIMENSION" }
         let plan = try XCTUnwrap(TankPlan(v, details: true)).dimensions.count
-        let sections = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) } + [TankDrawings.tableSectionCAD(l.params)]
-            + [TankDrawings.tableFrontCAD(l)].compactMap { $0 }
-        XCTAssertEqual(sections.count, 4)
+        let sections = [TankDrawings.tableSectionCAD(l.params)] + [TankDrawings.tableFrontCAD(l)].compactMap { $0 }
+        XCTAssertEqual(sections.count, 2)
         // the plan's chains twice (the module plan and the mounting plan), the mounting plan's own, the sections'
         let chains: Int = l.builtTables.map { (t: TankLayout.Table) -> Int in t.pairs + 1 }.reduce(0, +)
         let postLines: Set<Int> = Set(l.builtTables.flatMap { (t: TankLayout.Table) -> [Int] in t.posts.map { Int(($0.y * 1000).rounded()) } })
         let mounting = chains + postLines.count + 1
         // and the two footing details' (0.30 each way on the plan, 0.30 × 0.15 on DETAIL 1)
         XCTAssertEqual(dims.count, 2 * plan + mounting + sections.map(\.dimensions.count).reduce(0, +) + 4)
-        // both tank sections' heights read H (metres), live
+        // the tank's own sections 1–1 and 2–2 stay in the PDF: no tank height dimension, no cut marks
         let key = String(data: SketchDXF.tis620("สูง <>"), encoding: .isoLatin1)!
-        let heights = dims.filter { t.value($0, "1") == key }
-        XCTAssertEqual(heights.count, 2)
-        XCTAssertTrue(heights.allSatisfy { abs(abs(t.double($0, "24") - t.double($0, "23")) - H) < 1e-3 })
-        // the section lengths are the tank's: section 2–2 cuts across Σ spansX
-        XCTAssertTrue(dims.contains { abs(abs(t.double($0, "14") - t.double($0, "13")) - TW) < 1e-3 && t.value($0, "50") == "0" })
+        XCTAssertFalse(dims.contains { t.value($0, "1") == key })
+        XCTAssertFalse(recs.contains { t.value($0, "8") == "G-ANNO-SYMB" })
+        XCTAssertNotNil(TankDrawings.sectionCAD(v, across: false), "the PDF's section is still there")
         // the rows' spacings read the layout's
         XCTAssertTrue(dims.contains { abs(abs(t.double($0, "14") - t.double($0, "13")) - l.params.rowGap) < 1e-3 })
-        // everything they add is below the plan: the tank's top-left corner is (0, TH), its sketch's lowest text a few m below 0
+        // everything they add is below the plan
         let planBottom = try XCTUnwrap(recs.filter { $0.first?.1 == "INSERT" && (t.value($0, "2") ?? "").hasPrefix("PV_MODULE_") }.map { t.double($0, "20") }.min())
-        let sectionLines = recs.filter { t.value($0, "8") == "S-TANK-SECT-E" }
-        XCTAssertFalse(sectionLines.isEmpty)
-        XCTAssertTrue(sectionLines.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
+        let rafters = recs.filter { t.value($0, "8") == "P-RAFT-N" && $0.first?.1 == "LWPOLYLINE" && t.double($0, "20") < 0 }
+        XCTAssertFalse(rafters.isEmpty)
+        XCTAssertTrue(rafters.allSatisfy { e in e.filter { $0.0 == "20" }.allSatisfy { Double($0.1)! < planBottom - 2 } })
     }
 
     /// The mounting plan beside the module plan, as the team draws it: a footing block at every support point, the

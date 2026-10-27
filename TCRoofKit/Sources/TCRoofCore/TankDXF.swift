@@ -1,7 +1,7 @@
 import Foundation
 
 /// D1 "ส่งออก DXF" (docs/specs/cad-export-dxf phase 3): the clear-water tank's roof plan (`TankPlan`) at real scale in
-/// metres (`millimetres` for 1 unit = 1 mm), from the tank's top-left corner with Y up, with the printed sheet's beams, section marks, size and
+/// metres (`millimetres` for 1 unit = 1 mm), from the tank's top-left corner with Y up, with the printed sheet's beams, size and
 /// volume summary and note (`details`), plus the sub-step 3 panel layout (`TankLayout.current`) when
 /// there is one. Layer colours carry the meaning, so ops keep no colour of their own.
 public enum TankDXF {
@@ -9,7 +9,7 @@ public enum TankDXF {
     static let layers: [String: SketchDXF.Layer] = [
         "grid": CADLayers.grid, "out": CADLayers.tankOutline, "dim": CADLayers.dim, "dimtxt": CADLayers.dim,
         "obst": CADLayers.obstacle, "north": CADLayers.north, "txt": CADLayers.text,
-        "beam": CADLayers.tankBeam, "sect": CADLayers.sectionMark,
+        "beam": CADLayers.tankBeam,
     ]
     static let pv = CADLayers.pvModule, pvGroup = CADLayers.pvTable
 
@@ -21,8 +21,9 @@ public enum TankDXF {
         o.dashes = true; o.textBoxes = true; o.hatches = true; o.outlineBoxes = true; o.skipFillOnly = true; o.centreText = false
         var dxf = SketchDXF(options: o)
         let tf: (Pt) -> (Double, Double) = { p in ((p.x - f.ox) / f.k, TH - (p.y - f.oy) / f.k) }
-        // the span chains are DIMENSIONs, not their lines and texts
-        var drawnDims: Set<String> = plan.dimensions.isEmpty ? [] : ["dim", "dimtxt"]
+        // the span chains are DIMENSIONs, not their lines and texts; the 1–1 / 2–2 cut marks are left out with the
+        // tank sections they point to (the PDF keeps both)
+        var drawnDims: Set<String> = plan.dimensions.isEmpty ? ["sect"] : ["dim", "dimtxt", "sect"]
         // the team's north arrow block where the sketch draws its own, at the same size
         if NorthArrow.shared != nil, let az = Tank.azimuth(v) {
             drawnDims.insert("north")
@@ -66,10 +67,11 @@ public enum TankDXF {
             mountingPlan(&dxf, l, dx: dx, TH: TH)
         }
 
-        // under the plan, to scale and in metres: sections 1–1 and 2–2, then the module rows' section and the table's front
-        // elevation, each with its zero (the tank's west wall, a row's front post, the table's west end) at x = 0
-        let tables: [TankDrawings.SectionCAD] = [false, true].compactMap { TankDrawings.sectionCAD(v, across: $0) }
-            + (TankLayout.current(v).map { [TankDrawings.tableSectionCAD($0.params)] + [TankDrawings.tableFrontCAD($0)].compactMap { $0 } } ?? [])
+        // under the plan, to scale and in metres: the module rows' section and the back post line's elevation, each with
+        // its zero (a row's front line, the table's west end) at x = 0. The tank's own sections 1–1 and 2–2 stay in the
+        // PDF only.
+        let tables: [TankDrawings.SectionCAD] =
+            TankLayout.current(v).map { [TankDrawings.tableSectionCAD($0.params)] + [TankDrawings.tableFrontCAD($0)].compactMap { $0 } } ?? []
         let gap = 3.0
         var top = dxf.extents.min.y / (millimetres ? 1000 : 1) - gap
         // the rows' section and the front elevation take their footings, posts, braces and modules from the team's

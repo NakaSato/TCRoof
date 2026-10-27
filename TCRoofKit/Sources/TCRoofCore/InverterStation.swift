@@ -154,24 +154,29 @@ public struct InverterStation: Hashable, Sendable {
         public var d: Double
         /// Inverter size, for inverters.
         public var kw: Int?
+        /// Height (m), from the catalog: what the front and side views draw.
+        public var h: Double = 0
     }
     /// Equipment in row order and the clear gap after each (one fewer than the items).
     public var row: (items: [Item], gaps: [Double]) {
         let ac = Double(catalog.acCabinet(inverters: sizes.count).w) / 1000
         let meter = Double(catalog.cabinets.meter.w) / 1000, sem = Double(catalog.cabinets.sem.w) / 1000
-        var items = [Item(kind: .cabinet, name: "AC-DB-01", w: ac, d: 0.45), Item(kind: .cabinet, name: "METER-DB-01", w: meter, d: 0.28)]
+        let acH = Double(catalog.acCabinet(inverters: sizes.count).h) / 1000
+        var items = [Item(kind: .cabinet, name: "AC-DB-01", w: ac, d: 0.45, h: acH),
+                     Item(kind: .cabinet, name: "METER-DB-01", w: meter, d: 0.28, h: Double(catalog.cabinets.meter.h) / 1000)]
         var gaps: [Double]
         let gap: Double
         if site == .outdoor {
             gaps = [0.24, 0.45]; gap = 0.47
         } else {
-            items.append(Item(kind: .cabinet, name: "SEM-DB", w: sem, d: 0.28))
+            items.append(Item(kind: .cabinet, name: "SEM-DB", w: sem, d: 0.28, h: Double(catalog.cabinets.sem.h) / 1000))
             gaps = [0.24, 0.37, 0.46]; gap = 0.46
         }
         for (i, kw) in sizes.enumerated() {
             let inv = catalog.inverter(kw: kw)
-            items.append(Item(kind: .inverter, name: "INVERTER No.\(i + 1)", w: Double(inv.w) / 1000, d: Double(inv.d) / 1000, kw: kw))
-            items.append(Item(kind: .cabinet, name: String(format: "DC-DB-%02d", i + 1), w: Double(catalog.dcCabinet(mppt: inv.mppt).w) / 1000, d: 0.28))
+            let dc = catalog.dcCabinet(mppt: inv.mppt)
+            items.append(Item(kind: .inverter, name: "INVERTER No.\(i + 1)", w: Double(inv.w) / 1000, d: Double(inv.d) / 1000, kw: kw, h: Double(inv.h) / 1000))
+            items.append(Item(kind: .cabinet, name: String(format: "DC-DB-%02d", i + 1), w: Double(dc.w) / 1000, d: 0.28, h: Double(dc.h) / 1000))
             gaps += [gap, gap]
         }
         gaps.removeLast(gaps.count - (items.count - 1))

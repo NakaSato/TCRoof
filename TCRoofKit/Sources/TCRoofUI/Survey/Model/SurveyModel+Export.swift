@@ -115,6 +115,17 @@ extension SurveyModel {
         return ExportFile(url: url, summary: "Tank plan DXF")
     }
 
+    /// A B2 inverter station's top, front and side views and its base plate detail as DXF R2000 at real scale
+    /// (`InverterStationDXF`, the team's components), named like D1's: `NO<job no>_B2.dxf`.
+    public func exportInverterDXF(_ job: Job, moduleID: UUID) throws -> ExportFile? {
+        flush(job.id)
+        guard let m = job.modules.first(where: { $0.id == moduleID }) else { return nil }
+        let section = job.sectionsByCategory.flatMap(\.sections).first { $0.id == moduleID }?.number ?? "B2"
+        let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + section).replacingOccurrences(of: " ", with: "") + ".dxf")
+        try InverterStationDXF.build(m.values).data.write(to: url, options: .atomic)
+        return ExportFile(url: url, summary: "Inverter station DXF")
+    }
+
     /// The A2 site plan (models, shapes, symbols over the picture's frame) as DXF R2000 (`SiteDXF`): `NO<job no>_A2.dxf`.
     public func exportSiteDXF(_ job: Job) throws -> ExportFile? {
         flush(job.id)

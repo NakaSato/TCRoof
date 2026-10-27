@@ -269,6 +269,33 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
   INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
   The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
+- **Inverter station** (2026-10-27, after the team's `reference/inverter-station`: `Inverter.dxf` one 125 kW inverter
+  under a 6.0 × 2.5 m shelter, `Inverter_EXL-HV.dxf` 125 + 40 kW under 9.0 × 2.5 m, `Internal_Inverter_Station_EXL-LV.dxf`
+  an 80 kW rack on a building's wall, `Part_1.dxf` the column's base plate, and the component library extracted from
+  them in `components/cad`): B2's `ส่งออก DXF` (`InverterStationDXF`) draws the section's station at real scale in
+  metres. TOP VIEW on the B2 page's own positions (`InverterStationDrawing`: the rack band 0.17 m off the back line, the
+  row in front of it, the door by column 1 on line A): outdoors the columns 1, 2 … on lines A (front, door) and B
+  (back) with bubbles, each the library's 150 plate with its 75 tube; indoors the existing wall (hatched) and the
+  measured area; the rack with its posts (no span over 1.40 m, as the team's), the AC tray (`TCR_TRAY_PLAN_COVER_W…`),
+  the inverters' top views (MAX 125 / 80 blocks), the chains of spans, width, row and walkway. FRONT VIEW under it on
+  the same x: the columns of line A, the edge beam, the rafters' ends, the purlin and sheet, a T8 LED lamp on each
+  inside column line; the rack on its 200×100 concrete footings and 200×10 plates, the top rail at 2.00 m, the AC tray
+  at 0.50 m and the DC tray at 0.90 m (the library's side modules, 1.0 m), each cabinet topped at 2.00 m and each
+  inverter at 2.10 m (the team's station templates: AC-DB 0.598, meter 1.248, inverter 1.461, DC-DB 0.998 for 1.40 /
+  0.75 / 0.635 / 1.00 m tall), the library's front blocks stretched to the equipment catalog's sizes, the ladder
+  (`TCR_LADDER_PLAN_W…`, 1.2 m modules) up from AC-DB-01 and a DC tray up from each DC-DB, labelled over the roof.
+  SIDE VIEW right of it, seen from the right end: the posts 3.00 m at A and 2.75 m at B (the measured height ส for the
+  front when there is one), the edge beams' sections, the tie beam, the rafter 0.40 m past A and 0.55 m past B, its
+  purlins about 1 m apart and the sheet; the rack's section with its arms, the trays' sections (`TCR_TRAY_SECTION_…`),
+  the equipment from the generic side blocks drawn far end first so nearer items hide farther ones; indoors the wall.
+  The scale figure stands in both views. Right of the plan the equipment schedule (model, W × H × D, the levels), the
+  notes (including a short area and a narrow walkway) and the base plate DETAIL at 5 : 1 with its sizes in mm.
+  Layers: `S-COLS-N`, `S-BEAM-N`, `S-ROOF-PURL-N`, `A-ROOF-N`, `S-FRAM-N` (rack), `S-FTNG-N`, `E-EQPM-N`, `E-CTRY-N`,
+  `E-LITE-N`, `A-DOOR-N`, `A-WALL-E` (hatched), `A-AREA-E`, ground `C-TOPO-E`. A size the library lacks (a tray over
+  300 or a ladder over 600 mm wide) is drawn by the file itself. Open: the column size (the library's tube is 75×75×2.4
+  on a 150 plate, its layer says 100×100×3, and the elevations' plate is 200 wide); the catalog's AC-DB (900 × 1200 for
+  up to 2 inverters) against the team's 900 × 1400, the meter 630 × 800 against 630 × 750, the MAX 80 870 × 580
+  against the block's 860 × 628, the 40 kW 580 × 435 against 580 × 600; the beams', rafters' and purlins' sections.
 - **Tank roof beam plan** (2026-10-27, after the team's `reference/Tank_Truss.dxf` / `.dwg`: a 40 × 24 m tank on a
   4.00 m grid, B1 0.20 m on the perimeter wall line and B2 0.20 m on every interior line, a mark per span, 4.00 chains
   and the 40.00 / 24.00 overall): D1's DXF draws it for any rectangular tank from its own spans (`TankFraming`), right
@@ -295,7 +322,7 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   non-plot layer, named so), `G-DETL`; the existing roof `S-ROOF-OTLN | RIDG | FRAM | PURL | SECT-E`, `S-COLS-E`,
   `A-ROOF-SKYL-E`, `A-OPNG-E`; new PV `P-MODL-N`, `P-MODL-KEEP-N`, `P-CTRY-N`, `P-RAIL-N`, `P-RAIL-CUTS-N`, `P-FOOT-N`,
   `P-TABL-N`, `P-RAFT-N`, `P-BRAC-N`, `P-FTNG-N`, `P-WALK-N` (`-RAIL-N`, `-FOOT-N`), `P-LIFE-N` (`-RAIL-N`, `-SUPT-N`),
-  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E` (and the roof beam plan's continuous `S-BEAM-E`), `C-TOPO-E`; the site `A-BLDG-E`, `P-AREA-N`,
+  `P-LADD-N`; the existing tank `S-TANK-OTLN | BEAM | SECT-E` (and the roof beam plan's continuous `S-BEAM-E`), `C-TOPO-E`; the inverter station `S-COLS | BEAM | FRAM | FTNG-N`, `S-ROOF-PURL-N`, `A-ROOF | DOOR-N`, `E-EQPM | CTRY | LITE-N`, `A-WALL-E`, `A-AREA-E`; the site `A-BLDG-E`, `P-AREA-N`,
   `P-AREA-DRAW-N`, `E-CABL-N`, `E-EQPM-E`, `C-ACCS-T`, `C-SHAD-E`, `C-BNDY-E`; the single line diagram `E-SLDG-E | N`,
   `E-SLDG-OKAY | WARN | MISS | ASSM | TEXT | OTHR`, `E-SLDG-POLE-E`. Every object is ByLayer (no colour on an entity):
   a part drawn in another colour has its own layer, and a single line text whose colour means something goes on that

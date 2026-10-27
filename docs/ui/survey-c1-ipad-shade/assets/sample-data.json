@@ -1,0 +1,12 @@
+{
+  "_note": "Example values from the design board only. Never hard-code them; the app computes every figure.",
+  "site": { "latitude": 13.75, "label": "กรุงเทพฯ (ตัวอย่าง)" },
+  "module": { "maker": "ZNSHINE", "model": "ZXM7 570 W", "wp": 570 },
+  "groups": [
+    { "id": "S", "label": "ด้านใต้", "modules": 36, "dcKWp": 20.5, "tilt": 15, "azimuth": 180 },
+    { "id": "N", "label": "ด้านเหนือ", "modules": 30, "dcKWp": 17.1, "tilt": 15, "azimuth": 0 },
+    { "id": "all", "label": "รวมทั้งหลังคา", "modules": 66, "dcKWp": 37.6 }
+  ],
+  "metrics": { "sunAccess": "[computed]", "tof": "[computed]", "tsrf": "[computed]" },
+  "sunPathDays": ["21 มิ.ย.", "21 มี.ค. / 21 ก.ย.", "21 ธ.ค."]
+}

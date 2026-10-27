@@ -143,7 +143,7 @@ struct NorthArrow: View {
 
 /// A 24 × 14 legend symbol (icons/legend).
 struct LegendGlyph: View {
-    enum Kind { case post, double, heavy, thin, dashedHeavy, purlin, skyOK, skyNo, ridge, section, pv, table, gap, blocked, keepOut }
+    enum Kind { case post, double, heavy, thin, dashedHeavy, purlin, skyOK, skyNo, ridge, section, pv, table, gap, blocked, keepOut, shadedModule, obstacleShadow }
     let kind: Kind
     static let ink = Color(RoofPlan.ink)
     var body: some View {
@@ -178,6 +178,13 @@ struct LegendGlyph: View {
             case .keepOut:
                 ctx.fill(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red.opacity(0.12)))
                 ctx.stroke(Path(r(3, 2, 18, 10)), with: .color(RoofPageWide.red), lineWidth: 1)
+            case .shadedModule:
+                ctx.fill(Path(r(3, 2, 18, 10)), with: .color(Theme.warning.opacity(0.9)))
+            case .obstacleShadow:
+                var p = Path(); p.move(to: CGPoint(x: 2 * sx, y: 3 * sy)); p.addLine(to: CGPoint(x: 15 * sx, y: 3 * sy))
+                p.addLine(to: CGPoint(x: 22 * sx, y: 11 * sy)); p.addLine(to: CGPoint(x: 9 * sx, y: 11 * sy)); p.closeSubpath()
+                ctx.fill(p, with: .color(Color(RoofPlan.postInk).opacity(0.18)))
+                ctx.stroke(p, with: .color(Color(RoofPlan.postInk).opacity(0.45)), style: StrokeStyle(lineWidth: 0.8, dash: [3, 2]))
             }
         }
         // drawn in the plan's dark ink, so it keeps the plan's white paper in dark mode

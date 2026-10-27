@@ -64,6 +64,9 @@ struct RoofPageWide: View {
     /// The layout's yearly energy from the hourly engine, or SolarModel's (RoofPageWide+Energy).
     @State var mountYield: RoofMountYield.Estimate?
     @State var mountYieldBusy = false
+    /// iPad: the shade card's report from the same run (RoofPageWide+Shade), and its face group.
+    @State var mountShade: RoofShade.Outcome?
+    @State var shadeGroup = "S"
     @State var energyOpen = false
     @State var rowSectionOpen = false
     @State var boqOpen = false
@@ -466,7 +469,7 @@ struct RoofPageWide: View {
 extension RoofPageWide {
     /// `-surveyC1 <state>` seeds the design's example roof (19 × 16, Pratt, ridge นอน, two skylights) and opens one of the
     /// states in docs/ui/survey-c1: span, spany, posts, pv, keepout, landscape, ridgev, frame-n|w|c|r|k, picker, shape,
-    /// material, wood, bays12, std, save, purlin, zoom, cad, member; pvyield / pvyieldfar set A1's GPS for the energy card.
+    /// material, wood, bays12, std, save, purlin, zoom, cad, member; pvyield / pvyieldfar set A1's GPS for the energy card; pvshade / pvshadenorth open the iPad shade card.
     func openDebugState() async {
         guard let state = UserDefaults.standard.string(forKey: "surveyC1") else { return }
         update { v in
@@ -524,6 +527,20 @@ extension RoofPageWide {
                 RoofMount.setShedLowAtStart(&v, false)
             }
             mode = .pv; scrollTarget = "info"
+        // the shade card (docs/ui/survey-c1-ipad-shade): A1's GPS in Bangkok, a 2.00 m stack south of the ridge, shade
+        // avoidance off so the stack's shadow falls on modules (the south face's field); pvshadenorth selects ด้านเหนือ
+        case "pvshade", "pvshadenorth":
+            job.values["gps"] = .text("13.7563, 100.5018")
+            update { v in
+                v[Roof.Key.shape] = .choice("หลังคาทรงจั่ว", other: ""); v[Roof.Key.material] = .choice("เมทัลชีท", other: "")
+                RoofMount.setShedLowAtStart(&v, false)
+                var c = RoofMount.choice(v)
+                c.removed = []; c.avoidShade = false; c.landscape = false; c.railsAcross = false; c.walkwayEvery = 0
+                RoofMount.setChoice(&v, c)
+                Roof.addArea(&v, kind: RoofObstacleKind.stack.rawValue, x1: 14.6, y1: 12.0, x2: 15.2, y2: 12.6)
+            }
+            shadeGroup = state == "pvshadenorth" ? "N" : "S"
+            mode = .pv
         // pvrules: the installation checks card (ModuleRules) (information only)
         case "pvrules":
             update { v in

@@ -180,7 +180,7 @@ extension ReportLayout {
     func roofPVUnits(_ d: Values) -> [Unit] {
         guard RoofMount.printable(d) else { return [] }
         let lat = RoofMount.latitude(gps: j.text("gps"))
-        let (m, energy) = RoofMount.printed(d, job: job), q = m.quantities
+        let (m, energy, shade) = RoofMount.printedWithShade(d, job: job), q = m.quantities
         guard q.modules > 0 else { return [] }
         let W = Self.cw, plan = RoofPlan(d, mode: .pv, mount: m).sketch, k = (W - 16) / plan.width
         let used = m.faces
@@ -216,7 +216,46 @@ extension ReportLayout {
             out.append(Unit(h: sh, ops: s))
         }
         out.append(roofEnergyUnit(energy))
+        out += roofShadeUnits(shade)
         return out
+    }
+
+    /// เงาบังแผง (docs/ui/survey-c1-ipad-shade, change 4): a box per face in use after the energy box, with C1's shade
+    /// card's figures as a table, its three charts (the same sketches) and the source line; none without a shade report.
+    func roofShadeUnits(_ outcome: RoofShade.Outcome) -> [Unit] {
+        guard let r = outcome.shade else { return [] }
+        let W = Self.cw
+        return r.groups.filter { $0.id != "all" }.map { g in
+            let head = ["DC capacity", "ผู้ผลิตแผง | จำนวน", "Tilt | Azimuth", "Sun Access", "TOF", "TSRF"]
+            let vals = [String(format: "%.1f kWp", g.dcKWp), "\(r.moduleName) × \(g.modules)", g.tiltAzimuthText,
+                        String(format: "%.1f%%", g.sunAccess * 100), String(format: "%.1f%%", g.tof * 100), String(format: "%.1f%%", g.tsrf * 100)]
+            let widths: [Double] = [1, 2, 2, 1, 1, 1].map { $0 * (W - 16) / 8 }
+            let rowH = 15.0, tableY = Self.band + 8
+            let charts = [r.sunPathSketch(g), r.monthlySketch(g), r.hourMonthSketch(g)]
+            let gap = 10.0, k = (W - 16 - 2 * gap) / charts.reduce(0) { $0 + $1.width }
+            let chartY = tableY + 2 * rowH + 18, chartH = (charts.map(\.height).max() ?? 0) * k
+            let h = chartY + chartH + 30
+            var o = box("เงาบังแผง | Shade | " + g.caption, height: h)
+            var x = 8.0
+            for (c, w) in widths.enumerated() {
+                o.append(.rect(Box(x, tableY, w, rowH), stroke: .black, fill: .band, width: 0.5))
+                o.append(.textBox(head[c], Box(x + 3, tableY + 3, w - 6, rowH - 3), size: 7.5, bold: true))
+                o.append(.rect(Box(x, tableY + rowH, w, rowH), stroke: .black, fill: nil, width: 0.5))
+                o.append(.textBox(vals[c], Box(x + 3, tableY + rowH + 3, w - 6, rowH - 3), size: 8.5, bold: true))
+                x += w
+            }
+            let titles = ["Sun-path Diagram", "Monthly Sun Access & Shading Averages", "Hour-Month Sun Access"]
+            x = 8
+            for (c, sk) in charts.enumerated() {
+                o.append(.text(titles[c], at: Pt(x, chartY - 8), size: 8, bold: true))
+                o += sk.translated(x, chartY, scale: k)
+                x += sk.width * k + gap
+            }
+            o.append(.text(r.sourceLine + String(format: " | ระนาบดีที่สุดของพื้นที่ %.0f° | %@ (ค้นทีละ %@)", r.bestPlane.tilt, r.bestPlane.azimuthText, r.searchStep),
+                           at: Pt(8, h - 18), size: 7.5, color: .faint))
+            o.append(.text("TSRF = TOF × Sun Access | คิดเฉพาะสิ่งกีดขวางบนหลังคาตามความสูงที่สำรวจ ไม่รวมอาคารและต้นไม้รอบข้าง", at: Pt(8, h - 8), size: 7, color: .faint))
+            return Unit(h: h, ops: o)
+        }
     }
 
     /// พลังงานไฟฟ้าโดยประมาณ (docs/specs/energy-yield/preliminary-energy-yield.md §11): the P90–P50 range, the lifetime

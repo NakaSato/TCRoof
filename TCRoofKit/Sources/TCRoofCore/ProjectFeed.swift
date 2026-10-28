@@ -221,17 +221,20 @@ public enum FeedBuilder {
         let from = RoutineReport.add(RoutineReport.day(now), -(max(days, 1) - 1))
         var all: [FeedPost] = []
         for s in stations {
-            all += reportPosts(s) + testPosts(s) + problemPosts(s) + punchPosts(s)
+            all += reportPosts(s, from: from, through: now)
+            all += testPosts(s, from: from, through: now)
+            all += problemPosts(s, from: from, through: now)
+            all += punchPosts(s, from: from, through: now)
         }
         all += summaries(stations, from: from, now: now)
         return all.filter { $0.date >= from && $0.date <= now }
             .sorted { $0.pinned != $1.pinned ? $0.pinned : $0.date != $1.date ? $0.date > $1.date : $0.id < $1.id }
     }
 
-    static func reportPosts(_ s: Station) -> [FeedPost] {
+    static func reportPosts(_ s: Station, from: Date? = nil, through: Date? = nil) -> [FeedPost] {
         let dailies = s.dailies
         return s.signed.compactMap { r in
-            guard let signedAt = r.signedAt else { return nil }
+            guard let signedAt = r.signedAt, inWindow(signedAt, from: from, through: through) else { return nil }
             let d = r.daily
             let done = RoutineReport.workDone(d, in: dailies)
             let main = done.max { $0.delta < $1.delta }
@@ -258,8 +261,8 @@ public enum FeedBuilder {
         }
     }
 
-    static func testPosts(_ s: Station) -> [FeedPost] {
-        s.tests.map { t in
+    static func testPosts(_ s: Station, from: Date? = nil, through: Date? = nil) -> [FeedPost] {
+        s.tests.filter { inWindow($0.date, from: from, through: through) }.map { t in
             let ok = t.passed >= t.total
             let text = ok ? "\(t.title) ผ่านครบ \(t.total) \(t.unit)" : "\(t.title) ผ่าน \(t.passed) จาก \(t.total) \(t.unit)"
             let stats = [FeedPost.Stat("\(t.passed)/\(t.total)", "\(t.unit)ผ่าน", ok ? .green : .red)] + t.extra.prefix(2)
@@ -270,11 +273,12 @@ public enum FeedBuilder {
     }
 
     /// Problems of the signed daily reports, each in its latest state and dated by the report that raised it.
-    static func problemPosts(_ s: Station) -> [FeedPost] {
+    static func problemPosts(_ s: Station, from: Date? = nil, through: Date? = nil) -> [FeedPost] {
         let signed = s.signed
         let (open, closed) = RoutineReport.problems(signed.map(\.daily))
         return (open + closed).compactMap { p in
-            guard let first = signed.first(where: { $0.daily.problems.contains { $0.id == p.id } }), let at = first.signedAt else { return nil }
+            guard let first = signed.first(where: { $0.daily.problems.contains { $0.id == p.id } }),
+                  let at = first.signedAt, inWindow(at, from: from, through: through) else { return nil }
             let owner = s.settings.siteEngineer.isEmpty ? first.recorder : s.settings.siteEngineer
             let text = p.solution.isEmpty ? p.description : p.description + " — " + p.solution
             return FeedPost(id: "problem-\(s.id)-\(p.id.uuidString)", kind: .issue, project: s.project, team: s.team,
@@ -285,9 +289,10 @@ public enum FeedBuilder {
     }
 
     /// The home job's punch list. A punch made before `raised` was kept is dated by its due date.
-    static func punchPosts(_ s: Station) -> [FeedPost] {
+    static func punchPosts(_ s: Station, from: Date? = nil, through: Date? = nil) -> [FeedPost] {
         s.punches.compactMap { p in
             guard !p.title.trimmingCharacters(in: .whitespaces).isEmpty, let at = p.raised ?? p.due ?? p.closed else { return nil }
+            guard inWindow(at, from: from, through: through) else { return nil }
             let text = p.location.isEmpty ? p.title : p.title + " | " + p.location
             return FeedPost(id: "punch-\(s.id)-\(p.id)", kind: .issue, project: s.project, team: s.team,
                             initials: initials(team: s.team), who: who(s.team, s.project == .home ? "งานบ้าน" : ""), place: place(s, on: at),
@@ -295,6 +300,10 @@ public enum FeedBuilder {
                             issue: .init(owner: s.contractor, due: p.due, fixed: !p.isOpen, canFix: p.canClose),
                             source: .punch(project: s.id, id: p.id))
         }
+    }
+
+    private static func inWindow(_ date: Date, from: Date?, through: Date?) -> Bool {
+        (from.map { date >= $0 } ?? true) && (through.map { date <= $0 } ?? true)
     }
 
     // MARK: Daily summary

@@ -257,7 +257,8 @@ extension InstallTrackingPage {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     padHeadCard
-                    padCategoryBody(data)
+                    // Keep the selected category's large editor tree out of this tab's concrete view type.
+                    AnyView(padCategoryBody(data))
                 }
                 .padding(.vertical, 2)
                 .padding(.bottom, settingsChanges.isEmpty ? 0 : 96)
@@ -306,7 +307,7 @@ extension InstallTrackingPage {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(2).minimumScaleFactor(0.85)
-                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 4)
                 syncChip(!settingsChanges.isEmpty)
@@ -665,7 +666,7 @@ extension InstallTrackingPage {
             }
             padSection("การทดสอบ IEC 62446") {
                 padValueRow("เครื่องมือวัด", value: instruments.isEmpty ? "ยังไม่ได้ตั้งค่า" : instruments, first: true,
-                            id: "padSettings.instruments") { leave(to: .route(.iec)) }
+                            id: "padSettings.instruments") { leave(to: .tab(.iec)) }
                 padValueRow("อินเวอร์เตอร์", value: job.iecReport.map { "\($0.inverters.count) เครื่อง | \($0.stringCount) สตริง" } ?? "ยังไม่ได้ตั้งค่า")
             }
         }

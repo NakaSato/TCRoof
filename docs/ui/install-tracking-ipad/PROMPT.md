@@ -24,7 +24,7 @@ D. รายงานประจำวัน tab: KPI row, report table from Da
    four cards under it.
 
 Rules:
-- Tabs คำขอรายสัปดาห์ / ทดสอบ IEC / เอกสาร / แผนก่อสร้าง only LINK to the existing screens.
+- Tabs คำขอรายสัปดาห์ / ทดสอบ IEC / เอกสาร / แผนก่อสร้าง show the existing screens inside the install page; keep the install tab bar visible.
 - Show only what has a data source. Hide weather, milestones, instalments, RFI/NCR/CO, labour, safety, PPC, SPI, cause
   etc. when there is no model, and list them.
 - -installDemo YES may seed the board's example data, for screenshots only.

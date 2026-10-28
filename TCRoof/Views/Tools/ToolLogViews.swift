@@ -11,6 +11,7 @@ struct ToolLogCard: View {
     @State private var filter = 0
     @State private var form: ToolLogForm?
     @State private var showAll = false
+    @State private var sync = CloudSync.shared
     @Environment(\.modelContext) private var context
 
     private var events: [ToolLog.Event] { ToolLogDemo.on ? ToolLogDemo.events : stored.map(\.event) }
@@ -23,6 +24,9 @@ struct ToolLogCard: View {
         let days = ToolLog.days(all.filter { keeps($0.action.kind) }, now: now, days: showAll ? 60 : 7)
         return VStack(alignment: .leading, spacing: 14) {
             header(all, now: now)
+            if (sync.isLoading("toolEvents") || sync.isLoading("vehicles")) && events.isEmpty && vehicles.isEmpty {
+                DataLoadingSkeleton(lines: 3)
+            } else {
             sectionTitle("ใช้งานอยู่ตอนนี้", count: "\(outs.count) รายการ")
             if outs.isEmpty {
                 Text("ไม่มีรายการที่ยืมหรือออกใช้อยู่").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
@@ -51,6 +55,7 @@ struct ToolLogCard: View {
             }
             Button(showAll ? "แสดง 7 วันล่าสุด" : "ดูบันทึกทั้งหมด ›") { showAll.toggle() }
                 .font(.sarabun(15, .semibold, relativeTo: .subheadline)).frame(minHeight: 44)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()

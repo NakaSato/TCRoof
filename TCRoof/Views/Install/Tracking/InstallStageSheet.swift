@@ -27,23 +27,34 @@ struct InstallStageSheet: View {
     var setDocument: (MasterSchedule.WorkItem, String) -> Void = { _, _ in }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            head
-            if let confirmation { MPAssistantMark(confirmation: confirmation) }
-            if row.overrunDays > 0 && row.status != .done { lateBox }
-            if !row.subs.isEmpty { checklist }
-            if !wbs.isEmpty {
-                WBSChecklist(items: wbs, ticks: ticks, canTick: canTick, canTakeBack: canTakeBack, toggle: toggleWBS,
-                             setDocument: setDocument)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                head
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if let confirmation { MPAssistantMark(confirmation: confirmation) }
+                        if row.overrunDays > 0 && row.status != .done { lateBox }
+                        if !row.subs.isEmpty { checklist }
+                        if !wbs.isEmpty {
+                            WBSChecklist(items: wbs, ticks: ticks, canTick: canTick, canTakeBack: canTakeBack,
+                                         toggle: toggleWBS, setDocument: setDocument)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                }
+                .scrollIndicators(.hidden)
+                Rectangle().fill(Theme.hairline).frame(height: 1)
+                footer.padding(.top, 16)
             }
-            footer
+            .padding(24)
+            .frame(maxWidth: 870)
+            .frame(maxHeight: max(geometry.size.height - 48, 320))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
+            // the phone's width less its margins
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(24)
-        .frame(maxWidth: 870)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .shadow(color: Theme.navySolid.opacity(0.18), radius: 24, y: 8)
-        // the phone's width less its margins
-        .padding(.horizontal, 12)
     }
 
     private var days: String {

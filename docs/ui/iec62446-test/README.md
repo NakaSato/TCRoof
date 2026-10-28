@@ -3,6 +3,10 @@
 แบบหน้าจอสำหรับฟอร์ม `docs/forms/iec62446-pwa` ใช้ design system "TCRoof Survey" (`Theme.swift`) และข้อมูลจริงของสถานีจ่ายน้ำแพรกหนามแดง
 เปิด `preview.html` ในเบราว์เซอร์เพื่อดูทั้ง 4 จอ (รองรับธีมมืด)
 
+## เวอร์ชันปัจจุบันในแท็บงานติดตั้ง (iPad)
+
+The install-page version uses the install page's shared project header and tabs. It does not draw a second IEC navigation header or pin a second action bar above the app dock. Its report content scrolls as one page, with a compact overview card (station, completion, status and setup actions), the existing inverter and stage sections, and export/submit actions at the end. The overview uses the shared `TCProgressRing` and `TCStatusChip`; overview, summary, inverter, stage, and action cards use `tcCard()` with `Space` and `Radius` tokens. The standalone IEC screen keeps its own header and pinned action bar.
+
 | จอ | ไฟล์ | หน้าที่ | ข้อมูลใน schema |
 |---|---|---|---|
 | 1 ภาพรวม | `screen-1.png` | ความครบต่อ inverter แยกก่อน/หลัง, รายการที่ยังขาด, ปุ่มส่งออก Excel + Word | ทั้งไฟล์ |

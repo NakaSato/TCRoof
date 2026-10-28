@@ -7,7 +7,9 @@ import TCRoofCore
 /// `วันนี้` takes the column's free height and scrolls inside; `งานสำรวจค้างอยู่` is two rows high.
 /// Under ~1000 pt wide the columns stack in one scroll view.
 struct PadHome<Popover: View>: View {
+    let jobs: [Job]
     let appointments: [TodayAppointment]
+    let jobsLoading: Bool
     let timeline: [TimelineItem]
     let pending: [PendingSurvey]
     let unread: Int
@@ -100,9 +102,13 @@ struct PadHome<Popover: View>: View {
         return ahead + paged.filter { $0.isInstall && $0.date <= .now }
     }
 
-    private var hero: some View {
-        AppointmentHero(size: .pad, title: "แผนงานวันนี้", emptyTitle: "ไม่มีแผนงานวันนี้", appointments: plan.map(heroItem), page: $page,
-                        open: open, newSurvey: newSurvey)
+    @ViewBuilder private var hero: some View {
+        if jobsLoading && jobs.isEmpty {
+            DataLoadingSkeleton(lines: 3)
+        } else {
+            AppointmentHero(size: .pad, title: "แผนงานวันนี้", emptyTitle: "ไม่มีแผนงานวันนี้", appointments: plan.map(heroItem), page: $page,
+                            open: open, newSurvey: newSurvey)
+        }
     }
 
     private func heroItem(_ item: TimelineItem) -> HeroItem {
@@ -122,7 +128,8 @@ struct PadHome<Popover: View>: View {
 
     /// `ฟีดโครงการ`, the iPhone home's feed at the column's sizes.
     private func feed(scrolls: Bool) -> some View {
-        HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), layout: .column(scrolls: scrolls), open: openFeed)
+        HomeFeed(now: now, todayTeams: Set(appointments.map(\.job.teamRaw)), jobs: jobs,
+                 layout: .column(scrolls: scrolls), open: openFeed)
     }
 }
 

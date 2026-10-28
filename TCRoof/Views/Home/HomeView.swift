@@ -97,6 +97,7 @@ struct HomeView: View {
     @State private var notificationService = NotificationService.shared
     @State private var liveFeed = LiveFeed.shared
     @State private var instruments = InstrumentStore.shared
+    @State private var cloudSync = CloudSync.shared
     /// A screen opened from a system notification.
     @State private var linked: LinkedScreen?
     @State private var shareURL: SharedLink?
@@ -190,7 +191,7 @@ struct HomeView: View {
         let survey = session.survey
         let items = notifications, read = readIDs
         let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
-        return PhoneHome(appointments: appointments,
+        return PhoneHome(jobs: jobs, appointments: appointments, jobsLoading: jobs.isEmpty && cloudSync.isLoading("jobs"),
                          unread: items.filter { !read.contains($0.id) }.count,
                          now: now,
                          notificationsShown: $showNotifications,
@@ -230,7 +231,7 @@ struct HomeView: View {
         let survey = session.survey
         let items = notifications, read = readIDs
         let appointments = TodayAppointment.list(jobs: jobs, survey: survey)
-        return PadHome(appointments: appointments,
+        return PadHome(jobs: jobs, appointments: appointments, jobsLoading: jobs.isEmpty && cloudSync.isLoading("jobs"),
                        timeline: TimelineItem.list(jobs: jobs, survey: survey),
                        pending: PendingSurvey.list(survey: survey, todayJobs: todaysJobs),
                        unread: items.filter { !read.contains($0.id) }.count,

@@ -4,10 +4,9 @@ import TCRoofCore
 import ExcelExport
 
 /// The iPad install tracking page of one station (docs/ui/install-tracking-ipad): the blue header, the project's tab
-/// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock. `ภาพรวม` and
-/// `รายงานประจำวัน` change the page in place; the other tabs push the screens that exist.
+/// bar and, on `ภาพรวม`, the KPI strip. It is pushed over the PWA home and keeps the dock; its tabs change in place.
 struct InstallTrackingPage: View {
-    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request, weekly, settings }
+    enum Tab: String, CaseIterable { case overview, daily, plan, docs, request, weekly, iec, settings }
 
     /// A screen the page pushes.
     enum Route: Hashable { case request, weekly, docs, plan, dailies, day(Date), survey(UUID), detail, iec, devices }
@@ -130,6 +129,7 @@ struct InstallTrackingPage: View {
         .mpWorkbook(workbook, job: job)
         .onAppear(perform: enforceRoleTabAccess)
         .onChange(of: permissions.role) { _, _ in enforceRoleTabAccess() }
+        .task { CloudSync.shared.loadSiteICLSheets() }
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {
@@ -138,7 +138,9 @@ struct InstallTrackingPage: View {
             // `-installDetail YES` opens รายละเอียดงาน
             if Debug.detail { route = .detail }
             // `-iecOpen YES` opens ทดสอบ IEC 62446
-            if Debug.iec { route = .iec }
+            if Debug.iec {
+                if sizeClass == .compact { route = .iec } else { tab = .iec }
+            }
             // `-installPlanEdit YES` opens แผนก่อสร้าง's edit mode (iPhone)
             if Debug.planEdit, sizeClass == .compact { startPlanEdit(data) }
             guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
@@ -190,6 +192,8 @@ struct InstallTrackingPage: View {
                     }
             } else if tab == .settings {
                 padSettingsTab(data)
+            } else if tab == .iec {
+                IECTestScreen(job: job, embedded: true)
             } else {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -205,7 +209,7 @@ struct InstallTrackingPage: View {
                             planTab(data)
                         case .docs:
                             docsTab()
-                        case .request, .weekly, .settings:
+                        case .request, .weekly, .iec, .settings:
                             EmptyView()
                         }
                     }
@@ -437,7 +441,7 @@ struct InstallTrackingPage: View {
          // the one-page request in the page (docs/ui/install-tracking-ipad-request-map), the R1 form below 1000 pt
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
          Item(id: "weekly", title: "Weekly Report", symbol: "doc.text", tab: .weekly),
-         Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", route: .iec),
+         Item(id: "iec", title: "ทดสอบ IEC 62446", symbol: "bolt", tab: .iec),
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan),
          Item(id: "settings", title: "ตั้งค่าโครงการ", symbol: "gearshape", tab: .settings)]

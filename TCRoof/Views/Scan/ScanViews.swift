@@ -11,6 +11,7 @@ struct ScanJobListView: View {
     @State private var showPicker = false
     @State private var pendingJob: Job?
     @State private var scanJob: Job?
+    @State private var sync = CloudSync.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var filtered: [Job] {
@@ -18,7 +19,10 @@ struct ScanJobListView: View {
     }
 
     var body: some View {
-        if sizeClass == .compact { PhoneScanList() } else { padList }
+        Group {
+            if sizeClass == .compact { PhoneScanList() } else { padList }
+        }
+        .task { CloudSync.shared.loadScannedDevices() }
     }
 
     /// iPad; the phone has `PhoneScanList`.
@@ -26,7 +30,9 @@ struct ScanJobListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 QueueFilterBar(listTitle: "รายการงานติดตั้ง", prefix: "คิวติดตั้ง", window: $window, search: $search, count: filtered.count)
-                if filtered.isEmpty {
+                if filtered.isEmpty && sync.isLoading("devices") {
+                    ForEach(0..<3, id: \.self) { _ in DataLoadingSkeleton(lines: 2) }
+                } else if filtered.isEmpty {
                     TCEmptyState("ไม่พบรายการ", systemImage: "tray", description: Text("ลองเปลี่ยนตัวกรองหรือคำค้นหา"))
                 } else {
                     LazyVGrid(columns: cardColumns, spacing: 16) {

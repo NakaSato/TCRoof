@@ -8,10 +8,12 @@ struct PhoneScanList: View {
     @State private var showPicker = false
     @State private var pendingJob: Job?
     @State private var scanJob: Job?
+    @State private var sync = CloudSync.shared
 
     var body: some View {
         PhoneJobQueue(title: "สแกนอุปกรณ์", noun: "งานติดตั้ง", historyLabel: "ประวัติการสแกน",
-                      fabSymbol: "barcode.viewfinder", fabLabel: "สแกนอุปกรณ์", fab: { showPicker = true }) {
+                      fabSymbol: "barcode.viewfinder", fabLabel: "สแกนอุปกรณ์", fab: { showPicker = true },
+                      loading: sync.isLoading("devices")) {
             EmptyView()
         } history: {
             ScanHistoryView()

@@ -94,4 +94,31 @@ final class InstallSettingsUITests: XCTestCase {
         confirm.tap()
         XCTAssertTrue(waitGone(confirm), "the sheet closes after the upload")
     }
+
+    /// With `TEST_RUNNER_SETTINGS_SHOTS=<folder>`, saves the board's states there named like `states/` (05 and 08, the
+    /// categories left out, have none).
+    func testStateShots() throws {
+        guard let dir = ProcessInfo.processInfo.environment["SETTINGS_SHOTS"] else { throw XCTSkip("TEST_RUNNER_SETTINGS_SHOTS not set") }
+        let states: [(String, [String], String?)] = [
+            ("01-team", [], nil),
+            ("02-document-header", ["-installSettings", "header"], nil),
+            ("03-drawings", ["-installSettings", "drawings"], nil),
+            ("04-report-cycle", ["-installSettings", "routine"], nil),
+            ("06-connection-iec", ["-installSettings", "connection"], nil),
+            ("07-reference", ["-installSettings", "reference"], nil),
+            ("09-text-editor", ["-installSettingsState", "edit"], "padSheet.text"),
+            ("10-unsaved-bar", ["-installSettingsState", "dirty"], "padSettings.unsavedBar"),
+            ("11-revision-history", ["-installSettingsState", "history"], "padSheet.uploadNext"),
+            ("12-upload-revision", ["-installSettingsState", "upload"], "padSheet.uploadConfirm"),
+            ("13-person-sheet", ["-installSettingsState", "person"], "padSheet.remove"),
+        ]
+        for (name, extra, wait) in states {
+            let app = try launch(["-installTab", "settings"] + extra)
+            XCTAssertTrue(app.buttons["padSettings.team"].waitForExistence(timeout: 15), name)
+            if let wait { XCTAssertTrue(app.descendants(matching: .any)[wait].firstMatch.waitForExistence(timeout: 15), name) }
+            _ = XCTWaiter().wait(for: [XCTestExpectation(description: "settle")], timeout: 1.5)
+            try XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name + ".png"))
+            app.terminate()
+        }
+    }
 }

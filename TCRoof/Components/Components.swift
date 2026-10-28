@@ -1,6 +1,26 @@
 import SwiftUI
 import TCRoofUI
 
+/// Placeholder card shown while a screen is preparing or fetching its first rows.
+struct DataLoadingSkeleton: View {
+    var lines = 3
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            RoundedRectangle(cornerRadius: 5).fill(Theme.borderSubtle).frame(width: 150, height: 16)
+            ForEach(0..<max(lines, 1), id: \.self) { index in
+                RoundedRectangle(cornerRadius: 4).fill(Theme.borderSubtle.opacity(0.8))
+                    .frame(maxWidth: index == lines - 1 ? 180 : .infinity).frame(height: 12)
+            }
+            RoundedRectangle(cornerRadius: 8).fill(Theme.borderSubtle.opacity(0.65)).frame(height: 88)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityLabel("กำลังโหลดข้อมูล")
+    }
+}
+
 // MARK: - Page chrome
 
 /// The secondary button on the right of a `TCNavBar`.

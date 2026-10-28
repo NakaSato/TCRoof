@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import ImageIO
 import TCRoofUI
 import TCRoofCore
@@ -113,10 +112,11 @@ struct HomeFeed: View {
     let now: Date
     /// Teams on today's appointments, `ทีมของฉัน` when Settings names none.
     let todayTeams: Set<String>
+    /// Shared with the home screen so this feed doesn't issue a second all-project query.
+    let jobs: [Job]
     var layout = Layout.phone
     let open: (FeedLink) -> Void
 
-    @Query(sort: \Job.installStart) private var jobs: [Job]
     /// Every server snapshot sync brings in moves `lastSync`: a record added to a job already here rebuilds the feed
     /// then, not at the next minute.
     @State private var sync = CloudSync.shared
@@ -130,6 +130,7 @@ struct HomeFeed: View {
     /// `สรุปโดย AI` of the daily summary, on this device.
     @State private var digest = FeedDigestStore.shared
     @State private var posts: [FeedPost] = []
+    @State private var didBuild = false
     @State private var filter = HomeFeed.initialFilter
     @State private var days = FeedBuilder.windowDays
     /// A punch that can't be closed yet: it needs a photo of the fix.
@@ -187,9 +188,15 @@ struct HomeFeed: View {
         // the page that scrolls the feed shows the pill
         .preference(key: FeedNewPostsKey.self, value: topVisible ? 0 : fresh)
         .onChange(of: topVisible) { if topVisible { seen = Set(posts.map(\.id)) } }
-        .task(id: Refresh(now: now, jobs: jobs.count, days: days, synced: sync.lastSync, pulls: sync.refreshes)) { rebuild() }
+        .task(id: Refresh(day: RoutineReport.day(now), jobs: jobs.count, days: days, synced: sync.lastSync, pulls: sync.refreshes)) {
+            // Firestore can confirm several listeners in a burst. Let their snapshots settle before rebuilding the
+            // all-project feed; relative timestamps update from `now` in the view without a full data scan each minute.
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            rebuild()
+        }
         // back from a record a post opened
-        .onAppear { rebuild() }
+        .onAppear { if didBuild { rebuild() } }
         #if DEBUG
         .task {
             let s = UserDefaults.standard.double(forKey: "homeFeedArrive")
@@ -212,16 +219,22 @@ struct HomeFeed: View {
         }
     }
 
-    private struct Refresh: Equatable { let now: Date; let jobs: Int; let days: Int; let synced: Date?; let pulls: Int }
+    private struct Refresh: Equatable { let day: Date; let jobs: Int; let days: Int; let synced: Date?; let pulls: Int }
 
     /// The posts, the empty state and `ดูโพสต์ก่อนหน้า`, for the layout's stack.
     @ViewBuilder private func list(_ shown: [FeedPost]) -> some View {
-        ForEach(shown) { card($0) }
-        if shown.isEmpty {
-            Text("ยังไม่มีความคืบหน้าวันนี้").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
-                .frame(maxWidth: .infinity, minHeight: 44)
+        LazyVStack(spacing: 14) {
+            ForEach(shown) { card($0) }
+            if !didBuild || (jobs.isEmpty && sync.isLoading("jobs")) {
+                DataLoadingSkeleton(lines: 2)
+                DataLoadingSkeleton(lines: 3)
+                DataLoadingSkeleton(lines: 2)
+            } else if shown.isEmpty {
+                Text("ยังไม่มีความคืบหน้าวันนี้").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            if didBuild { earlier }
         }
-        earlier
     }
 
     private var isColumn: Bool { if case .column = layout { true } else { false } }
@@ -371,12 +384,24 @@ struct HomeFeed: View {
 
     private func rebuild() {
         #if DEBUG
-        if Self.isDemo { posts = Self.refreshDemoPosts(now: now, pulls: sync.refreshes + demoArrived) + Self.demoPosts(now: now); markSeen(); return }
+        if Self.isDemo { posts = Self.refreshDemoPosts(now: now, pulls: sync.refreshes + demoArrived) + Self.demoPosts(now: now); markSeen(); didBuild = true; return }
         #endif
+#if DEBUG
+        let stationsStartedAt = Date()
+#endif
         let stations = jobs.map(\.feedStation)
+#if DEBUG
+        let stationsElapsedMS = Int(Date().timeIntervalSince(stationsStartedAt) * 1_000)
+        let postsStartedAt = Date()
+#endif
         posts = FeedBuilder.posts(stations, now: now, days: days)
+#if DEBUG
+        let postsElapsedMS = Int(Date().timeIntervalSince(postsStartedAt) * 1_000)
+        print("HomeFeed: built \(stations.count) stations in \(stationsElapsedMS) ms; generated \(posts.count) posts in \(postsElapsedMS) ms")
+#endif
         markSeen()
         askDigest(stations)
+        didBuild = true
     }
 
     /// The daily summary on show gets its `สรุปโดย AI` (one question a day on this device, team only).

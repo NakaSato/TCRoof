@@ -61,7 +61,7 @@ public extension SurveyModel {
     /// Lets everyone who can open a job read its Drive folder, so their devices download the photos its report prints:
     /// each address once per folder (remembered on this device), never this account's own. An address Google refuses
     /// is tried again next time; the others go on.
-    public func shareJobFolder(_ folderID: String, with emails: [String]) async {
+    func shareJobFolder(_ folderID: String, with emails: [String]) async {
         let key = "drive.sharedTo.\(folderID)"
         var done = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
         let me = google.email.map(Permissions.normalized)

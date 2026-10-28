@@ -27,12 +27,7 @@ struct WBSChecklist: View {
                 Spacer()
                 Text("ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
-            // the list scrolls once it outgrows the sheet
-            ViewThatFits(in: .vertical) {
-                rows(parents)
-                ScrollView { rows(parents) }
-            }
-            .frame(maxHeight: 360)
+            rows(parents)
         }
         .alert("เลขที่เอกสาร", isPresented: Binding(get: { documentFor != nil }, set: { if !$0 { documentFor = nil } }),
                presenting: documentFor) { item in

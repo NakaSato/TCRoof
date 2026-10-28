@@ -18,6 +18,8 @@ extension InstallTrackingPage {
         if target == .request, sizeClass != .compact { tab = .request; return }
         // and Weekly Report
         if target == .weekly, sizeClass != .compact { tab = .weekly; return }
+        // IEC commissioning is also a tab of the iPad install page
+        if target == .iec, sizeClass != .compact { tab = .iec; return }
         let today = RoutineReport.calendar.startOfDay(for: .now)
         route = switch target {
         case .daily: .day(today)

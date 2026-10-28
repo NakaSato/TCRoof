@@ -8,6 +8,8 @@ import ExcelExport
 /// Opened from the install tracking page's tab.
 struct IECTestScreen: View {
     @Bindable var job: Job
+    /// Embedded in the install page's tabs: use that page's shared header instead of drawing a second blue header.
+    var embedded = false
     @State private var setup = false
     @State private var grid: GridTarget?
     /// Step 2's designed page (iPad): the inverter it opens on.
@@ -48,28 +50,32 @@ struct IECTestScreen: View {
     var body: some View {
         let report = job.iecReport
         VStack(spacing: 0) {
-            IECHeader(title: "ทดสอบระบบ IEC 62446", subtitle: (report?.stationLine).flatMap { $0.isEmpty ? nil : $0 } ?? job.stationName) {
-                if report?.isLocked != true {
-                    IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { showSetup() }
+            if !embedded {
+                IECHeader(title: "ทดสอบระบบ IEC 62446", subtitle: (report?.stationLine).flatMap { $0.isEmpty ? nil : $0 } ?? job.stationName) {
+                    if report?.isLocked != true {
+                        IECHeaderButton(title: report == nil ? "ตั้งค่าการทดสอบ" : "ตั้งค่า", symbol: "slider.horizontal.3") { showSetup() }
+                    }
+                    if report?.inverters.isEmpty == false, sizeClass == .regular {
+                        IECHeaderButton(title: "ดูชีต Excel", symbol: "tablecells") { sheetPreview = SheetTarget(inverter: 0) }
+                    }
+                    if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { startExport() } }
                 }
-                if report?.inverters.isEmpty == false, sizeClass == .regular {
-                    IECHeaderButton(title: "ดูชีต Excel", symbol: "tablecells") { sheetPreview = SheetTarget(inverter: 0) }
-                }
-                if report?.inverters.isEmpty == false { IECHeaderButton(title: "ส่งออก", symbol: "square.and.arrow.up") { startExport() } }
             }
             if let report, !report.inverters.isEmpty {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: Space.l) {
+                        if embedded { embeddedOverview(report) }
                         resultNotice(report)
                         stationNotice(report)
                         stats(report)
                         inverterCards(report)
                         stagesCard(report)
+                        if embedded { embeddedFooter(report) }
                     }
-                    .padding(24)
+                    .padding(Space.xl)
                 }
                 .scrollIndicators(.hidden)
-                bottomBar(report)
+                if !embedded { bottomBar(report) }
             } else {
                 emptyState
             }
@@ -132,6 +138,96 @@ struct IECTestScreen: View {
         #endif
     }
 
+    /// The install-page version: status, progress and setup actions inside the content, with no second screen header.
+    private func embeddedOverview(_ report: IECReport) -> some View {
+        let complete = IECReport.Stage.allCases.filter { $0 != .review && report.isDone($0) }.count
+        let (status, kind): (String, TCStatusChip.Kind) = if report.resultIsStale {
+            ("נדרש עדכון", .pending)
+        } else if report.result != nil {
+            ("ปิดการทดสอบแล้ว", .done)
+        } else if report.isAwaitingClose {
+            ("รอทีมภายในปิด", .active)
+        } else {
+            ("กำลังตรวจ", .pending)
+        }
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ภาพรวมการทดสอบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(report.stationLine.isEmpty ? job.stationName : report.stationLine)
+                        .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    Text("\(report.inverters.count) Inverter · \(report.stringCount) สตริง · \(IECFormat.number(report.installedKWp)) kWp")
+                        .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
+                }
+                Spacer(minLength: 8)
+                TCProgressRing(.percent(report.completion), size: 58)
+            }
+            HStack(spacing: 10) {
+                TCStatusChip(status, kind: kind)
+                Text("ครบ \(complete)/6 ขั้น").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.inkMuted)
+                Spacer(minLength: 8)
+                if !report.isLocked {
+                    Button { showSetup() } label: { Label("ตั้งค่า", systemImage: "slider.horizontal.3") }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                }
+                if sizeClass == .regular {
+                    Button { sheetPreview = SheetTarget(inverter: 0) } label: { Label("ดูชีต Excel", systemImage: "tablecells") }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                }
+            }
+        }
+        .padding(Space.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .tcCard()
+    }
+
+    /// Embedded submit/export actions scroll with the report, leaving the app's dock as the only pinned bottom bar.
+    private func embeddedFooter(_ report: IECReport) -> some View {
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: report.result != nil ? "checkmark.seal.fill" : report.isAwaitingClose ? "paperplane.fill" : "square.and.pencil")
+                    .foregroundStyle(report.result != nil ? Theme.successInk : Theme.primary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(report.result != nil ? "ผลทดสอบสรุปแล้ว" : report.isAwaitingClose ? "ส่งผลให้ทีมแล้ว" : "บันทึกอัตโนมัติ")
+                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(report.result.map { Self.stamp($0.completedAt, $0.by) }
+                         ?? report.submission.map { Self.stamp($0.submittedAt, $0.by) }
+                         ?? "ความคืบหน้า \(Int((report.completion * 100).rounded()))%")
+                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer(minLength: 8)
+                if let result = report.result {
+                    TCStatusChip(result.passed ? "ผ่าน" : "ไม่ผ่าน",
+                                 fill: result.passed ? Theme.successSoft : Theme.dangerSoft,
+                                 text: result.passed ? Theme.successInk : Theme.dangerText)
+                }
+            }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                Button { startExport(.word) } label: { Label(makingWord ? "กำลังทำ Word…" : "ส่งออก Word ภาพถ่าย", systemImage: "doc.richtext").frame(maxWidth: .infinity) }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(makingWord)
+                Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells").frame(maxWidth: .infinity) }
+                    .buttonStyle(TCButtonStyle(report.isLocked || !report.isDone(.review) ? .primary : .secondary, size: .card))
+                if !report.isLocked, permissions.can(.iecFillSubmit, on: job.access) {
+                    Button(action: submit) { Label("ส่งผลให้ทีม", systemImage: "paperplane").frame(maxWidth: .infinity) }
+                        .buttonStyle(TCButtonStyle(.primary, size: .card))
+                        .disabled(!report.isDone(.review))
+                        .accessibilityHint(report.isDone(.review) ? "ส่งผลให้ทีมภายในตรวจและปิด" : "ทำขั้นที่ 1–6 ให้ครบก่อน")
+                } else if report.isAwaitingClose, permissions.can(.iecClose, on: job.access) {
+                    Button { sendingBack = true } label: { Label("ส่งกลับให้แก้", systemImage: "arrow.uturn.backward").frame(maxWidth: .infinity) }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                    Button(action: complete) { Label("ปิดการทดสอบ", systemImage: "checkmark.seal").frame(maxWidth: .infinity) }
+                        .buttonStyle(TCButtonStyle(.primary, size: .card)).disabled(report.submissionIsStale)
+                } else if report.result != nil, permissions.can(.iecClose, on: job.access) {
+                    Button { confirmReopen = true } label: { Label("แก้ไขผลทดสอบ", systemImage: "lock.open").frame(maxWidth: .infinity) }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
+                }
+            }
+        }
+        .padding(Space.l)
+        .tcCard()
+    }
+
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "bolt.badge.checkmark").font(.system(size: 44)).foregroundStyle(Theme.primary)
@@ -167,10 +263,9 @@ struct IECTestScreen: View {
             }
             Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
         }
-        .padding(16)
+        .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .tcCard()
         .accessibilityElement(children: .combine)
     }
 
@@ -209,9 +304,8 @@ struct IECTestScreen: View {
                 IECBar(title: "PR (คำนวณ)", tally: .init(pr == nil ? 0 : 1, 1), value: pr.map { IECFormat.number($0) } ?? "—")
             }
         }
-        .padding(18)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .padding(Space.l)
+        .tcCard()
     }
 
     /// The green band of a phase and its bars; tapped, it opens that phase's string table.
@@ -247,10 +341,9 @@ struct IECTestScreen: View {
             }
             ForEach(IECReport.Stage.allCases) { stageRow(r, $0) }
         }
-        .padding(18)
+        .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .tcCard()
     }
 
     /// The before phase's table is step 2's page on iPad; the rest, and the iPhone, open the string table.

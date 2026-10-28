@@ -80,7 +80,7 @@
   | `รายงานประจำวัน` (+ 8 pt orange dot when today's report isn't sent) | Phase D, in place |
   | `คำขอรายสัปดาห์` | `WeeklyRequestScreen` (push) |
   | `Weekly Report` | the weekly report draft sheet (`states/06`), or the existing routine summary if it covers it; report which |
-  | `ทดสอบ IEC 62446` | the job's IEC test (push) |
+  | `ทดสอบ IEC 62446` | the job's IEC test, in place |
   | `เอกสาร` | `StationDocsScreen` (push) |
   | `แผนก่อสร้าง` | `MPScheduleScreen` / the plan calendar on this job (push) |
 

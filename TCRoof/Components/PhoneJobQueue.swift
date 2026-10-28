@@ -15,6 +15,7 @@ struct PhoneJobQueue<Extra: View, History: View, Card: View>: View {
     let fabSymbol: String
     let fabLabel: String
     let fab: () -> Void
+    var loading = false
     @ViewBuilder let extraControls: () -> Extra
     @ViewBuilder let history: () -> History
     @ViewBuilder let card: (Job) -> Card
@@ -34,8 +35,12 @@ struct PhoneJobQueue<Extra: View, History: View, Card: View>: View {
         ScrollView {
             LazyVStack(spacing: 10) {
                 if filtered.isEmpty {
-                    Text("ไม่พบ\(noun)").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
-                        .frame(maxWidth: .infinity).padding(.vertical, 40).padding(.horizontal, 16)
+                    if loading {
+                        ForEach(0..<3, id: \.self) { _ in DataLoadingSkeleton(lines: 2).padding(.horizontal, 16) }
+                    } else {
+                        Text("ไม่พบ\(noun)").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+                            .frame(maxWidth: .infinity).padding(.vertical, 40).padding(.horizontal, 16)
+                    }
                 }
                 ForEach(filtered) { card($0) }
             }

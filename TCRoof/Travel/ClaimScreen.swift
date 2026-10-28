@@ -30,6 +30,7 @@ struct ClaimScreen: View {
     @State private var uploading = false
     @State private var stamping: String?
     @State private var pickStop = false
+    @State private var sync = CloudSync.shared
 
     struct NewExpense: Identifiable {
         let id = UUID()
@@ -50,18 +51,25 @@ struct ClaimScreen: View {
     private var managesTeam: Bool { MemberRole.shared.permissions.role.managesTeam }
     private var summary: TravelClaim.Summary { TravelClaim.Summary(days: trips.map(\.day), items: expenses.map(\.item)) }
     private var isThisMonth: Bool { month == TravelClaim.monthKey(.now) }
+    private var isLoadingTravel: Bool { sync.isLoading("trips") || sync.isLoading("expenses") || sync.isLoading("claims") }
+    private var hasTravelData: Bool { !trips.isEmpty || !expenses.isEmpty || claim != nil }
 
     var body: some View {
         PadForm(maxWidth: 820) {
             if managesTeam { reviewLink }
             monthBar
-            if locked { submittedBanner }
-            if isThisMonth, !locked { todayCard }
-            warningsCard
-            daysCard
-            expensesCard
-            totalsCard
-            actionsCard
+            if isLoadingTravel && !hasTravelData {
+                DataLoadingSkeleton(lines: 3)
+                DataLoadingSkeleton(lines: 2)
+            } else {
+                if locked { submittedBanner }
+                if isThisMonth, !locked { todayCard }
+                warningsCard
+                daysCard
+                expensesCard
+                totalsCard
+                actionsCard
+            }
         }
         .navigationTitle("เดินทางและเบิกค่าใช้จ่าย")
         .navigationBarTitleDisplayMode(.inline)
@@ -84,6 +92,7 @@ struct ClaimScreen: View {
         .sheet(item: Binding(get: { share.map(SharedFiles.init) }, set: { share = $0?.urls })) {
             ActivitySheet(items: $0.urls).presentationDetents([.medium, .large])
         }
+        .task { CloudSync.shared.loadTravelRecords() }
         .fullScreenCover(isPresented: $showCamera) {
             ReceiptCamera { pages in addScanned(pages) }
         }

@@ -124,33 +124,12 @@ extension InstallTrackingPage {
     @ViewBuilder func weeklyTab() -> some View {
         VStack(spacing: 12) {
             weeklyHeader.zIndex(1)
-            if let c = reportContent {
-                if weeklyNarrow {
-                    // portrait: the rail beside the slide at full width, the checks and the recipients under it
-                    HStack(alignment: .top, spacing: 12) {
-                        weeklyRail(c).frame(width: 206)
-                        VStack(spacing: 12) {
-                            weeklyViewer(c).layoutPriority(1)
-                            weeklyPanel(split: true).frame(minHeight: 300)
-                        }
-                    }
-                    .frame(maxHeight: .infinity)
-                } else {
-                    HStack(alignment: .top, spacing: 12) {
-                        weeklyRail(c).frame(width: 206)
-                        weeklyViewer(c)
-                        weeklyPanel(split: false).frame(width: 300)
-                    }
-                    .frame(maxHeight: .infinity)
-                }
-            } else {
-                Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            weeklyContent
         }
         .padding(.horizontal, 24).padding(.top, 14)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { weeklyWidth = $0 }
-        // the columns end above the dock
-        .padding(.bottom, 96)
+        // `padDock` already reserves the dock's safe area; keep just a small gap here.
+        .padding(.bottom, 12)
         .overlay(alignment: .bottom) { if let t = reportNote { weeklyToast(t).padding(.bottom, 100) } }
         .sheet(isPresented: $reportPptx) { weeklyPptxSheet }
         .sheet(item: $reportShare) { share in
@@ -164,8 +143,37 @@ extension InstallTrackingPage {
         }
     }
 
-    /// A portrait iPad: the three columns would leave the slide small.
-    var weeklyNarrow: Bool { weeklyWidth > 0 && weeklyWidth < 1200 }
+    /// The viewer, rail, and readiness panel each contain sizable SwiftUI trees. Type erase this branch boundary so
+    /// opening the tab doesn't require the runtime to instantiate their combined generic type at once.
+    private var weeklyContent: AnyView {
+        guard let content = reportContent else {
+            return AnyView(Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity))
+        }
+        if weeklyNarrow {
+            return AnyView(
+                HStack(alignment: .top, spacing: 12) {
+                    weeklyRail(content).frame(width: 206)
+                    VStack(spacing: 12) {
+                        weeklyViewer(content).layoutPriority(1)
+                        weeklyPanel(split: true).frame(minHeight: 300)
+                    }
+                }
+                .frame(maxHeight: .infinity)
+            )
+        }
+        return AnyView(
+            HStack(alignment: .top, spacing: 12) {
+                weeklyRail(content).frame(width: 206)
+                weeklyViewer(content)
+                weeklyPanel(split: false).frame(width: 300)
+            }
+            .frame(maxHeight: .infinity)
+        )
+    }
+
+    /// Use the portrait arrangement only when the content width is genuinely narrow. The 11-inch iPad Air's
+    /// landscape content area is about 1130 pt after page margins, so a 1200 pt cutoff misclassified it.
+    var weeklyNarrow: Bool { weeklyWidth > 0 && weeklyWidth < 1000 }
 
     private func weeklyCard<Content: View>(padding: CGFloat = 14, @ViewBuilder _ content: () -> Content) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)

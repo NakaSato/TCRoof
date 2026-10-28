@@ -108,6 +108,7 @@ struct ToolsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .tcPadNavBar("เครื่องมือวัด", trail: ["หน้าหลัก"])
+        .task { CloudSync.shared.loadToolRecords() }
         .sheet(item: $editing) { tool in
             InstrumentForm(tool: tool, isNew: !store.all.contains { $0.id == tool.id }, save: store.save, delete: store.delete)
         }

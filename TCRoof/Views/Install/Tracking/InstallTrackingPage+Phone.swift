@@ -102,10 +102,12 @@ extension InstallTrackingPage {
             if permissions.can(.assistantUse), job.scheduleInput != nil {
                 roundButton("ผู้ช่วย", "sparkles", on: false) { assistant = true }
             }
-            roundButton("ตั้งค่าเฉพาะโครงการ", "gearshape", on: phoneSettings) {
-                withAnimation(.snappy) {
-                    phoneSettings.toggle()
-                    settingsCategory = nil
+            if permissions.role != .external {
+                roundButton("ตั้งค่าเฉพาะโครงการ", "gearshape", on: phoneSettings) {
+                    withAnimation(.snappy) {
+                        phoneSettings.toggle()
+                        settingsCategory = nil
+                    }
                 }
             }
         }
@@ -150,9 +152,12 @@ extension InstallTrackingPage {
         ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
-                    ForEach(PhoneTab.allCases, id: \.self) { t in
+                    ForEach(PhoneTab.allCases.filter { t in
+                        permissions.role != .external || ![.weekly, .docs, .plan].contains(t)
+                    }, id: \.self) { t in
                         let on = t == phoneTab, item = Self.phoneItem(t)
                         Button {
+                            guard permissions.role != .external || ![.weekly, .docs, .plan].contains(t) else { return }
                             phoneTab = t
                             if t != .plan { planEditing = false }
                         } label: {

@@ -128,6 +128,8 @@ struct InstallTrackingPage: View {
             Button("ตกลง", role: .cancel) {}
         }
         .mpWorkbook(workbook, job: job)
+        .onAppear(perform: enforceRoleTabAccess)
+        .onChange(of: permissions.role) { _, _ in enforceRoleTabAccess() }
         #if DEBUG
         // `-installStage n` opens the nth task's sheet
         .task {
@@ -145,7 +147,7 @@ struct InstallTrackingPage: View {
         #endif
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $route) { r in
-            destination(r).environment(\.installTab) { t in route = nil; tab = t }
+            destination(r).environment(\.installTab) { t in route = nil; if canOpen(t) { tab = t } }
         }
         .navigationDestination(item: $phoneRoute) { phoneDestination($0) }
     }
@@ -246,7 +248,7 @@ struct InstallTrackingPage: View {
     private func go(_ target: Leave?) {
         leaving = nil
         switch target {
-        case .tab(let t): tab = t
+        case .tab(let t): if canOpen(t) { tab = t }
         case .route(let r): route = r
         case .back: dismiss()
         case nil: break
@@ -430,7 +432,7 @@ struct InstallTrackingPage: View {
     }
 
     func items(_ data: InstallPageData) -> [Item] {
-        [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
+        let all = [Item(id: "overview", title: "ภาพรวม", symbol: "chart.line.uptrend.xyaxis", tab: .overview),
          Item(id: "daily", title: "รายงานประจำวัน", symbol: "list.clipboard", tab: .daily, dot: data.dailyUnsent),
          // the one-page request in the page (docs/ui/install-tracking-ipad-request-map), the R1 form below 1000 pt
          Item(id: "request", title: "คำขอรายสัปดาห์", symbol: "calendar", tab: .request),
@@ -439,6 +441,20 @@ struct InstallTrackingPage: View {
          Item(id: "docs", title: "เอกสาร", symbol: "doc.text", tab: .docs),
          Item(id: "plan", title: "แผนก่อสร้าง", symbol: "slider.horizontal.3", tab: .plan),
          Item(id: "settings", title: "ตั้งค่าโครงการ", symbol: "gearshape", tab: .settings)]
+        return all.filter { item in item.tab.map(canOpen) ?? true }
+    }
+
+    /// External users can work in the daily report, weekly request and IEC tabs, but the four team-only tabs stay hidden.
+    func canOpen(_ tab: Tab) -> Bool {
+        guard permissions.role == .external else { return true }
+        return ![Tab.weekly, .docs, .plan, .settings].contains(tab)
+    }
+
+    func enforceRoleTabAccess() {
+        guard permissions.role == .external else { return }
+        if !canOpen(tab) { tab = .overview }
+        if [.weekly, .docs, .plan].contains(phoneTab) { phoneTab = .overview }
+        phoneSettings = false
     }
 
     private func tabBar(_ data: InstallPageData) -> some View {

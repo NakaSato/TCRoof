@@ -58,6 +58,10 @@ public final class JobStore: @unchecked Sendable {
         let dir = root.appendingPathComponent("Jobs")
         let items: [URL]
         do {
+            // Foundation on Linux can return an empty listing for a regular file. Validate the directory first
+            // so an invalid store is reported as a load failure rather than an empty, successfully loaded store.
+            let values = try dir.resourceValues(forKeys: [.isDirectoryKey])
+            guard values.isDirectory == true else { throw POSIXError(.ENOTDIR) }
             items = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
         } catch {
             return LoadResult(jobs: [], failures: [LoadFailure(url: dir, operation: .list, error: error)])

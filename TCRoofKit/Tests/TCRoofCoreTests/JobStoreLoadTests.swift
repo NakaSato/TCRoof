@@ -80,7 +80,8 @@ final class JobStoreLoadTests: XCTestCase {
         let result = store.loadAll()
         XCTAssertTrue(result.jobs.isEmpty)
         XCTAssertEqual(result.failures.count, 1)
-        XCTAssertEqual(result.failures.first?.url, directory)
+        // A URL constructed before the directory was replaced can retain a trailing directory slash.
+        XCTAssertEqual(result.failures.first?.url.path, directory.path)
         XCTAssertEqual(result.failures.first?.operation, .list)
         XCTAssertTrue(try XCTUnwrap(result.failures.first).affects(UUID()))
     }

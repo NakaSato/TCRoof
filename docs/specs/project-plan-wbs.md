@@ -159,3 +159,35 @@ name that station's people in the same rows (`เปรม`, `บีม`, `ผ�
    request's, signed with its email), `AppCompat.syncVersion` raised, `config/app.minSyncVersion` set once every device
    runs it.
 4. Step 3's tick column: L and M, as the full workbook's own formulas fill them (2026-10-26).
+
+## Explicit dependency forecasts
+
+`WorkItem.dependencies` optionally stores finish-to-start links (`predecessor`: WBS code, `lagDays`: working days).
+It is separate from the worksheet's predecessor prose: descriptions such as `ย้อนจาก 2.10` are never parsed as links.
+Missing links in older JSON leave the existing schedule unchanged.
+
+`WBSDependencies.schedule` validates duplicate codes/links, missing references, summary or irrelevant endpoints,
+missing/invalid dates, negative or excessive lag, and cycles. Endpoints must be active leaf rows with baseline dates.
+Zero lag starts on the next working day after the predecessor finishes; lag and duration use the station's working
+weekdays, its holidays and public holidays, including dates beyond the original plan end. A linked row uses its `days`
+when present (zero is a same-day milestone), else its baseline working-day span. Lag is limited to 3,650 working days;
+durations to 3,650 days and baseline spans to 100 years. A calendar must have at least one working weekday.
+
+The forward pass respects existing start dates as release constraints: it can delay linked rows but does not pull them
+earlier. The backward pass computes float and critical rows from explicit links, not inferred date adjacency.
+The construction plan shifts source dates with each stage before scheduling, displays forecast rows, extends summary
+bars and the chart axis, and retains original baseline dates. Invalid graphs show an error and keep legacy dates.
+This forecast does not overwrite MP progress, actual completion dates, weekly bookings or locked workbook baselines.
+
+The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
+It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
+Rows persist through the existing `scheduleWBS` JSON and job sync. `AppCompat.syncVersion` is 7; after this build has
+been rolled out, set `config/app.minSyncVersion` to 7 before relying on links across devices. Older builds can drop
+unknown fields if they rewrite WBS rows. This change does not alter the deployed Firebase switch.
+
+Plan exports keep explicit links in `urn:tcroof:wbs-dependencies` custom XML, and full plan imports restore them.
+The worksheet's human-readable predecessor text and baseline cells remain unchanged. Exporting an unchanged graph
+keeps file bytes unchanged; exporting an empty graph clears previously exported links. Progress-only imports retain
+the app's current links, since that flow merges completion and people rather than replacing the plan structure.
+Dependency forecasts are currently calculated in the app; export carries the links without replacing the workbook's
+forecast columns or its scheduling formulas. Only finish-to-start links and nonnegative lag are supported in this version.

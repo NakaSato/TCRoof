@@ -23,7 +23,8 @@ public enum AppCompat {
     /// 6: the plan file's WBS and its ticks (`scheduleWBS`, `wbsTicks` signed `wbsTicksBy` by a contractor) and what the
     /// ticks booked (`Actual.fromWBS`). Builds before it drop `fromWBS` when they save the plan's progress, so the ticks
     /// would book again; set the minimum before anyone ticks.
-    public static let syncVersion = 6
+    /// 7: explicit WBS dependency links; older builds drop them when rewriting WBS rows.
+    public static let syncVersion = 7
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

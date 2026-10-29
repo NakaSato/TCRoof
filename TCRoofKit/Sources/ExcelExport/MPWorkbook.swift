@@ -139,6 +139,9 @@ public enum MPWorkbook {
                         base: Snapshot.read(book.zip),
                         wbs: book.detail.map { siteSpecific(wbs($0, cal), sheet: $0) } ?? [])
         imported.setup = setup(book)
+        if let dependencies = Snapshot.readDependencies(book.zip) {
+            for i in imported.wbs.indices { imported.wbs[i].dependencies = dependencies[imported.wbs[i].code] }
+        }
         if let detail = book.detail, let h = wbsHeader(detail) {
             let done = wbsDone(detail, h, cal)
             imported.wbsDone = done.codes
@@ -171,6 +174,7 @@ public enum MPWorkbook {
     /// (`ProjectSetup(_:)`), written into the file's station lines where they differ; nil leaves the lines as they are.
     public static func export(_ original: Data, input: MasterSchedule.Input, actual: MasterSchedule.Actual,
                               ticks: [String: MasterSchedule.WBSTick]? = nil, setup: ProjectSetup? = nil,
+                              wbs: [MasterSchedule.WorkItem]? = nil,
                               calendar cal: Calendar = MasterSchedule.calendar) throws -> Export {
         let book = try Book(original)
         let layout = book.layout
@@ -294,17 +298,19 @@ public enum MPWorkbook {
         }
         let keptTicks = Snapshot.readTicks(book.zip)
         let ticksMoved = tickedRows.map { rows in keptTicks.map { $0 != rows } ?? false } ?? false
+        let dependenciesMoved = wbs.map { Snapshot.dependencyMap($0) != (Snapshot.readDependencies(book.zip) ?? [:]) } ?? false
 
         // the progress as the file now holds it, kept in the file so a later import can tell what was changed in Excel;
         // an unchanged file with no record, or an up-to-date one, comes back as it was
         let held = progress(Sheet(sheet.cells.xml, shared: []), layout, cal)
         let kept = Snapshot.read(book.zip)
-        guard changed > 0 || detailChanged > 0 || ticksMoved || (kept != nil && kept != held) else {
+        guard changed > 0 || detailChanged > 0 || ticksMoved || dependenciesMoved || (kept != nil && kept != held) else {
             return Export(data: original, changedCells: 0, weeksOutside: outside.sorted())
         }
         var zip = book.zip
         Snapshot.write(held, into: &zip)
         if let tickedRows { Snapshot.writeTicks(tickedRows, into: &zip) }
+        if let wbs { Snapshot.writeDependencies(wbs, into: &zip) }
         if detailChanged > 0, let detail, let path = book.detailPath { zip.set(path, detail.cells.xml) }
         changed += detailChanged
 

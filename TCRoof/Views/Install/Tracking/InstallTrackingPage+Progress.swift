@@ -380,9 +380,10 @@ struct InstallAxis {
     let columns: [Date]
 
     /// `dayLimit`: the longest span still drawn a day a column (the iPhone keeps a month, its columns scroll).
-    init(_ g: InstallGantt, dayLimit: Int = 62) {
+    init(_ g: InstallGantt, dayLimit: Int = 62, forecast: InstallPlan? = nil) {
         let cal = MasterSchedule.calendar
-        let span = g.span(calendar: cal) ?? g.today...g.today
+        let original = g.span(calendar: cal) ?? g.today...g.today
+        let span = min(original.lowerBound, forecast?.start ?? original.lowerBound)...max(original.upperBound, forecast?.end ?? original.upperBound)
         let days = (cal.dateComponents([.day], from: span.lowerBound, to: span.upperBound).day ?? 0) + 1
         // a day a column up to two months (the board's weekends and today's column read), a week past that
         unit = days > dayLimit ? .week : .day

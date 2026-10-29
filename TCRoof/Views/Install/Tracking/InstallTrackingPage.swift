@@ -41,6 +41,7 @@ struct InstallTrackingPage: View {
     @State private var debugApplied = false
     /// ผู้ช่วยโครงการ, opened on this station.
     @State var assistant = false
+    @State var showWBSDependencies = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
     @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
     @State private var survey = SurveyModel.shared
@@ -123,6 +124,7 @@ struct InstallTrackingPage: View {
         .overlay { if let s = sheet { pageSheet(s, data) } }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
+        .sheet(isPresented: $showWBSDependencies) { WBSDependenciesSheet(job: job) }
         .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {
             Button("ตกลง", role: .cancel) {}
         }

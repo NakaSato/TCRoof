@@ -23,9 +23,12 @@ extension InstallTrackingPage {
             let body = max(viewport - 14 - Self.planHeaderHeight - 14 - Self.dockClearance, 440)
             VStack(alignment: .leading, spacing: 14) {
                 planHeader(p)
+                if !p.dependencyIssues.isEmpty {
+                    Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
+                }
                 HStack(alignment: .top, spacing: 14) {
                     Group {
-                        if planView == .gantt { planGantt(p, axis: InstallAxis(g), waitLabel: data.waitLabel) } else { planTable(p) }
+                        if planView == .gantt { planGantt(p, axis: InstallAxis(g, forecast: p), waitLabel: data.waitLabel) } else { planTable(p) }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: body)
@@ -89,6 +92,11 @@ extension InstallTrackingPage {
                 .accessibilityLabel("มุมมองแผน")
             Button("แก้ไขแผน") { route = .plan }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
+                Button { showWBSDependencies = true } label: { Image(systemName: "arrow.triangle.branch") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    .accessibilityLabel("งานก่อนหน้า WBS")
+            }
             Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
                 Label("Excel", systemImage: "tablecells").font(.sarabunFixed(17, .semibold)).frame(minHeight: touchMin)
             }

@@ -419,14 +419,23 @@ final class CloudSync {
             // Let the other collection listeners deliver their initial cache/server snapshots into this same batch.
             try? await Task.sleep(for: .milliseconds(50))
             guard let self, !Task.isCancelled else { return }
-            let batch = self.pendingSnapshotWork
-            self.pendingSnapshotWork.removeAll(keepingCapacity: true)
-            self.snapshotJobIndex = nil
-            self.pendingModelIndexes.removeAll(keepingCapacity: true)
-            self.applyingRemoteSnapshots = true
-            for apply in batch { apply() }
-            if let context = self.context {
-                if context.hasChanges {
+            while !self.pendingSnapshotWork.isEmpty {
+                guard self.context != nil, !Task.isCancelled else { return }
+                let batch = self.pendingSnapshotWork
+                self.pendingSnapshotWork.removeAll(keepingCapacity: true)
+                self.snapshotJobIndex = nil
+                self.pendingModelIndexes.removeAll(keepingCapacity: true)
+                self.applyingRemoteSnapshots = true
+                let startedAt = ProcessInfo.processInfo.systemUptime
+                var applied = 0
+                for apply in batch {
+                    apply()
+                    applied += 1
+                    if ProcessInfo.processInfo.systemUptime - startedAt >= 0.008 { break }
+                }
+                // Keep the remaining work ahead of snapshots that arrived later, preserving collection order.
+                self.pendingSnapshotWork.insert(contentsOf: batch.dropFirst(applied), at: 0)
+                if let context = self.context, context.hasChanges {
                     let contextID = ObjectIdentifier(context)
                     self.remoteSavePushSuppressions.insert(contextID)
                     do {
@@ -436,11 +445,23 @@ final class CloudSync {
                         print("CloudSync: remote save: \(error.localizedDescription)")
                     }
                 }
+                self.applyingRemoteSnapshots = false
+                self.snapshotJobIndex = nil
+                self.pendingModelIndexes.removeAll(keepingCapacity: true)
+#if DEBUG
+                let elapsedMS = Int((ProcessInfo.processInfo.systemUptime - startedAt) * 1_000)
+                if elapsedMS >= 50 { print("CloudSync: slow snapshot batch: \(elapsedMS) ms") }
+#endif
+                // Let scrolling, typing and rendering run before applying more remote data. No sync indexes or
+                // remote-save suppression flags are held across the suspension.
+                if !self.pendingSnapshotWork.isEmpty {
+                    do { try await Task.sleep(for: .milliseconds(16)) } catch { return }
+                }
             }
+            // Persist and rebuild pending badges once for the drained queue, rather than rescanning every survey
+            // after each small chunk.
             self.saveKnown()
-            self.applyingRemoteSnapshots = false
-            self.snapshotJobIndex = nil
-            self.pendingModelIndexes.removeAll(keepingCapacity: true)
+            self.refreshSurveyPending()
             self.snapshotApplyTask = nil
         }
     }
@@ -464,6 +485,9 @@ final class CloudSync {
     private func push() {
         // an outdated build sends nothing (`config/app.minSyncVersion`); its edits wait here for the update
         guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
+        // A snapshot may be partly applied while the queue yields to the UI. Upload only after it is complete,
+        // otherwise records still waiting in the queue could be mistaken for local deletions.
+        guard snapshotApplyTask == nil, pendingSnapshotWork.isEmpty else { schedulePush(); return }
         var changes: [Change] = []
         var present = Set<String>()
         // an external member changes only a job's IEC test (`iec.fill_submit`) and weekly requests (`weekly.request`), and only reads the ICL (`icl.checklist`)
@@ -857,8 +881,10 @@ final class CloudSync {
                 if let error { onServerSnapshot?(nil); return self.failed(error) }
                 guard let snapshot else { onServerSnapshot?(nil); return }
                 let changes = snapshot.documentChanges
-                if !changes.isEmpty {
-                    self.enqueueSnapshotApplication { [weak self] in self?.receiveSurveys(changes) }
+                // Survey application writes files; bound each work item so the queue can yield during large imports.
+                for start in stride(from: 0, to: changes.count, by: 8) {
+                    let chunk = Array(changes[start..<min(start + 8, changes.count)])
+                    self.enqueueSnapshotApplication { [weak self] in self?.receiveSurveys(chunk) }
                 }
                 if !snapshot.metadata.isFromCache { onServerSnapshot?(snapshot.documents.count); self.synced() }
             }
@@ -875,9 +901,12 @@ final class CloudSync {
                 known[key] = nil
                 continue
             }
-            guard let record = try? change.document.data(as: SurveyRecord.self),
+            guard let record = try? change.document.data(as: SurveyRecord.self) else { continue }
+            // Cache/server acknowledgements often contain the same survey. Check before decoding its full JSON.
+            // A failed local load is the exception: the unchanged cloud record may be needed for recovery.
+            guard known[key] != record.fingerprint
+                    || (UUID(uuidString: change.document.documentID).map { survey.needsRemoteRecovery($0) } ?? false),
                   let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
-            guard known[key] != record.fingerprint || survey.needsRemoteRecovery(job.id) else { continue }
             do {
                 try survey.applyRemote(job)
             } catch {
@@ -888,7 +917,6 @@ final class CloudSync {
             // its photos taken on the other device, from Drive, without waiting for the editor to open
             if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
         }
-        refreshSurveyPending()
     }
 
     /// A whole collection for the team; for an external member only the documents of their jobs, the one query

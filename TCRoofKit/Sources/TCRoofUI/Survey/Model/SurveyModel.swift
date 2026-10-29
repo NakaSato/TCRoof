@@ -84,7 +84,8 @@ public final class SurveyModel {
 
     /// An unchanged cloud copy can repair a failed load, but must not resurrect an intentional local deletion.
     public func needsRemoteRecovery(_ id: UUID) -> Bool {
-        job(id) == nil && loadFailures.contains { $0.affects(id) }
+        // Healthy loads need no recovery and should not scan the job list on every sync acknowledgement.
+        !loadFailures.isEmpty && job(id) == nil && loadFailures.contains { $0.affects(id) }
     }
 
     // MARK: editing
@@ -258,10 +259,13 @@ public final class SurveyModel {
     /// Photo files don't travel with it — the editor downloads them from Drive (`fetchMissingPhotos`).
     public func applyRemote(_ job: Job) throws {
         var job = job
-        if let local = self.job(job.id)?.drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
-        try store.save(job, preservingInvalidFile: true)
+        let index = jobs.firstIndex { $0.id == job.id }
+        if let index, let local = jobs[index].drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
+        // Only recovery needs to read and validate the previous file. Healthy updates already have a loaded copy.
+        let recovering = index == nil || loadFailures.contains { $0.affects(job.id) }
+        try store.save(job, preservingInvalidFile: recovering)
         pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
-        if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
+        if let index { jobs[index] = job } else { jobs.insert(job, at: 0) }
     }
 
     /// A job deleted on another device.

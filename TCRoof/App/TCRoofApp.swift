@@ -204,6 +204,8 @@ struct RootView: View {
             }
             #endif
             // another account signed in: the previous one's records go before sync brings this one's
+            await session.survey.waitForReload()
+            guard !Task.isCancelled, session.survey.hasLoaded else { return }
             LocalData.wipeIfNeeded(context, survey: session.survey)
             SampleData.removeSamples(context)
             Job.keepKinds(context)

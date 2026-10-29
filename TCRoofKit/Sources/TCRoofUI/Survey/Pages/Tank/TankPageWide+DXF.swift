@@ -20,9 +20,11 @@ extension TankPageWide {
     }
 
     func exportDXF() {
-        do {
-            if let f = try model.exportTankDXF(job, moduleID: moduleID) { dxfShare = DXFShare(url: f.url) }
-        } catch { dxfError = error.localizedDescription }
+        Task { @MainActor in
+            do {
+                if let f = try await model.exportTankDXF(job, moduleID: moduleID) { dxfShare = DXFShare(url: f.url) }
+            } catch { dxfError = error.localizedDescription }
+        }
     }
 }
 #endif

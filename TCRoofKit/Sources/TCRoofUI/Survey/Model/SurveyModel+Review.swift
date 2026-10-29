@@ -8,7 +8,34 @@ import DriveSync
 /// Issued REVs: issuing, their snapshots, changes, PDFs and sync.
 extension SurveyModel {
     /// The snapshot `rev` of a job, as issued.
-    func snapshot(_ job: Job, rev: String) -> FormSnapshot? { store.loadRevision(rev: rev, job: job.id) }
+    func snapshot(_ job: Job, rev: String) -> FormSnapshot? {
+        _ = revisionArrivals
+        let key = "\(job.id)/\(rev)"
+        if let snapshot = revisionSnapshots[key] { return snapshot }
+        if !revisionReads.contains(key), revisionLoads[job.id] == nil {
+            revisionLoads[job.id] = Task { [weak self] in await self?.prepareRevisionSnapshots(job) }
+        }
+        return nil
+    }
+
+    func prepareRevisionSnapshots(_ job: Job) async {
+        guard (job.revisions ?? []).contains(where: { !revisionReads.contains("\(job.id)/\($0.rev)") }) else { revisionLoads[job.id] = nil; return }
+        let session = storageSession
+        let revision = revisionArrivals
+        let snapshots = await writer.revisionSnapshots(job)
+        let documents = await writer.revisionDocuments(job)
+        guard !Task.isCancelled, storageSession == session else { return }
+        revisionLoads[job.id] = nil
+        guard revisionArrivals == revision else { return }
+        for item in job.revisions ?? [] {
+            let key = "\(job.id)/\(item.rev)"
+            revisionSnapshots[key] = snapshots[item.rev]
+            revisionJSONs[key] = documents[item.rev]
+            revisionReads.insert(key)
+        }
+        revisionArrivals += 1
+        onChange?()
+    }
 
     /// Changes from the previous issued REV: the report's รายการแก้ไข and the change markers. Empty before REV 01.
     func revisionChanges(_ job: Job) -> [FieldChange] {
@@ -34,27 +61,29 @@ extension SurveyModel {
 
     /// ออก REV nn: the number (the next one once the current is issued), the snapshot and its hash in
     /// `revisions/REVnn.json`, the report as `REVnn.pdf`, then the `Revision`. Nothing is locked.
-    func issue(_ id: UUID, reason: String, now: Date = Date()) throws {
-        flush(id)
+    func issue(_ id: UUID, reason: String, now: Date = Date()) async throws {
+        try await flushAndWait(id)
         guard var j = job(id) else { return }
+        await prepareRevisionSnapshots(j)
         j.values["rev"] = .text(j.nextIssueRev)
         let store = store
-        guard let hash = FormHash.of(j.snapshot, photoData: { store.data(of: $0, in: id) }) else { throw IssueError.photosNotHere }
-        do { try store.saveRevision(j.snapshot, rev: j.rev, job: id) }
-        catch JobStore.RevisionError.exists {
-            // an issue that stopped after writing the snapshot may finish; another REV with this number may not
-            guard snapshot(j, rev: j.rev) == j.snapshot else { throw IssueError.alreadyIssued(j.rev) }
-        }
+        let original = self.job(id)?.snapshot
+        let hash: String
+        do { hash = try await writer.issueSnapshot(j) }
+        catch JobStoreWriter.IssueError.photosMissing { throw IssueError.photosNotHere }
+        catch JobStoreWriter.IssueError.alreadyIssued { throw IssueError.alreadyIssued(j.rev) }
         let path = JobStore.revisionPDFPath(rev: j.rev)
         j.issue(reason: reason, hash: hash, pdfFile: path, now: now)
         // the PDF as issued: its รายการแก้ไข lists the changes from the REV before
-        let pdfOK = (try? pdfData(j).write(to: store.revisionPDF(rev: j.rev, job: id), options: .atomic)) != nil
+        let data = await pdfData(j)
+        let pdfOK = (try? await writer.write(data, to: store.revisionPDF(rev: j.rev, job: id))) != nil
         if !pdfOK, var list = j.revisions, !list.isEmpty {
             list[list.count - 1].pdfFile = nil
             j.revisions = list
         }
+        guard self.job(id)?.snapshot == original, !Task.isCancelled else { throw CancellationError() }
         update(j)
-        flush(id)
+        try await flushAndWait(id)
         // the REV's PDF and snapshot go to Drive's REV folder with the next background upload
         autoUploadPhotos(id, after: 1)
     }
@@ -81,29 +110,38 @@ extension SurveyModel {
     /// The issued REVs of a job that this device holds.
     public func revisionDocs(_ job: Job) -> [RevisionDoc] {
         (job.revisions ?? []).compactMap { r in
-            store.revisionData(rev: r.rev, job: job.id).flatMap { String(data: $0, encoding: .utf8) }.map { RevisionDoc(job: job.id, rev: r.rev, json: $0) }
+            _ = snapshot(job, rev: r.rev)
+            return revisionJSONs["\(job.id)/\(r.rev)"].map { RevisionDoc(job: job.id, rev: r.rev, json: $0) }
         }
     }
 
     /// A REV issued on another device. One already here is kept as it is.
-    public func receiveRevision(_ doc: RevisionDoc) {
-        guard (try? store.saveRevisionData(Data(doc.json.utf8), rev: doc.rev, job: doc.job)) != nil else { return }
+    public func receiveRevision(_ doc: RevisionDoc) async -> Bool {
+        let session = storageSession
+        let saved = await writer.receiveRevision(Data(doc.json.utf8), rev: doc.rev, job: doc.job)
+        guard saved, !Task.isCancelled, storageSession == session else { return false }
+        revisionReads.remove("\(doc.job)/\(doc.rev)")
+        revisionSnapshots["\(doc.job)/\(doc.rev)"] = nil
+        revisionJSONs["\(doc.job)/\(doc.rev)"] = nil
         revisionArrivals += 1
+        return true
     }
 
     /// The PDF as signed; on a device without the file, the report rebuilt from the REV's snapshot (kept once every
     /// photo is here, so it matches the signed one).
-    func revisionPDF(_ job: Job, rev: String) -> URL? {
+    func revisionPDF(_ job: Job, rev: String) async -> URL? {
+        await prepareRevisionSnapshots(job)
         let url = store.revisionPDF(rev: rev, job: job.id)
         if FileManager.default.fileExists(atPath: url.path) { return url }
         guard let list = job.revisions, let i = list.firstIndex(where: { $0.rev == rev }), let snap = snapshot(job, rev: rev) else { return nil }
         var j = job
         j.values = snap.values; j.modules = snap.modules
         j.revisions = Array(list[...i])
-        let complete = missingPhotos(j).isEmpty
+        let present = await writer.existingPhotoIDs(j)
+        let complete = Set(j.allPhotos.map(\.id)).isSubset(of: present)
         let out = complete ? url : tempURL("REV\(rev) " + baseName(j) + ".pdf")
-        try? FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
-        guard (try? pdfData(j).write(to: out, options: .atomic)) != nil else { return nil }
+        let data = await pdfData(j)
+        guard (try? await writer.write(data, to: out)) != nil else { return nil }
         return out
     }
 }

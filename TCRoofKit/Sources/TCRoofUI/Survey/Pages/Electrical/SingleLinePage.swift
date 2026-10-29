@@ -390,20 +390,24 @@ struct SingleLinePage: View {
     }
 
     func exportPDF() {
-        do {
-            let hv: Bool? = hasB4 ? nil : hvPreview
-            let f = try model.exportSingleLinePDF(job, hv: hv)
-            shared = ShareItem(url: f.url)
-        } catch { self.error = error.localizedDescription }
+        Task { @MainActor in
+            do {
+                let hv: Bool? = hasB4 ? nil : hvPreview
+                let f = try await model.exportSingleLinePDF(job, hv: hv)
+                shared = ShareItem(url: f.url)
+            } catch { self.error = error.localizedDescription }
+        }
     }
 
     /// The same diagram as `exportPDF`, as a DXF for CAD programs.
     func exportDXF() {
-        do {
-            let hv: Bool? = hasB4 ? nil : hvPreview
-            let f = try model.exportSingleLineDXF(job, hv: hv)
-            shared = ShareItem(url: f.url)
-        } catch { self.error = error.localizedDescription }
+        Task { @MainActor in
+            do {
+                let hv: Bool? = hasB4 ? nil : hvPreview
+                let f = try await model.exportSingleLineDXF(job, hv: hv)
+                shared = ShareItem(url: f.url)
+            } catch { self.error = error.localizedDescription }
+        }
     }
 }
 #endif

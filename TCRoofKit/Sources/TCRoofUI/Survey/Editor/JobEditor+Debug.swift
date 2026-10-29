@@ -108,7 +108,7 @@ extension JobEditorView {
             if UserDefaults.standard.bool(forKey: "surveyRoofPDF") {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 6_000_000_000)
-                    writeDebugFile("survey.pdf", model.pdfData(job))
+                    writeDebugFile("survey.pdf", await model.pdfData(job))
                 }
             }
         case "final":
@@ -132,7 +132,7 @@ extension JobEditorView {
             if UserDefaults.standard.bool(forKey: "surveyTankPDF") {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 4_000_000_000)
-                    writeDebugFile("survey.pdf", model.pdfData(job))
+                    writeDebugFile("survey.pdf", await model.pdfData(job))
                 }
             }
         default: break

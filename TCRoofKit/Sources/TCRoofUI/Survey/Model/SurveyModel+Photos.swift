@@ -24,6 +24,7 @@ extension SurveyModel {
                 ?? img.jpegData(compressionQuality: 0.8) else { return nil }
         let px = CGSize(width: img.size.width * img.scale, height: img.size.height * img.scale)
         var photo = try? store.addPhoto(data, width: Int(px.width), height: Int(px.height), png: png, takenAt: taken, to: job)
+        photoPresence[job] = nil
         if let stamp { photo?.apply(stamp) }
         if photo != nil, let shot { CameraRoll.save(image, stamp: shot, taken: taken) }
         // the field takes the photo right after this returns; the delay lets that land before the upload looks
@@ -35,9 +36,19 @@ extension SurveyModel {
         _ = photoRevision  // views showing an empty frame look again once a download lands
         let key = "\(job.uuidString)/\(p.fileName)" as NSString
         if let i = cache.object(forKey: key) { return i }
-        guard let d = store.data(of: p, in: job), let i = UIImage(data: d) else { return nil }
-        cache.setObject(i, forKey: key)
-        return i
+        let loadKey = key as String
+        if photoLoads[loadKey] == nil {
+            let session = storageSession
+            photoLoads[loadKey] = Task { [weak self, writer] in
+                let data = await writer.photoData(p, job: job)
+                guard let self, !Task.isCancelled, self.storageSession == session else { return }
+                self.photoLoads[loadKey] = nil
+                guard let data, let image = UIImage(data: data) else { return }
+                self.cache.setObject(image, forKey: key)
+                self.photoRevision += 1
+            }
+        }
+        return nil
     }
 
     // MARK: photos taken on another device
@@ -50,7 +61,24 @@ extension SurveyModel {
     }
 
     /// Photos the job refers to whose files aren't on this device (taken on another iPad).
-    public func missingPhotos(_ job: Job) -> [Photo] { job.allPhotos.filter { !store.hasPhoto($0, in: job.id) } }
+    public func missingPhotos(_ job: Job) -> [Photo] {
+        _ = photoRevision
+        let photos = job.allPhotos
+        if let hit = photoPresence[job.id], hit.photos == photos {
+            return photos.filter { !hit.present.contains($0.id) }
+        }
+        if presenceLoads[job.id] == nil {
+            let session = storageSession
+            presenceLoads[job.id] = Task { [weak self, writer] in
+                let present = await writer.existingPhotoIDs(job)
+                guard let self, !Task.isCancelled, self.storageSession == session else { return }
+                self.presenceLoads[job.id] = nil
+                self.photoPresence[job.id] = (photos, present)
+                self.photoRevision += 1
+            }
+        }
+        return photos
+    }
 
     /// The missing photos that the device which took them already saved to Drive, with their Drive file ids.
     public func downloadablePhotos(_ job: Job) -> [(photo: Photo, fileID: String)] {
@@ -61,7 +89,10 @@ extension SurveyModel {
     /// Downloads the job's missing photos from its Drive folder, four at a time. Does nothing while signed out.
     public func fetchMissingPhotos(_ id: UUID) async {
         guard photoFetch[id]?.running != true, google.isSignedIn, let job = job(id) else { return }
-        let todo = downloadablePhotos(job)
+        let present = await writer.existingPhotoIDs(job)
+        guard !Task.isCancelled else { return }
+        let files = job.drive?.photoFiles ?? [:]
+        let todo = job.allPhotos.filter { !present.contains($0.id) }.compactMap { p in files[p.id.uuidString].map { (photo: p, fileID: $0) } }
         guard !todo.isEmpty else { return }
         photoFetch[id] = PhotoTransfer(total: todo.count)
         let client = DriveClient(tokens: google), store = self.store
@@ -78,7 +109,7 @@ extension SurveyModel {
             for _ in 0..<4 { if !start() { break } }
             for await failure in group {
                 if let failure { photoFetch[id]?.failed += 1; photoFetch[id]?.error = failure }
-                else { photoFetch[id]?.done += 1; photoRevision += 1 }
+                else { photoFetch[id]?.done += 1; photoPresence[id] = nil; photoRevision += 1 }
                 _ = start()
             }
         }
@@ -88,7 +119,8 @@ extension SurveyModel {
     /// Photos taken here that Drive doesn't have yet.
     public func photosToUpload(_ job: Job) -> Int {
         let sent = job.drive?.photoFiles ?? [:]
-        return job.driveFolders.flatMap(\.photos).filter { sent[$0.photo.id.uuidString] == nil && store.hasPhoto($0.photo, in: job.id) }.count
+        let missing = Set(missingPhotos(job).map(\.id))
+        return job.driveFolders.flatMap(\.photos).filter { sent[$0.photo.id.uuidString] == nil && !missing.contains($0.photo.id) }.count
     }
 
     /// Sends the job's new photos to Drive a few seconds after the last change, so another iPad can download them.

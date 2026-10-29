@@ -20,9 +20,11 @@ extension InverterPageWide {
     }
 
     func exportDXF() {
-        do {
-            if let f = try model.exportInverterDXF(job, moduleID: moduleID) { dxfShare = DXFShare(url: f.url) }
-        } catch { dxfError = error.localizedDescription }
+        Task { @MainActor in
+            do {
+                if let f = try await model.exportInverterDXF(job, moduleID: moduleID) { dxfShare = DXFShare(url: f.url) }
+            } catch { dxfError = error.localizedDescription }
+        }
     }
 }
 #endif

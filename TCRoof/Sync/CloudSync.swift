@@ -5,6 +5,7 @@ import CryptoKit
 import FirebaseAuth
 import FirebaseFirestore
 import Network
+import os
 import TCRoofCore
 import TCRoofUI
 
@@ -18,6 +19,10 @@ import TCRoofUI
 @Observable
 final class CloudSync {
     static let shared = CloudSync()
+
+    /// Invalidates callbacks already queued by Firestore when a session stops or restarts.
+    @ObservationIgnored private var sessionID = UUID()
+    @ObservationIgnored private let performance = OSSignposter(subsystem: "com.tcroof.internal", category: "CloudSync")
 
     enum State: Equatable {
         case off, connecting, synced
@@ -63,11 +68,12 @@ final class CloudSync {
     @ObservationIgnored private var startupSnapshotTimedOut = false
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var recordFingerprintCaches: [ObjectIdentifier: Any] = [:]
     @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, externals: [String]?, record: SurveyRecord, fingerprint: String)] = [:]
     @ObservationIgnored private var pushTask: Task<Void, Never>?
     /// Initial collection snapshots often arrive together. Apply them in one main-actor batch so SwiftData only saves
     /// once per burst and relationship lookups are shared across the batch.
-    @ObservationIgnored private var pendingSnapshotWork: [@MainActor () -> Void] = []
+    @ObservationIgnored private var pendingSnapshotWork: [@MainActor () async -> Void] = []
     @ObservationIgnored private var snapshotApplyTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotJobIndex: [String: Job]?
     @ObservationIgnored private var applyingRemoteSnapshots = false
@@ -78,6 +84,8 @@ final class CloudSync {
     @ObservationIgnored private var unconfirmed: [String: Int] = [:]
     /// Child records waiting for their job to arrive, keyed like `known`.
     @ObservationIgnored private var pending: [String: () -> Bool] = [:]
+    @ObservationIgnored private var pendingRetryScheduled = false
+    @ObservationIgnored private var pendingRetryAgain = false
     /// The signed-in email when the member is external (roles): the listeners then ask only for the documents that
     /// list it in `externals`, which is all firestore.rules lets them read, and the push sends only what they may change.
     @ObservationIgnored private var external: String?
@@ -135,6 +143,9 @@ final class CloudSync {
     }
 
     func stop() {
+        sessionID = UUID()
+        survey?.invalidateStorageSession()
+        recordFingerprintCaches.removeAll()
         connectTask?.cancel(); connectTask = nil
         startupSnapshotTimedOut = false
         listeners.forEach { $0.remove() }
@@ -155,6 +166,8 @@ final class CloudSync {
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
+        pendingRetryScheduled = false
+        pendingRetryAgain = false
         unconfirmed = [:]
         snapshotApplyTask?.cancel(); snapshotApplyTask = nil
         pendingSnapshotWork = []
@@ -175,6 +188,11 @@ final class CloudSync {
     }
 
     private func connect() async {
+        if let survey {
+            if !survey.isLoading { survey.reload() }
+            await survey.waitForReload()
+            guard survey.hasLoaded, !Task.isCancelled, context != nil else { return }
+        }
         state = .connecting
         do {
             let user = try await firebaseUser()
@@ -318,6 +336,14 @@ final class CloudSync {
         UserDefaults.standard.set(known, forKey: knownKey)
     }
 
+    private func recordFingerprintCache<M: CloudSynced>(_ type: M.Type) -> RecordFingerprintCache<M.Record> {
+        let id = ObjectIdentifier(type)
+        if let cache = recordFingerprintCaches[id] as? RecordFingerprintCache<M.Record> { return cache }
+        let cache = RecordFingerprintCache<M.Record>()
+        recordFingerprintCaches[id] = cache
+        return cache
+    }
+
     private func fingerprint<T: Encodable>(_ value: T) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
@@ -412,33 +438,40 @@ final class CloudSync {
         }
     }
 
-    private func enqueueSnapshotApplication(_ work: @escaping @MainActor () -> Void) {
+    private func enqueueSnapshotApplication(_ work: @escaping @MainActor () async -> Void) {
         pendingSnapshotWork.append(work)
         guard snapshotApplyTask == nil else { return }
+        let session = sessionID
         snapshotApplyTask = Task { @MainActor [weak self] in
             // Let the other collection listeners deliver their initial cache/server snapshots into this same batch.
             try? await Task.sleep(for: .milliseconds(50))
-            guard let self, !Task.isCancelled else { return }
+            guard let self, self.sessionID == session, !Task.isCancelled else { return }
             while !self.pendingSnapshotWork.isEmpty {
                 guard self.context != nil, !Task.isCancelled else { return }
                 let batch = self.pendingSnapshotWork
                 self.pendingSnapshotWork.removeAll(keepingCapacity: true)
                 self.snapshotJobIndex = nil
                 self.pendingModelIndexes.removeAll(keepingCapacity: true)
-                self.applyingRemoteSnapshots = true
                 let startedAt = ProcessInfo.processInfo.systemUptime
                 var applied = 0
                 for apply in batch {
-                    apply()
+                    await apply()
+                    guard self.sessionID == session, !Task.isCancelled else { return }
+                    // UI edits can occur while storage is awaited. Rebuild relationship indexes after suspension.
+                    self.snapshotJobIndex = nil
+                    self.pendingModelIndexes.removeAll(keepingCapacity: true)
                     applied += 1
                     if ProcessInfo.processInfo.systemUptime - startedAt >= 0.008 { break }
                 }
                 // Keep the remaining work ahead of snapshots that arrived later, preserving collection order.
                 self.pendingSnapshotWork.insert(contentsOf: batch.dropFirst(applied), at: 0)
+                self.applyingRemoteSnapshots = true
                 if let context = self.context, context.hasChanges {
                     let contextID = ObjectIdentifier(context)
                     self.remoteSavePushSuppressions.insert(contextID)
                     do {
+                        let interval = self.performance.beginInterval("SaveRemoteContext")
+                        defer { self.performance.endInterval("SaveRemoteContext", interval) }
                         try context.save()
                     } catch {
                         self.remoteSavePushSuppressions.remove(contextID)
@@ -487,7 +520,9 @@ final class CloudSync {
         guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
         // A snapshot may be partly applied while the queue yields to the UI. Upload only after it is complete,
         // otherwise records still waiting in the queue could be mistaken for local deletions.
-        guard snapshotApplyTask == nil, pendingSnapshotWork.isEmpty else { schedulePush(); return }
+        guard survey.hasLoaded, !survey.isLoading, snapshotApplyTask == nil, pendingSnapshotWork.isEmpty else { schedulePush(); return }
+        let interval = performance.beginInterval("Push")
+        defer { performance.endInterval("Push", interval) }
         var changes: [Change] = []
         var present = Set<String>()
         // an external member changes only a job's IEC test (`iec.fill_submit`) and weekly requests (`weekly.request`), and only reads the ICL (`icl.checklist`)
@@ -529,7 +564,7 @@ final class CloudSync {
         for key in known.keys where !present.contains(key) {
             // A failed local load is not a deletion. Protect both surveys and their issued revisions until a
             // successful reload establishes the complete local inventory; other collections still sync normally.
-            if !survey.loadFailures.isEmpty,
+            if (!survey.hasLoaded || survey.isLoading || !survey.loadFailures.isEmpty),
                key.hasPrefix("\(Self.surveyCollection)/") || key.hasPrefix("\(Self.revisionCollection)/") { continue }
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
@@ -567,7 +602,9 @@ final class CloudSync {
                 known[change.key] = change.fingerprint
                 unconfirmed[change.key, default: 0] += 1
             }
+            let session = sessionID
             batch.commit { [weak self] error in
+                guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
                 MainActor.assumeIsolated {
                     guard let self else { return }
                     // Firestore calls back once the server has the batch, or has refused it
@@ -633,7 +670,9 @@ final class CloudSync {
                 previous[change.key] = known[change.key]
                 known[change.key] = change.fingerprint
             }
+            let session = sessionID
             batch.commit { [weak self] error in
+                guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
                 MainActor.assumeIsolated {
                     guard let self, let error else { return }
                     for (key, old) in previous { self.known[key] = old }
@@ -650,6 +689,9 @@ final class CloudSync {
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
                                          _ upload: Upload = .full) {
+        let interval = performance.beginInterval("Collect", id: performance.makeSignpostID(), "\(M.collection, privacy: .public)")
+        defer { performance.endInterval("Collect", interval) }
+        let cache = recordFingerprintCache(M.self)
         guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
         let me = MemberRole.shared.permissions.email
         for model in models {
@@ -663,7 +705,7 @@ final class CloudSync {
             // an external member's record outside their jobs stays on the device: the rules would refuse it
             if let external, model.ownerJob?.externals.contains(external) != true { continue }
             let record = model.record
-            let print = fingerprint(record)
+            let print = cache.fingerprint(id: key, record: record) { fingerprint($0) }
             guard known[key] != print else { continue }
             let ref = db.document(key)
             if upload == .iecOnly {
@@ -686,6 +728,7 @@ final class CloudSync {
                 changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
             }
         }
+        cache.retainIDs(Set(models.compactMap { $0.syncID.map { "\(M.collection)/\($0)" } }))
     }
 
     /// Each job's phone and address in `jobContacts`, written by the team whether or not the job's own document still
@@ -717,7 +760,9 @@ final class CloudSync {
         guard !listeningCollections.contains(M.collection) else { onServerSnapshot?(nil); onFirstSnapshot?(); return }
         listeningCollections.insert(M.collection)
         let q = owner.map { db.collection(M.collection).whereField("ownerEmail", isEqualTo: $0) } ?? query(M.collection)
+        let session = sessionID
         let registration = q.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error {
@@ -729,8 +774,15 @@ final class CloudSync {
                 guard let snapshot else { onServerSnapshot?(nil); onFirstSnapshot?(); return }
                 onFirstSnapshot?()
                 let changes = snapshot.documentChanges
-                if !changes.isEmpty {
-                    self.enqueueSnapshotApplication { [weak self] in self?.receive(M.self, changes) }
+                let index = SnapshotModels<M>()
+                for start in stride(from: 0, to: changes.count, by: 32) {
+                    let chunk = Array(changes[start..<min(start + 32, changes.count)])
+                    self.enqueueSnapshotApplication { [weak self] in
+                        guard let self, self.sessionID == session else { return }
+                        self.applyingRemoteSnapshots = true
+                        defer { self.applyingRemoteSnapshots = false }
+                        self.receive(M.self, chunk, index: index)
+                    }
                 }
                 if !snapshot.metadata.isFromCache {
                     onServerSnapshot?(snapshot.documents.count)
@@ -771,8 +823,15 @@ final class CloudSync {
         listenOnDemand(CompanyVehicle.self, optional: true)
     }
 
-    private func receive<M: CloudSynced>(_ type: M.Type, _ changes: [DocumentChange]) {
+    /// One index per server snapshot, shared by its bounded chunks to avoid fetching the collection per chunk.
+    @MainActor private final class SnapshotModels<M: CloudSynced> {
+        var models: [String: M]?
+    }
+
+    private func receive<M: CloudSynced>(_ type: M.Type, _ changes: [DocumentChange], index: SnapshotModels<M>) {
         guard let context, !changes.isEmpty else { return }
+        let interval = performance.beginInterval("ReceiveCollection")
+        defer { performance.endInterval("ReceiveCollection", interval) }
 #if DEBUG
         let applyStartedAt = Date()
         defer {
@@ -780,20 +839,34 @@ final class CloudSync {
             print("CloudSync: applied \(changes.count) \(M.collection) changes in \(elapsedMS) ms")
         }
 #endif
-        let local = Dictionary(((try? context.fetch(FetchDescriptor<M>())) ?? []).compactMap { m in m.syncID.map { ($0, m) } },
-                               uniquingKeysWith: { a, _ in a })
+        let cache = recordFingerprintCache(M.self)
+        let actionable: [(change: DocumentChange, record: M.Record?)] = changes.compactMap { change in
+            if change.type == .removed { return (change, nil) }
+            let key = "\(M.collection)/\(change.document.documentID)"
+            guard let record = try? change.document.data(as: M.Record.self),
+                  known[key] != cache.fingerprint(id: key, record: record, compute: { fingerprint($0) }) else { return nil }
+            return (change, record)
+        }
+        guard !actionable.isEmpty else { return }
+        if index.models == nil {
+            index.models = Dictionary(((try? context.fetch(FetchDescriptor<M>())) ?? []).compactMap { m in m.syncID.map { ($0, m) } },
+                                      uniquingKeysWith: { a, _ in a })
+        }
         let jobs = jobIndexForSnapshotBatch()
-        for change in changes {
+        for (change, incoming) in actionable {
             let id = change.document.documentID
             let key = "\(M.collection)/\(id)"
             if change.type == .removed {
-                if let model = local[id] { context.delete(model) }
+                if let model = index.models?[id], !model.isDeleted { context.delete(model) }
+                index.models?[id] = nil
                 known[key] = nil
                 pending[key] = nil
                 continue
             }
-            guard let record = try? change.document.data(as: M.Record.self), known[key] != fingerprint(record) else { continue }
-            if !upsert(M.self, id: id, record: record, existing: local[id], jobs: jobs) {
+            guard let record = incoming else { continue }
+            let existing = index.models?[id]
+            if existing?.isDeleted == true { continue }
+            if !upsert(M.self, id: id, record: record, existing: existing, jobs: jobs, index: index) {
                 pending[key] = { [weak self] in
                     guard let self else { return true }
                     let existing = self.model(M.self, syncID: id)
@@ -806,7 +879,32 @@ final class CloudSync {
         // records waiting for their job, and photos waiting for their log or inspection
         if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self {
             pendingModelIndexes.removeAll(keepingCapacity: true)
-            for (key, retry) in pending where retry() { pending[key] = nil }
+            schedulePendingRetries()
+        }
+    }
+
+    /// Retry dependent records in bounded work items; a new parent arriving requests one more pass.
+    private func schedulePendingRetries() {
+        guard !pendingRetryScheduled else { pendingRetryAgain = true; return }
+        let keys = Array(pending.keys)
+        guard !keys.isEmpty else { return }
+        pendingRetryScheduled = true
+        pendingRetryAgain = false
+        let session = sessionID
+        for start in stride(from: 0, to: keys.count, by: 32) {
+            let end = min(start + 32, keys.count)
+            let chunk = Array(keys[start..<end])
+            let last = end == keys.count
+            enqueueSnapshotApplication { [weak self] in
+                guard let self, self.sessionID == session else { return }
+                self.applyingRemoteSnapshots = true
+                defer { self.applyingRemoteSnapshots = false }
+                for key in chunk where self.pending[key]?() == true { self.pending[key] = nil }
+                if last {
+                    self.pendingRetryScheduled = false
+                    if self.pendingRetryAgain { self.schedulePendingRetries() }
+                }
+            }
         }
     }
 
@@ -826,7 +924,7 @@ final class CloudSync {
     }
 
     /// Applies a remote record; false when it belongs to a job this device hasn't received yet.
-    private func upsert<M: CloudSynced>(_ type: M.Type, id: String, record: M.Record, existing: M?, jobs: [String: Job]) -> Bool {
+    private func upsert<M: CloudSynced>(_ type: M.Type, id: String, record: M.Record, existing: M?, jobs: [String: Job], index: SnapshotModels<M>? = nil) -> Bool {
         guard let context else { return true }
         let model: M
         if let existing {
@@ -840,7 +938,9 @@ final class CloudSync {
             guard made.apply(record, jobs: jobs) else { context.delete(made); return false }
             model = made
         }
-        known["\(M.collection)/\(id)"] = fingerprint(model.record)
+        index?.models?[id] = model
+        let key = "\(M.collection)/\(id)"
+        known[key] = recordFingerprintCache(M.self).fingerprint(id: key, record: model.record) { fingerprint($0) }
         return true
     }
 
@@ -875,7 +975,9 @@ final class CloudSync {
     }
 
     private func listenSurveys(onServerSnapshot: ((Int?) -> Void)? = nil) {
+        let session = sessionID
         let registration = query(Self.surveyCollection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { onServerSnapshot?(nil); return self.failed(error) }
@@ -884,7 +986,7 @@ final class CloudSync {
                 // Survey application writes files; bound each work item so the queue can yield during large imports.
                 for start in stride(from: 0, to: changes.count, by: 8) {
                     let chunk = Array(changes[start..<min(start + 8, changes.count)])
-                    self.enqueueSnapshotApplication { [weak self] in self?.receiveSurveys(chunk) }
+                    self.enqueueSnapshotApplication { [weak self] in await self?.receiveSurveys(chunk) }
                 }
                 if !snapshot.metadata.isFromCache { onServerSnapshot?(snapshot.documents.count); self.synced() }
             }
@@ -892,9 +994,15 @@ final class CloudSync {
         listeners.append(registration)
     }
 
-    private func receiveSurveys(_ changes: [DocumentChange]) {
+    private func receiveSurveys(_ changes: [DocumentChange]) async {
         guard let survey else { return }
+        let session = sessionID
+        await survey.waitForReload()
+        guard sessionID == session, !Task.isCancelled, survey.hasLoaded else { return }
+        let interval = performance.beginInterval("ReceiveSurveys")
+        defer { performance.endInterval("ReceiveSurveys", interval) }
         for change in changes {
+            guard sessionID == session, !Task.isCancelled else { return }
             let key = "\(Self.surveyCollection)/\(change.document.documentID)"
             if change.type == .removed {
                 if let id = UUID(uuidString: change.document.documentID) { survey.removeRemote(id) }
@@ -908,12 +1016,15 @@ final class CloudSync {
                     || (UUID(uuidString: change.document.documentID).map { survey.needsRemoteRecovery($0) } ?? false),
                   let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
             do {
-                try survey.applyRemote(job)
+                let applied = try await survey.applyRemote(job)
+                guard sessionID == session, !Task.isCancelled else { return }
+                guard applied else { continue }
             } catch {
+                guard sessionID == session, !Task.isCancelled else { return }
                 failed(error)
                 continue   // keep the previous fingerprint until the remote record is saved locally
             }
-            known[key] = surveyRecord(job)?.fingerprint
+            known[key] = survey.job(job.id).flatMap { surveyRecord($0)?.fingerprint }
             // its photos taken on the other device, from Drive, without waiting for the editor to open
             if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
         }
@@ -930,7 +1041,9 @@ final class CloudSync {
     /// REVs issued on other devices: their snapshots are stored next to the job, as if issued here. The team's only.
     private func listenRevisions() {
         guard external == nil else { return }
+        let session = sessionID
         let registration = db.collection(Self.revisionCollection).addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
                 // never fail the whole sync over REVs (rules not deployed yet): the jobs still sync
@@ -940,8 +1053,12 @@ final class CloudSync {
                     if change.type == .removed { self.known[key] = nil; continue }
                     guard let record = try? change.document.data(as: RevisionRecord.self), self.known[key] != record.fingerprint,
                           let job = UUID(uuidString: record.job) else { continue }
-                    survey.receiveRevision(SurveyModel.RevisionDoc(job: job, rev: record.rev, json: record.json))
-                    self.known[key] = record.fingerprint
+                    self.enqueueSnapshotApplication { [weak self] in
+                        guard let self, self.sessionID == session else { return }
+                        let saved = await survey.receiveRevision(SurveyModel.RevisionDoc(job: job, rev: record.rev, json: record.json))
+                        guard saved, self.sessionID == session, !Task.isCancelled else { return }
+                        self.known[key] = record.fingerprint
+                    }
                 }
                 self.saveKnown()
             }
@@ -956,9 +1073,10 @@ final class CloudSync {
     /// devices (the higher revision wins); a design saved, renamed, archived or imported here is sent, by the team only
     /// (`design.library`; firestore.rules refuses anyone else and an older revision).
     private func listenDesigns() {
+        let session = sessionID
         let collection = db.collection("standardDesigns")
         DesignLibrary.shared.onChange = { [weak self] d in
-            guard let self, self.external == nil else { return }
+            guard let self, self.sessionID == session, self.external == nil else { return }
             let json = String(decoding: d.exported(), as: UTF8.self)
             collection.document(d.id).setData(["json": json, "revision": d.revision, "savedBy": d.savedBy ?? "",
                                                "updatedAt": FieldValue.serverTimestamp()]) { error in
@@ -969,7 +1087,8 @@ final class CloudSync {
             for p in d.sheet where !sent.contains(p.id.uuidString) {
                 guard let u = DesignLibrary.shared.sheetURL(p), let data = try? Data(contentsOf: u) else { continue }
                 self.db.collection("standardDesignSheets").document(p.id.uuidString)
-                    .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { error in
+                    .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { [weak self] error in
+                        guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
                         if let error { return print("CloudSync: design sheet upload: \(error.localizedDescription)") }
                         let done = (UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? []) + [p.id.uuidString]
                         UserDefaults.standard.set(done, forKey: "cloudSync.designSheetsSent")
@@ -978,13 +1097,14 @@ final class CloudSync {
         }
         // building roofs (C1, §7) share the collection, marked `kind: roof`
         DesignLibrary.shared.onRoofChange = { [weak self] d in
-            guard let self, self.external == nil else { return }
+            guard let self, self.sessionID == session, self.external == nil else { return }
             collection.document(d.id).setData(["json": String(decoding: d.exported(), as: UTF8.self), "kind": "roof", "revision": d.revision,
                                                "savedBy": d.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
                 if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
             }
         }
-        let registration = collection.addSnapshotListener { snapshot, error in
+        let registration = collection.addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
             if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
@@ -999,7 +1119,9 @@ final class CloudSync {
         }
         listeners.append(registration)
         // sheet pages taken on other devices
-        let pages = db.collection("standardDesignSheets").addSnapshotListener { snapshot, error in
+        let pagesSession = sessionID
+        let pages = db.collection("standardDesignSheets").addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == pagesSession }) else { return }
             if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
                 let data = change.document.data()
@@ -1017,14 +1139,16 @@ final class CloudSync {
     /// takes a newer revision; a manager's save here is sent (`tank.standard`; firestore.rules refuses anyone else and
     /// an older revision).
     private func listenTankStandard() {
+        let session = sessionID
         let ref = db.document("config/tankStandard")
-        TankStandard.Store.shared.onChange = { s in
-            guard MemberRole.shared.permissions.can(.tankStandard) else { return }
+        TankStandard.Store.shared.onChange = { [weak self] s in
+            guard self?.sessionID == session, MemberRole.shared.permissions.can(.tankStandard) else { return }
             ref.setData(["json": s.json, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
                 if let error { print("CloudSync: tank standard refused: \(error.localizedDescription)") }
             }
         }
-        let registration = ref.addSnapshotListener { snapshot, error in
+        let registration = ref.addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             // never fail the whole sync over the standard (rules not deployed yet): the jobs still sync
             if let error { return print("CloudSync: tank standard listener: \(error.localizedDescription)") }
             guard let json = snapshot?.data()?["json"] as? String, let s = TankStandard.decode(json) else { return }
@@ -1034,9 +1158,10 @@ final class CloudSync {
     }
 
     private func listenFeedAcks() {
+        let session = sessionID
         let acks = FeedAcks.shared
         acks.send = { [weak self] post, member, on in
-            guard let self else { return }
+            guard let self, self.sessionID == session else { return }
             self.db.document(Self.ackKey(post)).setData(
                 ["post": post, "members": on ? FieldValue.arrayUnion([member]) : FieldValue.arrayRemove([member])], merge: true
             ) { error in
@@ -1048,7 +1173,8 @@ final class CloudSync {
             for (post, set) in acks.members where set.contains(me) { acks.send?(post, me, true) }
             UserDefaults.standard.set(true, forKey: uploaded)
         }
-        let registration = db.collection(Self.ackCollection).addSnapshotListener { snapshot, error in
+        let registration = db.collection(Self.ackCollection).addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 // never fail the whole sync over acknowledgements (rule not deployed yet): the jobs still sync
                 if let error { return print("CloudSync: acknowledgement listener: \(error.localizedDescription)") }
@@ -1068,7 +1194,9 @@ final class CloudSync {
     private func listenClaimReviews(owner email: String) {
         ClaimReviews.shared.start(owner: email)
         let q = db.collection(ClaimReviews.collection).whereField("ownerEmail", isEqualTo: Permissions.normalized(email))
-        let registration = q.addSnapshotListener { snapshot, error in
+        let session = sessionID
+        let registration = q.addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 if let error { return print("CloudSync: claimReviews listener: \(error.localizedDescription)") }
                 if let snapshot { ClaimReviews.shared.receive(snapshot.documents) }
@@ -1086,7 +1214,9 @@ final class CloudSync {
                 if let error { print("CloudSync: directory entry refused: \(error.localizedDescription)") }
             }
         }
-        let registration = db.collection(TeamDirectory.collection).addSnapshotListener { snapshot, error in
+        let session = sessionID
+        let registration = db.collection(TeamDirectory.collection).addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 // never fail the whole sync over the directory (rule not deployed yet): the jobs still sync
                 if let error { return print("CloudSync: directory listener: \(error.localizedDescription)") }
@@ -1099,7 +1229,9 @@ final class CloudSync {
     /// The customers' phones and addresses (team only). A contact whose job hasn't arrived yet waits for it.
     private func listenContacts() {
         guard external == nil else { return }
+        let session = sessionID
         let registration = db.collection(Self.contactCollection).addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 guard let self, let context = self.context else { return }
                 // never fail the whole sync over contacts (rule not deployed yet): the jobs still sync
@@ -1129,7 +1261,9 @@ final class CloudSync {
     /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
     /// once every device runs this version: the jobs are then sent again without their phone and address.
     private func listenConfig() {
+        let session = sessionID
         let registration = db.document(Self.configDocument).addSnapshotListener { [weak self] snapshot, error in
+            guard MainActor.assumeIsolated({ self?.sessionID == session }) else { return }
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }

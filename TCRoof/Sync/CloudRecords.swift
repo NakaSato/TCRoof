@@ -5,7 +5,7 @@ import TCRoofCore
 /// A SwiftData model mirrored to one Firestore collection. Only text fields travel; photos,
 /// signatures and documents stay on the device and Google Drive.
 protocol CloudSynced: PersistentModel {
-    associatedtype Record: Codable
+    associatedtype Record: Codable & Equatable
     static var collection: String { get }
     var syncID: String? { get set }
     var record: Record { get }
@@ -55,7 +55,7 @@ private func externals(of job: Job?) -> [String]? {
 // MARK: - Job
 
 extension Job: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var code, projectName, customerName: String
         /// The customer's contact; nil once it travels in `jobContacts` only (`Job.contactsSplit`), which external
         /// members can't read.
@@ -218,7 +218,7 @@ extension Job: CloudSynced {
 // MARK: - Survey
 
 extension SurveyForm: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var createdAt: Int64
         var surveyor, roofType, orientation, shading, meterPhase, notes: String
         var roofAreaSqm, monthlyBill, recommendedKW: Double
@@ -275,7 +275,7 @@ extension SurveyForm: CloudSynced {
 // MARK: - Devices
 
 extension ScannedDevice: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var kind, serial, scannedBy: String
         var scannedAt: Int64
         var jobID: String?
@@ -306,7 +306,7 @@ extension ScannedDevice: CloudSynced {
 // MARK: - Install log
 
 extension InstallLog: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var date, createdAt: Int64
         var recorder, details: String
         var jobID: String?
@@ -346,7 +346,7 @@ extension InstallLog: CloudSynced {
 // MARK: - Inspection
 
 extension Inspection: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var createdAt, updatedAt: Int64
         var submittedAt: Int64?
         var inspector, customerName: String
@@ -386,7 +386,7 @@ extension Inspection: CloudSynced {
 /// A sheet of the PWA site ICL (`SiteICL`), one document each. `state` is the sheet's hand-over, beside it for the
 /// rules: a contractor writes a sheet only while it is open and may send it (`sent`), never sign it (`closed`).
 extension ICLSheet: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var sheetID: String
         var sheet: String
         var state: String
@@ -433,7 +433,7 @@ extension ICLSheet: CloudSynced {
 /// A daily-report, ICL or IEC 62446 photo, one document each, so photos added or deleted on two devices at once never
 /// overwrite each other. Only the Drive file travels: the other devices download it (`PhotoSync`).
 extension PhotoAsset: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Equatable {
         var tag: String
         var createdAt: Int64
         var drive: String

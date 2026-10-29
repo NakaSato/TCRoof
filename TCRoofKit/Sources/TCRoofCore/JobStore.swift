@@ -28,13 +28,52 @@ public final class JobStore: @unchecked Sendable {
     public func photosFolder(_ id: UUID) -> URL { folder(id).appendingPathComponent("photos") }
     public func url(of photo: Photo, in job: UUID) -> URL { photosFolder(job).appendingPathComponent(photo.fileName) }
 
-    public func loadAll() -> [Job] {
+    /// A failed load leaves the original file in place so it can be recovered or retried.
+    public struct LoadFailure {
+        public enum Operation: Equatable { case list, read, decode }
+
+        public let url: URL
+        public let operation: Operation
+        public let error: Error
+
+        /// A listing failure may hide any job; a file failure identifies its job by the folder's UUID.
+        public func affects(_ jobID: UUID) -> Bool {
+            operation == .list || UUID(uuidString: url.deletingLastPathComponent().lastPathComponent) == jobID
+        }
+    }
+
+    public struct LoadResult {
+        public let jobs: [Job]
+        public let failures: [LoadFailure]
+    }
+
+    /// Returns readable jobs and reports every failure, including failure to list the Jobs directory.
+    public func loadAll() -> LoadResult {
         let dir = root.appendingPathComponent("Jobs")
-        let items = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
-        return items.compactMap { u -> Job? in
-            guard let d = try? Data(contentsOf: u.appendingPathComponent("job.json")) else { return nil }
-            return try? Self.decoder.decode(Job.self, from: d)
-        }.sorted { $0.updated > $1.updated }
+        let items: [URL]
+        do {
+            items = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+        } catch {
+            return LoadResult(jobs: [], failures: [LoadFailure(url: dir, operation: .list, error: error)])
+        }
+        var jobs: [Job] = []
+        var failures: [LoadFailure] = []
+        for item in items.sorted(by: { $0.path < $1.path }) {
+            let url = item.appendingPathComponent("job.json")
+            let data: Data
+            do {
+                data = try Data(contentsOf: url)
+            } catch {
+                failures.append(LoadFailure(url: url, operation: .read, error: error))
+                continue
+            }
+            do {
+                jobs.append(try Self.decoder.decode(Job.self, from: data))
+            } catch {
+                failures.append(LoadFailure(url: url, operation: .decode, error: error))
+            }
+        }
+        return LoadResult(jobs: jobs.sorted { $0.updated > $1.updated }, failures: failures)
     }
 
     public func load(_ id: UUID) -> Job? {
@@ -42,11 +81,27 @@ public final class JobStore: @unchecked Sendable {
         return try? Self.decoder.decode(Job.self, from: d)
     }
 
-    public func save(_ job: Job) throws {
+    /// Recovery keeps an invalid original beside job.json before replacing it. An unreadable original is never replaced.
+    public func save(_ job: Job, preservingInvalidFile: Bool = false) throws {
         lock.lock(); defer { lock.unlock() }
         try fm.createDirectory(at: photosFolder(job.id), withIntermediateDirectories: true)
         let data = try Self.encoder.encode(job)
-        try data.write(to: folder(job.id).appendingPathComponent("job.json"), options: .atomic)
+        let url = folder(job.id).appendingPathComponent("job.json")
+        if preservingInvalidFile {
+            let previous: Data?
+            do {
+                previous = try Data(contentsOf: url)
+            } catch {
+                let e = error as NSError
+                guard e.domain == NSCocoaErrorDomain, e.code == NSFileReadNoSuchFileError else { throw error }
+                previous = nil
+            }
+            if let previous, (try? Self.decoder.decode(Job.self, from: previous)) == nil {
+                let backup = folder(job.id).appendingPathComponent("job-recovery-\(UUID().uuidString).json")
+                try previous.write(to: backup, options: .withoutOverwriting)
+            }
+        }
+        try data.write(to: url, options: .atomic)
     }
 
     public func delete(_ id: UUID) throws {

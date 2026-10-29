@@ -12,6 +12,8 @@ import DriveSync
 public final class SurveyModel {
     public let store: JobStore
     public private(set) var jobs: [Job] = []
+    /// Files that could not be loaded on the latest reload, retained for recovery reporting.
+    public private(set) var loadFailures: [JobStore.LoadFailure] = []
     public var settings: SurveySettings { didSet { settings.save() } }
     public let google: GoogleAuth
     /// Set by a host app whose own login is this Google account, so signing out here also ends its session.
@@ -73,10 +75,17 @@ public final class SurveyModel {
 
     public func reload() {
         for id in Array(pendingSave.keys) { flush(id) }
-        jobs = store.loadAll()
+        let result = store.loadAll()
+        jobs = result.jobs
+        loadFailures = result.failures
     }
 
     public func job(_ id: UUID) -> Job? { jobs.first { $0.id == id } }
+
+    /// An unchanged cloud copy can repair a failed load, but must not resurrect an intentional local deletion.
+    public func needsRemoteRecovery(_ id: UUID) -> Bool {
+        job(id) == nil && loadFailures.contains { $0.affects(id) }
+    }
 
     // MARK: editing
 
@@ -247,12 +256,12 @@ public final class SurveyModel {
     /// A job changed on another device; replaces the local copy, except that the Drive files either side knows of are
     /// kept (`DriveLink.merged`): a copy saved before this device's upload landed would otherwise send those photos again.
     /// Photo files don't travel with it — the editor downloads them from Drive (`fetchMissingPhotos`).
-    public func applyRemote(_ job: Job) {
-        pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
+    public func applyRemote(_ job: Job) throws {
         var job = job
         if let local = self.job(job.id)?.drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
+        try store.save(job, preservingInvalidFile: true)
+        pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
         if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
-        try? store.save(job)
     }
 
     /// A job deleted on another device.

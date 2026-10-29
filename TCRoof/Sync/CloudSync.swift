@@ -503,6 +503,10 @@ final class CloudSync {
         surveyRecords = surveyRecords.filter { present.contains("\(Self.surveyCollection)/\($0.key.uuidString)") }
         let revisions = external == nil ? revisionChanges(survey, &present) : []
         for key in known.keys where !present.contains(key) {
+            // A failed local load is not a deletion. Protect both surveys and their issued revisions until a
+            // successful reload establishes the complete local inventory; other collections still sync normally.
+            if !survey.loadFailures.isEmpty,
+               key.hasPrefix("\(Self.surveyCollection)/") || key.hasPrefix("\(Self.revisionCollection)/") { continue }
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
@@ -871,9 +875,15 @@ final class CloudSync {
                 known[key] = nil
                 continue
             }
-            guard let record = try? change.document.data(as: SurveyRecord.self), known[key] != record.fingerprint,
+            guard let record = try? change.document.data(as: SurveyRecord.self),
                   let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
-            survey.applyRemote(job)
+            guard known[key] != record.fingerprint || survey.needsRemoteRecovery(job.id) else { continue }
+            do {
+                try survey.applyRemote(job)
+            } catch {
+                failed(error)
+                continue   // keep the previous fingerprint until the remote record is saved locally
+            }
             known[key] = surveyRecord(job)?.fingerprint
             // its photos taken on the other device, from Drive, without waiting for the editor to open
             if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }

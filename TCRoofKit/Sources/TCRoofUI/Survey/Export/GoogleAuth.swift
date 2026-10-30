@@ -13,7 +13,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
     public var clientID: String {
         get { tokens.clientID }
         set {
-            if newValue != tokens.clientID { session?.cancel(); session = nil }
+            if newValue != tokens.clientID { authorization?.cancel(); authorization = nil }
             tokens.clientID = newValue
         }
     }
@@ -30,7 +30,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
     }
 
     private let tokens: OAuthTokenSession
-    private var session: ASWebAuthenticationSession?
+    private var authorization: OAuthBrowserAuthorization?
 
     public init(clientID: String) {
         tokens = OAuthTokenSession(clientID: clientID.trimmingCharacters(in: .whitespaces),
@@ -70,11 +70,7 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
     public func signIn() async throws {
         guard clientID.hasSuffix(".apps.googleusercontent.com") else { throw Failure.noClientID }
         let ticket = tokens.beginSignIn()
-        session?.cancel()
-        defer {
-            if tokens.generation == ticket { session = nil }
-            tokens.cancelSignIn(ticket)
-        }
+        authorization?.cancel()
         let verifier = Self.randomString(64)
         let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URL
         var c = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
@@ -82,20 +78,24 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
                         .init(name: "response_type", value: "code"), .init(name: "scope", value: Self.scope),
                         .init(name: "code_challenge", value: challenge), .init(name: "code_challenge_method", value: "S256"),
                         .init(name: "prompt", value: "select_account consent"), .init(name: "access_type", value: "offline")]
-        let callback: URL = try await withCheckedThrowingContinuation { cont in
-            let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: redirectScheme) { url, err in
-                if let url { cont.resume(returning: url) }
-                else if let e = err as? ASWebAuthenticationSessionError, e.code == .canceledLogin { cont.resume(throwing: Failure.cancelled) }
-                else { cont.resume(throwing: err ?? Failure.cancelled) }
+        let browser = OAuthBrowserAuthorization { [weak self] completion in
+            let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: self?.redirectScheme) { url, err in
+                if let url { completion(.success(url)) }
+                else if let e = err as? ASWebAuthenticationSessionError, e.code == .canceledLogin { completion(.failure(Failure.cancelled)) }
+                else { completion(.failure(err ?? Failure.cancelled)) }
             }
             s.presentationContextProvider = self
-            // A shared iPad: Safari's saved Google session would offer the previous person's account to the next one.
+            // A shared iPad: do not offer the previous person's Safari account.
             s.prefersEphemeralWebBrowserSession = true
-            self.session = s
-            s.start()
+            return s
         }
+        authorization = browser
+        defer {
+            if authorization === browser { authorization = nil }
+            tokens.cancelSignIn(ticket)
+        }
+        let callback = try await browser.value()
         try tokens.validate(ticket)
-        session = nil
         guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else {
             throw Failure.badResponse("ไม่มีรหัสยืนยัน")
         }
@@ -111,8 +111,8 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
 
     public func signOut() {
         tokens.signOut()
-        session?.cancel()
-        session = nil
+        authorization?.cancel()
+        authorization = nil
     }
 
     public func accessToken() async throws -> String { try await tokens.accessToken() }
@@ -139,6 +139,8 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
         return o
     }
 }
+
+extension ASWebAuthenticationSession: OAuthBrowserSession {}
 
 extension GoogleAuth: ASWebAuthenticationPresentationContextProviding {
     public nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {

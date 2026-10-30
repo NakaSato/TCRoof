@@ -369,9 +369,14 @@ public struct SketchDXF: Sendable {
         // inside a block it stays on 0 with the rest
         let l = inBlock && !blockLayers ? layer : CADLayers.hatch(of: layer)
         use(l)
-        ents += head("HATCH", layerName(l)) + extra + ["100", "AcDbHatch", "10", "0", "20", "0", "30", "0", "210", "0", "220", "0", "230", "1",
-                                                       "2", name, "70", solid ? "1" : "0", "71", "0", "91", String(loops)]
-            + boundary + ["97", "0"] + pattern + ["98", "0"]
+        ents += head("HATCH", layerName(l))
+        ents += extra
+        ents += ["100", "AcDbHatch", "10", "0", "20", "0", "30", "0", "210", "0", "220", "0", "230", "1",
+                 "2", name, "70", solid ? "1" : "0", "71", "0", "91", String(loops)]
+        ents += boundary
+        ents += ["97", "0"]
+        ents += pattern
+        ents += ["98", "0"]
     }
 
     /// `height` in metres; `angle` in degrees counter-clockwise; `middle` aligns the line's vertical middle on `p`.

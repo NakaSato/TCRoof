@@ -13,6 +13,8 @@ final class SingleLineRender: ObservableObject {
     private var task: Task<Void, Never>?
     private var key: (job: Job, hv: Bool?)?
 
+    deinit { task?.cancel() }
+
     /// The diagram for `job`, now when there is none yet (then kept), else the last one while a new one is made.
     func current(_ job: Job, hv: Bool? = nil) -> Result {
         if let result { return result }
@@ -24,16 +26,29 @@ final class SingleLineRender: ObservableObject {
     func update(_ job: Job, hv: Bool? = nil, now: Bool = false) {
         if let key, key.job == job, key.hv == hv, result != nil { return }
         key = (job, hv)
-        task?.cancel()
+        let previous = task
+        previous?.cancel()
         task = Task { [weak self] in
             if !now { try? await Task.sleep(nanoseconds: 250_000_000) }
+            // A synchronous build already in progress must finish its current stage. Wait for it
+            // before starting another, so rapid edits cannot accumulate concurrent diagram builds.
+            await previous?.value
             guard !Task.isCancelled else { return }
-            let made = await Task.detached(priority: .userInitiated) { () -> Result in
+            let worker = Task.detached(priority: .userInitiated) { () throws -> Result in
+                try Task.checkCancellation()
                 let line = SingleLine.build(job, hvOverride: hv)
-                return Result(line: line, drawing: SingleLineLayout.draw(line))
-            }.value
+                try Task.checkCancellation()
+                let drawing = SingleLineLayout.draw(line)
+                try Task.checkCancellation()
+                return Result(line: line, drawing: drawing)
+            }
+            let made = await withTaskCancellationHandler {
+                try? await worker.value
+            } onCancel: {
+                worker.cancel()
+            }
             guard !Task.isCancelled else { return }
-            self?.result = made
+            if let made { self?.result = made }
         }
     }
 }

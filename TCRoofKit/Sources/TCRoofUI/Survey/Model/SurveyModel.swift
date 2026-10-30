@@ -141,6 +141,11 @@ public final class SurveyModel {
         for task in photoLoads.values { task.cancel() }
         for task in presenceLoads.values { task.cancel() }
         for task in revisionLoads.values { task.cancel() }
+        for task in uploadWait.values { task.cancel() }
+        for task in uploadRun.values { task.cancel() }
+        uploadWait.removeAll()
+        uploadRun.removeAll()
+        heldUploads.removeAll()
         photoLoads.removeAll()
         presenceLoads.removeAll()
         photoPresence.removeAll()
@@ -150,6 +155,22 @@ public final class SurveyModel {
         revisionReads.removeAll()
         cache.removeAllObjects()
         store.invalidatePendingSaves()
+    }
+
+    /// Removes local records without invoking domain deletion callbacks or sending cloud deletions.
+    public func removeLocalAccountData() throws {
+        invalidateStorageSession()
+        try store.removeAllJobs()
+        jobs = []
+        loadFailures = []
+        pendingSave.removeAll()
+        saveErrors.removeAll()
+        saveError = nil
+        photoFetch = [:]
+        photoUpload = [:]
+        manualDriveSave.removeAll()
+        captureStamp = nil
+        hasLoaded = true
     }
 
     private func didChange(_ id: UUID) {

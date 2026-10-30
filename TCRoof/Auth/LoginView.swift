@@ -284,6 +284,8 @@ struct LoginView: View {
         Task {
             do {
                 try await session.signIn()
+            } catch is CancellationError {
+                // Superseded sign-in or sign-out.
             } catch GoogleAuth.Failure.cancelled {
                 // closing Google's sheet is a choice, not a failure
             } catch {

@@ -157,6 +157,7 @@ extension SurveyModel {
 
     private func uploadPhotos(_ id: UUID) async {
         guard let job = job(id) else { return }
+        let session = storageSession
         let store = self.store
         photoUpload[id] = PhotoTransfer(total: photosToUpload(job))
         do {
@@ -164,13 +165,18 @@ extension SurveyModel {
                                                   revisions: revisionUploads(job),
                                                   revisionData: { try? Data(contentsOf: store.revisionFile($0.key, job: id)) }) { [weak self] step in
                 guard case .photos(let done, let total) = step else { return }
-                Task { @MainActor in self?.photoUpload[id] = PhotoTransfer(total: total, done: done) }
+                Task { @MainActor in
+                    guard let self, self.storageSession == session else { return }
+                    self.photoUpload[id] = PhotoTransfer(total: total, done: done)
+                }
             }
+            guard !Task.isCancelled, storageSession == session else { return }
             keepLink(link, for: id)
             photoUpload[id] = nil
             // everyone who can open the job reads its photos (its folder is in this account's Drive)
             if let folder = link.folderID, let readers = driveReaders?(job) { await shareJobFolder(folder, with: readers) }
         } catch {
+            guard !Task.isCancelled, storageSession == session else { return }
             if let e = error as? DriveSync.Interrupted {
                 keepLink(e.link, for: id)
                 if let folder = e.link.folderID, let readers = driveReaders?(job) { await shareJobFolder(folder, with: readers) }

@@ -3,6 +3,32 @@ import XCTest
 @testable import TCRoofCore
 
 final class JobStoreConcurrencyTests: XCTestCase {
+    func testAccountCleanupRemovesHealthyAndCorruptJobsAndInvalidatesDelayedSaves() throws {
+        let store = makeStore()
+        let job = Job()
+        try store.save(job)
+        let token = store.reserveSave(job.id)
+        let corruptFolder = store.folder(UUID())
+        try FileManager.default.createDirectory(at: corruptFolder, withIntermediateDirectories: true)
+        try Data("invalid JSON".utf8).write(to: corruptFolder.appendingPathComponent("job.json"))
+
+        try store.removeAllJobs()
+
+        XCTAssertFalse(try store.saveIfCurrent(job, token: token))
+        let loaded = store.loadAll()
+        XCTAssertTrue(loaded.jobs.isEmpty)
+        XCTAssertTrue(loaded.failures.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: corruptFolder.path))
+    }
+
+    func testAccountCleanupPropagatesInvalidStorageFailure() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("not a directory".utf8).write(to: root)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = JobStore(root: root)
+        XCTAssertThrowsError(try store.removeAllJobs())
+    }
+
     private func makeStore() -> JobStore {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("job-concurrency-" + UUID().uuidString)
         addTeardownBlock { try FileManager.default.removeItem(at: root) }

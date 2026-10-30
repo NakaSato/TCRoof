@@ -26,6 +26,8 @@ final class GoogleSession {
         }
     }
 
+    private static let operations = SessionOperationGate()
+
     var survey: SurveyModel { SurveyModel.shared }
 
     /// TCRoof's OAuth client (type iOS, bundle com.tcroof.internal). Client IDs of installed apps are public, not secrets.
@@ -40,9 +42,13 @@ final class GoogleSession {
             SurveyModel.shared.google.clientID = Self.defaultClientID
         }
         let google = SurveyModel.shared.google
-        email = google.isSignedIn ? (google.email ?? "") : nil
-        if google.isSignedIn { Self.fillUserName() }
-        if let email, !email.isEmpty { LocalData.adopt(Permissions.normalized(email)) }
+        let restoredEmail = Permissions.normalized(google.email ?? "")
+        // A refresh token alone does not establish membership after an interrupted first sign-in.
+        email = google.isSignedIn && !restoredEmail.isEmpty && MemberRole.wasConfirmed(restoredEmail) ? restoredEmail : nil
+        if let email {
+            Self.fillUserName()
+            LocalData.signedIn(email, role: MemberRole.savedRole(email))
+        }
         // the survey module's own sign-out buttons end the app session too
         SurveyModel.shared.signOutHandler = { [weak self] in self?.signOut() }
         // taken off the member list, or suspended by a Maintainer: out at the next sync
@@ -68,6 +74,7 @@ final class GoogleSession {
         get { survey.settings.googleClientID }
         set {
             let id = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if id != survey.google.clientID { Self.operations.invalidate() }
             survey.settings.googleClientID = id
             survey.google.clientID = id
         }
@@ -78,45 +85,75 @@ final class GoogleSession {
     /// Google sign-in, then the member list: an account the developer hasn't added is signed out again. Offline, only
     /// an account this device has seen on the list gets in.
     func signIn() async throws {
+        // Programmatic account switching must stop the old listeners and UI before OAuth starts.
+        signOut()
+        let ticket = Self.operations.invalidate()
         notice = nil
-        try await survey.google.signIn()
-        let mail = Permissions.normalized(survey.google.email ?? "")
         do {
+            try await survey.google.signIn()
+            try Self.operations.validate(ticket)
+            let mail = Permissions.normalized(survey.google.email ?? "")
             guard !mail.isEmpty else { throw Denied.noEmail }
-            switch await Self.membership(of: mail, google: survey.google) {
+            let membership = try await Self.membership(of: mail, google: survey.google)
+            try Self.operations.validate(ticket)
+            switch membership {
             case .member: break
             case .notMember: throw Denied.notMember(mail)
             case .suspended: throw Denied.suspended
             case .unknown: guard MemberRole.wasConfirmed(mail) else { throw Denied.offline }
             }
+            LocalData.signedIn(mail, role: MemberRole.savedRole(mail))
+            email = mail
+            MySignature.shared.account = mail
+            MemberRole.shared.signedIn(mail)
+            Self.fillUserName()
         } catch {
-            survey.google.signOut()
-            try? Auth.auth().signOut()
+            // An older request must never clear a newer account's credentials.
+            if Self.operations.generation == ticket {
+                Self.operations.invalidate()
+                survey.google.signOut()
+                try? Auth.auth().signOut()
+            }
             throw error
         }
-        LocalData.signedIn(mail, role: MemberRole.savedRole(mail))
-        email = mail
-        MySignature.shared.account = mail
-        MemberRole.shared.signedIn(mail)
-        Self.fillUserName()
     }
 
-    private static func membership(of email: String, google: GoogleAuth) async -> MemberRole.Membership {
-        guard (try? await firebaseUser(google)) != nil else { return .unknown }
+    private static func membership(of email: String, google: GoogleAuth) async throws -> MemberRole.Membership {
+        do { _ = try await firebaseUser(google) }
+        catch is CancellationError { throw CancellationError() }
+        catch { return .unknown }
         return await MemberRole.shared.membership(of: email)
     }
 
-    /// Firebase account of the Google account signed in to the app; firestore.rules check its verified email.
+    /// Firebase has process-wide mutable auth state. Drain stale SDK completions before signing in another account.
     static func firebaseUser(_ google: GoogleAuth) async throws -> User {
+        let ticket = operations.generation
         let email = google.email
-        if let user = Auth.auth().currentUser, email == nil || email == "" || user.email?.lowercased() == email?.lowercased() { return user }
-        let tokens = try await google.idAndAccessToken()
-        fillUserName() // the fresh token may carry the account's name
-        let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.accessToken)
-        return try await Auth.auth().signIn(with: credential).user
+        let clientID = google.clientID
+        return try await operations.run(ticket: ticket, operation: {
+            guard google.email == email, google.clientID == clientID, google.isSignedIn else {
+                throw CancellationError()
+            }
+            if let user = Auth.auth().currentUser, let email, !email.isEmpty,
+               user.email?.lowercased() == email.lowercased() { return user }
+            let tokens = try await google.idAndAccessToken()
+            try operations.validate(ticket)
+            guard google.email == email, google.clientID == clientID else { throw CancellationError() }
+            let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.accessToken)
+            let user = try await Auth.auth().signIn(with: credential).user
+            guard google.email == email, google.clientID == clientID, google.isSignedIn else {
+                try? Auth.auth().signOut()
+                throw CancellationError()
+            }
+            return user
+        }, discard: { _ in
+            // The gate guarantees a newer Firebase sign-in has not started yet.
+            try? Auth.auth().signOut()
+        })
     }
 
     func signOut() {
+        Self.operations.invalidate()
         CloudSync.shared.stop()
         survey.google.signOut()
         email = nil

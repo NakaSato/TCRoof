@@ -153,6 +153,16 @@ public final class JobStore: @unchecked Sendable {
         try data.write(to: url, options: .atomic)
     }
 
+    /// Account cleanup includes corrupt/unreadable jobs that could not appear in a loaded job list.
+    public func removeAllJobs() throws {
+        lock.lock(); defer { lock.unlock() }
+        invalidatePendingSaves()
+        let directory = root.appendingPathComponent("Jobs", isDirectory: true)
+        do { try fm.removeItem(at: directory) }
+        catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError { }
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
     public func delete(_ id: UUID) throws {
         lock.lock(); defer { lock.unlock() }
         invalidateSave(id)   // a delayed autosave must never recreate a deleted job

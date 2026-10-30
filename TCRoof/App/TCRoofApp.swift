@@ -58,7 +58,8 @@ struct TCRoofApp: App {
         WindowGroup {
             Group {
                 if session.isSignedIn {
-                    RootView()
+                    AccountActivationView()
+                        .id(session.email)
                         .overlay {
                             // `config/app.minSyncVersion` is above this build: nothing more until the update
                             if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }
@@ -81,6 +82,53 @@ struct TCRoofApp: App {
             .tint(Theme.primary)
         }
         .modelContainer(container)
+    }
+}
+
+/// No account data, notification actions or sync is exposed until local isolation succeeds.
+private struct AccountActivationView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(GoogleSession.self) private var session
+    @State private var ready = false
+    @State private var failed = false
+    @State private var attempt = 0
+
+    var body: some View {
+        Group {
+            if ready {
+                RootView()
+            } else if failed {
+                ContentUnavailableView {
+                    Label("เตรียมข้อมูลบัญชีไม่สำเร็จ", systemImage: "exclamationmark.lock")
+                } description: {
+                    Text("ยังเปิดข้อมูลไม่ได้ ลองอีกครั้งหรือออกจากระบบ")
+                } actions: {
+                    Button("ลองอีกครั้ง") { failed = false; attempt += 1 }
+                    Button("ออกจากระบบ") { session.signOut() }
+                }
+            } else {
+                ProgressView("กำลังเตรียมข้อมูลบัญชี")
+            }
+        }
+        .task(id: attempt) {
+            #if DEBUG
+            if DebugScreen.requested != nil { ready = true; return }
+            #endif
+            let account = session.email
+            do {
+                session.survey.reload()
+                await session.survey.waitForReload()
+                try Task.checkCancellation()
+                guard account == session.email else { throw CancellationError() }
+                guard session.survey.hasLoaded else { failed = true; return }
+                try LocalData.wipeIfNeeded(context, survey: session.survey)
+                ready = true
+            } catch is CancellationError {
+                // The account changed or this activation view went away.
+            } catch {
+                failed = true
+            }
+        }
     }
 }
 
@@ -206,7 +254,6 @@ struct RootView: View {
             // another account signed in: the previous one's records go before sync brings this one's
             await session.survey.waitForReload()
             guard !Task.isCancelled, session.survey.hasLoaded else { return }
-            LocalData.wipeIfNeeded(context, survey: session.survey)
             SampleData.removeSamples(context)
             Job.keepKinds(context)
             CloudSync.shared.start(context: context, survey: session.survey)

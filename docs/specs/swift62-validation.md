@@ -3,6 +3,24 @@
 The package requires Swift 6.2 / Xcode 26, retains Swift 5 language mode, and keeps
 its iOS 17 / macOS 14 deployment targets. The app's deployment target remains iOS 18.
 
+## Review follow-up
+
+- Code exchange rejects missing/empty replacement refresh tokens before clearing
+  previous credentials; empty access tokens are rejected during response decoding.
+- `accessToken(validFor:)` enforces the full requested lifetime after refresh and
+  rejects invalid durations. A token that is too short for background work can
+  still be used for an eligible shorter foreground request without signing out.
+- ZIP decoding verifies expanded size and CRC, with configurable `ReadLimits`.
+  Defaults are 64 MiB per entry and 256 MiB total expanded content, including
+  directory and duplicate entries. Limits are checked before buffer allocation;
+  input and metadata overhead are separate. All 132 repository archives (2,789
+  entries) passed the new limits, size checks, and CRC validation. The largest
+  entry was 8.73 MiB; the largest expanded archive was 74.92 MiB.
+- `TCRoofCore/SingleLineRender.swift` owns observable asynchronous diagram state.
+  The diagram page and B4/B5 previews show a loading state for the first result,
+  retain the previous result during edits, and cancel on disappearance. Reading
+  `result` never performs model building or layout on the main actor.
+
 ## Browser authorization fix
 
 `OAuthBrowserAuthorization` owns one browser request and resumes its continuation
@@ -41,7 +59,7 @@ Run the focused Linux checks from the repository root using Swift 6.2:
 
 ```bash
 tools/linux-swift/test.sh --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests'
-tools/linux-swift/test.sh -c release --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests|ReviewTests|ZipArchiveTests|SingleLineTests|^ExcelExportTests.ExcelExportTests/'
+tools/linux-swift/test.sh -c release --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests|ReviewTests|ZipArchiveTests|SingleLineRenderTests|SingleLineTests|^ExcelExportTests.ExcelExportTests/|WBSDependencyExcelTests'
 SLD_SVG=/tmp/tcroof-sld-validation tools/linux-swift/test.sh -c release --filter 'SingleLineTests/testWriteSVG'
 ```
 
@@ -49,6 +67,12 @@ The Release run selected 73 tests: 72 passed and the opt-in SVG export was skipp
 because `SLD_SVG` was unset. The final command was then run with the directory set;
 the remaining test passed and produced five non-empty, well-formed SVG diagrams.
 All 73 selected tests therefore passed across the two runs.
+
+After the review follow-up, the expanded Release selection (including renderer
+state, token lifetime, malformed ZIP cases, and WBS export fixtures) passed **93
+tests with zero failures or skips**, with `SLD_SVG` configured for that run. The
+four changed UIKit source files also passed syntax parsing; this is not an Apple
+SDK type-check or UI integration test.
 
 On the Mac, inspect available destinations and build both app configurations with
 isolated build output:

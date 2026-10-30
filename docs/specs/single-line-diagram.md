@@ -227,6 +227,7 @@ TCRoofKit/Sources/
     SingleLine.swift                model (SL* types), SLConstants, calculations
     SingleLine+Build.swift          build(job): reads the survey into SingleLine
     SingleLineLayout.swift          SingleLine → SingleLineDrawing (Sketch + hit boxes + B4 / B5 crops)
+    SingleLineRender.swift          observable async renderer (250 ms debounce); no build on a result read
     SLSymbols.swift                 symbols as DrawOp paths
     SingleLineDXF.swift             DXF R12 export (via SketchDXF)
     Flood.swift                     FloodCheck (read for the flood card)
@@ -235,7 +236,6 @@ TCRoofKit/Sources/
     Pages/Electrical/SingleLinePage+Panel.swift  side panel: PV data, IC check, blocking list, flood card, sheets
     Pages/Electrical/ElectricalPageWide.swift    A3 button "สร้าง Single Line Diagram →"
     Pages/Electrical/ElectricalPageWide+SLD.swift  level 2 entry: breaker sheet group, board busbar / ground sheet
-    Pages/Electrical/SingleLineRender.swift      debounced off-main rebuild (250 ms) for the page and the B4 / B5 crops
     Editor/JobEditor.swift, JobEditor+Actions.swift  full-screen cover and openFromDiagram(SLTarget)
     Model/SurveyModel+Export.swift               exportSingleLinePDF / exportSingleLineDXF
   PDFReport/

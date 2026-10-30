@@ -200,4 +200,67 @@ final class OAuthTokenSessionTests: XCTestCase {
         let count = await endpoint.requests.count
         XCTAssertEqual(count, 0)
     }
+
+    func testIncompleteCodeExchangePreservesPreviousCredentials() async throws {
+        for response in [
+            #"{"access_token":"replacement","expires_in":3600}"#,
+            #"{"access_token":"replacement","expires_in":3600,"refresh_token":""}"#,
+            #"{"access_token":"","expires_in":3600,"refresh_token":"replacement-refresh"}"#,
+        ] {
+            let endpoint = TokenEndpoint()
+            let auth = session(endpoint)
+            let ticket = auth.beginSignIn()
+            let request = Task { try await auth.exchangeCode("code", verifier: "verifier", redirectURI: "app:/callback", ticket: ticket) }
+            await endpoint.waitForRequests(1)
+            await endpoint.reply(0, response)
+            do { try await request.value; XCTFail("Incomplete response was accepted") }
+            catch is OAuthTokenSession.Failure {}
+            auth.cancelSignIn(ticket)
+            XCTAssertEqual(refresh, "old-refresh")
+            XCTAssertTrue(accepted.isEmpty)
+            XCTAssertEqual(clears, 0)
+        }
+    }
+
+    func testRefreshedTokenMustSatisfyRequestedLifetime() async throws {
+        let endpoint = TokenEndpoint()
+        let auth = session(endpoint)
+        let request = Task { try await auth.accessToken(validFor: 1800) }
+        await endpoint.waitForRequests(1)
+        await endpoint.reply(0, #"{"access_token":"short","expires_in":120}"#)
+        do { _ = try await request.value; XCTFail("Two-minute token satisfied a thirty-minute request") }
+        catch is OAuthTokenSession.Failure {}
+        // It remains usable for short foreground work; rejection must not sign the person out.
+        let foreground = try await auth.accessToken(validFor: 60)
+        XCTAssertEqual(foreground, "short")
+        XCTAssertEqual(refresh, "old-refresh")
+        XCTAssertEqual(clears, 0)
+        let count = await endpoint.requests.count
+        XCTAssertEqual(count, 1)
+    }
+
+    func testSufficientRefreshedTokenAndCachedTokenMeetLifetime() async throws {
+        let endpoint = TokenEndpoint()
+        let auth = session(endpoint)
+        let request = Task { try await auth.accessToken(validFor: 1800) }
+        await endpoint.waitForRequests(1)
+        await endpoint.reply(0, success)
+        let token = try await request.value
+        let cached = try await auth.accessToken(validFor: 1800)
+        XCTAssertEqual(token, "new-access")
+        XCTAssertEqual(cached, token)
+        let count = await endpoint.requests.count
+        XCTAssertEqual(count, 1)
+    }
+
+    func testInvalidLifetimeDoesNotStartRefresh() async throws {
+        let endpoint = TokenEndpoint()
+        let auth = session(endpoint)
+        for seconds in [-1, Double.infinity, Double.nan] {
+            do { _ = try await auth.accessToken(validFor: seconds); XCTFail("Invalid lifetime accepted") }
+            catch is OAuthTokenSession.Failure {}
+        }
+        let count = await endpoint.requests.count
+        XCTAssertEqual(count, 0)
+    }
 }

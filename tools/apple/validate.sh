@@ -92,7 +92,7 @@ done
 if $package_tests; then
     run_step package-tests xcrun swift test --package-path TCRoofKit \
         --scratch-path "$output/PackageBuild" -c release \
-        --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests|ReviewTests|ZipArchiveTests|SingleLineTests'
+        --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests|ReviewTests|ZipArchiveTests|SingleLineRenderTests|SingleLineTests'
 else
     printf 'NOT_RUN\tpackage-tests\n' >> "$output/results.tsv"
 fi

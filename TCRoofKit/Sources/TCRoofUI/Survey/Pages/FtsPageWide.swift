@@ -15,7 +15,7 @@ struct FtsPageWide: View {
     let width: CGFloat
     var openSite: () -> Void = {}
     var openDiagram: () -> Void = {}
-    @StateObject var sldRender = SingleLineRender()
+    @State var sldRender = SingleLineRender()
     /// Portrait and iPhone: the button card, the A2 picture and the SLD crop one under another, the page scrolling.
     var stacked = false
     @Environment(SurveyModel.self) var model
@@ -40,6 +40,7 @@ struct FtsPageWide: View {
         }
         .foregroundStyle(Theme.navy)
         .onAppear { sldRender.update(job, now: true) }
+        .onDisappear { sldRender.cancel() }
         .onChange(of: job) { _, j in sldRender.update(j) }
         .alert("ตำแหน่งปุ่ม Emergency", isPresented: $editingPlace) {
             TextField("เช่น ผนังข้างประตู Site Office", text: $placeText)
@@ -215,10 +216,11 @@ struct FtsPageWide: View {
             }
             .padding(.vertical, -10)
             // drawn off the main thread after typing stops (SingleLineRender)
-            let drawing = sldRender.current(job).drawing
             Group {
-                if drawing.ftsBox != nil {
+                if let drawing = sldRender.result?.drawing, drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
+                } else if sldRender.result == nil {
+                    ProgressView("กำลังสร้างแผนภาพ")
                 } else {
                     Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()

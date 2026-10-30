@@ -5,13 +5,29 @@ import CZlib
 public struct ZipArchive {
     public enum Failure: Error { case notZip, unsupported(String), corrupt(String) }
 
+    /// Bounds decoded content, including directory and duplicate entries. Input/metadata overhead is separate.
+    public struct ReadLimits: Sendable {
+        public let maxEntryBytes: Int
+        public let maxExpandedBytes: Int
+
+        public init(maxEntryBytes: Int = 64 * 1024 * 1024, maxExpandedBytes: Int = 256 * 1024 * 1024) {
+            self.maxEntryBytes = maxEntryBytes
+            self.maxExpandedBytes = maxExpandedBytes
+        }
+
+        public static let standard = ReadLimits()
+    }
+
     /// Entry paths in archive order.
     public private(set) var paths: [String] = []
     private var files: [String: Data] = [:]
 
     public init() {}
 
-    public init(_ data: Data) throws {
+    public init(_ data: Data, limits: ReadLimits = .standard) throws {
+        guard limits.maxEntryBytes >= 0, limits.maxExpandedBytes >= 0 else {
+            throw Failure.unsupported("negative expansion limit")
+        }
         try data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
             let b = bytes.bindMemory(to: UInt8.self)
             func u16(_ i: Int) -> Int { Int(b[i]) | Int(b[i + 1]) << 8 }
@@ -28,9 +44,11 @@ public struct ZipArchive {
             paths.reserveCapacity(count)
             files.reserveCapacity(count)
             var p = u32(eocd + 16)
+            var remainingBytes = limits.maxExpandedBytes
             for _ in 0..<count {
                 guard p + 46 <= b.count, u32(p) == 0x02014b50 else { throw Failure.corrupt("central directory") }
                 let method = u16(p + 10), csize = u32(p + 20), usize = u32(p + 24)
+                let expectedCRC = UInt32(u32(p + 16))
                 let nlen = u16(p + 28), xlen = u16(p + 30), clen = u16(p + 32), local = u32(p + 42)
                 guard p + 46 + nlen + xlen + clen <= b.count else { throw Failure.corrupt("central directory") }
                 let name = String(decoding: b[(p + 46)..<(p + 46 + nlen)], as: UTF8.self)
@@ -39,12 +57,24 @@ public struct ZipArchive {
                 let start = local + 30 + u16(local + 26) + u16(local + 28)
                 guard start + csize <= b.count else { throw Failure.corrupt(name) }
                 let raw = UnsafeBufferPointer(rebasing: b[start..<(start + csize)])
+                // Reject untrusted expanded sizes before allocating any entry buffer.
+                guard usize <= limits.maxEntryBytes, usize <= remainingBytes else {
+                    throw Failure.unsupported("expanded size limit in \(name)")
+                }
                 let content: Data
                 switch method {
-                case 0: content = Data(buffer: raw)
+                case 0:
+                    guard csize == usize else { throw Failure.corrupt(name) }
+                    content = Data(buffer: raw)
                 case 8: content = try Self.inflate(raw, size: usize)
                 default: throw Failure.unsupported("method \(method) in \(name)")
                 }
+                guard content.count == usize else { throw Failure.corrupt(name) }
+                let actualCRC = content.withUnsafeBytes {
+                    cz_crc32(0, $0.bindMemory(to: UInt8.self).baseAddress, $0.count)
+                }
+                guard actualCRC == expectedCRC else { throw Failure.corrupt(name) }
+                remainingBytes -= content.count
                 if name.hasSuffix("/") { continue }
                 paths.append(name); files[name] = content
             }
@@ -75,7 +105,7 @@ public struct ZipArchive {
         // fixed DOS time 1980-01-01 00:00
         let dosTime = 0, dosDate = (0 << 9) | (1 << 5) | 1
         for path in paths {
-            let raw = files[path]!
+            guard let raw = files[path] else { throw Failure.corrupt(path) }
             let crc = Int(raw.withUnsafeBytes { cz_crc32(0, $0.bindMemory(to: UInt8.self).baseAddress, $0.count) })
             let lower = path.lowercased()
             let store = lower.hasSuffix(".png") || lower.hasSuffix(".jpg") || lower.hasSuffix(".jpeg") || raw.isEmpty

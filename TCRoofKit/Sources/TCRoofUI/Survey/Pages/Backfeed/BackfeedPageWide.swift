@@ -35,20 +35,26 @@ struct BackfeedPageWide: View {
     }
 
     var hv: Bool { ZeroExport.isHV(values) }
-    @StateObject var sldRender = SingleLineRender()
-    var line: SingleLine { SingleLine.build(job) }
+    @State var sldRender = SingleLineRender()
 
     static let tealSoft = WaterPageWide.tealSoft
     static let line = Theme.borderOutdoor
     static let tagGrey = Theme.headerLine
 
     var body: some View {
-        let sl = line
-        return Group {
-            if stacked { stackedColumn(sl) } else { sideBySide(sl) }
+        Group {
+            if let sl = sldRender.result?.line {
+                if stacked { stackedColumn(sl) } else { sideBySide(sl) }
+            } else {
+                VStack(spacing: 16) {
+                    PageStepBar(job: job, here: .module(moduleID), title: "ตำแหน่งติดตั้งระบบกันย้อน")
+                    ProgressView("กำลังสร้างแผนภาพ").frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
         }
         .foregroundStyle(Theme.navy)
         .onAppear { sldRender.update(job, now: true) }
+        .onDisappear { sldRender.cancel() }
         .onChange(of: job) { _, j in sldRender.update(j) }
         #if DEBUG
         .task { openDebugState() }

@@ -29,12 +29,11 @@ struct SingleLinePage: View {
     @State var error: String?
     @State var stamp = Date()
     /// The diagram, rebuilt off the main thread after edits (`SingleLineRender`).
-    @StateObject var render = SingleLineRender()
+    @State var render = SingleLineRender()
 
     enum ListKind: String, Identifiable { case others, conditions, assumptions; var id: String { rawValue } }
     struct ShareItem: Identifiable { let id = UUID(); let url: URL }
 
-    var line: SingleLine { SingleLine.build(job, hvOverride: hasB4 ? nil : hvPreview) }
     /// iPhone: a two-line header, the toggle's two choices side by side under their title, the zoom on the diagram and a smaller legend.
     var phone: Bool { sizeClass == .compact }
     var hasB4: Bool { job.modules.contains { $0.type == .backfeed } }
@@ -42,23 +41,30 @@ struct SingleLinePage: View {
     var twoPane: Bool { viewport.width >= 900 }
 
     var body: some View {
-        let made = render.current(job, hv: hasB4 ? nil : hvPreview)
-        let sl = made.line, drawing = made.drawing
         VStack(spacing: 0) {
             header
-            GeometryReader { geo in
-                content(sl, drawing).onAppear { viewport = geo.size } .onChange(of: geo.size) { _, s in viewport = s }
+            if let made = render.result {
+                GeometryReader { geo in
+                    content(made.line, made.drawing).onAppear { viewport = geo.size } .onChange(of: geo.size) { _, s in viewport = s }
+                }
+                bottomBar(made.line)
+            } else {
+                ProgressView("กำลังสร้างแผนภาพ").frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            bottomBar(sl)
         }
         .background(Paper.page)
         .foregroundStyle(Theme.navy)
-        .sheet(isPresented: $showPanel) { NavigationStack { ScrollView { panel(sl).padding(16) }.tcPageBackground().navigationTitle("ข้อมูลฝั่ง PV")
-            .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showPanel = false } } } } }
-        .sheet(item: $listSheet) { k in listView(k, sl) }
+        .sheet(isPresented: $showPanel) {
+            if let sl = render.result?.line {
+                NavigationStack { ScrollView { panel(sl).padding(16) }.tcPageBackground().navigationTitle("ข้อมูลฝั่ง PV")
+                    .navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { showPanel = false } } } }
+            }
+        }
+        .sheet(item: $listSheet) { k in if let sl = render.result?.line { listView(k, sl) } }
         .sheet(item: $shared) { s in ShareSheet(items: [s.url]).presentationDetents([.medium, .large]) }
         .errorAlert($error)
         .onAppear { stamp = Date(); render.update(job, hv: hasB4 ? nil : hvPreview, now: true) }
+        .onDisappear { render.cancel() }
         .onChange(of: job) { _, j in render.update(j, hv: hasB4 ? nil : hvPreview) }
         .onChange(of: hvPreview) { _, v in render.update(job, hv: hasB4 ? nil : v, now: true) }
         #if DEBUG
@@ -97,6 +103,7 @@ struct SingleLinePage: View {
                     .padding(.horizontal, phone ? 0 : 14).frame(minWidth: 44, minHeight: 44).background(Theme.onPrimary.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain).accessibilityLabel("ข้อมูลฝั่ง PV")
+                .disabled(render.result == nil)
             }
         }
         .foregroundStyle(Theme.onPrimary)

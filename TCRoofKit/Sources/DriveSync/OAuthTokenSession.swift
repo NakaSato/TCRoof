@@ -72,6 +72,9 @@ public final class OAuthTokenSession {
             "grant_type": "authorization_code", "redirect_uri": redirectURI], transport: transport)
         try validate(ticket)
         try Task.checkCancellation()
+        guard let refresh = tokens.refresh_token, !refresh.isEmpty else {
+            throw Failure.response("ไม่มี refresh_token")
+        }
         invalidate()
         // Never leave the previous account's refresh token behind if Google omits one.
         onSignOut()
@@ -80,12 +83,15 @@ public final class OAuthTokenSession {
 
     public func accessToken(validFor seconds: TimeInterval = 60) async throws -> String {
         try Task.checkCancellation()
+        guard seconds.isFinite, seconds >= 0 else { throw Failure.response("ระยะเวลาของ access_token ไม่ถูกต้อง") }
         if let cached, cached.expiry > Date().addingTimeInterval(seconds) { return cached.tokens.access_token }
         let ticket = generation
         _ = try await refresh()
         try validate(ticket)
         try Task.checkCancellation()
-        guard let cached, cached.expiry > Date().addingTimeInterval(min(seconds, 60)) else { throw DriveError.notSignedIn }
+        guard let cached, cached.expiry > Date().addingTimeInterval(seconds) else {
+            throw Failure.response("อายุ access_token สั้นกว่าที่ต้องใช้")
+        }
         return cached.tokens.access_token
     }
 
@@ -151,7 +157,9 @@ public final class OAuthTokenSession {
             if obj?["error"] as? String == "invalid_grant" { throw Failure.invalidGrant(message) }
             throw Failure.response(message)
         }
-        guard let tokens = try? JSONDecoder().decode(Tokens.self, from: data) else { throw Failure.response("ไม่มี access_token") }
+        guard let tokens = try? JSONDecoder().decode(Tokens.self, from: data), !tokens.access_token.isEmpty else {
+            throw Failure.response("ไม่มี access_token")
+        }
         return tokens
     }
 

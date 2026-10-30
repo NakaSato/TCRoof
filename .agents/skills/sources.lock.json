@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "hashAlgorithm": "sha256(relative-path + NUL + file-bytes + NUL), sorted by path",
+  "sources": [
+    {
+      "name": "swiftui-expert-skill",
+      "source": "https://github.com/AvdLee/SwiftUI-Agent-Skill",
+      "revision": "204dba7c67256a8b707ee3fbc5759a824191974f",
+      "upstreamPath": "skills/swiftui-expert-skill",
+      "path": ".agents/skills/swiftui-expert-skill",
+      "sha256": "57a563871681cff3bba6b3186d8ff94da2c86a12e79bfc980b5530eebc0d9bc2",
+      "license": ".agents/skills/swiftui-expert-skill/LICENSE"
+    },
+    {
+      "name": "swiftui-gotchas",
+      "source": "https://github.com/daneden/agent-skills",
+      "revision": "d6e5665c96781e4938b666464bc96a377cc226b4",
+      "upstreamPath": "skills/swiftui-gotchas",
+      "path": ".agents/skills/swiftui-gotchas",
+      "sha256": "bcdddf9381f209f5a48145bb6e8c7f8851de6efffeed8e82ba08da409f5eba55",
+      "license": ".agents/skills/swiftui-gotchas/LICENSE"
+    },
+    {
+      "name": "swift-concurrency",
+      "source": "https://github.com/piemonte/skills",
+      "revision": "f26ecec8a55cb84ff464ea82532c9b82a123ee8e",
+      "upstreamPath": "swift-concurrency",
+      "path": ".agents/skills/swift-concurrency",
+      "sha256": "b60a71374cca025c76a4919cd7f0d5f0528aebc5b73daf6085346f1657c72bbe",
+      "license": ".agents/skills/swift-concurrency/LICENSE"
+    },
+    {
+      "name": "swift-testing-expert",
+      "source": "https://github.com/AvdLee/Swift-Testing-Agent-Skill",
+      "revision": "798e9b1a2bcac164d4f0c781908199e754f0bab6",
+      "upstreamPath": "swift-testing-expert",
+      "path": ".agents/skills/swift-testing-expert",
+      "sha256": "44d585c2b3b64700ba80dcb2efa8f256642445f70fb1c80926df153fddd66bf3",
+      "license": ".agents/skills/swift-testing-expert/LICENSE"
+    },
+    {
+      "name": "swiftui-pro",
+      "source": "https://github.com/twostraws/SwiftUI-Agent-Skill",
+      "revision": null,
+      "upstreamPath": "swiftui-pro",
+      "path": ".agents/skills/swiftui-pro",
+      "sha256": "5392a974e969f460b176526b522d2f74ac0af041a1c40be43fbed43028f6869c",
+      "license": "docs/licenses/agent-skills/swiftui-pro-LICENSE",
+      "notes": "Existing installation retained unchanged. Original revision was not recorded; see skills-lock.json for its existing installer hash."
+    },
+    {
+      "name": "swift-code-reviewer-guide",
+      "source": "https://github.com/Viniciuscarvalho/swift-code-reviewer-skill",
+      "revision": "1d39ce338b112658ba1c3304b173f7ce7cdf7648",
+      "upstreamPath": "templates/agents/codex/swift-code-reviewer.md",
+      "path": "swift-code-reviewer.md",
+      "sha256": "370e3308d5b8a8e3d83dce1fad494edfb460afe3ee72e75df30bddd56f5d0bbe",
+      "license": "docs/licenses/agent-skills/swift-code-reviewer-LICENSE",
+      "notes": "Prepended project-local scope, skill-routing, and read-only rules. Companion bundles were not duplicated."
+    }
+  ],
+  "localSkills": [
+    "swift-codebase-analysis",
+    "swiftui-performance-audit"
+  ]
+}

@@ -595,9 +595,12 @@ private struct FeedPhoto: View {
             .overlay { if let image { Image(uiImage: image).resizable().scaledToFill() } }
             .clipped()
             .task(id: key) {
+                guard !Task.isCancelled else { return }
                 if let hit = Self.cache.object(forKey: key as NSString) { image = hit; return }
+                image = nil
                 guard let data = data() else { return }
-                let made = await Task.detached(priority: .userInitiated) { Self.scaled(data) }.value
+                let made = try? await BackgroundWork.value { Self.scaled(data) }
+                guard !Task.isCancelled else { return }
                 if let made { Self.cache.setObject(made, forKey: key as NSString) }
                 image = made
             }

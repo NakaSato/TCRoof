@@ -42,6 +42,14 @@ enum SHA256Pure {
         0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]
 
     static func hash(_ data: Data) -> Data {
+        if #available(iOS 26, macOS 26, tvOS 26, watchOS 26, visionOS 26, *) {
+            return hashInline(data)
+        }
+        return legacyHash(data)
+    }
+
+    /// Keeps the package usable on its existing iOS 17 / macOS 14 deployment targets.
+    static func legacyHash(_ data: Data) -> Data {
         var h: [UInt32] = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
         var msg = [UInt8](data)
         let bitLength = UInt64(msg.count) * 8
@@ -71,5 +79,69 @@ enum SHA256Pure {
         var out = Data(capacity: 32)
         for v in h { out.append(contentsOf: [UInt8(v >> 24), UInt8((v >> 16) & 0xff), UInt8((v >> 8) & 0xff), UInt8(v & 0xff)]) }
         return out
+    }
+
+    @available(iOS 26, macOS 26, tvOS 26, watchOS 26, visionOS 26, *)
+    private static func hashInline(_ data: Data) -> Data {
+        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+            // The span borrows Data only for this closure; input blocks are never copied.
+            let buffer = raw.bindMemory(to: UInt8.self)
+            let bytes = Span(_unsafeElements: buffer)
+            var state = Blocks()
+            var offset = 0
+            while bytes.count - offset >= 64 {
+                state.compress(bytes.extracting(offset..<(offset + 64)))
+                offset += 64
+            }
+            return state.finish(bytes.extracting(offset..<bytes.count), byteCount: bytes.count)
+        }
+    }
+
+    /// One hash's working storage. Ownership stays in hashInline; no implicit state/scratch copies.
+    @available(iOS 26, macOS 26, tvOS 26, watchOS 26, visionOS 26, *)
+    private struct Blocks: ~Copyable {
+        private var h: InlineArray<8, UInt32> = [
+            0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+        private var w = InlineArray<64, UInt32>(repeating: 0)
+
+        mutating func compress(_ bytes: borrowing Span<UInt8>) {
+            precondition(bytes.count == 64)
+            func rotr(_ x: UInt32, _ n: UInt32) -> UInt32 { (x >> n) | (x << (32 - n)) }
+            for t in 0..<16 {
+                let b = t * 4
+                w[t] = UInt32(bytes[b]) << 24 | UInt32(bytes[b + 1]) << 16 | UInt32(bytes[b + 2]) << 8 | UInt32(bytes[b + 3])
+            }
+            for t in 16..<64 {
+                let s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >> 3)
+                let s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >> 10)
+                w[t] = w[t - 16] &+ s0 &+ w[t - 7] &+ s1
+            }
+            var a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7]
+            for t in 0..<64 {
+                let t1 = hh &+ (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) &+ ((e & f) ^ (~e & g)) &+ SHA256Pure.k[t] &+ w[t]
+                let t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) &+ ((a & b) ^ (a & c) ^ (b & c))
+                hh = g; g = f; f = e; e = d &+ t1; d = c; c = b; b = a; a = t1 &+ t2
+            }
+            h[0] &+= a; h[1] &+= b; h[2] &+= c; h[3] &+= d; h[4] &+= e; h[5] &+= f; h[6] &+= g; h[7] &+= hh
+        }
+
+        consuming func finish(_ remainder: borrowing Span<UInt8>, byteCount: Int) -> Data {
+            // At most two padding blocks, regardless of input size.
+            var tail = InlineArray<128, UInt8>(repeating: 0)
+            for i in remainder.indices { tail[i] = remainder[i] }
+            tail[remainder.count] = 0x80
+            let end = remainder.count < 56 ? 64 : 128
+            let bitLength = UInt64(byteCount) * 8
+            for i in 0..<8 { tail[end - 1 - i] = UInt8((bitLength >> (UInt64(i) * 8)) & 0xff) }
+            compress(tail.span.extracting(0..<64))
+            if end == 128 { compress(tail.span.extracting(64..<128)) }
+            var out = Data(capacity: 32)
+            for i in 0..<8 {
+                let v = h[i]
+                out.append(contentsOf: [UInt8(v >> 24), UInt8((v >> 16) & 0xff), UInt8((v >> 8) & 0xff), UInt8(v & 0xff)])
+            }
+            return out
+        }
     }
 }

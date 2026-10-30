@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs the Swift tests that work on Linux: TCRoofCore, ExcelExport, PVYield and ModuleRules.
+# Runs the supported Linux tests: TCRoofCore, ExcelExport, PVYield, ModuleRules and DriveAuth.
 # The rest of TCRoofKit doesn't build on Linux (CoreText, UIKit, PDFKit), so this makes a small package
 # next to the repo that links those targets (and CZlib) with their tests, plus `tools` and `Project_Plan_TCRoof`
 # links where the tests look for them, four levels above their own files. Every target line
@@ -13,8 +13,8 @@ repo="$(cd "$(dirname "$0")/../.." && pwd)"
 root="${TCROOF_LINUX_SWIFT_DIR:-$HOME/.cache/tcroof-linux-swift}"
 kit="$root/Kit"
 manifest="$repo/TCRoofKit/Package.swift"
-targets=(CZlib PVYield ModuleRules TCRoofCore ExcelExport)
-tests=(PVYieldTests ModuleRulesTests TCRoofCoreTests ExcelExportTests)
+targets=(CZlib PVYield ModuleRules TCRoofCore ExcelExport DriveSync)
+tests=(PVYieldTests ModuleRulesTests TCRoofCoreTests ExcelExportTests DriveAuthTests)
 
 mkdir -p "$kit/Sources" "$kit/Tests"
 ln -sfn "$repo/tools" "$root/tools"
@@ -29,14 +29,15 @@ for t in "${tests[@]}"; do
   lines+="$(grep -E "^[[:space:]]*\\.testTarget\\(name: \"$t\"" "$manifest")"$'\n'
 done
 cat > "$kit/Package.swift" <<SWIFT
-// swift-tools-version:5.9
+// swift-tools-version:6.2
 // Written by tools/linux-swift/test.sh; the targets are copied from TCRoofKit/Package.swift.
 import PackageDescription
 let package = Package(
     name: "TCRoofLinux",
     defaultLocalization: "th",
     targets: [
-$lines    ]
+$lines    ],
+    swiftLanguageModes: [.v5]
 )
 SWIFT
 

@@ -2,6 +2,21 @@
 
 Swift package สำหรับ iPad (iOS 17+) ที่ใช้ใน TCRoof
 
+## Toolchain
+
+Requires Swift 6.2 or later (Xcode 26 or later on macOS). `.swift-version` selects
+Swift 6.2 for toolchain managers. The package keeps Swift 5 language mode and its
+existing iOS 17 / macOS 14 deployment targets; the app keeps iOS 18.
+
+The pure Swift SHA-256 implementation uses `Span`, `InlineArray`, and a noncopyable
+working state on supported runtimes (iOS/macOS 26 or newer, and Linux with Swift 6.2).
+Older Apple runtimes use the existing implementation. Apple builds continue using
+CryptoKit for `FormHash.sha256`.
+
+Class collections exposed by SwiftData and SwiftUI remain `Array`: `ContiguousArray`
+would require conversions and only makes the references contiguous, not the objects.
+Use it for private class collections when profiling demonstrates a benefit.
+
 | Module | หน้าที่ |
 |---|---|
 | `TCRoofCore` | โมเดลงาน, schema ฟอร์มทั้ง 10 หัวข้อ (ตรงกับแผ่นงาน NO.224), คำนวณความครบถ้วน, เก็บงาน/รูปใน `Documents/SolarSurvey`, นำเข้า/ส่งออก JSON ของเว็บแอป, แปลน/Truss/เข็มทิศแบบ vector |
@@ -27,7 +42,11 @@ NavigationStack { SolarSurveyReportView() }
 
 ## ทดสอบ
 ```
-swift test          # macOS หรือ Linux: Core, Excel (เทียบ template จริง), Drive (mock), เลย์เอาต์ PDF
+swift test          # macOS (Xcode 26+)
+# Linux, from the repository root:
+tools/linux-swift/test.sh --build-only
+tools/linux-swift/test.sh --filter ReviewTests
+tools/linux-swift/test.sh --filter 'OAuthTokenSessionTests|BackgroundWorkTests'
 ```
 `EXPORT_DIR=/tmp/out swift test` จะเขียน `native-test.xlsx` และหน้า PDF แบบ SVG ไว้ตรวจด้วยตา
 

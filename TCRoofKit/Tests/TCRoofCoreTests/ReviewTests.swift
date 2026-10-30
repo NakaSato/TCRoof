@@ -187,10 +187,21 @@ final class ReviewTests: XCTestCase {
         ]
         for (msg, hex) in vectors {
             XCTAssertEqual(FormHash.hex(SHA256Pure.hash(Data(msg.utf8))), hex)
+            XCTAssertEqual(FormHash.hex(SHA256Pure.legacyHash(Data(msg.utf8))), hex)
             XCTAssertEqual(FormHash.hex(FormHash.sha256(Data(msg.utf8))), hex)
         }
         let million = Data(repeating: UInt8(ascii: "a"), count: 1_000_000)
         XCTAssertEqual(FormHash.hex(SHA256Pure.hash(million)), "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0")
+    }
+
+    func testSHA256BlockBoundaries() {
+        // Exercise both one- and two-block padding, complete blocks, and non-zero Data indices.
+        for count in [0, 1, 55, 56, 57, 63, 64, 65, 119, 120, 127, 128, 129, 1024] {
+            let data = Data((0..<count).map { UInt8($0 & 0xff) })
+            var prefixed = Data([1, 2, 3])
+            prefixed.append(data)
+            XCTAssertEqual(SHA256Pure.hash(prefixed.dropFirst(3)), SHA256Pure.legacyHash(data), "length \(count)")
+        }
     }
 
     // MARK: issuing

@@ -469,7 +469,7 @@ struct HomeFeed: View {
         case .summary: break
         }
         switch p.source {
-        case .dailyReport(let key, let day): open(p.kind == .waitingInspector && !source ? .job(key) : .daily(job: key, day: day))
+        case .dailyReport(let key, let day): open(.daily(job: key, day: day))
         case .test(let key, _): open(.inspection(job: key))
         case .problem(let key, let id):
             let day = job(key)?.dailyLogs.last { $0.report?.problems.contains { $0.id == id } == true }?.date

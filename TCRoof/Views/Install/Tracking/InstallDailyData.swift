@@ -30,6 +30,7 @@ struct InstallDailyData {
             return Int(a.rounded()) - Int(p.rounded())
         }
         var needsWork: Bool { state == .today || state == .missing || state == .draft }
+        var isPendingAck: Bool { signedAt != nil && ackAt == nil }
         var hasProblem: Bool { !problem.isEmpty }
     }
 

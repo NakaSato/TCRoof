@@ -58,6 +58,8 @@ struct DailyReportEditor: View {
     @State private var showSign = false
     @State private var showAck = false
     @State private var askUnsign = false
+    @State private var askSendBack = false
+    @State private var sendBackReason = ""
     @State private var showSettings = false
     @State private var share: ReportShare?
     @State private var toast: String?
@@ -120,6 +122,18 @@ struct DailyReportEditor: View {
             Button("กลับไปแก้ไข", role: .cancel) { pendingDay = nil }
         } message: {
             Text("บันทึกแล้วลายเซ็นและการรับทราบของ Inspector จะถูกล้าง ต้องลงนามใหม่")
+        }
+        .alert("ส่งกลับให้แก้", isPresented: $askSendBack) {
+            TextField("เหตุผลที่ส่งกลับ (ต้องใส่)", text: $sendBackReason)
+            Button("ส่งกลับ") {
+                let reason = sendBackReason.trimmingCharacters(in: .whitespacesAndNewlines)
+                sendBackReason = ""
+                guard !reason.isEmpty else { withAnimation { toast = "ใส่เหตุผลที่ส่งกลับก่อน" }; return }
+                sendBack(reason)
+            }
+            Button("ยกเลิก", role: .cancel) { sendBackReason = "" }
+        } message: {
+            Text("ผู้รับเหมาจะเห็นเหตุผลนี้ในปัญหาของรายงาน แล้วแก้และเซ็นส่งใหม่")
         }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
         .quickLookPreview($preview)
@@ -315,6 +329,11 @@ struct DailyReportEditor: View {
                 Label("Inspector รับทราบ \(ack.thaiLong)", systemImage: "person.fill.checkmark").foregroundStyle(Theme.okText)
             } else {
                 Button("บันทึก Inspector รับทราบ", action: requestAck).frame(minHeight: touchMin)
+                if canSign {
+                    Button("ส่งกลับให้แก้", role: .destructive) { askSendBack = true }
+                        .frame(minHeight: touchMin)
+                        .accessibilityIdentifier("dailySendBack")
+                }
             }
             Menu {
                 Button { exportPDF() } label: { Label("PDF", systemImage: "doc.richtext") }

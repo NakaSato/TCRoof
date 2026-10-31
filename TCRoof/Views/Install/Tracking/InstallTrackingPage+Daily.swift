@@ -109,9 +109,13 @@ extension InstallTrackingPage {
 
     // MARK: ทุกรายงาน
 
+    func rowNeedsWork(_ r: InstallDailyData.Row) -> Bool {
+        r.needsWork || (r.isPendingAck && permissions.can(.dailySign, on: job.access))
+    }
+
     private func filtered(_ d: InstallDailyData) -> [InstallDailyData.Row] {
         switch dailyFilter {
-        case 1: d.rows.filter(\.needsWork)
+        case 1: d.rows.filter(rowNeedsWork)
         case 2: d.rows.filter(\.hasProblem)
         default: d.rows
         }
@@ -172,7 +176,7 @@ extension InstallTrackingPage {
     private func reportsBar(_ d: InstallDailyData, short: Bool) -> some View {
         HStack(spacing: 14) {
             Text("ทุกรายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-            TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(\.needsWork).count),
+            TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(rowNeedsWork).count),
                              .init("มีปัญหา", count: d.rows.filter(\.hasProblem).count)],
                             selection: $dailyFilter, equalWidths: false, fontSize: 15)
                 .fixedSize()
@@ -320,11 +324,12 @@ extension InstallTrackingPage {
     }
 
     private func actionButton(_ r: InstallDailyData.Row) -> some View {
+        let canApprove = r.isPendingAck && permissions.can(.dailySign, on: job.access)
         let (title, prominent): (String, Bool) = switch r.state {
         case .today: ("ทำรายงานวันนี้", true)
         case .draft: ("ทำต่อ | ส่ง", true)
         case .missing: ("ทำรายงาน", false)
-        case .signed, .stopped: ("เปิดรายงาน", false)
+        case .signed, .stopped: canApprove ? ("ตรวจ & รับทราบ", true) : ("เปิดรายงาน", false)
         }
         return Button { route = .day(r.date) } label: { Text(title).frame(maxWidth: .infinity) }
             .buttonStyle(TCButtonStyle(prominent ? .primary : .secondary, size: .card))

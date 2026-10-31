@@ -8,7 +8,7 @@ import TCRoofCore
 extension InstallTrackingPage {
     func phoneDailyTab(_ d: InstallDailyData) -> some View {
         let rows: [InstallDailyData.Row] = switch dailyFilter {
-        case 1: d.rows.filter(\.needsWork)
+        case 1: d.rows.filter(rowNeedsWork)
         case 2: d.rows.filter(\.hasProblem)
         default: d.rows
         }
@@ -18,7 +18,7 @@ extension InstallTrackingPage {
             }
             HStack(spacing: 8) {
                 filterCapsule("ทั้งหมด", d.rows.count, 0)
-                filterCapsule("ต้องทำ", d.rows.filter(\.needsWork).count, 1)
+                filterCapsule("ต้องทำ", d.rows.filter(rowNeedsWork).count, 1)
                 filterCapsule("มีปัญหา", d.rows.filter(\.hasProblem).count, 2)
                 Spacer(minLength: 0)
                 if d.hasReports {
@@ -78,7 +78,7 @@ extension InstallTrackingPage {
                             Text(subline(r, workEnd: workEnd)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                         Spacer(minLength: 4)
-                        dayChip(r.state)
+                        dayChip(r)
                     }
                     if let p = r.planned, let a = r.actual { progressLine(actual: a, planned: p) }
                     if r.hasProblem {
@@ -107,13 +107,13 @@ extension InstallTrackingPage {
         }
     }
 
-    private func dayChip(_ s: InstallDailyData.State) -> some View {
-        let (title, tone): (String, InstallPageData.Tone) = switch s {
+    private func dayChip(_ r: InstallDailyData.Row) -> some View {
+        let (title, tone): (String, InstallPageData.Tone) = switch r.state {
         case .today: ("ยังไม่ส่ง", .danger)
         case .missing: ("ขาดส่ง", .danger)
         case .draft: ("ร่าง", .warn)
-        case .signed: ("ส่งแล้ว", .ok)
-        case .stopped: ("หยุดงาน", .idle)
+        case .signed: r.isPendingAck ? ("รอรับทราบ", .warn) : ("ส่งแล้ว", .ok)
+        case .stopped: r.isPendingAck ? ("หยุด • รอรับทราบ", .warn) : ("หยุดงาน", .idle)
         }
         return toneChip(title, tone)
     }
@@ -140,11 +140,12 @@ extension InstallTrackingPage {
     }
 
     private func dayButton(_ r: InstallDailyData.Row) -> some View {
+        let canApprove = r.isPendingAck && permissions.can(.dailySign, on: job.access)
         let (title, prominent): (String, Bool) = switch r.state {
         case .today: ("ทำรายงานวันนี้", true)
         case .draft: ("ทำต่อ | ส่ง", true)
         case .missing: ("ทำรายงาน", false)
-        case .signed, .stopped: ("เปิดรายงาน", false)
+        case .signed, .stopped: canApprove ? ("ตรวจ & รับทราบ", true) : ("เปิดรายงาน", false)
         }
         return Button { route = .day(r.date) } label: { Text(title).frame(maxWidth: .infinity) }
             .buttonStyle(TCButtonStyle(prominent ? .primary : .secondary, size: .card, fullWidth: true))

@@ -181,7 +181,12 @@ struct DailyReportListView: View {
             }
             Spacer()
             switch job.dailyState(on: d) {
-            case .signed: TCStatusChip(log?.inspectorAckAt != nil ? "Inspector รับทราบ" : "ส่งแล้ว", fill: Theme.okSoft, text: Theme.okText)
+            case .signed:
+                if log?.inspectorAckAt != nil {
+                    TCStatusChip("Inspector รับทราบ", fill: Theme.okSoft, text: Theme.okText)
+                } else {
+                    TCStatusChip("ส่งแล้ว • รอรับทราบ", fill: Theme.warningSoft, text: Theme.pending)
+                }
             case .draft: TCStatusChip("ร่าง", fill: Theme.warningSoft, text: Theme.pending)
             case .none:
                 if RoutineReport.dayKey(d) == RoutineReport.dayKey(.now), RoutineReport.calendar.component(.hour, from: .now) < 17 {

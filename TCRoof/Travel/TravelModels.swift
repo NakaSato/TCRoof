@@ -30,6 +30,7 @@ final class Trip {
     var odoStartDriveID: String?
     var odoEndDriveID: String?
     var syncID: String?
+    @Transient let jsonCache = ModelJSONCache()
 
     init(date: Date, ownerEmail: String, person: String, vehicle: TravelClaim.Vehicle, plate: String, startPlace: String, rate: Double) {
         self.date = TravelClaim.calendar.startOfDay(for: date)
@@ -50,8 +51,12 @@ final class Trip {
     }
 
     var stops: [TravelClaim.Stop] {
-        get { (try? JSONDecoder().decode([TravelClaim.Stop].self, from: Data(stopsJSON.utf8))) ?? [] }
-        set { stopsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
+        get { jsonCache.decode([TravelClaim.Stop].self, for: "stops", raw: stopsJSON) ?? [] }
+        set {
+            let encoded = ModelJSONCache.encode(newValue) ?? "[]"
+            stopsJSON = encoded
+            jsonCache.set(for: "stops", raw: encoded, value: newValue)
+        }
     }
 
     var monthKey: String { TravelClaim.monthKey(date) }

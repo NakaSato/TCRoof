@@ -35,4 +35,19 @@ final class WBSChecklistUITests: XCTestCase {
         XCTAssertTrue(count.waitForExistence(timeout: 5), "taking it back should uncount it")
         XCTAssertEqual(first.value as? String, "ยังไม่เสร็จ")
     }
+
+    func testInternalCanEditWBSSubtask() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
+                               "-installStage", "1", "-role", "internal", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let editButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.edit.")).firstMatch
+        XCTAssertTrue(editButton.waitForExistence(timeout: slow), "internal role should see WBS edit button")
+        editButton.tap()
+
+        XCTAssertTrue(app.navigationBars["แก้ไขงานย่อย WBS"].waitForExistence(timeout: 5),
+                      "tapping edit button should open WBSItemEditSheet")
+        app.buttons["ยกเลิก"].tap()
+    }
 }

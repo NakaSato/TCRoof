@@ -13,6 +13,7 @@ final class ICLSheet {
     var job: Job?
     var syncID: String?
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.iclSheet) var photos: [PhotoAsset] = []
+    @Transient let jsonCache = ModelJSONCache()
 
     init(_ sheet: SiteICL.Sheet) {
         self.sheetJSON = Self.encode(sheet) ?? "{}"
@@ -22,10 +23,11 @@ final class ICLSheet {
 
     /// The sheet, or an empty one of group `?` when the JSON can't be read (an app version newer than this one).
     var sheet: SiteICL.Sheet {
-        get { (try? JSONDecoder().decode(SiteICL.Sheet.self, from: Data(sheetJSON.utf8))) ?? SiteICL.Sheet(group: "?") }
+        get { jsonCache.decode(SiteICL.Sheet.self, for: "sheet", raw: sheetJSON) ?? SiteICL.Sheet(group: "?") }
         set {
             guard let text = Self.encode(newValue), text != sheetJSON else { return }
             sheetJSON = text
+            jsonCache.set(for: "sheet", raw: text, value: newValue)
             updatedAt = .now
         }
     }
@@ -45,9 +47,7 @@ final class ICLSheet {
     }
 
     private static func encode(_ sheet: SiteICL.Sheet) -> String? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        return (try? encoder.encode(sheet)).flatMap { String(data: $0, encoding: .utf8) }
+        ModelJSONCache.encode(sheet, sortedKeys: true)
     }
 }
 

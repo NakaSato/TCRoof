@@ -10,6 +10,7 @@ final class ToolEvent {
     /// The event's time, for sorting without decoding.
     var at: Date
     var syncID: String?
+    @Transient let jsonCache = ModelJSONCache()
 
     init(_ event: ToolLog.Event) {
         eventJSON = Self.encode(event)
@@ -18,14 +19,17 @@ final class ToolEvent {
     }
 
     var event: ToolLog.Event {
-        get { (try? JSONDecoder().decode(ToolLog.Event.self, from: Data(eventJSON.utf8))) ?? ToolLog.Event(action: .remind, item: "", itemName: "", person: "", personEmail: "") }
-        set { eventJSON = Self.encode(newValue); at = newValue.at }
+        get { jsonCache.decode(ToolLog.Event.self, for: "event", raw: eventJSON) ?? ToolLog.Event(action: .remind, item: "", itemName: "", person: "", personEmail: "") }
+        set {
+            let encoded = Self.encode(newValue)
+            eventJSON = encoded
+            jsonCache.set(for: "event", raw: encoded, value: newValue)
+            at = newValue.at
+        }
     }
 
     static func encode<T: Encodable>(_ value: T) -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        return (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        ModelJSONCache.encode(value, sortedKeys: true) ?? "{}"
     }
 }
 
@@ -34,6 +38,7 @@ final class ToolEvent {
 final class CompanyVehicle {
     var vehicleJSON: String
     var syncID: String?
+    @Transient let jsonCache = ModelJSONCache()
 
     init(_ vehicle: ToolLog.Vehicle) {
         vehicleJSON = ToolEvent.encode(vehicle)
@@ -41,8 +46,12 @@ final class CompanyVehicle {
     }
 
     var vehicle: ToolLog.Vehicle {
-        get { (try? JSONDecoder().decode(ToolLog.Vehicle.self, from: Data(vehicleJSON.utf8))) ?? ToolLog.Vehicle(name: "", plate: "") }
-        set { vehicleJSON = ToolEvent.encode(newValue) }
+        get { jsonCache.decode(ToolLog.Vehicle.self, for: "vehicle", raw: vehicleJSON) ?? ToolLog.Vehicle(name: "", plate: "") }
+        set {
+            let encoded = ToolEvent.encode(newValue)
+            vehicleJSON = encoded
+            jsonCache.set(for: "vehicle", raw: encoded, value: newValue)
+        }
     }
 }
 

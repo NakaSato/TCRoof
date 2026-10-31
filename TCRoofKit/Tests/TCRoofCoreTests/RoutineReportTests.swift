@@ -132,6 +132,22 @@ final class RoutineReportTests: XCTestCase {
         XCTAssertEqual(a.done(.inverter, through: d(19)), 0, accuracy: 1e-9)
     }
 
+    func testBatchApprovalMatchesIncrementalFeed() {
+        let all = [daily(7, lines: [(.structure, "หลังคา 1", 50), (.inverter, "ห้องอินเวอร์เตอร์", 20)]),
+                   daily(9, lines: [(.structure, "หลังคา 1", 100), (.inverter, "ห้องอินเวอร์เตอร์", 40)]),
+                   daily(15, lines: [(.panels, "หลังคา 1", 60), (.inverter, "ห้องอินเวอร์เตอร์", 100)])]
+        var incremental = MasterSchedule.Actual()
+        for i in 1...all.count {
+            RoutineReport.feed(&incremental, reports: all, counted: Array(all.prefix(i)), settings: .init(), over200kVA: false)
+        }
+        var batch = MasterSchedule.Actual()
+        RoutineReport.feed(&batch, reports: all, counted: all, settings: .init(), over200kVA: false)
+        XCTAssertEqual(batch, incremental)
+        XCTAssertEqual(batch.done(.structure, through: d(19)), 20, accuracy: 1e-9)
+        XCTAssertEqual(batch.done(.inverter, through: d(19)), 15, accuracy: 1e-9)
+        XCTAssertEqual(batch.done(.panels, through: d(19)), 12, accuracy: 1e-9)
+    }
+
     func testWarningsBeforeSigning() {
         let y = daily(1, lines: [(.structure, "หลังคา 1", 50)])
         var t = RoutineReport.nextDay(from: y, date: d(2), settings: .init())

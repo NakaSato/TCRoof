@@ -33,6 +33,13 @@ extension InstallTrackingPage {
                     .accessibilityLabel("PDF รวม")
                 }
             }
+            if !d.unacknowledged.isEmpty, permissions.can(.dailySign, on: job.access) {
+                Button { ackingAllDailies = true } label: {
+                    Label("รับทราบทั้งหมด (\(d.unacknowledged.count) วัน)", systemImage: "checkmark.seal.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))
+                .accessibilityIdentifier("dailyAckAll")
+            }
             if rows.isEmpty {
                 Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 80)

@@ -32,13 +32,20 @@ extension InstallTrackingPage {
         let through = min(w.upperBound, today)
         let working = through >= w.lowerBound ? RoutineReport.workingDays(settings: settings, from: w.lowerBound, to: through).count : 0
         let signed = logs.filter { $0.engineerSignedAt != nil }.count
+        let approved = logs.filter { $0.inspectorAckAt != nil }.count
         let photos = logs.reduce(0) { $0 + $1.sortedPhotos.count }
         let problems = reports.reduce(0) { $0 + $1.problems.filter { !$0.description.isEmpty }.count }
         let planned = job.scheduleInput.map { MasterSchedule.status(plan: MasterSchedule.plan($0), actual: job.scheduleActual, through: w.upperBound).planned }
         let unsigned = logs.filter { $0.engineerSignedAt == nil }.map { Self.dayLabel($0.date) }
+        let unacked = logs.filter { $0.engineerSignedAt != nil && $0.inspectorAckAt == nil }.map { Self.dayLabel($0.date) }
+        let pendingNotes = [
+            unsigned.isEmpty ? nil : unsigned.joined(separator: ", ") + " รอเซ็น",
+            unacked.isEmpty ? nil : unacked.joined(separator: ", ") + " รอรับทราบ"
+        ].compactMap { $0 }
         return [
-            WeeklyCheck(title: "รายงานประจำวันเซ็นครบ", ok: signed >= working && working > 0,
-                        note: "เซ็นแล้ว \(signed)/\(working) วันทำงาน" + (unsigned.isEmpty ? "" : " | " + unsigned.joined(separator: ", ") + " รอเซ็น"), fixable: true),
+            WeeklyCheck(title: "รายงานประจำวันเซ็นครบ", ok: signed >= working && approved >= signed && working > 0,
+                        note: "เซ็นแล้ว \(signed)/\(working) · รับทราบ \(approved)/\(signed) วัน"
+                            + (pendingNotes.isEmpty ? "" : " | " + pendingNotes.joined(separator: " | ")), fixable: true),
             WeeklyCheck(title: "แผน MP" + (weekNumber.map { " สัปดาห์ที่ \($0)" } ?? ""), ok: planned != nil,
                         note: planned.map { "แผนสะสม \(Int($0.rounded()))%" } ?? "ยังไม่มีแผน MP", fixable: false),
             WeeklyCheck(title: "รูปหน้างาน", ok: photos > 0, note: "\(photos) รูปจากรายงานประจำวัน", fixable: true),

@@ -181,6 +181,13 @@ extension InstallTrackingPage {
                             selection: $dailyFilter, equalWidths: false, fontSize: 15)
                 .fixedSize()
             Spacer(minLength: 8)
+            if !d.unacknowledged.isEmpty, permissions.can(.dailySign, on: job.access) {
+                Button { ackingAllDailies = true } label: {
+                    Label("รับทราบทั้งหมด (\(d.unacknowledged.count))", systemImage: "checkmark.seal.fill")
+                }
+                .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                .accessibilityIdentifier("dailyAckAll")
+            }
             if let w = d.week {
                 Button { go(.weekly) } label: {
                     Label(short ? "Weekly Report W\(w.number)" : "สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")

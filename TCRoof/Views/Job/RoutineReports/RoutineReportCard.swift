@@ -96,6 +96,7 @@ struct DailyReportListView: View {
     @State private var share: ReportShare?
     /// A signed report the team is recording the inspector's `รับทราบ` for.
     @State private var acking: InstallLog?
+    @State private var ackingAll = false
     @Environment(\.modelContext) private var context
     @Environment(\.permissions) private var permissions
 
@@ -137,6 +138,11 @@ struct DailyReportListView: View {
                 job.recordInspectorAck(log, name: name, at: when, signature: drawn, context: context)
             }
         }
+        .sheet(isPresented: $ackingAll) {
+            InspectorAckSheet(title: "รับทราบทั้งหมด (\(job.pendingAckLogs.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAckAll(job.pendingAckLogs, name: name, at: when, signature: drawn, context: context)
+            }
+        }
     }
 
     /// `รับทราบ` beside a signed report the inspector hasn't acknowledged, for the people who sign (`daily.sign`).
@@ -155,6 +161,11 @@ struct DailyReportListView: View {
 
     private var menu: some View {
         Menu {
+            if !job.pendingAckLogs.isEmpty, permissions.can(.dailySign, on: job.access) {
+                Button { ackingAll = true } label: {
+                    Label("รับทราบทั้งหมด (\(job.pendingAckLogs.count) วัน)", systemImage: "checkmark.seal.fill")
+                }
+            }
             Button { shareBlankForm() } label: { Label("พิมพ์แบบฟอร์มเปล่า", systemImage: "printer") }
         } label: {
             Label("เพิ่มเติม", systemImage: "ellipsis.circle").font(.sarabun(17, .semibold, relativeTo: .body)).frame(minHeight: touchMin)

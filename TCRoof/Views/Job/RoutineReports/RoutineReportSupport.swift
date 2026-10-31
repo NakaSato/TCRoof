@@ -77,6 +77,11 @@ extension Job {
         if a != scheduleActual { scheduleActual = a }
     }
 
+    /// Logs signed by the reporter (`engineerSignedAt != nil`) that the inspector has not acknowledged yet (`inspectorAckAt == nil`).
+    var pendingAckLogs: [InstallLog] {
+        dailyLogs.filter { $0.engineerSignedAt != nil && $0.inspectorAckAt == nil }
+    }
+
     /// Records the inspector's acknowledgement of a signed report, updates the MP plan, then files its PDF and Excel
     /// again with it. The report screen and the daily list both call it; the caller checks `daily.sign`.
     @MainActor func recordInspectorAck(_ log: InstallLog, name: String, at when: Date, signature: Data?, context: ModelContext) {
@@ -88,6 +93,25 @@ extension Job {
         feedMP()
         if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }
         if let excel = RoutineReportFiles.dailyExcel(self, log: log) { RoutineReportFiles.file(excel, job: self, context: context) }
+        try? context.save()
+    }
+
+    /// Records the inspector's acknowledgement across all pending signed reports in one pass, updates the MP plan once,
+    /// and re-files each day's PDF and Excel.
+    @MainActor func recordInspectorAckAll(_ logs: [InstallLog], name: String, at when: Date, signature: Data?, context: ModelContext) {
+        guard !logs.isEmpty else { return }
+        if routineSettings.inspector != name {
+            var s = routineSettings; s.inspector = name; routineSettings = s
+        }
+        for log in logs {
+            log.inspectorAckAt = when
+            log.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
+        }
+        feedMP()
+        for log in logs {
+            if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }
+            if let excel = RoutineReportFiles.dailyExcel(self, log: log) { RoutineReportFiles.file(excel, job: self, context: context) }
+        }
         try? context.save()
     }
 

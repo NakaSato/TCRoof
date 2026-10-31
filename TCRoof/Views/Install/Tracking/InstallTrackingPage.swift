@@ -33,6 +33,7 @@ struct InstallTrackingPage: View {
     @State var siteTab = Debug.site
     /// `ทุกรายงาน`'s segment: all, to do, with a problem.
     @State var dailyFilter = Debug.dailyFilter
+    @State var ackingAllDailies = false
     @State var shared: Shared?
     /// `แผนก่อสร้าง`'s plan file: import and export of the station's own workbook.
     @State var workbook = MPWorkbookFlow()
@@ -123,6 +124,11 @@ struct InstallTrackingPage: View {
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
         .overlay { if let s = sheet { pageSheet(s, data) } }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .sheet(isPresented: $ackingAllDailies) {
+            InspectorAckSheet(title: "รับทราบทั้งหมด (\(job.pendingAckLogs.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAckAll(job.pendingAckLogs, name: name, at: when, signature: drawn, context: context)
+            }
+        }
         .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
         .sheet(isPresented: $showWBSDependencies) { WBSDependenciesSheet(job: job) }
         .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {

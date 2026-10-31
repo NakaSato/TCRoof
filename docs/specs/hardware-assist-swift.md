@@ -1,7 +1,7 @@
 # Hardware assist: using the iPad's hardware in the survey (iPad Swift dev spec)
 
 **Status:** Mostly built (checked 2026-10-17): §1 `DeviceCaps` (Settings › เครื่องนี้), H1 Live Text and the nameplate parser (`LiveTextScanner`, `TCRoofCore/Hardware/NameplateParser`), H2 position, H3 roof angle and facing (`RoofSensor`, `Orientation`), H4 camera checks, wide rooms and stamp (`CheckedCamera`, `WideCamera`, `ImageQuality`, `PanoramaGuide`), H6 card / USB import (`CardImportSheet`, `CardImport`), H8 power (`PowerMonitor`, `PowerAdvice`). Files live in `TCRoofUI/Survey/Hardware/` and `TCRoofCore/Hardware/` (§5).
-**Not built:** H5 Pencil tools; H6 external display; H7 laser meter and LiDAR / ARKit measuring (`FillSource` has `laser`, `lidar` and `arEstimate` cases, but nothing sets them).
+**Not built:** H6 external display.
 **Platform:** TCRoof on **iPad** (SwiftUI, iPadOS 17+).
 **Target device:** iPad Air (M-series), plus anything better.
 **Rule:** every feature checks the hardware **at runtime** and falls back cleanly. The same build runs on iPad Air
@@ -24,19 +24,14 @@ This spec builds on all of these.
 |---|---|---|---|---|
 | Neural Engine: on-device text recognition and image analysis | ✓ | ✓ | `DataScannerViewController.isSupported && isAvailable`; `VNRecognizeTextRequest.supportedRecognitionLanguages()` | type by hand |
 | Rear camera | one 12 MP wide | wide + ultra-wide | `AVCaptureDevice.DiscoverySession([.builtInUltraWideCamera], …)` | guided multi-shot (§H4) |
-| LiDAR | **no** | ✓ | `ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)` | ARKit planes (low accuracy label) or a Bluetooth laser meter |
 | GPS | **Cellular models only**; Wi-Fi models get approximate location | same rule | the first fix's `horizontalAccuracy` (≤ 20 m counts as GPS) | external Bluetooth GNSS receiver (Core Location uses it automatically), or type / paste a Google Maps link |
 | Compass (magnetometer) | ✓ | ✓ | `CLLocationManager.headingAvailable()`; `CLHeading.headingAccuracy` | pick the direction by hand |
 | Motion (accelerometer / gyro) | ✓ | ✓ | `CMMotionManager.isDeviceMotionAvailable` | type the angle |
-| Apple Pencil Pro: squeeze, barrel roll, Pencil haptics | Air **M2 and later** | M4 | `UIPencilInteraction` squeeze callback fires; `UITouch.rollAngle` non-zero | long-press menus; two-finger rotate |
-| Pencil hover | depends on model | ✓ | `UIHoverGestureRecognizer` with Pencil events arriving | no preview; draw on touch |
 | USB-C: storage, card readers, external display | ✓ (Stage Manager with an external display on M1+) | ✓ | `fileImporter`; `UIApplication.shared.openSessions` external display role | AirDrop / Files |
-| Bluetooth LE | ✓ | ✓ | `CBCentralManager.state == .poweredOn` | type the value |
 | Thermal state, battery, Low Power Mode | ✓ | ✓ | `ProcessInfo.thermalState`, `UIDevice.batteryLevel`, `isLowPowerModeEnabled` | — |
 
 **Two facts shape the design:**
-- **iPads have no haptic motor.** Only Apple Pencil Pro can give haptic feedback, so all confirmation is visual. The
-  Pencil ticks only when a Pencil Pro is in use.
+- **iPads have no haptic motor.** All confirmation is visual.
 - **The compass is disturbed near steel and transformers.** Every heading reading shows its accuracy. Headings taken
   within about 2 m of a transformer or on a steel roof are marked "ตรวจทิศอีกครั้ง" (§H3).
 
@@ -169,24 +164,6 @@ This spec builds on all of these.
    `WideCamera` has its own capture session. Photos are stored at `maxSide` 1600 (as before). The quality check runs
    off the main thread.
 
-### H5. Apple Pencil (Pro)
-
-- **Squeeze (Pencil Pro, iPad Air M2+):** `UIPencilInteraction` squeeze shows a small palette at the Pencil tip:
-  - ถ่ายรูปช่องนี้
-  - เขียนทับรูป (markup on the current photo, PencilKit)
-  - ข้อความสำเร็จรูป (phrase list for remarks / condition notes)
-  - ย้อนกลับ
-
-  Squeezing again, or lifting, closes it.
-- **Barrel roll:**
-  - While dragging a site symbol, rolling rotates it. `MapMark` gets an optional `rotation`, shown in the editor and
-    the report.
-  - In the tank / roof editors, rolling turns the north arrow in 90° steps.
-- **Hover** (where available): previews a symbol before it is dropped, and shows the running length while drawing
-  cable routes and paths.
-- **Pencil haptics** (Pencil Pro): a tick when a route snaps to a symbol, or a slot snaps to a bay.
-- **Without Pencil Pro:** a long-press menu gives the same palette, and two-finger rotation rotates symbols.
-
 ### H6. USB-C: drone and camera cards, external display
 
 **Card / USB import:**
@@ -203,16 +180,6 @@ This spec builds on all of these.
 
 **External display (USB-C / AirPlay, Stage Manager on M1+):**
 - In the office: form on the iPad, **report preview** on the monitor, re-rendered whenever the form changes.
-
-### H7. Measuring distances
-
-| Tool | Where it fills | Notes |
-|---|---|---|
-| **Bluetooth laser meter** (preferred) | any number field in metres or cm: spans, heights, gate width, `measA`…`measI2`, purlin spacing | CoreBluetooth; one adapter per supported brand's BLE measurement characteristic. Tap a field, press the meter's button, and the value goes in. The field shows "จากเลเซอร์" |
-| **LiDAR** (iPad Pro) | heights and widths in the logistics editor, tank / roof spans | `ARWorldTrackingConfiguration` + `sceneReconstruction`; tap two points; ± 1–2 cm class |
-| **ARKit planes** (iPad Air) | same | plane detection only; the result carries "ความแม่นยำต่ำ ตรวจด้วยตลับเมตร" and `fillSource = .arEstimate` |
-
-The laser meter makes the iPad Air measure as well as a Pro for the survey's needs. It is the recommended accessory.
 
 ### H8. Power, heat, storage (a full day outdoors)
 
@@ -231,7 +198,7 @@ The top bar shows a small battery/heat indicator only when one of these applies.
 ## 3. Data model changes (all optional → old jobs decode unchanged)
 
 ```swift
-public enum FillSource: String, Codable, Sendable { case typed, nameplate, sensor, laser, lidar, arEstimate, gps, drone }
+public enum FillSource: String, Codable, Sendable { case typed, nameplate, sensor, gps, drone }
 // Values gets a parallel map, so FieldValue stays unchanged:
 public struct Values: Codable, Hashable, Sendable {
     public var storage: [String: FieldValue] = [:]
@@ -256,7 +223,6 @@ public var rotation: Double?
 | `NSCameraUsageDescription` | done | "…ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์" |
 | `NSLocationWhenInUseUsageDescription` | exists | keep |
 | `NSMotionUsageDescription` | done | "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง" |
-| `NSBluetoothAlwaysUsageDescription` | **not yet** (for H7) | "ใช้รับค่าจากเครื่องวัดระยะเลเซอร์" |
 
 Each permission is asked for only the first time its feature is used, never at launch.
 
@@ -279,7 +245,6 @@ Each permission is asked for only the first time its feature is used, never at l
 | `TCRoofCore/Hardware/CardImport.swift` | EXIF reading and placement rules |
 | `TCRoofCore/Hardware/Position.swift` | `GPSGrade` |
 | `TCRoofCore/Hardware/PowerAdvice.swift` | §H8 rules |
-| `PencilTools`, `LaserMeter`, `ARMeasure` | **not built** (H5, H7) |
 
 The photo slots (`Photos/PhotoSlot.swift`) use `CheckedCamera` (around the existing `CameraPicker`) for fields that
 need the checks. The library
@@ -301,10 +266,7 @@ picker stays.
 **On device (manual, checklist in the PR):**
 - iPad Air Wi-Fi:
   - location shows "ประมาณการ"
-  - no LiDAR, so ARKit shows the low-accuracy label
   - multi-shot is offered for wide photos
-- iPad Air M2+ with Pencil Pro: squeeze palette and roll rotation work.
-- Laser meter: 10 readings match the meter's display.
 - Inclinometer: within ±0.5° of a digital level on a test roof sheet.
 
 ## 7. Done when
@@ -317,10 +279,8 @@ picker stays.
 
 ## 8. Open questions
 
-1. **Exact models:** which iPad Air the team uses (M1 / M2 / M3, Wi-Fi or Cellular), and whether anyone has Pencil
-   Pro.
-2. **Laser meter:** which brand and model the team has or will buy, so the first Bluetooth adapter matches it.
-3. **External GPS:** buy Bluetooth GNSS receivers for Wi-Fi iPads, or switch to Cellular models?
-4. **Photo stamp:** print coordinates and time under photos in the report by default, or only on request?
-5. **Nameplate fields:** besides kVA, meter number and main breaker AT, which nameplate values should the form keep?
+1. **Exact models:** which iPad Air the team uses (M1 / M2 / M3, Wi-Fi or Cellular).
+2. **External GPS:** buy Bluetooth GNSS receivers for Wi-Fi iPads, or switch to Cellular models?
+3. **Photo stamp:** print coordinates and time under photos in the report by default, or only on request?
+4. **Nameplate fields:** besides kVA, meter number and main breaker AT, which nameplate values should the form keep?
    This ties in with the SLD's transformer and breaker fields.

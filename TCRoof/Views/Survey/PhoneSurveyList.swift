@@ -16,7 +16,7 @@ struct PhoneSurveyList: View {
     @Environment(\.permissions) private var permissions
     @State private var openedJob: Job?
     @State private var surveyJob: Job?
-    @StateObject private var drive = DriveEstimate()
+    @State private var drive = DriveEstimate()
     @FocusState private var searching: Bool
     @AppStorage("surveyList.recentSearches") private var recentRaw = ""
     @Environment(\.modelContext) private var context

@@ -249,7 +249,7 @@ struct ElectricalPageWide: View {
         guard trafos.indices.contains(i) else { return }
         withAnimation { open = i }
         // after the rows above have their new heights
-        DispatchQueue.main.async { scrollTarget = i }
+        Task { @MainActor in scrollTarget = i }
     }
 
     // MARK: diagram

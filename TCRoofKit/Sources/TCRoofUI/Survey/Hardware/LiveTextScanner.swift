@@ -202,7 +202,7 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
         if DataScannerViewController.isAvailable {
             try? vc.startScanning()
         } else {
-            DispatchQueue.main.async { unavailable = true }
+            Task { @MainActor in unavailable = true }
         }
     }
 

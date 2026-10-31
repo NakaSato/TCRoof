@@ -255,7 +255,7 @@ struct SingleLinePage: View {
                 }
                 .accessibilityElement().accessibilityLabel("แผนภาพเส้นเดียว หม้อแปลง \(sl.transformers.count) ลูก ยังขาด \(sl.missing.count) จุด")
             }
-            .onChange(of: focusPoint) { _, _ in DispatchQueue.main.async { withAnimation { proxy.scrollTo("focus", anchor: .center) } } }
+            .onChange(of: focusPoint) { _, _ in Task { @MainActor in withAnimation { proxy.scrollTo("focus", anchor: .center) } } }
         }
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -266,7 +266,7 @@ struct SingleLinePage: View {
         .overlay(alignment: .bottomTrailing) { if phone { zoomControl.shadow(color: Theme.navy.opacity(0.15), radius: 4, y: 1).padding(8) } }
         .frame(maxHeight: .infinity)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { s in
-            if !fitted, s.width > 0 { fitted = true; DispatchQueue.main.async { fit() } }
+            if !fitted, s.width > 0 { fitted = true; Task { @MainActor in fit() } }
         }
     }
 

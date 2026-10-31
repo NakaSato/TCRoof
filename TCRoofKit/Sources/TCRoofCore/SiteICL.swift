@@ -59,6 +59,13 @@ public enum SiteICL {
         public var groups: [Group]
         public var items: [Item]
 
+        public init(version: Int = 0, mounts: [String] = [], groups: [Group] = [], items: [Item] = []) {
+            self.version = version
+            self.mounts = mounts
+            self.groups = groups
+            self.items = items
+        }
+
         public init(json: Data) throws { self = try JSONDecoder().decode(Catalog.self, from: json) }
 
         public func group(_ id: String) -> Group? { groups.first { $0.id == id } }
@@ -255,5 +262,5 @@ public enum SiteICL {
 }
 
 extension SiteICL.Catalog {
-    static let empty = try! SiteICL.Catalog(json: Data(#"{"version":0,"mounts":[],"groups":[],"items":[]}"#.utf8))
+    static let empty = SiteICL.Catalog()
 }

@@ -305,7 +305,7 @@ struct HomeWorkView: View {
             target = home.mode == .sell ? "sell" : "setup"
         }
         // after the tab's rows are on screen
-        DispatchQueue.main.async { scrollTarget = target }
+        Task { @MainActor in scrollTarget = target }
     }
 
     // MARK: iPhone menu bar

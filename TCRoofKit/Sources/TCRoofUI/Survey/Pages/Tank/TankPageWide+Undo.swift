@@ -1,5 +1,6 @@
 #if canImport(UIKit)
 import SwiftUI
+import Observation
 import TCRoofCore
 
 /// D1's `↶ เลิกทำ` (docs/specs/tank-drawing-swift.md §4.3): snapshots of the tank's answers, the last 30. Changes less
@@ -64,10 +65,12 @@ extension TankPageWide {
 }
 
 /// The undo history: kept in a reference so recording a step doesn't need a state write per change.
-final class TankUndo: ObservableObject {
-    @Published var back: [Values] = []
-    @Published var forward: [Values] = []
-    var at = Date.distantPast
-    var applying = false
+@MainActor
+@Observable
+final class TankUndo {
+    var back: [Values] = []
+    var forward: [Values] = []
+    @ObservationIgnored var at = Date.distantPast
+    @ObservationIgnored var applying = false
 }
 #endif

@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 import TCRoofUI
 import TCRoofCore
 import CoreLocation
@@ -406,9 +407,10 @@ struct SurveyHomeDock: View {
 /// Distance and drive time from here to the next appointment's address. It never asks for location access:
 /// without it, or without a route, `text` stays nil and the item is hidden.
 @MainActor
-final class DriveEstimate: ObservableObject {
-    @Published private(set) var text: String?
-    private var fetcher: LocationFetcher?
+@Observable
+final class DriveEstimate {
+    private(set) var text: String?
+    @ObservationIgnored private var fetcher: LocationFetcher?
 
     func load(address: String) async {
         text = nil

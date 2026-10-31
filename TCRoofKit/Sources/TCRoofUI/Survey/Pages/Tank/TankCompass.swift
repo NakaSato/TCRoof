@@ -220,11 +220,11 @@ struct TankCompassView: View {
 struct CameraPreview: UIViewRepresentable {
     final class PreviewView: UIView {
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var preview: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        var preview: AVCaptureVideoPreviewLayer? { layer as? AVCaptureVideoPreviewLayer }
         let session = AVCaptureSession()
         override func layoutSubviews() {
             super.layoutSubviews()
-            if let c = preview.connection, let scene = window?.windowScene {
+            if let c = preview?.connection, let scene = window?.windowScene {
                 let angle: CGFloat = switch scene.interfaceOrientation {
                 case .landscapeLeft: 180
                 case .landscapeRight: 0
@@ -238,8 +238,8 @@ struct CameraPreview: UIViewRepresentable {
 
     func makeUIView(context: Context) -> PreviewView {
         let v = PreviewView()
-        v.preview.videoGravity = .resizeAspectFill
-        v.preview.session = v.session
+        v.preview?.videoGravity = .resizeAspectFill
+        v.preview?.session = v.session
         let session = v.session
         AVCaptureDevice.requestAccess(for: .video) { ok in
             guard ok, let cam = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),

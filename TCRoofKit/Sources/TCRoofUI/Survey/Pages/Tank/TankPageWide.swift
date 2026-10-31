@@ -106,7 +106,7 @@ struct TankPageWide: View {
     @State var shadeBusy = false
     @State var shadeMoment = 4
     /// `↶ เลิกทำ` (TankPageWide+Undo).
-    @StateObject var undo = TankUndo()
+    @State var undo = TankUndo()
     /// Sub-step 4 on iPad (TankPageWide+Photos): the selected tile, the filter, the wall shown, and where the next
     /// photo from the camera or the library goes.
     @State var photoSel: String?

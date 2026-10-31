@@ -44,7 +44,7 @@ extension Job {
 
     /// The Weekly Reports (R3) sent from the iPad install page.
     var weeklySentList: [RoutineReport.WeeklySent] {
-        weeklySentJSON.flatMap { try? JSONDecoder().decode([RoutineReport.WeeklySent].self, from: Data($0.utf8)) } ?? []
+        jsonCache.decode([RoutineReport.WeeklySent].self, for: "weeklySent", raw: weeklySentJSON) ?? []
     }
 
     /// The send of the week holding `week`, if it was sent from the page.
@@ -56,7 +56,9 @@ extension Job {
     /// Keeps the send in place of an earlier one of its week.
     func recordWeeklySent(_ sent: RoutineReport.WeeklySent) {
         let list = RoutineReport.WeeklySent.recording(sent, in: weeklySentList)
-        weeklySentJSON = (try? JSONEncoder().encode(list)).flatMap { String(data: $0, encoding: .utf8) }
+        let encoded = ModelJSONCache.encode(list)
+        weeklySentJSON = encoded
+        jsonCache.set(for: "weeklySent", raw: encoded, value: list)
     }
 
     /// The week's R3 PDF is among the job's documents: an older way of sending, before the record.

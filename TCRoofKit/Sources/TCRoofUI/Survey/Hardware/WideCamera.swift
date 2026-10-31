@@ -294,13 +294,13 @@ private struct WidePreview: UIViewRepresentable {
 
     final class Host: UIView {
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var preview: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        var preview: AVCaptureVideoPreviewLayer? { layer as? AVCaptureVideoPreviewLayer }
     }
 
     func makeUIView(context: Context) -> Host {
         let v = Host()
-        v.preview.session = cam.session
-        v.preview.videoGravity = .resizeAspectFill
+        v.preview?.session = cam.session
+        v.preview?.videoGravity = .resizeAspectFill
         cam.preview = v.preview
         return v
     }

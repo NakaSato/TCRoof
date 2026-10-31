@@ -100,18 +100,20 @@ public struct DriveClient: Sendable {
     }
 
     public func search(_ query: String, orderBy: String? = nil, pageSize: Int = 100) async throws -> [DriveFile] {
-        var c = URLComponents(url: Self.api, resolvingAgainstBaseURL: false)!
+        guard var c = URLComponents(url: Self.api, resolvingAgainstBaseURL: false) else { throw DriveError.badResponse }
         c.queryItems = [.init(name: "q", value: query), .init(name: "fields", value: "files(\(Self.fields))"),
                         .init(name: "pageSize", value: String(pageSize)), .init(name: "spaces", value: "drive")]
         if let o = orderBy { c.queryItems?.append(.init(name: "orderBy", value: o)) }
+        guard let url = c.url else { throw DriveError.badResponse }
         struct List: Decodable { let files: [DriveFile] }
-        return try JSONDecoder().decode(List.self, from: try await send(URLRequest(url: c.url!))).files
+        return try JSONDecoder().decode(List.self, from: try await send(URLRequest(url: url))).files
     }
 
     public func metadata(_ id: String) async throws -> DriveFile {
-        var c = URLComponents(url: Self.api.appendingPathComponent(id), resolvingAgainstBaseURL: false)!
+        guard var c = URLComponents(url: Self.api.appendingPathComponent(id), resolvingAgainstBaseURL: false) else { throw DriveError.badResponse }
         c.queryItems = [.init(name: "fields", value: Self.fields)]
-        return try JSONDecoder().decode(DriveFile.self, from: try await send(URLRequest(url: c.url!)))
+        guard let url = c.url else { throw DriveError.badResponse }
+        return try JSONDecoder().decode(DriveFile.self, from: try await send(URLRequest(url: url)))
     }
 
     /// True when the file or folder still exists and is not in the trash.

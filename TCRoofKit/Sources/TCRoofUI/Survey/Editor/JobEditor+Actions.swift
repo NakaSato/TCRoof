@@ -53,7 +53,7 @@ extension JobEditorView {
             select(.electrical)
             if t.trafo != nil {
                 // the page must be on screen before it can open the item
-                DispatchQueue.main.async { electricalFocus = t; electricalRequest = t.trafo }
+                Task { @MainActor in electricalFocus = t; electricalRequest = t.trafo }
             }
         }
     }

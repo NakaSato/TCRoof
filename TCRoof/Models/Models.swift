@@ -195,6 +195,7 @@ final class Job {
     /// The station's position from the PWA tracking workbook (`StationList`); optional for the same reason.
     var latitude: Double?
     var longitude: Double?
+    @Transient let jsonCache = ModelJSONCache()
 
     init(code: String, projectName: String, customerName: String, phone: String = "", address: String = "",
          province: String, capacityKW: Double, team: Team, status: JobStatus,
@@ -285,9 +286,11 @@ final class Job {
 
     /// The MP plan's dates and flag; setting it also moves the install window so the Plan calendar agrees.
     var scheduleInput: MasterSchedule.Input? {
-        get { scheduleInputJSON.flatMap { try? JSONDecoder().decode(MasterSchedule.Input.self, from: Data($0.utf8)) } }
+        get { jsonCache.decode(MasterSchedule.Input.self, for: "scheduleInput", raw: scheduleInputJSON) }
         set {
-            scheduleInputJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } }
+            let encoded = newValue.flatMap { ModelJSONCache.encode($0) }
+            scheduleInputJSON = encoded
+            jsonCache.set(for: "scheduleInput", raw: encoded, value: newValue)
             if let i = newValue {
                 let cal = MasterSchedule.calendar
                 installStart = cal.startOfDay(for: i.installStart)
@@ -296,22 +299,32 @@ final class Job {
         }
     }
     var scheduleActual: MasterSchedule.Actual {
-        get { scheduleActualJSON.flatMap { try? JSONDecoder().decode(MasterSchedule.Actual.self, from: Data($0.utf8)) } ?? .init() }
-        set { scheduleActualJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
+        get { jsonCache.decode(MasterSchedule.Actual.self, for: "scheduleActual", raw: scheduleActualJSON) ?? .init() }
+        set {
+            let encoded = ModelJSONCache.encode(newValue)
+            scheduleActualJSON = encoded
+            jsonCache.set(for: "scheduleActual", raw: encoded, value: newValue)
+        }
     }
 
     var routineSettings: RoutineReport.Settings {
-        get { routineSettingsJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Settings.self, from: Data($0.utf8)) } ?? .init() }
-        set { routineSettingsJSON = (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) } }
+        get { jsonCache.decode(RoutineReport.Settings.self, for: "routineSettings", raw: routineSettingsJSON) ?? .init() }
+        set {
+            let encoded = ModelJSONCache.encode(newValue)
+            routineSettingsJSON = encoded
+            jsonCache.set(for: "routineSettings", raw: encoded, value: newValue)
+        }
     }
     /// Setting it also books the MP permit tasks its papers approve (`PermitLink`: 1.4, 1.5, 1.7 at 100 % on the
     /// approval day, once each). Every writer is a team screen behind `stationdocs.drafts` (the ERC flow too), so the
     /// booking happens on the device that records the approval, by someone who may; sync writes `stationDocsJSON`
     /// itself, so a received change books nothing and the booking arrives with it on the same job record.
     var stationDocs: StationDocs.Station {
-        get { StationDocs.Station.decode(stationDocsJSON) }
+        get { jsonCache.value(for: "stationDocs", raw: stationDocsJSON, decode: StationDocs.Station.decode) }
         set {
-            stationDocsJSON = newValue.json
+            let encoded = newValue.json
+            stationDocsJSON = encoded
+            jsonCache.set(for: "stationDocs", raw: encoded, value: newValue)
             bookPermitsFromDocs(newValue)
         }
     }
@@ -330,20 +343,22 @@ final class Job {
     }
     /// The plan file's WBS rows; empty for a plan without them. Setting it books the ticks again (`bookFromWBS`).
     var scheduleWBS: [MasterSchedule.WorkItem] {
-        get { scheduleWBSJSON.flatMap { try? JSONDecoder().decode([MasterSchedule.WorkItem].self, from: Data($0.utf8)) } ?? [] }
+        get { jsonCache.decode([MasterSchedule.WorkItem].self, for: "scheduleWBS", raw: scheduleWBSJSON) ?? [] }
         set {
-            scheduleWBSJSON = newValue.isEmpty ? nil : (try? JSONEncoder().encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            let encoded = newValue.isEmpty ? nil : ModelJSONCache.encode(newValue)
+            scheduleWBSJSON = encoded
+            jsonCache.set(for: "scheduleWBS", raw: encoded, value: newValue)
             bookFromWBS()
         }
     }
     /// The ticked WBS rows. Setting it books them into the plan's progress (`bookFromWBS`).
     var wbsTicks: [String: MasterSchedule.WBSTick] {
-        get { wbsTicksJSON.flatMap { try? JSONDecoder().decode([String: MasterSchedule.WBSTick].self, from: Data($0.utf8)) } ?? [:] }
+        get { jsonCache.decode([String: MasterSchedule.WBSTick].self, for: "wbsTicks", raw: wbsTicksJSON) ?? [:] }
         set {
             // sorted keys, so the same ticks always write the same text (sync compares and fingerprints it)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .sortedKeys
-            wbsTicksJSON = newValue.isEmpty ? nil : (try? encoder.encode(newValue)).flatMap { String(data: $0, encoding: .utf8) }
+            let encoded = newValue.isEmpty ? nil : ModelJSONCache.encode(newValue, sortedKeys: true)
+            wbsTicksJSON = encoded
+            jsonCache.set(for: "wbsTicks", raw: encoded, value: newValue)
             bookFromWBS()
         }
     }
@@ -357,17 +372,23 @@ final class Job {
     }
     /// The IEC 62446 test; nil until the team sets up its inverters.
     var iecReport: IECReport? {
-        get { iecReportJSON.flatMap { try? JSONDecoder().decode(IECReport.self, from: Data($0.utf8)) } }
-        set { iecReportJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } } }
+        get { jsonCache.decode(IECReport.self, for: "iecReport", raw: iecReportJSON) }
+        set {
+            let encoded = newValue.flatMap { ModelJSONCache.encode($0) }
+            iecReportJSON = encoded
+            jsonCache.set(for: "iecReport", raw: encoded, value: newValue)
+        }
     }
     var stationContext: StationDocs.Context {
         StationDocs.Context(stationDocs, inverterKW: inverterKW ?? (scheduleInput?.over200kVA == true ? 200 : nil))
     }
     var weeklyRequests: [RoutineReport.WeeklyRequest] {
-        get { weeklyRequestsJSON.flatMap { try? JSONDecoder().decode([RoutineReport.WeeklyRequest].self, from: Data($0.utf8)) } ?? [] }
+        get { jsonCache.decode([RoutineReport.WeeklyRequest].self, for: "weeklyRequests", raw: weeklyRequestsJSON) ?? [] }
         set {
             let sorted = newValue.sorted { $0.weekStart < $1.weekStart }
-            weeklyRequestsJSON = sorted.isEmpty ? nil : (try? JSONEncoder().encode(sorted)).flatMap { String(data: $0, encoding: .utf8) }
+            let encoded = sorted.isEmpty ? nil : ModelJSONCache.encode(sorted)
+            weeklyRequestsJSON = encoded
+            jsonCache.set(for: "weeklyRequests", raw: encoded, value: sorted)
         }
     }
 
@@ -498,6 +519,7 @@ final class InstallLog {
     var engineerSignedAt: Date?
     /// When the Inspector acknowledged it (typed in after the paper or LINE reply).
     var inspectorAckAt: Date?
+    @Transient let jsonCache = ModelJSONCache()
 
     @Relationship(deleteRule: .cascade, inverse: \PhotoAsset.log) var photos: [PhotoAsset] = []
 
@@ -534,9 +556,11 @@ final class InstallLog {
 
     /// The structured daily report; setting it also rewrites `details` as its readable summary.
     var report: RoutineReport.Daily? {
-        get { reportJSON.flatMap { try? JSONDecoder().decode(RoutineReport.Daily.self, from: Data($0.utf8)) } }
+        get { jsonCache.decode(RoutineReport.Daily.self, for: "report", raw: reportJSON) }
         set {
-            reportJSON = newValue.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } }
+            let encoded = newValue.flatMap { ModelJSONCache.encode($0) }
+            reportJSON = encoded
+            jsonCache.set(for: "report", raw: encoded, value: newValue)
             if let r = newValue { details = r.summary }
         }
     }

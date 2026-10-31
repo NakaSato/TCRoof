@@ -271,7 +271,9 @@ extension SitePageWide {
 
     /// The site plan over the picture's frame as a CAD file (docs/specs/cad-export-dxf), at real scale once it is known.
     func exportDXF() {
-        do { dxfFile = try model.exportSiteDXF(job) } catch { failure = error.localizedDescription }
+        Task { @MainActor in
+            do { dxfFile = try await model.exportSiteDXF(job) } catch { failure = error.localizedDescription }
+        }
     }
 
     /// "ภาพโดรน 29/9/2569 10:12"

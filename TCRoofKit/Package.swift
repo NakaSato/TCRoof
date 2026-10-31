@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.2
 import PackageDescription
 
 let package = Package(
@@ -40,6 +40,8 @@ let package = Package(
         .testTarget(name: "TCRoofCoreTests", dependencies: ["TCRoofCore", "ModuleRules"], resources: [.copy("Fixtures")]),
         .testTarget(name: "PDFReportTests", dependencies: ["PDFReport", "TCRoofCore"]),
         .testTarget(name: "DriveSyncTests", dependencies: ["DriveSync", "TCRoofCore"]),
+        .testTarget(name: "DriveAuthTests", dependencies: ["DriveSync"]),
         .testTarget(name: "ExcelExportTests", dependencies: ["ExcelExport", "TCRoofCore"], resources: [.copy("Fixtures")]),
-    ]
+    ],
+    swiftLanguageModes: [.v5]
 )

@@ -8,8 +8,15 @@ import DriveSync
 
 /// Google sign-in for Drive using OAuth 2.0 with PKCE (no third-party SDK).
 /// Needs an OAuth client of type "iOS" in Google Cloud Console; paste its client ID in Settings.
-public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable {
-    public var clientID: String { didSet { if clientID != oldValue { signOut() } } }
+@MainActor
+public final class GoogleAuth: NSObject, DriveTokenProvider {
+    public var clientID: String {
+        get { tokens.clientID }
+        set {
+            if newValue != tokens.clientID { authorization?.cancel(); authorization = nil }
+            tokens.clientID = newValue
+        }
+    }
     /// Full Drive (not `drive.file`): a TC engineer writes into the company account's center folder, which `drive.file`
     /// can't see since another account made it. Accounts signed in before ask again (`hasFullDrive`).
     public static let scope = "openid email profile https://www.googleapis.com/auth/drive"
@@ -22,12 +29,23 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         (UserDefaults.standard.string(forKey: Self.grantedKey) ?? "").split(separator: " ").contains { $0 == Self.fullDrive }
     }
 
-    private let lock = NSLock()
-    private var accessTokenValue: String?
-    private var expiry = Date.distantPast
-    private var session: ASWebAuthenticationSession?
+    private let tokens: OAuthTokenSession
+    private var authorization: OAuthBrowserAuthorization?
 
-    public init(clientID: String) { self.clientID = clientID.trimmingCharacters(in: .whitespaces) }
+    public init(clientID: String) {
+        tokens = OAuthTokenSession(clientID: clientID.trimmingCharacters(in: .whitespaces),
+            readRefresh: { Keychain.read("google.refresh") }, onTokens: { token in
+                if let refresh = token.refresh_token { Keychain.write("google.refresh", refresh) }
+                if let id = token.id_token { Self.remember(idToken: id) }
+                if let scope = token.scope { UserDefaults.standard.set(scope, forKey: Self.grantedKey) }
+            }, onSignOut: {
+                Keychain.delete("google.refresh")
+                UserDefaults.standard.removeObject(forKey: "solarSurvey.googleEmail")
+                UserDefaults.standard.removeObject(forKey: "solarSurvey.googleName")
+                UserDefaults.standard.removeObject(forKey: Self.grantedKey)
+            })
+        super.init()
+    }
 
     public var isSignedIn: Bool { Keychain.read("google.refresh") != nil }
     public var email: String? { UserDefaults.standard.string(forKey: "solarSurvey.googleEmail") }
@@ -49,9 +67,10 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
         }
     }
 
-    @MainActor
     public func signIn() async throws {
         guard clientID.hasSuffix(".apps.googleusercontent.com") else { throw Failure.noClientID }
+        let ticket = tokens.beginSignIn()
+        authorization?.cancel()
         let verifier = Self.randomString(64)
         let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URL
         var c = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
@@ -59,95 +78,51 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
                         .init(name: "response_type", value: "code"), .init(name: "scope", value: Self.scope),
                         .init(name: "code_challenge", value: challenge), .init(name: "code_challenge_method", value: "S256"),
                         .init(name: "prompt", value: "select_account consent"), .init(name: "access_type", value: "offline")]
-        let callback: URL = try await withCheckedThrowingContinuation { cont in
-            let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: redirectScheme) { url, err in
-                if let url { cont.resume(returning: url) }
-                else if let e = err as? ASWebAuthenticationSessionError, e.code == .canceledLogin { cont.resume(throwing: Failure.cancelled) }
-                else { cont.resume(throwing: err ?? Failure.cancelled) }
+        let browser = OAuthBrowserAuthorization { [weak self] completion in
+            let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: self?.redirectScheme) { url, err in
+                if let url { completion(.success(url)) }
+                else if let e = err as? ASWebAuthenticationSessionError, e.code == .canceledLogin { completion(.failure(Failure.cancelled)) }
+                else { completion(.failure(err ?? Failure.cancelled)) }
             }
             s.presentationContextProvider = self
-            // A shared iPad: Safari's saved Google session would offer the previous person's account to the next one.
+            // A shared iPad: do not offer the previous person's Safari account.
             s.prefersEphemeralWebBrowserSession = true
-            self.session = s
-            s.start()
+            return s
         }
+        authorization = browser
+        defer {
+            if authorization === browser { authorization = nil }
+            tokens.cancelSignIn(ticket)
+        }
+        let callback = try await browser.value()
+        try tokens.validate(ticket)
         guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else {
             throw Failure.badResponse("ไม่มีรหัสยืนยัน")
         }
-        let tok = try await token(["code": code, "code_verifier": verifier, "grant_type": "authorization_code", "redirect_uri": redirectURI])
-        if let r = tok["refresh_token"] as? String { Keychain.write("google.refresh", r) }
-        if let idt = tok["id_token"] as? String { remember(idToken: idt) }
+        try await tokens.exchangeCode(code, verifier: verifier, redirectURI: redirectURI, ticket: ticket)
     }
 
     /// Keeps the email and name from an OpenID token.
-    private func remember(idToken: String) {
+    private static func remember(idToken: String) {
         let c = Self.claims(fromIDToken: idToken)
         if let mail = c?["email"] as? String { UserDefaults.standard.set(mail, forKey: "solarSurvey.googleEmail") }
         if let n = (c?["name"] as? String)?.trimmingCharacters(in: .whitespaces), !n.isEmpty { UserDefaults.standard.set(n, forKey: "solarSurvey.googleName") }
     }
 
     public func signOut() {
-        clearToken()
-        Keychain.delete("google.refresh")
-        UserDefaults.standard.removeObject(forKey: "solarSurvey.googleEmail")
-        UserDefaults.standard.removeObject(forKey: "solarSurvey.googleName")
-        UserDefaults.standard.removeObject(forKey: Self.grantedKey)
+        tokens.signOut()
+        authorization?.cancel()
+        authorization = nil
     }
 
-    public func accessToken() async throws -> String { try await accessToken(validFor: 60) }
+    public func accessToken() async throws -> String { try await tokens.accessToken() }
 
-    /// Refreshes once the cached token has less than `seconds` left (a background upload may start later). Google's
-    /// tokens last an hour, so a fresh one always does.
     public func accessToken(validFor seconds: TimeInterval) async throws -> String {
-        if let t = cachedToken(margin: seconds) { return t }
-        guard let refresh = Keychain.read("google.refresh") else { throw DriveError.notSignedIn }
-        _ = try await token(["refresh_token": refresh, "grant_type": "refresh_token"])
-        guard let t = cachedToken(margin: min(seconds, 60)) else { throw DriveError.notSignedIn }
-        return t
+        try await tokens.accessToken(validFor: seconds)
     }
-    /// A fresh OpenID token with its access token, for signing in to Firebase with the same Google account.
+
     public func idAndAccessToken() async throws -> (idToken: String, accessToken: String) {
-        guard let refresh = Keychain.read("google.refresh") else { throw DriveError.notSignedIn }
-        let tok = try await token(["refresh_token": refresh, "grant_type": "refresh_token"])
-        guard let idToken = tok["id_token"] as? String, let accessToken = tok["access_token"] as? String else {
-            throw Failure.badResponse("ไม่มี id_token")
-        }
-        remember(idToken: idToken)
-        return (idToken, accessToken)
-    }
-
-    private func cachedToken(margin: TimeInterval = 60) -> String? {
-        lock.lock(); defer { lock.unlock() }
-        if let t = accessTokenValue, expiry > Date().addingTimeInterval(margin) { return t }
-        return nil
-    }
-    private func clearToken() {
-        lock.lock(); defer { lock.unlock() }
-        accessTokenValue = nil; expiry = .distantPast
-    }
-    private func setToken(_ t: String, expiresIn: Int) {
-        lock.lock(); defer { lock.unlock() }
-        accessTokenValue = t
-        expiry = Date().addingTimeInterval(TimeInterval(expiresIn))
-    }
-
-    @discardableResult
-    private func token(_ params: [String: String]) async throws -> [String: Any] {
-        var r = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
-        r.httpMethod = "POST"
-        r.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        var all = params; all["client_id"] = clientID
-        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
-        r.httpBody = Data(all.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: allowed) ?? $0.value)" }.joined(separator: "&").utf8)
-        let (data, resp) = try await URLSession.shared.data(for: r)
-        let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        guard (resp as? HTTPURLResponse)?.statusCode == 200, let at = obj["access_token"] as? String else {
-            if (obj["error"] as? String) == "invalid_grant" { signOut() }
-            throw Failure.badResponse((obj["error_description"] as? String) ?? (obj["error"] as? String) ?? "HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)")
-        }
-        setToken(at, expiresIn: (obj["expires_in"] as? NSNumber)?.intValue ?? 3600)
-        if let granted = obj["scope"] as? String { UserDefaults.standard.set(granted, forKey: Self.grantedKey) }
-        return obj
+        try await tokens.idAndAccessToken()
     }
 
     static func randomString(_ n: Int) -> String {
@@ -165,8 +140,10 @@ public final class GoogleAuth: NSObject, DriveTokenProvider, @unchecked Sendable
     }
 }
 
+extension ASWebAuthenticationSession: OAuthBrowserSession {}
+
 extension GoogleAuth: ASWebAuthenticationPresentationContextProviding {
-    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    public nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         MainActor.assumeIsolated {
             let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             return scenes.flatMap(\.windows).first { $0.isKeyWindow } ?? scenes.first?.windows.first ?? ASPresentationAnchor()

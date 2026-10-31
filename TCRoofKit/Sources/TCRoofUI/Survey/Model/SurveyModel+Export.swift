@@ -20,9 +20,9 @@ extension SurveyModel {
     static func safeName(_ s: String) -> String { s.replacingOccurrences(of: "[/\\\\:*?\"<>|]", with: "-", options: .regularExpression) }
     func baseName(_ j: Job) -> String { Self.safeName("แบบสำรวจ NO.\(j.docNo.isEmpty ? "-" : j.docNo) \(j.projectName)".trimmingCharacters(in: .whitespaces)) }
 
-    func excelData(_ job: Job) throws -> ExcelExporter.Result {
-        let store = self.store
-        return try ExcelExporter().export(job, photoData: { store.data(of: $0, in: job.id) }, planImage: { m in
+    func excelData(_ job: Job) async throws -> ExcelExporter.Result {
+        let photos = await writer.photos(job)
+        return try ExcelExporter().export(job, photoData: { photos[$0.id] }, planImage: { m in
             // the plan with its sections under it: NO.224 has one drawing box per roof / tank sheet
             guard let sk = Drawings.planWithSections(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
             return ExcelImage(data: r.0, width: r.1, height: r.2, isPNG: true)
@@ -52,21 +52,23 @@ extension SurveyModel {
         return ExcelImage(data: data, width: Int(size.width), height: Int(size.height), isPNG: false)
     }
 
-    public func exportExcel(_ job: Job) throws -> ExportFile {
-        flush(job.id)
-        let r = try excelData(job)
+    public func exportExcel(_ job: Job) async throws -> ExportFile {
+        try await flushAndWait(job.id)
+        let r = try await excelData(job)
         let url = tempURL(baseName(job) + ".xlsx")
-        try r.data.write(to: url, options: .atomic)
+        try await writer.write(r.data, to: url)
         return ExportFile(url: url, summary: "Excel \(r.sheets.count) แผ่น | \(r.pictures) รูป")
     }
 
     var reportHeader: ReportHeader { ReportHeader(company: settings.company, photoStamps: settings.printPhotoStamps) }
 
-    public func pdfData(_ job: Job) -> Data {
+    public func pdfData(_ job: Job) async -> Data {
+        let photos = await writer.photos(job)
+        await prepareRevisionSnapshots(job)
         let job = asPrinted(job)
         var header = reportHeader
         header.changes = revisionChanges(job)
-        return PDFRenderer.render(job: job, header: header, photo: { [weak self] p in self?.image(p, in: job.id) })
+        return PDFRenderer.render(job: job, header: header, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } })
     }
 
     /// The job as a report prints it. Nothing locks an issued REV, so answers changed after REV nn was issued would
@@ -81,71 +83,76 @@ extension SurveyModel {
         return j
     }
 
-    public func exportSummaryPDF(_ job: Job) throws -> ExportFile {
-        flush(job.id)
+    public func exportSummaryPDF(_ job: Job) async throws -> ExportFile {
+        try await flushAndWait(job.id)
+        let photos = await writer.photos(job)
+        await prepareRevisionSnapshots(job)
         let job = asPrinted(job)
         let url = tempURL("สรุป " + baseName(job) + ".pdf")
-        try PDFRenderer.renderSummary(job: job, header: reportHeader, photo: { [weak self] p in self?.image(p, in: job.id) }).write(to: url, options: .atomic)
+        try await writer.write(PDFRenderer.renderSummary(job: job, header: reportHeader, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } }), to: url)
         return ExportFile(url: url, summary: "PDF สรุป 1 หน้า")
     }
 
     /// The single line diagram alone on an A3 landscape page.
-    public func exportSingleLinePDF(_ job: Job, hv: Bool? = nil) throws -> ExportFile {
-        flush(job.id)
+    public func exportSingleLinePDF(_ job: Job, hv: Bool? = nil) async throws -> ExportFile {
+        try await flushAndWait(job.id)
         let url = tempURL("SLD " + baseName(job) + ".pdf")
-        try PDFRenderer.renderSingleLine(job: job, header: reportHeader, hv: hv, photo: { _ in nil }).write(to: url, options: .atomic)
+        try await writer.write(PDFRenderer.renderSingleLine(job: job, header: reportHeader, hv: hv, photo: { _ in nil }), to: url)
         return ExportFile(url: url, summary: "Single Line Diagram A3")
     }
 
     /// The single line diagram as DXF R2000 at A3 paper scale (`SingleLineDXF`), for CAD programs.
-    public func exportSingleLineDXF(_ job: Job, hv: Bool? = nil) throws -> ExportFile {
-        flush(job.id)
+    public func exportSingleLineDXF(_ job: Job, hv: Bool? = nil) async throws -> ExportFile {
+        try await flushAndWait(job.id)
         let url = tempURL("SLD " + baseName(job) + ".dxf")
-        try SingleLineDXF.build(job, hv: hv).data.write(to: url, options: .atomic)
+        try await writer.write(SingleLineDXF.build(job, hv: hv).data, to: url)
         return ExportFile(url: url, summary: "Single Line Diagram DXF")
     }
 
     /// A D1 tank's roof plan and panel layout as DXF R2000 at real scale (`TankDXF`), named like C1's: `NO<job no>_D1.dxf`.
-    public func exportTankDXF(_ job: Job, moduleID: UUID) throws -> ExportFile? {
-        flush(job.id)
+    public func exportTankDXF(_ job: Job, moduleID: UUID) async throws -> ExportFile? {
+        try await flushAndWait(job.id)
         guard let m = job.modules.first(where: { $0.id == moduleID }), let out = TankDXF.build(m.values) else { return nil }
         let section = job.sectionsByCategory.flatMap(\.sections).first { $0.id == moduleID }?.number ?? "D1"
         let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + section).replacingOccurrences(of: " ", with: "") + ".dxf")
-        try out.data.write(to: url, options: .atomic)
+        try await writer.write(out.data, to: url)
         return ExportFile(url: url, summary: "Tank plan DXF")
     }
 
     /// A B2 inverter station's top, front and side views and its base plate detail as DXF R2000 at real scale
     /// (`InverterStationDXF`, the team's components), named like D1's: `NO<job no>_B2.dxf`.
-    public func exportInverterDXF(_ job: Job, moduleID: UUID) throws -> ExportFile? {
-        flush(job.id)
+    public func exportInverterDXF(_ job: Job, moduleID: UUID) async throws -> ExportFile? {
+        try await flushAndWait(job.id)
         guard let m = job.modules.first(where: { $0.id == moduleID }) else { return nil }
         let section = job.sectionsByCategory.flatMap(\.sections).first { $0.id == moduleID }?.number ?? "B2"
         let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + section).replacingOccurrences(of: " ", with: "") + ".dxf")
-        try InverterStationDXF.build(m.values).data.write(to: url, options: .atomic)
+        try await writer.write(InverterStationDXF.build(m.values).data, to: url)
         return ExportFile(url: url, summary: "Inverter station DXF")
     }
 
     /// The A2 site plan (models, shapes, symbols over the picture's frame) as DXF R2000 (`SiteDXF`): `NO<job no>_A2.dxf`.
-    public func exportSiteDXF(_ job: Job) throws -> ExportFile? {
-        flush(job.id)
+    public func exportSiteDXF(_ job: Job) async throws -> ExportFile? {
+        try await flushAndWait(job.id)
         guard let out = SiteDXF.build(job) else { return nil }
         let url = tempURL(((job.docNo.isEmpty ? "" : "NO" + job.docNo + "_") + "A2").replacingOccurrences(of: " ", with: "") + ".dxf")
-        try out.data.write(to: url, options: .atomic)
+        try await writer.write(out.data, to: url)
         return ExportFile(url: url, summary: "Site plan DXF")
     }
 
-    public func exportPDF(_ job: Job) throws -> ExportFile {
-        flush(job.id)
+    public func exportPDF(_ job: Job) async throws -> ExportFile {
+        try await flushAndWait(job.id)
         let url = tempURL(baseName(job) + ".pdf")
-        try pdfData(job).write(to: url, options: .atomic)
+        let data = await pdfData(job)
+        try await writer.write(data, to: url)
         return ExportFile(url: url, summary: "รายงาน PDF")
     }
 
-    public func exportBackup(_ ids: [UUID]? = nil) throws -> ExportFile {
+    public func exportBackup(_ ids: [UUID]? = nil) async throws -> ExportFile {
+        for job in jobs { try await flushAndWait(job.id) }
         let list = ids.map { set in jobs.filter { set.contains($0.id) } } ?? jobs
         let url = tempURL("solar-survey-backup-\(ISODate.string(Date())).json")
-        try WebBackup.exportBackup(list, store: store).write(to: url, options: .atomic)
+        let data = try await writer.backup(list)
+        try await writer.write(data, to: url)
         return ExportFile(url: url, summary: "สำรองข้อมูล \(list.count) งาน")
     }
 

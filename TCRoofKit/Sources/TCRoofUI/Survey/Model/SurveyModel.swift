@@ -16,14 +16,31 @@ public final class SurveyModel {
     }
     /// Invalidates project-list results for local edits, imports, Drive links and remote changes alike.
     public private(set) var jobsRevision = 0
+    /// Files that could not be loaded on the latest reload, retained for recovery reporting.
+    public private(set) var loadFailures: [JobStore.LoadFailure] = []
     public var settings: SurveySettings { didSet { settings.save() } }
     public let google: GoogleAuth
     /// Set by a host app whose own login is this Google account, so signing out here also ends its session.
     @ObservationIgnored public var signOutHandler: (@MainActor () -> Void)?
 
     @ObservationIgnored private var pendingSave: [UUID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var remoteSaves: [UUID: (version: UUID, job: Job)] = [:]
-    @ObservationIgnored private var remoteSaveTasks: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored let writer: JobStoreWriter
+    @ObservationIgnored var photoLoads: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored var presenceLoads: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored var photoPresence: [UUID: (photos: [Photo], present: Set<UUID>)] = [:]
+    @ObservationIgnored var revisionSnapshots: [String: FormSnapshot] = [:]
+    @ObservationIgnored var revisionJSONs: [String: String] = [:]
+    @ObservationIgnored var revisionReads: Set<String> = []
+    @ObservationIgnored var revisionLoads: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var saveErrors: [UUID: Error] = [:]
+    public private(set) var saveError: String?
+    public private(set) var isLoading = false
+    public private(set) var hasLoaded = false
+    @ObservationIgnored private var reloadTask: Task<Void, Never>?
+    @ObservationIgnored private var reloadID = UUID()
+    @ObservationIgnored var storageSession = UUID()
+    @ObservationIgnored private var contentRevision = UUID()
+    @ObservationIgnored private var jobRevisions: [UUID: UUID] = [:]
     /// Called after a job is created, edited, duplicated or deleted here (not for `applyRemote`/`removeRemote`).
     @ObservationIgnored public var onChange: (() -> Void)?
     /// Jobs the host app's cloud (TCRoof: Firestore) doesn't hold in their latest form yet.
@@ -66,6 +83,7 @@ public final class SurveyModel {
 
     public init(store: JobStore = .documents()) {
         self.store = store
+        self.writer = JobStoreWriter(store: store)
         let s = SurveySettings.load()
         self.settings = s
         self.google = GoogleAuth(clientID: s.googleClientID)
@@ -77,26 +95,107 @@ public final class SurveyModel {
         TankStandard.Store.shared.configure(url: support.appendingPathComponent("tank-standard.json"))
     }
 
+    /// Starts a background load. Existing jobs stay visible until a current result is available.
     public func reload() {
-#if DEBUG
-        let started = Date()
-        defer { print("SurveyModel: local reload \(jobs.count) projects in \(Int(Date().timeIntervalSince(started) * 1000)) ms") }
-#endif
-        for id in Array(pendingSave.keys) { flush(id) }
-        jobs = store.loadAll()
-        for entry in remoteSaves.values {
-            if let i = jobs.firstIndex(where: { $0.id == entry.job.id }) { jobs[i] = entry.job }
-            else { jobs.append(entry.job) }
+        reloadTask?.cancel()
+        let id = UUID()
+        reloadID = id
+        let revision = contentRevision
+        let drafts = pendingSave.keys.compactMap { id -> (job: Job, token: UUID)? in
+            pendingSave[id]?.cancel()
+            guard let job = self.job(id) else { return nil }
+            return (job, store.reserveSave(id))
+        }
+        isLoading = true
+        reloadTask = Task { [weak self, writer] in
+            do {
+                let result = try await writer.load(saving: drafts)
+                guard let self, self.reloadID == id, !Task.isCancelled else { return }
+                // An edit or deletion during the read makes its snapshot stale. Read again after flushing that edit.
+                guard self.contentRevision == revision else { self.reload(); return }
+                self.jobs = result.jobs
+                self.loadFailures = result.failures
+                self.pendingSave.removeAll()
+                self.hasLoaded = true
+                self.isLoading = false
+                self.reloadTask = nil
+            } catch {
+                guard let self, self.reloadID == id, !Task.isCancelled else { return }
+                self.saveError = error.localizedDescription
+                self.isLoading = false
+                self.reloadTask = nil
+            }
         }
     }
 
+    public func waitForReload() async {
+        while let task = reloadTask {
+            await task.value
+            if Task.isCancelled { return }
+        }
+    }
+
+    /// Called before ending a sync session. Queued writes and late load results cannot enter the next session.
+    public func invalidateStorageSession() {
+        storageSession = UUID()
+        reloadID = UUID()
+        reloadTask?.cancel(); reloadTask = nil
+        isLoading = false
+        for task in pendingSave.values { task.cancel() }
+        for task in photoLoads.values { task.cancel() }
+        for task in presenceLoads.values { task.cancel() }
+        for task in revisionLoads.values { task.cancel() }
+        for task in uploadWait.values { task.cancel() }
+        for task in uploadRun.values { task.cancel() }
+        uploadWait.removeAll()
+        uploadRun.removeAll()
+        heldUploads.removeAll()
+        photoLoads.removeAll()
+        presenceLoads.removeAll()
+        photoPresence.removeAll()
+        revisionLoads.removeAll()
+        revisionSnapshots.removeAll()
+        revisionJSONs.removeAll()
+        revisionReads.removeAll()
+        cache.removeAllObjects()
+        store.invalidatePendingSaves()
+    }
+
+    /// Removes local records without invoking domain deletion callbacks or sending cloud deletions.
+    public func removeLocalAccountData() throws {
+        invalidateStorageSession()
+        try store.removeAllJobs()
+        jobs = []
+        loadFailures = []
+        pendingSave.removeAll()
+        saveErrors.removeAll()
+        saveError = nil
+        photoFetch = [:]
+        photoUpload = [:]
+        manualDriveSave.removeAll()
+        captureStamp = nil
+        hasLoaded = true
+    }
+
+    private func didChange(_ id: UUID) {
+        contentRevision = UUID()
+        jobRevisions[id] = UUID()
+    }
+
     public func job(_ id: UUID) -> Job? { jobs.first { $0.id == id } }
+
+    /// An unchanged cloud copy can repair a failed load, but must not resurrect an intentional local deletion.
+    public func needsRemoteRecovery(_ id: UUID) -> Bool {
+        // Healthy loads need no recovery and should not scan the job list on every sync acknowledgement.
+        !loadFailures.isEmpty && job(id) == nil && loadFailures.contains { $0.affects(id) }
+    }
 
     // MARK: editing
 
     public func create(_ template: JobTemplate, engineer: String = "") -> Job {
         var j = Job.new(template: template)
         if !engineer.isEmpty { j.values["engineer"] = .text(engineer) }
+        didChange(j.id)
         jobs.insert(j, at: 0)
         try? store.save(j)
         onChange?()
@@ -107,40 +206,82 @@ public final class SurveyModel {
     @discardableResult
     public func update(_ job: Job) -> Bool {
         _ = store.reserveSave(job.id)
-        remoteSaves[job.id] = nil
         var j = job
         // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
         if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID,
            old.stage == j.stage, old.install == j.install { j.updated = old.updated }
         else { j.updated = Date() }
+        didChange(j.id)
         if let i = jobs.firstIndex(where: { $0.id == j.id }) { jobs[i] = j } else { jobs.insert(j, at: 0) }
         pendingSave[j.id]?.cancel()
         let snapshot = j
-        pendingSave[j.id] = Task { [store, snapshot] in
-            try? await Task.sleep(nanoseconds: 600_000_000)
+        let token = store.reserveSave(j.id)
+        pendingSave[j.id] = Task { [weak self, writer, snapshot] in
+            do { try await Task.sleep(nanoseconds: 600_000_000) } catch { return }
             guard !Task.isCancelled else { return }
-            try? store.save(snapshot)
+            do {
+                let saved = try await writer.save(snapshot, token: token)
+                guard !Task.isCancelled else { return }
+                if saved { self?.saveError = nil; self?.saveErrors[snapshot.id] = nil }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.saveError = error.localizedDescription
+                self?.saveErrors[snapshot.id] = error
+            }
         }
         onChange?()
         return true
     }
 
-    public func flush(_ id: UUID) {
+    @discardableResult
+    /// Queues a save without waiting on the file lock. Call `flushAndWait` before consuming saved files.
+    /// Photo cleanup is deliberately separate: removing files from a queued, older snapshot can race new photos.
+    public func flush(_ id: UUID) -> Task<Void, Never> {
         pendingSave[id]?.cancel(); pendingSave[id] = nil
-        if let j = job(id) { try? store.save(j); store.purgeUnusedPhotos(of: j) }
+        guard let snapshot = job(id) else { return Task {} }
+        let token = store.reserveSave(id)
+        let task = Task { [weak self, writer] in
+            do {
+                let saved = try await writer.save(snapshot, token: token)
+                guard !Task.isCancelled else { return }
+                if saved { self?.saveError = nil; self?.saveErrors[id] = nil }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.saveError = error.localizedDescription
+                self?.saveErrors[id] = error
+            }
+        }
+        pendingSave[id] = task
+        return task
+    }
+
+    public func flushAndWait(_ id: UUID) async throws {
+        let session = storageSession
+        while job(id) != nil {
+            let revision = jobRevisions[id]
+            let task = flush(id)
+            await task.value
+            try Task.checkCancellation()
+            guard storageSession == session else { throw CancellationError() }
+            if task.isCancelled { continue }
+            if jobRevisions[id] != revision { continue }
+            if let error = saveErrors[id] { throw error }
+            return
+        }
     }
 
     public func delete(_ id: UUID) {
-        remoteSaves[id] = nil
         if let j = job(id) { onDeleted?(j) }
         pendingSave[id]?.cancel()
         try? store.delete(id)
+        didChange(id)
         jobs.removeAll { $0.id == id }
         onChange?()
     }
 
     public func duplicate(_ id: UUID) {
         guard let j = job(id), let copy = try? store.duplicate(j) else { return }
+        didChange(copy.id)
         jobs.insert(copy, at: 0)
         onChange?()
     }
@@ -264,40 +405,29 @@ public final class SurveyModel {
     /// A job changed on another device; replaces the local copy, except that the Drive files either side knows of are
     /// kept (`DriveLink.merged`): a copy saved before this device's upload landed would otherwise send those photos again.
     /// Photo files don't travel with it — the editor downloads them from Drive (`fetchMissingPhotos`).
-    public func applyRemote(_ job: Job) {
-        pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
+    public func applyRemote(_ job: Job) async throws -> Bool {
         var job = job
-        if let local = self.job(job.id)?.drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
-        if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
-        let version = store.reserveSave(job.id)
-        let snapshot = job
-        remoteSaves[job.id] = (version, snapshot)
-        remoteSaveTasks[job.id] = Task { [store] in
-            await Task.detached(priority: .utility) {
-#if DEBUG
-                let started = Date()
-                defer { print("SurveyModel: remote file save in \(Int(Date().timeIntervalSince(started) * 1000)) ms (worker)") }
-#endif
-                try? store.save(snapshot, ifCurrent: version)
-            }.value
-            if remoteSaves[snapshot.id]?.version == version {
-                remoteSaves[snapshot.id] = nil
-                remoteSaveTasks[snapshot.id] = nil
-            }
-        }
-    }
-
-    /// Sync must finish persistence before recording its durable acknowledgement of a remote batch.
-    public func finishRemoteSaves() async {
-        let tasks = Array(remoteSaveTasks.values)
-        for task in tasks { await task.value }
+        let index = jobs.firstIndex { $0.id == job.id }
+        if let index, let local = jobs[index].drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
+        // Only recovery needs to read and validate the previous file. Healthy updates already have a loaded copy.
+        let recovering = index == nil || loadFailures.contains { $0.affects(job.id) }
+        let session = storageSession
+        let revision = jobRevisions[job.id]
+        let token = store.reserveSave(job.id)
+        let saved = try await writer.save(job, token: token, preservingInvalidFile: recovering)
+        guard saved, !Task.isCancelled, storageSession == session, jobRevisions[job.id] == revision else { return false }
+        pendingSave[job.id]?.cancel(); pendingSave[job.id] = nil
+        // Array indices can change while the storage actor is writing.
+        didChange(job.id)
+        if let current = jobs.firstIndex(where: { $0.id == job.id }) { jobs[current] = job } else { jobs.insert(job, at: 0) }
+        return true
     }
 
     /// A job deleted on another device.
     public func removeRemote(_ id: UUID) {
-        remoteSaves[id] = nil
         pendingSave[id]?.cancel(); pendingSave[id] = nil
         try? store.delete(id)
+        didChange(id)
         jobs.removeAll { $0.id == id }
     }
 }

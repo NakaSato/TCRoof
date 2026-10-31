@@ -318,7 +318,7 @@ struct InfoPageBar: View {
 
     /// Writes the job now; the save button shows "บันทึกแล้ว" once it returns.
     @MainActor func save() async -> Date {
-        model.flush(job.id)
+        await model.flush(job.id).value
         return Date()
     }
 

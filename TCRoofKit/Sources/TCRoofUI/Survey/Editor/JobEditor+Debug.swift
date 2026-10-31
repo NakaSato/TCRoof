@@ -108,7 +108,7 @@ extension JobEditorView {
             if UserDefaults.standard.bool(forKey: "surveyRoofPDF") {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 6_000_000_000)
-                    writeDebugFile("survey.pdf", model.pdfData(job))
+                    writeDebugFile("survey.pdf", await model.pdfData(job))
                 }
             }
         case "final":
@@ -132,7 +132,7 @@ extension JobEditorView {
             if UserDefaults.standard.bool(forKey: "surveyTankPDF") {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 4_000_000_000)
-                    writeDebugFile("survey.pdf", model.pdfData(job))
+                    writeDebugFile("survey.pdf", await model.pdfData(job))
                 }
             }
         default: break
@@ -240,7 +240,9 @@ extension JobEditorView {
             }
             // the one-column layout at an iPhone's width, without its scroll view (ImageRenderer leaves those blank)
             let phone = BackfeedPageWide(job: .constant(job), moduleID: id, width: 370, stacked: true)
-            let cards = phone.stackedCards(phone.line).environment(model).padding(16).frame(width: 402).background(Paper.page)
+            let snapshot = job
+            guard let line = try? await BackgroundWork.value(operation: { SingleLine.build(snapshot) }) else { return }
+            let cards = phone.stackedCards(line).environment(model).padding(16).frame(width: 402).background(Paper.page)
             let r = ImageRenderer(content: cards); r.scale = 1
             if let d = r.uiImage?.pngData() { try? d.write(to: dir.appendingPathComponent("backfeed-phone.png")) }
         }

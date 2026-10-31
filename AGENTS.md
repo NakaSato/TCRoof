@@ -27,3 +27,32 @@ Recent commits use imperative summaries, often prefixed by an area (for example,
 ## Security & Configuration
 
 Keep credentials and local secrets out of commits. Use `Secrets.example.xcconfig` as the configuration template; `Secrets.xcconfig`, `.env` files, and Firebase emulator state are local-only. Review `firestore.rules` changes alongside corresponding rules tests.
+
+## Swift Review Skills
+
+Project-local skills are in `.agents/skills/`, with aliases in `.claude/skills/`. See
+`.agents/skills/README.md` for usage, provenance, licenses, and update instructions.
+
+- Whole-codebase reports: use `swift-codebase-analysis` (ten sections, cited evidence, P0–P3 actions).
+- Deep responsiveness/memory reviews: use `swiftui-performance-audit`.
+- SwiftUI implementation/API checks: use `swiftui-expert-skill`; use `swiftui-pro` for
+  complementary navigation, accessibility, localization, and composition checks.
+- Cross-check relevant antipatterns with `swiftui-gotchas`; use `swift-concurrency` for
+  async lifecycles and isolation, and `swift-testing-expert` for test design.
+- Change/spec reviews: read `swift-code-reviewer.md`; Claude Code also has `/review`
+  and an explicitly invokable `swift-code-reviewer` agent.
+
+Read only references relevant to the task. Project settings and user instructions take
+precedence over generic skill defaults. The app currently targets iOS 18; the package
+declares iOS 17/macOS 14, uses Swift 6.2 tooling, and retains Swift 5 language mode.
+Verify these settings before giving version-specific advice. Verify newer API claims
+against the selected SDK or official Apple documentation; use availability guards when
+needed. Do not raise deployment targets, change Swift mode, mandate an architecture,
+migrate XCTest suites, or adopt Liquid Glass unless the requested work requires it.
+Existing XCTest conventions remain valid; keep UI automation in XCTest. Third-party
+skills may mention optional tools/commands such as `/verify-ios`; if unavailable, use
+the repository's documented checks and state what remains unverified. Do not install
+tools or request interactive login just to satisfy an optional skill dependency.
+Audits are read-only unless edits are requested. Cite file:line evidence, separate
+measured results from source hypotheses, and never present Linux tests or parsing as
+Apple SDK, simulator/device, SwiftData, or Firebase integration validation.

@@ -155,7 +155,7 @@ extension Expense: OwnedRecord {}
 extension ClaimMonth: OwnedRecord {}
 
 extension Trip: CloudSynced {
-    struct Record: Codable, Sendable {
+    struct Record: Codable, Equatable, Sendable {
         var date: Int64
         var ownerEmail, person, vehicle, plate, startPlace, stops: String
         var backKm: Double?
@@ -191,7 +191,7 @@ extension Trip: CloudSynced {
 }
 
 extension Expense: CloudSynced {
-    struct Record: Codable, Sendable {
+    struct Record: Codable, Equatable, Sendable {
         var date, createdAt: Int64
         var ownerEmail, person, category: String
         var amount: Int
@@ -222,7 +222,7 @@ extension Expense: CloudSynced {
 }
 
 extension ClaimMonth: CloudSynced {
-    struct Record: Codable, Sendable {
+    struct Record: Codable, Equatable, Sendable {
         var ownerEmail, month, log: String
         var submittedAt: Int64?
         var pdfDrive, excelDrive, driveFolderURL: String?

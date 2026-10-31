@@ -83,7 +83,9 @@ final class TCRoofCoreTests: XCTestCase {
         XCTAssertEqual(loaded, j)
         let dup = try s.duplicate(j)
         XCTAssertNotNil(s.data(of: p, in: dup.id))
-        XCTAssertEqual(s.loadAll().count, 2)
+        let result = s.loadAll()
+        XCTAssertEqual(result.jobs.count, 2)
+        XCTAssertTrue(result.failures.isEmpty)
         j.modules[0].values["aerialPhoto"] = nil
         XCTAssertEqual(s.purgeUnusedPhotos(of: j), 1)
     }
@@ -93,7 +95,7 @@ final class TCRoofCoreTests: XCTestCase {
         var j = Job.new(template: JobTemplate.all[1])
         j.jobSyncID = "tc-job-42"
         try s.save(j)
-        XCTAssertEqual(s.loadAll().first { $0.id == j.id }?.jobSyncID, "tc-job-42")
+        XCTAssertEqual(s.loadAll().jobs.first { $0.id == j.id }?.jobSyncID, "tc-job-42")
         // survey-data files opened on another iPad keep the link too
         let other = tmpStore()
         let back = try WebBackup.importJobs(WebBackup.exportDriveData(j, store: s), into: other)

@@ -2,22 +2,21 @@ import Foundation
 
 /// The iPad install tracking page's `แผนก่อสร้าง` tab (docs/ui/install-tracking-ipad-v2 §6): the install plan by WBS,
 /// its stages (the MP plan's install tasks, as `InstallGantt` rows) and their sub-tasks, with float and the critical
-/// path from `InstallCriticalPath`. The MP plan keeps no crew per task, no predecessors, no baseline revision and no
-/// make-ready list, so those stay nil and the tab hides them; the app's `-installDemo YES` fills them with the board's
-/// example.
+/// path from `InstallCriticalPath`, or the explicit WBS graph when configured. Baselines and predecessor labels
+/// come from the WBS; crew and make-ready details remain optional.
 public struct InstallPlan: Equatable, Sendable {
     public struct Row: Equatable, Sendable, Identifiable {
         public let id: String
         /// `4` a stage, `4.1` a sub-task.
         public let code: String
         public let title: String
-        public let start: Date
-        public let end: Date
+        public var start: Date
+        public var end: Date
         public let status: InstallGantt.Status
         public let percent: Double
         /// Working days it can slip; nil for a sub-task with no days of its own (a place from the daily reports).
-        public let float: Int?
-        public let critical: Bool
+        public var float: Int?
+        public var critical: Bool
         public var crew: Int?
         /// `ต่อจาก`: the WBS code it follows.
         public var after: String?
@@ -62,11 +61,13 @@ public struct InstallPlan: Equatable, Sendable {
     }
 
     public var stages: [Stage]
-    public let start: Date
-    public let end: Date
+    public var start: Date
+    public var end: Date
+    public var dependencyIssues: [WBSDependencies.Issue] = []
+    var dependencyWorkingWeekdays: Set<Int>?
     public let today: Date
     /// Days off and days waiting (hatched), as on the overview.
-    public let nonWorking: Set<Date>
+    public var nonWorking: Set<Date>
     /// `ตามแผน` / `ช้ากว่าแผน`; nil without a tracking figure.
     public var onPlan: Bool?
     public var milestones: [Milestone]
@@ -117,7 +118,12 @@ public struct InstallPlan: Equatable, Sendable {
     public static func isSunday(_ d: Date) -> Bool { MasterSchedule.calendar.component(.weekday, from: d) == 1 }
 
     /// `วันทำงาน`: the span without Sundays and the hatched days.
-    public var workingDays: Int { days.filter { !Self.isSunday($0) && !nonWorking.contains($0) }.count }
+    public var workingDays: Int {
+        days.filter { day in
+            let works = dependencyWorkingWeekdays.map { $0.contains(MasterSchedule.calendar.component(.weekday, from: day)) } ?? !Self.isSunday(day)
+            return works && !nonWorking.contains(day)
+        }.count
+    }
 
     public var subCount: Int { stages.reduce(0) { $0 + $1.subs.count } }
 

@@ -230,7 +230,7 @@ final class MPWorkbookFlow {
         do {
             // the station's facts go into the file's station lines too, so a plan begun from another station's file names this one
             let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks,
-                                            setup: ProjectSetup(job.setupTarget))
+                                            setup: ProjectSetup(job.setupTarget), wbs: job.scheduleWBS)
             let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let url = dir.appendingPathComponent(MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName))

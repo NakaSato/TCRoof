@@ -2,6 +2,7 @@ import SwiftUI
 import CryptoKit
 import ImageIO
 import TCRoofUI
+import TCRoofCore
 import PhotosUI
 import PencilKit
 
@@ -124,9 +125,12 @@ struct Thumbnail: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
             .task(id: Self.key(data)) {
+                guard !Task.isCancelled else { return }
                 let key = Self.key(data) as NSString
                 if let hit = Self.cache.object(forKey: key) { image = hit; return }
-                let made = await Task.detached(priority: .userInitiated) { [data] in Self.thumbnail(data) }.value
+                image = nil
+                let made = try? await BackgroundWork.value { [data] in Self.thumbnail(data) }
+                guard !Task.isCancelled else { return }
                 if let made { Self.cache.setObject(made, forKey: key) }
                 image = made
             }

@@ -24,7 +24,6 @@ extension BackfeedPageWide {
 
     func sldCard(_ sl: SingleLine) -> some View {
         // the crop is drawn off the main thread after typing stops (SingleLineRender)
-        let drawing = sldRender.current(job).drawing
         return card {
             HStack(alignment: .firstTextBaseline) {
                 title("ส่วนที่เปลี่ยนใน SLD", sub: hv ? "CT/VT + รีเลย์หลังมิเตอร์ กฟภ." : "CT + รีเลย์ที่ตู้ \(ZeroExport.boardName(sl))")
@@ -33,17 +32,21 @@ extension BackfeedPageWide {
             }
             .padding(.vertical, phone ? 0 : -10)
             Group {
-                if let b = drawing.zeroExportBox, phone {
-                    // too small to read when fitted to a phone's width: shown at 0.6 and scrolled sideways
-                    ScrollView(.horizontal, showsIndicators: true) {
-                        SLDCrop(drawing: drawing, box: b).frame(width: b.w * 0.6, height: b.h * 0.6)
+                if let drawing = sldRender.result?.drawing {
+                    if let b = drawing.zeroExportBox, phone {
+                        // too small to read when fitted to a phone's width: shown at 0.6 and scrolled sideways
+                        ScrollView(.horizontal, showsIndicators: true) {
+                            SLDCrop(drawing: drawing, box: b).frame(width: b.w * 0.6, height: b.h * 0.6)
+                        }
+                        .frame(height: b.h * 0.6)
+                    } else if let b = drawing.zeroExportBox {
+                        SLDCrop(drawing: drawing, box: b, fill: true)
+                    } else {
+                        Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                            .multilineTextAlignment(.center).padding()
                     }
-                    .frame(height: b.h * 0.6)
-                } else if let b = drawing.zeroExportBox {
-                    SLDCrop(drawing: drawing, box: b, fill: true)
                 } else {
-                    Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                        .multilineTextAlignment(.center).padding()
+                    ProgressView("กำลังสร้างแผนภาพ")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: phone ? nil : .infinity)

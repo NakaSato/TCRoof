@@ -12,6 +12,28 @@ extension MPWorkbook {
 
         /// The WBS rows ticked when the app exported the file (`MasterSchedule.mergingTicks`), in a part of their own.
         static let ticksNamespace = "urn:tcroof:wbs-ticks"
+        static let dependenciesNamespace = "urn:tcroof:wbs-dependencies"
+
+        static func readDependencies(_ zip: ZipArchive) -> [String: [MasterSchedule.WBSDependency]]? {
+            guard let path = part(zip, dependenciesNamespace), let xml = zip.string(path), let body = content(xml) else { return nil }
+            return try? JSONDecoder().decode([String: [MasterSchedule.WBSDependency]].self, from: Data(XML.unescape(body).utf8))
+        }
+
+        static func dependencyMap(_ items: [MasterSchedule.WorkItem]) -> [String: [MasterSchedule.WBSDependency]] {
+            Dictionary(items.compactMap { item -> (String, [MasterSchedule.WBSDependency])? in
+                guard let links = item.dependencies, !links.isEmpty else { return nil }
+                return (item.code, links)
+            }, uniquingKeysWith: { first, _ in first })
+        }
+
+        static func writeDependencies(_ items: [MasterSchedule.WorkItem], into zip: inout ZipArchive) {
+            let links = dependencyMap(items)
+            guard !links.isEmpty || part(zip, dependenciesNamespace) != nil else { return }
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            guard let data = try? encoder.encode(links) else { return }
+            write(String(decoding: data, as: UTF8.self), root: "dependencies", namespace: dependenciesNamespace, into: &zip)
+        }
 
         static func read(_ zip: ZipArchive) -> MasterSchedule.Actual? {
             guard let path = part(zip), let xml = zip.string(path), let body = content(xml) else { return nil }

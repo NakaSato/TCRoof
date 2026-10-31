@@ -71,11 +71,11 @@ extension JobEditorView {
     }
 
     /// Runs an export on the next run-loop turn so the busy overlay shows first.
-    func run(_ message: String, _ work: @escaping () throws -> Void) {
+    func run(_ message: String, _ work: @escaping () async throws -> Void) {
         busy = message
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 80_000_000)
-            do { try work() } catch { self.error = error.localizedDescription }
+            do { try await work() } catch { self.error = error.localizedDescription }
             busy = nil
         }
     }

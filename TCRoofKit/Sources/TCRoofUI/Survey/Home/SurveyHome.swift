@@ -267,9 +267,13 @@ struct SurveyHomeView: View {
             Button("ซิงก์ต่อ") { pendingSync = nil; runSync() }
             Button("ยกเลิก", role: .cancel) { pendingSync = nil }
         } message: { p in Text(p.notes.joined(separator: "\n")) }
-        .overlay { if let busy { BusyOverlay(text: busy) } }
+        .overlay {
+            if let busy { BusyOverlay(text: busy) }
+            else if model.isLoading && model.jobs.isEmpty { ProgressView("กำลังโหลดงานสำรวจ…") }
+        }
         .errorAlert($error)
-        .onAppear { model.linkInstallJobs() }
+        .onAppear { model.reload(); model.linkInstallJobs() }
+        .onChange(of: model.isLoading) { _, loading in if !loading { model.linkInstallJobs() } }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {
@@ -383,7 +387,7 @@ struct SurveyHomeView: View {
     }
 
     func exportButton(_ j: Job) -> some View {
-        Button { do { share = try model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } label: {
+        Button { Task { do { share = try await model.exportBackup([j.id]) } catch { self.error = error.localizedDescription } } } label: {
             Label("ส่งออกข้อมูลงาน", systemImage: "square.and.arrow.up")
         }
     }

@@ -15,6 +15,8 @@ public extension MasterSchedule {
         public var weight: Double
         /// The sheet's own words (`ย้อนจาก 2.10 (60 วัน)`, `Master Plan`), kept as written.
         public var predecessor: String?
+        /// Explicit finish-to-start links. Nil in older plans; worksheet prose is never interpreted as a link.
+        public var dependencies: [WBSDependency]?
         public var lagDays: Int?
         public var days: Int?
         public var baselineStart: Date?

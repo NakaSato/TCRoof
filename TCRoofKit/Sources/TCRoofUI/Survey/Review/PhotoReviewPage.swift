@@ -227,11 +227,14 @@ struct Thumbnail: View {
             if let image { Image(uiImage: image).resizable().scaledToFill() }
             else { PhotoSlot.stageColor.overlay { Image(systemName: "photo").foregroundStyle(Theme.inkMuted) } }
         }
-        .task(id: photo.id) {
+        .task(id: "\(jobID.uuidString)/\(photo.fileName)") {
+            guard !Task.isCancelled else { return }
             let key = "\(jobID.uuidString)/\(photo.fileName)" as NSString
             if let hit = Self.cache.object(forKey: key) { image = hit; return }
+            image = nil
             let url = model.store.url(of: photo, in: jobID)
-            let made = await Task.detached(priority: .userInitiated) { Self.thumbnail(url) }.value
+            let made = try? await BackgroundWork.value { Self.thumbnail(url) }
+            guard !Task.isCancelled else { return }
             if let made { Self.cache.setObject(made, forKey: key) }
             image = made
         }

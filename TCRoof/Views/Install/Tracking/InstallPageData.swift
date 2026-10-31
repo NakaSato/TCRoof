@@ -141,7 +141,7 @@ struct InstallPageData {
             var p = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)
             // a plan from a plan file shows its WBS sub-tasks under each stage, in place of the reports' places
             let wbs = job.scheduleWBS
-            if !wbs.isEmpty { p.useWBS(wbs, ticked: Set(job.wbsTicks.keys)) }
+            if !wbs.isEmpty { p.useWBS(wbs, ticked: Set(job.wbsTicks.keys), settings: settings) }
             p.useBaseline(InstallPlan.baselineDates(input: input, wbs: wbs))
             plan = p
         }

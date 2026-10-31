@@ -6,12 +6,12 @@ import DriveSync
 
 /// Build, preview, share and save to Drive, with the confirmations before sending.
 extension ExportSheet {
-    func file(_ f: Format, _ job: Job) throws -> SurveyModel.ExportFile {
+    func file(_ f: Format, _ job: Job) async throws -> SurveyModel.ExportFile {
         switch f {
-        case .report: return try model.exportPDF(job)
-        case .summary: return try model.exportSummaryPDF(job)
-        case .excel: return try model.exportExcel(job)
-        case .data: return try model.exportBackup([job.id])
+        case .report: return try await model.exportPDF(job)
+        case .summary: return try await model.exportSummaryPDF(job)
+        case .excel: return try await model.exportExcel(job)
+        case .data: return try await model.exportBackup([job.id])
         case .photos: throw DriveFailure(message: "รูปภาพบันทึกลง Google Drive เท่านั้น")
         }
     }
@@ -29,7 +29,7 @@ extension ExportSheet {
     func previewPDF(_ f: Format) {
         guard let job = model.job(jobID) else { return }
         run("กำลังสร้าง \(f.title)…") {
-            let out = try file(f, job)
+            let out = try await file(f, job)
             preview = PDFPreviewItem(url: out.url, title: (f == .summary ? "สรุป " : "") + job.projectName)
         }
     }
@@ -68,7 +68,7 @@ extension ExportSheet {
             for f in formats {
                 busy = "กำลังสร้าง \(f.title)…"
                 await Task.yield()
-                let out = try file(f, job)
+                let out = try await file(f, job)
                 urls.append(out.url)
                 log.append("✓ " + out.summary)
             }

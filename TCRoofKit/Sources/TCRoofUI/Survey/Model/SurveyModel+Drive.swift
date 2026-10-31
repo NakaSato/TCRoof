@@ -19,10 +19,13 @@ extension SurveyModel {
         defer { manualDriveSave.remove(job.id) }
         await uploadRun[job.id]?.value
         let job = self.job(job.id) ?? job
-        flush(job.id)
-        let excel = try kinds.contains(.xlsx) ? excelData(job).data : Data()
-        let pdf = kinds.contains(.pdf) ? pdfData(job) : Data()
-        let json = try kinds.contains(.json) ? WebBackup.exportDriveData(job, store: store) : Data()
+        try await flushAndWait(job.id)
+        let excel: Data
+        if kinds.contains(.xlsx) { excel = try await excelData(job).data } else { excel = Data() }
+        let pdf: Data
+        if kinds.contains(.pdf) { pdf = await pdfData(job) } else { pdf = Data() }
+        let json: Data
+        if kinds.contains(.json) { json = try await writer.driveData(job) } else { json = Data() }
         let store = self.store, id = job.id
         do {
             let (link, files) = try await drive.save(job, kinds: kinds, build: { k in k == .xlsx ? excel : k == .pdf ? pdf : json },
@@ -69,6 +72,7 @@ extension SurveyModel {
     public func openFromDrive(_ file: DriveFile) async throws -> Job {
         let j = try await drive.open(file, into: store)
         reload()
+        await waitForReload()
         return j
     }
 }

@@ -59,7 +59,7 @@ struct RevisionsPage: View {
                     Spacer(minLength: 8)
                     if model.snapshot(job, rev: r.rev) != nil || FileManager.default.fileExists(atPath: model.store.revisionPDF(rev: r.rev, job: job.id).path) {
                         TCButton("เปิด PDF", systemImage: "doc.richtext", kind: .secondary, size: .card) {
-                            if let url = model.revisionPDF(job, rev: r.rev) { openPDF(url, "REV \(r.rev) " + job.projectName) }
+                            Task { if let url = await model.revisionPDF(job, rev: r.rev) { openPDF(url, "REV \(r.rev) " + job.projectName) } }
                         }
                         .fixedSize()
                     } else {

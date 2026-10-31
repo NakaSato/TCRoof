@@ -30,9 +30,16 @@ extension InstallTrackingPage {
     @ViewBuilder func phonePlanTab(_ data: InstallPageData) -> some View {
         if let p = data.plan, let g = data.gantt {
             phonePlanHeader(p)
+            if mayEditPlan, !job.scheduleWBS.isEmpty {
+                Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
+            }
+            if !p.dependencyIssues.isEmpty {
+                Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
+            }
             if planEditing { editStrip }
             Group {
-                if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g, dayLimit: 31), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
+                if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g, dayLimit: 31, forecast: p), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
             }
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

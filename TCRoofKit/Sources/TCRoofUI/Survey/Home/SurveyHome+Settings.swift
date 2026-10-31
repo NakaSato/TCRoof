@@ -95,7 +95,7 @@ extension SurveyHomeView {
             action("เปิดจาก Google Drive") { showDriveOpen = true }
             action("นำเข้าไฟล์ข้อมูล (.json)") { importing = true }
             action("สำรองข้อมูลทุกงาน", disabled: model.jobs.isEmpty) {
-                do { share = try model.exportBackup() } catch { self.error = error.localizedDescription }
+                Task { do { share = try await model.exportBackup() } catch { self.error = error.localizedDescription } }
             }
             action("คลังแบบมาตรฐาน", detail: "แบบถังน้ำใส กปภ. | แบบที่ทีมบันทึก") { showLibrary = true }
             action("มาตรฐานโครงสร้างแผงบนถัง", detail: TankStandard.Store.shared.current.summary) { showTankStandard = true }

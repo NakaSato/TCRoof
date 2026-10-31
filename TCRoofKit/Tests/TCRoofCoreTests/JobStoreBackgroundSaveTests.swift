@@ -9,7 +9,7 @@ final class JobStoreBackgroundSaveTests: XCTestCase {
             var local = remote
             local.values["projectName"] = .text("Local edit")
             try store.save(local)
-            try store.save(remote, ifCurrent: version)
+            _ = try store.saveIfCurrent(remote, token: version)
             XCTAssertEqual(store.load(local.id), local)
         }
     }
@@ -20,7 +20,7 @@ final class JobStoreBackgroundSaveTests: XCTestCase {
             try store.save(job)
             let version = store.reserveSave(job.id)
             try store.delete(job.id)
-            try store.save(job, ifCurrent: version)
+            _ = try store.saveIfCurrent(job, token: version)
             XCTAssertNil(store.load(job.id))
         }
     }
@@ -32,8 +32,8 @@ final class JobStoreBackgroundSaveTests: XCTestCase {
             var latest = first
             latest.values["projectName"] = .text("Latest remote")
             let version = store.reserveSave(first.id)
-            try store.save(latest, ifCurrent: version)
-            try store.save(first, ifCurrent: oldVersion)
+            _ = try store.saveIfCurrent(latest, token: version)
+            _ = try store.saveIfCurrent(first, token: oldVersion)
             XCTAssertEqual(store.load(first.id), latest)
         }
     }
@@ -43,7 +43,7 @@ final class JobStoreBackgroundSaveTests: XCTestCase {
             let job = Job.new(template: JobTemplate.all[0])
             let version = store.reserveSave(job.id)
             _ = store.reserveSave(job.id)
-            try store.save(job, ifCurrent: version)
+            _ = try store.saveIfCurrent(job, token: version)
             XCTAssertNil(store.load(job.id))
         }
     }

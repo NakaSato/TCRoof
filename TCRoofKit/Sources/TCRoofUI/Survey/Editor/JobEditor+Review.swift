@@ -79,7 +79,7 @@ extension JobEditorView {
     /// ออก REV nn; the change dots then compare with it.
     func issueRevision(_ reason: String) {
         run("กำลังออก REV \(job.nextIssueRev)…") {
-            try model.issue(job.id, reason: reason)
+            try await model.issue(job.id, reason: reason)
             if let j = model.job(job.id) { job = j }
             loadRevisionBase()
         }

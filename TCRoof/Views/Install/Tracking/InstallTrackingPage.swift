@@ -303,7 +303,8 @@ struct InstallTrackingPage: View {
                               openDaily: { stage = nil; route = .day(RoutineReport.calendar.startOfDay(for: .now)) },
                               wbs: wbsItems(row.id), ticks: job.wbsTicks, canTick: permissions.mayTickWBS(on: job.access),
                               canTakeBack: { permissions.mayTakeBack($0, on: job.access) },
-                              toggleWBS: toggleWBS, setDocument: setWBSDocument)
+                              canEditWBS: permissions.can(.mpSetup, on: job.access),
+                              toggleWBS: toggleWBS, setDocument: setWBSDocument, updateWBSItem: updateWBSItem)
         }
         .transition(.opacity)
     }
@@ -339,6 +340,15 @@ struct InstallTrackingPage: View {
     private func saveWBS(_ ticks: [String: MasterSchedule.WBSTick]) {
         job.wbsTicks = ticks
         if permissions.role == .external { job.wbsTicksUnsent = true }
+        try? context.save()
+    }
+
+    private func updateWBSItem(_ updated: MasterSchedule.WorkItem) {
+        guard permissions.can(.mpSetup, on: job.access) else { return }
+        var rows = job.scheduleWBS
+        guard let i = rows.firstIndex(where: { $0.code == updated.code }) else { return }
+        rows[i] = updated
+        job.scheduleWBS = rows
         try? context.save()
     }
 

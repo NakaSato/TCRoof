@@ -193,12 +193,17 @@ public extension MasterSchedule {
         let before = actual
         let byCode = Dictionary(items.map { ($0.code, $0) }) { a, _ in a }
         let parents = items.parentCodes
-        for (code, b) in actual.fromWBS where ticks[code] == nil || byCode[code] == nil {
-            var week = actual.points[b.task] ?? [:]
-            let left = (week[b.week] ?? 0) - b.points
-            week[b.week] = left > 1e-9 ? left : nil
-            actual.points[b.task] = week.isEmpty ? nil : week
-            actual.fromWBS[code] = nil
+        for (code, b) in actual.fromWBS {
+            let item = byCode[code]
+            let valid = ticks[code] != nil && item != nil && item?.task != nil && item?.code != item?.task?.code
+                && !parents.contains(code) && (item?.weight ?? 0) > 0 && item?.notForThisStation == false
+            if !valid || abs((item?.weight ?? 0) - b.points) > 1e-9 {
+                var week = actual.points[b.task] ?? [:]
+                let left = (week[b.week] ?? 0) - b.points
+                week[b.week] = left > 1e-9 ? left : nil
+                actual.points[b.task] = week.isEmpty ? nil : week
+                actual.fromWBS[code] = nil
+            }
         }
         for item in items {
             // the task's own line, and any row with steps under it, is its sub-rows' sum: only they book

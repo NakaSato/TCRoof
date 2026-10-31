@@ -198,13 +198,25 @@ struct DailyReportEditor: View {
     }
 
     private var canSign: Bool { permissions.can(.dailySign, on: job.access) }
+    /// The contractor's site engineer (`daily.fill`) or the job's internal team (`daily.sign`) signs the reporter box
+    /// (`engineerSignedAt`) to submit the daily report; our engineer/inspector (`daily.sign`) then approves (`inspectorAckAt`).
+    private var canSignReport: Bool {
+        if permissions.role == .external {
+            #if DEBUG
+            if DebugScreen.isKnown && job.access.externals.isEmpty { return true }
+            #endif
+            return permissions.can(.dailyFill, on: job.access)
+        }
+        return canSign
+    }
     /// Who signs, for the line a member who can't sees: our engineers for a contractor, and for a team member not on
     /// a job that names its people (`Permissions.signsDaily`), that job's team, its supervisor or a manager.
     private var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการ" }
 
     private func requestSign() {
-        guard canSign else { return withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
-        // ZNSHINE's manual: no open block, and a reason for every warn, before our engineer signs
+        if log?.engineerSignedAt != nil, !canSign { return withAnimation { toast = signedForOthers } }
+        guard canSignReport else { return withAnimation { toast = "\(signers)เป็นผู้ลงนามรายงาน" } }
+        // ZNSHINE's manual: no open block, and a reason for every warn, before signing
         let stops = DailyModuleCard.stops(report)
         guard stops.isEmpty else { return withAnimation { toast = "ตรวจติดตั้งแผงยังไม่ผ่าน: " + stops.joined(separator: " | ") } }
         showSign = true
@@ -221,7 +233,7 @@ struct DailyReportEditor: View {
     }
 
     private func clearSignature() {
-        guard let log, canSign else { return }
+        guard let log, canSign else { return withAnimation { toast = signedForOthers } }
         log.engineerSignedAt = nil
         log.inspectorAckAt = nil
         log.setSignature(nil, tag: InstallLog.engineerSignatureTag, context: context)
@@ -230,12 +242,13 @@ struct DailyReportEditor: View {
         try? context.save()
     }
 
-    /// Takes the inspector's acknowledgement off, leaving the reporter's signature (unlike `clearSignature`), and
-    /// files the PDF again without it.
+    /// Takes the inspector's acknowledgement off, leaving the reporter's signature (unlike `clearSignature`), updates
+    /// the MP plan, and files the PDF again without it.
     private func clearAck() {
         guard let log, canSign else { return }
         log.inspectorAckAt = nil
         log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
+        job.feedMP()
         if let built = RoutineReportFiles.daily(job, log: log) { RoutineReportFiles.file(built, job: job, context: context) }
         if let excel = RoutineReportFiles.dailyExcel(job, log: log) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()

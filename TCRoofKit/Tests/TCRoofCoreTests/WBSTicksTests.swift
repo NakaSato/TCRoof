@@ -144,6 +144,18 @@ final class WBSTicksTests: XCTestCase {
         XCTAssertNil(a.points["structure"])
     }
 
+    /// Editing a ticked WBS row's weight updates its booked points in the Master Plan.
+    func testEditingATickedWBSRowsWeightUpdatesItsBooking() {
+        var a = MasterSchedule.Actual()
+        MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.1": tick(7)], input: input)
+        XCTAssertEqual(a.points["structure"], [MasterSchedule.Actual.key(day(7)): 8])
+        var edited = items
+        edited[1].weight = 10
+        XCTAssertTrue(MasterSchedule.bookWBS(&a, items: edited, ticks: ["2.1.1": tick(7)], input: input))
+        XCTAssertEqual(a.points["structure"], [MasterSchedule.Actual.key(day(7)): 10])
+        XCTAssertEqual(a.fromWBS["2.1.1"]?.points, 10)
+    }
+
     func testAPlanKeepsItsBookingsAndOlderPlansRead() throws {
         var a = MasterSchedule.Actual()
         MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.1": tick(7)], input: input)

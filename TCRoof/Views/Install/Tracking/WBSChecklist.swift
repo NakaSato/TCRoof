@@ -11,10 +11,13 @@ struct WBSChecklist: View {
     let ticks: [String: MasterSchedule.WBSTick]
     let canTick: Bool
     let canTakeBack: (MasterSchedule.WBSTick) -> Bool
+    var canEdit = false
     let toggle: (MasterSchedule.WorkItem) -> Void
     let setDocument: (MasterSchedule.WorkItem, String) -> Void
+    var updateItem: (MasterSchedule.WorkItem) -> Void = { _ in }
     @State private var documentFor: MasterSchedule.WorkItem?
     @State private var document = ""
+    @State private var editingItem: MasterSchedule.WorkItem?
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
@@ -36,6 +39,9 @@ struct WBSChecklist: View {
             Button("ยกเลิก", role: .cancel) { documentFor = nil }
         } message: { item in
             Text(item.evidence ?? item.title)
+        }
+        .sheet(item: $editingItem) { item in
+            WBSItemEditSheet(item: item, onSave: updateItem)
         }
     }
 
@@ -108,6 +114,15 @@ struct WBSChecklist: View {
                     .foregroundStyle(Theme.muted)
                 if let who = item.responsible { Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
             }
+            if canEdit {
+                Button { editingItem = item } label: {
+                    Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("แก้ไขงานย่อย WBS \(item.code)")
+                .accessibilityIdentifier("wbs.edit.\(item.code)")
+            }
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
         .background(tick != nil ? Theme.successSoft.opacity(0.45) : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -117,6 +132,11 @@ struct WBSChecklist: View {
                 Button("ใส่เลขที่เอกสาร", systemImage: "doc.text") {
                     document = tick?.document ?? ""
                     documentFor = item
+                }
+            }
+            if canEdit {
+                Button("แก้ไขงานย่อย WBS", systemImage: "pencil") {
+                    editingItem = item
                 }
             }
         }
@@ -141,5 +161,92 @@ struct WBSChecklist: View {
     private func tickLine(_ t: MasterSchedule.WBSTick) -> String {
         let who = TeamDirectory.shared.person(t.by)?.label ?? t.by
         return ["เสร็จ " + ThaiFormat.numericDate.string(from: t.at), who, t.document ?? ""].filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+}
+
+/// Sheet for internal team / manager (`mp.setup`) to update/edit a WBS work item.
+struct WBSItemEditSheet: View {
+    let item: MasterSchedule.WorkItem
+    let onSave: (MasterSchedule.WorkItem) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String
+    @State private var weight: String
+    @State private var responsible: String
+    @State private var evidence: String
+    @State private var hasDates: Bool
+    @State private var baselineStart: Date
+    @State private var baselineEnd: Date
+
+    init(item: MasterSchedule.WorkItem, onSave: @escaping (MasterSchedule.WorkItem) -> Void) {
+        self.item = item
+        self.onSave = onSave
+        let cal = MasterSchedule.calendar
+        let start = item.baselineStart ?? cal.startOfDay(for: .now)
+        _title = State(initialValue: item.title.trimmingCharacters(in: .whitespaces))
+        _weight = State(initialValue: item.weight == item.weight.rounded() ? String(Int(item.weight)) : String(item.weight))
+        _responsible = State(initialValue: item.responsible ?? "")
+        _evidence = State(initialValue: item.evidence ?? "")
+        _hasDates = State(initialValue: item.baselineStart != nil && item.baselineEnd != nil)
+        _baselineStart = State(initialValue: start)
+        _baselineEnd = State(initialValue: max(item.baselineEnd ?? start, start))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("งานย่อย \(item.code)") {
+                    LabeledContent("ชื่องาน") {
+                        TextField("ชื่องานย่อย", text: $title).multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("wbsEdit.title")
+                    }
+                    LabeledContent("น้ำหนัก (%)") {
+                        TextField("0", text: $weight).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("wbsEdit.weight")
+                    }
+                    LabeledContent("ผู้รับผิดชอบ") {
+                        TextField("เช่น วศ., ผรม.", text: $responsible).multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("wbsEdit.responsible")
+                    }
+                    LabeledContent("หลักฐาน") {
+                        TextField("หลักฐาน / เลขที่เอกสาร", text: $evidence).multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("wbsEdit.evidence")
+                    }
+                }
+                Section("กำหนดวันตามแผน (Baseline)") {
+                    Toggle("มีกำหนดวัน", isOn: $hasDates)
+                    if hasDates {
+                        DatePicker("วันเริ่ม", selection: $baselineStart, displayedComponents: .date)
+                            .onChange(of: baselineStart) { _, s in if baselineEnd < s { baselineEnd = s } }
+                        DatePicker("วันเสร็จ", selection: $baselineEnd, in: baselineStart..., displayedComponents: .date)
+                    }
+                }
+            }
+            .environment(\.locale, ThaiFormat.locale)
+            .navigationTitle("แก้ไข WBS \(item.code)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("บันทึก") {
+                        var updated = item
+                        let indent = item.title.prefix { $0 == " " }
+                        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmedTitle.isEmpty { updated.title = String(indent) + trimmedTitle }
+                        updated.weight = max(Double(weight.replacingOccurrences(of: ",", with: ".")) ?? item.weight, 0)
+                        let r = responsible.trimmingCharacters(in: .whitespacesAndNewlines)
+                        updated.responsible = r.isEmpty ? nil : r
+                        let e = evidence.trimmingCharacters(in: .whitespacesAndNewlines)
+                        updated.evidence = e.isEmpty ? nil : e
+                        let cal = MasterSchedule.calendar
+                        updated.baselineStart = hasDates ? cal.startOfDay(for: baselineStart) : nil
+                        updated.baselineEnd = hasDates ? cal.startOfDay(for: max(baselineEnd, baselineStart)) : nil
+                        onSave(updated)
+                        dismiss()
+                    }
+                    .accessibilityIdentifier("wbsEdit.save")
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }

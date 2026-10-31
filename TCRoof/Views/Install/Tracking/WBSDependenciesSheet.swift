@@ -89,6 +89,41 @@ private struct WBSDependencyEditor: View {
 
     var body: some View {
         Form {
+            if let i = items.firstIndex(where: { $0.code == code }) {
+                Section("รายละเอียดงานย่อย WBS") {
+                    LabeledContent("ชื่องาน") {
+                        TextField("ชื่องานย่อย", text: Binding(
+                            get: { items[i].title.trimmingCharacters(in: .whitespaces) },
+                            set: { v in
+                                let indent = items[i].title.prefix { $0 == " " }
+                                let t = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !t.isEmpty { items[i].title = String(indent) + t }
+                            }
+                        )).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("น้ำหนัก (%)") {
+                        TextField("0", value: $items[i].weight, format: .number).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("ผู้รับผิดชอบ") {
+                        TextField("เช่น วศ., ผรม.", text: Binding(
+                            get: { items[i].responsible ?? "" },
+                            set: { v in
+                                let t = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                                items[i].responsible = t.isEmpty ? nil : t
+                            }
+                        )).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("หลักฐาน") {
+                        TextField("หลักฐาน / เลขที่เอกสาร", text: Binding(
+                            get: { items[i].evidence ?? "" },
+                            set: { v in
+                                let t = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                                items[i].evidence = t.isEmpty ? nil : t
+                            }
+                        )).multilineTextAlignment(.trailing)
+                    }
+                }
+            }
             let available = Set(candidates.map(\.code))
             let unavailable = links.filter { !available.contains($0.predecessor) }
             if !unavailable.isEmpty {

@@ -65,24 +65,25 @@ extension Job {
         return documents.contains { $0.name == name }
     }
 
-    /// Books the daily reports' progress into the MP actual (§3 "Feed MP"); no-op without a plan. Only reports our engineer
-    /// has signed count: the contractor's foreman writes them, so a draft must not move the plan.
+    /// Books the daily reports' progress into the MP actual (§3 "Feed MP"); no-op without a plan. Only reports our
+    /// engineer/inspector has approved (`inspectorAckAt != nil`) count: a contractor's draft or unapproved report must not move the plan.
     func feedMP() {
         guard let input = scheduleInput else { return }
         var a = scheduleActual
-        let signed = dailyLogs.filter { $0.engineerSignedAt != nil }.compactMap(\.report)
-        RoutineReport.feed(&a, reports: dailyReports, counted: signed, settings: routineSettings, weight: input.weight)
+        let approved = dailyLogs.filter { $0.inspectorAckAt != nil }.compactMap(\.report)
+        RoutineReport.feed(&a, reports: dailyReports, counted: approved, settings: routineSettings, weight: input.weight)
         if a != scheduleActual { scheduleActual = a }
     }
 
-    /// Records the inspector's acknowledgement of a signed report, then files its PDF and Excel again with it. The
-    /// report screen and the daily list both call it; the caller checks `daily.sign`.
+    /// Records the inspector's acknowledgement of a signed report, updates the MP plan, then files its PDF and Excel
+    /// again with it. The report screen and the daily list both call it; the caller checks `daily.sign`.
     @MainActor func recordInspectorAck(_ log: InstallLog, name: String, at when: Date, signature: Data?, context: ModelContext) {
         if routineSettings.inspector != name {
             var s = routineSettings; s.inspector = name; routineSettings = s
         }
         log.inspectorAckAt = when
         log.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
+        feedMP()
         if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }
         if let excel = RoutineReportFiles.dailyExcel(self, log: log) { RoutineReportFiles.file(excel, job: self, context: context) }
         try? context.save()

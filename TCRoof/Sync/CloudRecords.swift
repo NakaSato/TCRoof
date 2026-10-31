@@ -337,12 +337,13 @@ extension InstallLog: CloudSynced {
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
         guard let owner = parent(r.jobID, in: jobs) else { return false }
         date = Date(millis: r.date); createdAt = Date(millis: r.createdAt); recorder = r.recorder; details = r.details
+        if job !== owner { job = owner }
         // a record written by an app version without daily reports keeps this device's report
         if let v = r.report {
             reportJSON = v
             engineerSignedAt = r.engineerSignedAt.map(Date.init(millis:)); inspectorAckAt = r.inspectorAckAt.map(Date.init(millis:))
+            owner?.feedMP()
         }
-        if job !== owner { job = owner }
         return true
     }
 

@@ -149,12 +149,14 @@ test('an external member sends the WBS ticks of their own job, signed with their
   await assertSucceeds(setDoc(doc(db(TEAM), 'jobs', 'mine'), { scheduleWBS: '[]', wbsTicks: '{}', wbsTicksBy: TEAM }, { merge: true }));
 });
 
-test('an external member fills daily reports but never signs them', async () => {
+test('an external member fills and signs (submits) daily reports but never approves them', async () => {
   const d = db(CON);
   await assertSucceeds(setDoc(doc(d, 'installLogs', 'log3'), { jobID: 'mine', externals: [CON], report: '{}' }));
   await assertSucceeds(updateDoc(doc(d, 'installLogs', 'log1'), { report: '{"a":1}' }));
-  await assertFails(updateDoc(doc(d, 'installLogs', 'log1'), { engineerSignedAt: 1 }));
   await assertFails(updateDoc(doc(d, 'installLogs', 'log1'), { inspectorAckAt: 1 }));
+  await assertSucceeds(updateDoc(doc(d, 'installLogs', 'log1'), { engineerSignedAt: 1 }));
+  await assertFails(updateDoc(doc(d, 'installLogs', 'log1'), { report: '{"a":2}' }));
+  await assertFails(updateDoc(doc(d, 'installLogs', 'log1'), { engineerSignedAt: null }));
   await assertFails(setDoc(doc(d, 'installLogs', 'log4'), { jobID: 'theirs', externals: [CON], report: '{}' }));
   await assertFails(deleteDoc(doc(d, 'installLogs', 'log1')));
 });

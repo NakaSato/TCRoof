@@ -269,6 +269,10 @@ Every export (built 2026-10-22, in `SketchDXF.data`, checked with `ezdxf audit` 
   (their drawing's own 2199, from a module 2276.7 mm long or a tilt of 15.12°). Where the slope runs up the plan the
   INSERT is turned 90° at the panel's lower-right corner; a panel of any other size keeps a frame block of its own.
   The C1 roof export keeps its `TC_PV_MODULE_…` blocks with the cells.
+- **Leaders** (2026-10-27): a leader is CAD's own LEADER entity (`SketchDXF.leader`), not a line and a drawn
+  arrowhead: its arrowhead at the member, its line on to the label, a closed filled arrowhead from its leader style
+  `TC_LDR_<size>` (DIMASZ the size, no ticks), so it edits as one leader. C1 section A-A's member numbers ①–⑦, the
+  inverter station's member marks and its tray and riser labels use it.
 - **Inverter station** (2026-10-27, after the team's `reference/inverter-station`: `Inverter.dxf` one 125 kW inverter
   under a 6.0 × 2.5 m shelter, `Inverter_EXL-HV.dxf` 125 + 40 kW under 9.0 × 2.5 m, `Internal_Inverter_Station_EXL-LV.dxf`
   an 80 kW rack on a building's wall, `Part_1.dxf` the column's base plate, and the component library extracted from

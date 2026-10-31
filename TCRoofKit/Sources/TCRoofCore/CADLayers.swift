@@ -137,7 +137,7 @@ public enum CADLayers {
 
     /// The layers that carry hatches in the exports (their `HATC` layers are in the standards file too).
     public static let hatched: [SketchDXF.Layer] = [obstacle, roofSection, pvModule, pvCableTray, pvFooting, pvWalkway, lifeRail, pvAccess,
-                                                     tankSection, tankSoil, stationWall, memberMark, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
+                                                     tankSection, tankSoil, stationWall, siteBuilding, sitePVArea, siteShade, sldNew, sldLine, sldText, detail]
 
     /// The layers whose texts take their own `TEXT` layer (the single line diagram's meanings).
     public static let annotated: [SketchDXF.Layer] = [sldNew, sldOK, sldWarn, sldMissing, sldPole, sldAssumed]

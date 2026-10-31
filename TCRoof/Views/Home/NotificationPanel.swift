@@ -111,6 +111,6 @@ struct AppNotification: Identifiable {
         return .init(id: post.id, kind: .feed(post.kind), title: fixed ? "ปัญหา | แก้แล้ว" : FeedNotification.title(post.kind),
                      detail: post.kind == .summary ? post.text : post.place + " | " + post.text, date: post.date,
                      link: DeepLink.route(type: type, action: nil, info: FeedNotification.plan(post).info),
-                     todo: post.issue != nil && !fixed)
+                     todo: (post.issue != nil && !fixed) || post.kind == .waitingInspector)
     }
 }

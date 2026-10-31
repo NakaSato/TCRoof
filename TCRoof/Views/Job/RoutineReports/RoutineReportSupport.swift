@@ -262,7 +262,7 @@ enum RoutineReportFiles {
     static func weekly(_ job: Job, week: Date) -> Built {
         let (entries, images) = entries(job)
         let ws = MasterSchedule.weekStart(week)
-        let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws)!)
+        let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws) ?? ws)
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())
             .weekly(week: ws, entries: entries, all: job.dailyReports, schedule: job.reportSchedule, nextRequest: next,
                     installStart: job.installStart)
@@ -288,7 +288,7 @@ enum RoutineReportFiles {
         let input = WeeklySlides.Input(stationName: st.name, mpNumber: st.mpNumber, capacityKWp: st.capacityKWp, settings: st.settings,
                                        week: ws, days: days, all: job.dailyReports,
                                        schedule: job.reportSchedule.map { (input: $0.input, actual: $0.actual) },
-                                       nextRequest: job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws)!),
+                                       nextRequest: job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws) ?? ws),
                                        installStart: job.installStart)
         return (input, images)
     }

@@ -120,6 +120,12 @@ struct InstallPageData {
             items.append(.init(id: "daily", priority: .medium, title: "รายงานประจำวัน " + ThaiFormat.dayMonth.string(from: day),
                                detail: todayState == .draft ? "ร่างไว้ | ยังไม่ลงนาม" : "ยังไม่ได้ทำ", target: .daily))
         }
+        let pendingAck = job.pendingAckLogs
+        if !pendingAck.isEmpty {
+            let days = pendingAck.map { ThaiFormat.dayMonth.string(from: $0.date) }.joined(separator: ", ")
+            items.append(.init(id: "daily-ack", priority: .high, title: "รายงานประจำวันรอรับทราบ \(pendingAck.count) วัน",
+                               detail: "\(days) | เซ็นรับทราบเพื่ออัปเดตแผน MP", target: .daily))
+        }
         let nextWeek = cal.date(byAdding: .day, value: 7, to: RoutineReport.week(of: day).lowerBound) ?? day
         if job.scheduleInput != nil, job.weeklyRequest(for: nextWeek)?.engineerSignedAt == nil {
             items.append(.init(id: "request", priority: .medium, title: "คำขอสัปดาห์หน้า", detail: "ยังไม่ลงนาม", target: .request))

@@ -113,15 +113,27 @@ extension InstallPageData {
         let working = RoutineReport.isWorkingDay(day, settings: job.routineSettings) && job.installDay(on: day) != nil
         let dailyItems = logs.enumerated().reversed().compactMap { i, log -> DocItem? in
             guard let r = log.report else { return nil }
+            let (itemChip, itemTone): (String, Tone) = if log.inspectorAckAt != nil {
+                ("อนุมัติแล้ว", .ok)
+            } else if log.engineerSignedAt != nil {
+                ("รออนุมัติ", .info)
+            } else {
+                ("ร่าง", .warn)
+            }
             return DocItem(id: "dr\(i)", code: String(format: "DR-%03d", i + 1), title: dailyTitle(r),
-                           detail: dailyDetail(r, photos: log.sortedPhotos.count), chip: log.engineerSignedAt != nil ? "ส่งแล้ว" : "ร่าง",
-                           tone: log.engineerSignedAt != nil ? .ok : .warn, target: .day(cal.startOfDay(for: r.date)))
+                           detail: dailyDetail(r, photos: log.sortedPhotos.count), chip: itemChip,
+                           tone: itemTone, target: .day(cal.startOfDay(for: r.date)))
         }
         if !logs.isEmpty || working {
-            let (chip, tone): (String, Tone) = switch todayState {
-            case .signed: ("วันนี้ส่งแล้ว", .ok)
-            case .draft: ("วันนี้ยังไม่ลงนาม", .warn)
-            case .none: working ? ("วันนี้ยังไม่ส่ง", .warn) : ("\(logs.count) ฉบับ", .idle)
+            let unackedCount = job.pendingAckLogs.count
+            let (chip, tone): (String, Tone) = if unackedCount > 0 {
+                ("รออนุมัติ \(unackedCount) วัน", .info)
+            } else {
+                switch todayState {
+                case .signed: ("วันนี้ส่งแล้ว", .ok)
+                case .draft: ("วันนี้ยังไม่ลงนาม", .warn)
+                case .none: working ? ("วันนี้ยังไม่ส่ง", .warn) : ("\(logs.count) ฉบับ", .idle)
+                }
             }
             tiles.append(DocTile(id: "daily", title: "Daily Report", about: "รายงานประจำวัน: งานที่ทำ จำนวนคน สภาพอากาศ ปัญหา และรูปหน้างาน",
                                  chip: chip, tone: tone, items: dailyItems))

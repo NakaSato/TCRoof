@@ -8,6 +8,11 @@ import TCRoofCore
 /// expiring library paper and the selected view. The numbers come from `PWADocs` over `StationDocs`; a station
 /// card pushes `StationDocsScreen`, a paper opens its sheet. The main dock's `เอกสาร` tab is its root.
 struct PWADocsHomeView: View {
+    let isActive: Bool
+    @State private var overviewCache = PWADocsOverviewCache()
+
+    init(isActive: Bool = true) { self.isActive = isActive }
+
     enum Pane: String, CaseIterable { case st, todo, lib }
 
     /// A paper a row opens: a station's, or a library paper (on any job, since the sheet keeps it in the library).
@@ -112,20 +117,30 @@ struct PWADocsHomeView: View {
     }
 
     private var data: Data {
-        let (stations, library) = source
-        let rows = PWADocs.rows(stations, library: library, today: today)
-        let groups = PWADocs.todo(stations, library: library)
-        let lib = PWADocs.library(library, today: today)
+        let snapshot: PWADocsOverviewCache.Result
+        if isActive {
+            let (stations, library) = source
+            snapshot = overviewCache.result(stations: stations, library: library, today: today)
+        } else {
+            snapshot = overviewCache.cached
+            return Data(summary: snapshot.summary, allRows: snapshot.rows, rows: snapshot.rows, groups: snapshot.groups,
+                        library: snapshot.libraryRows, expiring: snapshot.expiring, ours: snapshot.ours)
+        }
+        if search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return Data(summary: snapshot.summary, allRows: snapshot.rows, rows: snapshot.rows, groups: snapshot.groups,
+                        library: snapshot.libraryRows, expiring: snapshot.expiring, ours: snapshot.ours)
+        }
+        let rows = snapshot.rows, groups = snapshot.groups, lib = snapshot.libraryRows
         let q = search
-        return Data(summary: PWADocs.summary(stations, library: library), allRows: rows,
+        return Data(summary: snapshot.summary, allRows: rows,
                     rows: rows.filter { PWADocs.matches($0, search: q) },
                     groups: groups.map { g in
                         var g = g
                         g.items = g.items.filter { PWADocs.matches($0, search: q) }
                         return g
                     },
-                    library: lib.filter { PWADocs.matches($0, search: q) }, expiring: PWADocs.nearestExpiry(lib),
-                    ours: groups.flatMap(\.items).filter(\.isOurs).count)
+                    library: lib.filter { PWADocs.matches($0, search: q) }, expiring: snapshot.expiring,
+                    ours: snapshot.ours)
     }
 
     /// The PWA jobs and the device library, or the board's example with `-pwaDocsDemo YES`.

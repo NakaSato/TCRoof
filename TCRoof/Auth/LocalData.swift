@@ -35,6 +35,7 @@ enum LocalData {
     static func wipeIfNeeded(_ context: ModelContext, survey: SurveyModel) {
         let d = UserDefaults.standard
         guard d.bool(forKey: wipeKey) else { return }
+        Task { await InstallSummaryCache.clearPersistentCache() }
         // Sync deletes in Firestore what it once knew and no longer finds here; forgetting what it knew first keeps
         // this removal on the device.
         for key in d.dictionaryRepresentation().keys where key.hasPrefix("cloudSync.known.") { d.removeObject(forKey: key) }

@@ -99,7 +99,7 @@ struct PhoneTabs<HomeRoot: View>: View {
                 // every PWA station's papers (docs/ui/pwa-docs-iphone-v2); the residential library is a row of the
                 // settings sheet, as the tools register is
                 // each root erased, as on iPad (`PadTabs`): otherwise every tab's layouts are worked out at launch
-                case .docs: AnyView(PWADocsHomeView())
+                case .docs: AnyView(PWADocsHomeView(isActive: dock.tab == .docs))
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-iphone-v3 §1)
                 case .pwa: AnyView(PWARoot())
                 default: if let module = t.module { AnyView(module.destination) } else { AnyView(home()) }

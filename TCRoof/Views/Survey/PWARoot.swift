@@ -20,7 +20,7 @@ struct PWARoot: View {
     @State private var showNotifications = false
     private var bell = PWABell()
     @Query(sort: \Job.installStart) private var jobs: [Job]
-    /// Each station's summary, rebuilt only when what it reads changes (`InstallSummaryCache`).
+    /// Published background summaries, updated only when station inputs change.
     @State private var summaryCache = InstallSummaryCache()
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
@@ -30,7 +30,9 @@ struct PWARoot: View {
 
     var body: some View {
         SolarSurveyEntryView()
+            .deferBackgroundFilesWhileBrowsingProjects()
             .environment(\.pwaOverview, overview)
+            .loadInstallSummaries(into: summaryCache)
             .navigationDestination(item: $station) { job in
                 // a station being installed opens its install tracking page (docs/ui/install-tracking-ipad, and on
                 // iPhone docs/ui/install-tracking-iphone)
@@ -99,7 +101,7 @@ struct PWARoot: View {
     private var overview: PWAOverviewHost {
         let installing = jobs.pwaInstalling, stations = jobs.pwaStations
         return PWAOverviewHost(
-            installStations: summaryCache.summaries(installing),
+            installStations: summaryCache.summaries,
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
@@ -112,7 +114,9 @@ struct PWARoot: View {
             unread: bell.unread,
             openNotifications: { showNotifications.toggle() },
             openSettings: { showSettings = true },
-            mine: jobs.mine(permissions))
+            mine: jobs.mine(permissions),
+            installLoading: summaryCache.isLoading || (!installing.isEmpty && summaryCache.summaries.isEmpty)
+                || (jobs.isEmpty && CloudSync.shared.isLoading("jobs")))
     }
 
     /// `-surveyHomeDemo maintenance`: the example stations are no jobs, so a row opens the first PWA station.
@@ -143,11 +147,12 @@ struct PWARoot: View {
 /// `ตั้งค่าโครงการ PWA` (`SurveyHome+Settings`), pushed from the settings sheet now that the PWA module has no dock of
 /// its own. Its project rows count the stations of the install overview.
 struct PWASettingsPage: View {
-    @Query(sort: \Job.installStart) private var jobs: [Job]
+    @State private var summaryCache = InstallSummaryCache()
 
     var body: some View {
         SolarSurveyEntryView(page: .settings)
-            .environment(\.pwaOverview, PWAOverviewHost(installStations: jobs.pwaInstalling.map(\.installSummary)))
+            .environment(\.pwaOverview, PWAOverviewHost(installStations: summaryCache.summaries, installLoading: summaryCache.isLoading))
+            .loadInstallSummaries(into: summaryCache)
     }
 }
 

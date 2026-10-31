@@ -37,8 +37,9 @@ final class CalendarSyncUITests: XCTestCase {
         XCTAssertTrue(text(app, "การแจ้งเตือน").waitForExistence(timeout: slow))
         for _ in 0..<4 where !toggle.isHittable { app.scrollViews.firstMatch.swipeUp() }
         XCTAssertTrue(toggle.exists)
-        XCTAssertTrue(text(app, "ระยะเวลานัด").exists || text(app, "ไม่ได้รับสิทธิ์ปฏิทิน").exists,
-                      "on: the options, or the line to grant access")
+        XCTAssertTrue(text(app, "ระยะเวลานัด").exists || text(app, "ไม่ได้รับสิทธิ์ปฏิทิน").exists
+                      || app.buttons["settings.calendarAccess"].exists,
+                      "on: the options, or an action to grant Calendar access")
         if let dir = ProcessInfo.processInfo.environment["CALENDAR_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent("calendar-settings.png"))
         }

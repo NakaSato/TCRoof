@@ -8,6 +8,7 @@ import TCRoofCore
 public struct PWAOverviewHost {
     /// The PWA project's stations being installed; nil when the host has none to give.
     public var installStations: [InstallStationSummary]?
+    public var installLoading: Bool
     /// Opens a station that has no survey job in the installation stage here.
     public var openStation: ((InstallStationSummary) -> Void)?
     /// Opens the daily report list from the overview's strip.
@@ -39,7 +40,8 @@ public struct PWAOverviewHost {
                 maintenanceTasks: [MaintenanceTask] = [], openMaintenanceStation: ((MaintenanceStationSummary) -> Void)? = nil,
                 handOver: ((String) -> Void)? = nil, returnToInstall: ((String) -> Void)? = nil,
                 openPlan: (() -> Void)? = nil, planBody: ((String) -> AnyView)? = nil, unread: Int = 0,
-                openNotifications: (() -> Void)? = nil, openSettings: (() -> Void)? = nil, mine: Set<String>? = nil) {
+                openNotifications: (() -> Void)? = nil, openSettings: (() -> Void)? = nil, mine: Set<String>? = nil,
+                installLoading: Bool = false) {
         self.planBody = planBody
         self.handOver = handOver; self.returnToInstall = returnToInstall
         self.installStations = installStations; self.openStation = openStation; self.openDailyReports = openDailyReports
@@ -48,6 +50,7 @@ public struct PWAOverviewHost {
         self.unread = unread; self.openNotifications = openNotifications
         self.openSettings = openSettings
         self.mine = mine
+        self.installLoading = installLoading
     }
 }
 

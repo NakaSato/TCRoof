@@ -46,7 +46,8 @@ private struct NotificationScheduler: ViewModifier {
     @State private var tick = 0
 
     func body(content: Content) -> some View {
-        content
+        let mp = mpState
+        return content
             .task {
                 let service = NotificationService.shared
                 #if DEBUG
@@ -68,8 +69,18 @@ private struct NotificationScheduler: ViewModifier {
             .task(id: surveyPlans(tick)) { await NotificationService.shared.scheduleSurveys(surveyPlans(tick)) }
             .task(id: reportPlans(tick)) { await NotificationService.shared.schedule(reportPlans(tick), type: .report) }
             .task(id: calibrationPlans(tick)) { await NotificationService.shared.schedule(calibrationPlans(tick), type: .cal) }
-            .task(id: installPlans(tick)) { await NotificationService.shared.schedule(installPlans(tick), type: .install) }
-            .task(id: mpPlans(tick)) { await NotificationService.shared.schedule(mpPlans(tick), type: .mp) }
+            .task(id: mp) {
+                let worker = Task.detached(priority: .utility) { mp.plans(now: .now) }
+                let plans = await withTaskCancellationHandler {
+                    await worker.value
+                } onCancel: {
+                    worker.cancel()
+                }
+                guard !Task.isCancelled else { return }
+                await NotificationService.shared.schedule(plans.mp, type: .mp)
+                guard !Task.isCancelled else { return }
+                await NotificationService.shared.schedule(plans.install, type: .install)
+            }
             .task(id: FeedState(tick: tick, jobs: jobs.count, on: feedOn)) { await refreshFeed() }
             .task {
                 while !Task.isCancelled {
@@ -145,31 +156,68 @@ private struct NotificationScheduler: ViewModifier {
     }
 
     /// `เริ่มติดตั้งพรุ่งนี้` on the eve, then `ติดตั้ง Day n/m` 30 min before each install day starts.
-    private func installPlans(_: Int) -> [NotificationPlan] {
+    private var installSnapshots: [InstallJob] {
         guard planOn else { return [] }
         let now = Date.now
-        return heard.filter { $0.status != .completed && $0.installEnd.endOfDay > now }.flatMap { job in
-            InstallNotification.plans(jobKey: job.syncID ?? job.code, name: [job.code, job.projectName].filter { !$0.isEmpty }.joined(separator: " "),
-                                      team: job.teamRaw, start: job.installStart, days: job.installDays, now: now)
+        return heard.filter { $0.status != .completed && $0.installEnd.endOfDay > now }.map { job in
+            InstallJob(key: job.syncID ?? job.code, name: [job.code, job.projectName].filter { !$0.isEmpty }.joined(separator: " "),
+                       team: job.teamRaw, start: job.installStart, days: job.installDays)
         }
-        .sorted { $0.id < $1.id }
     }
 
     /// Tasks of a PWA station's MP plan that start tomorrow, a station behind its plan, and a step of the ERC flow
     /// whose time limit is about to end or has passed.
-    private func mpPlans(_: Int) -> [NotificationPlan] {
-        guard planOn else { return [] }
+    private var mpState: MPState {
+        guard planOn else { return MPState(tick: tick, jobs: [], installs: []) }
         let now = Date.now
-        return heard.pwaStations.filter { $0.status != .completed }.flatMap { job -> [NotificationPlan] in
+        let snapshots = heard.pwaStations.filter { $0.status != .completed }.map { job in
             let key = job.syncID ?? job.code
             let erc = job.stationDocs.erc.map {
                 ERCNotification.plans(jobKey: key, station: job.stationName, record: $0, context: job.ercContext, now: now)
             } ?? []
-            guard let input = job.scheduleInput else { return erc }
-            return erc + MPNotification.plans(jobKey: key, station: job.stationName, plan: MasterSchedule.plan(input),
-                                              actual: job.scheduleActual, now: now)
+            return MPJob(key: key, station: job.stationName, input: job.scheduleInput, actual: job.scheduleActual, erc: erc)
         }
-        .sorted { $0.id < $1.id }
+        return MPState(tick: tick, jobs: snapshots, installs: installSnapshots)
+    }
+
+    /// Snapshot SwiftData on the main actor; the worker receives only value types.
+    private struct InstallJob: Equatable, Sendable {
+        let key: String
+        let name: String
+        let team: String
+        let start: Date
+        let days: Int
+    }
+
+    private struct MPJob: Equatable, Sendable {
+        let key: String
+        let station: String
+        let input: MasterSchedule.Input?
+        let actual: MasterSchedule.Actual
+        let erc: [NotificationPlan]
+    }
+
+    private struct MPState: Equatable, Sendable {
+        let tick: Int
+        let jobs: [MPJob]
+        let installs: [InstallJob]
+
+        func plans(now: Date) -> (mp: [NotificationPlan], install: [NotificationPlan]) {
+            let mp = jobs.flatMap { job in
+                guard !Task.isCancelled else { return [NotificationPlan]() }
+                guard let input = job.input else { return job.erc }
+                return job.erc + MPNotification.plans(jobKey: job.key, station: job.station,
+                                                     plan: MasterSchedule.plan(input), actual: job.actual, now: now)
+            }
+            .sorted { $0.id < $1.id }
+            let install = installs.flatMap { job in
+                guard !Task.isCancelled else { return [NotificationPlan]() }
+                return InstallNotification.plans(jobKey: job.key, name: job.name, team: job.team,
+                                                 start: job.start, days: job.days, now: now)
+            }
+            .sorted { $0.id < $1.id }
+            return (mp, install)
+        }
     }
 
     /// Rebuilds the project feed: a post not seen before is announced at once, today's summary waits for 18:00, and

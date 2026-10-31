@@ -5,6 +5,26 @@ public final class JobStore: @unchecked Sendable {
     public let root: URL
     private let fm = FileManager.default
     private let lock = NSLock()
+    private var saveVersions: [UUID: UUID] = [:]
+
+    /// Reserves a background write. A later write, edit or deletion invalidates it.
+    public func reserveSave(_ id: UUID) -> UUID {
+        lock.lock(); defer { lock.unlock() }
+        let version = UUID()
+        saveVersions[id] = version
+        return version
+    }
+
+    public func save(_ job: Job, ifCurrent version: UUID) throws {
+        // Encode before acquiring the lock so local edits never wait for JSON encoding.
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(job)
+        lock.lock(); defer { lock.unlock() }
+        guard saveVersions[job.id] == version else { return }
+        try fm.createDirectory(at: photosFolder(job.id), withIntermediateDirectories: true)
+        try data.write(to: folder(job.id).appendingPathComponent("job.json"), options: .atomic)
+    }
 
     public init(root: URL) {
         self.root = root
@@ -44,12 +64,15 @@ public final class JobStore: @unchecked Sendable {
 
     public func save(_ job: Job) throws {
         lock.lock(); defer { lock.unlock() }
+        saveVersions[job.id] = UUID()
         try fm.createDirectory(at: photosFolder(job.id), withIntermediateDirectories: true)
         let data = try Self.encoder.encode(job)
         try data.write(to: folder(job.id).appendingPathComponent("job.json"), options: .atomic)
     }
 
     public func delete(_ id: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        saveVersions[id] = UUID()
         let f = folder(id)
         if fm.fileExists(atPath: f.path) { try fm.removeItem(at: f) }
     }

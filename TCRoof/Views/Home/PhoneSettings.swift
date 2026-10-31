@@ -190,6 +190,18 @@ struct PhoneSettingsList: View {
             .tint(Theme.primary)
             .rowFrame()
             .accessibilityIdentifier("settings.calendarSync")
+            if calendar.isOn, !calendar.authorized, !calendar.denied {
+                divider
+                Button {
+                    Task { _ = await calendar.enable() }
+                } label: {
+                    Text("ให้สิทธิ์ปฏิทินแบบเต็มเพื่อซิงก์นัดสำรวจ")
+                        .font(.sarabun(14, .semibold)).foregroundStyle(Theme.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading).rowFrame()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("settings.calendarAccess")
+            }
             if calendar.denied {
                 divider
                 Button {

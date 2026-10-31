@@ -16,7 +16,7 @@ struct PlanCalendarView: View {
     @State var phoneMode = PlanPhoneMode.month
     @State var teamMenuOpen = false
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @Environment(\.permissions) private var permissions
+    @Environment(\.permissions) var permissions
 
     private static let weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
 

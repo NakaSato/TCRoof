@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8237A0E002A6B04AADC0B0CF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 08A5317E9EAB7ACB91F764B6 /* FirebaseCrashlytics */; };
 		A1000000000000000000F004 /* TCRoofUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F005 /* TCRoofUI */; };
 		A1000000000000000000F006 /* TCRoofMCP in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F007 /* TCRoofMCP */; };
 		A1000000000000000000F008 /* ModuleRules in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000F009 /* ModuleRules */; };
@@ -54,6 +55,7 @@
 				A1000000000000000000F008 /* ModuleRules in Frameworks */,
 				A1000000000000000000F101 /* FirebaseAuth in Frameworks */,
 				A1000000000000000000F102 /* FirebaseFirestore in Frameworks */,
+				8237A0E002A6B04AADC0B0CF /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +99,7 @@
 				A10000000000000000000007 /* Sources */,
 				A10000000000000000000003 /* Frameworks */,
 				A10000000000000000000008 /* Resources */,
+				250A7FEF7897D6B6D8349AB1 /* Upload Crashlytics Symbols */,
 			);
 			buildRules = (
 			);
@@ -112,6 +115,7 @@
 				A1000000000000000000F009 /* ModuleRules */,
 				A1000000000000000000F103 /* FirebaseAuth */,
 				A1000000000000000000F104 /* FirebaseFirestore */,
+				08A5317E9EAB7ACB91F764B6 /* FirebaseCrashlytics */,
 			);
 			productName = TCRoof;
 			productReference = A10000000000000000000001 /* TCRoof.app */;
@@ -142,14 +146,6 @@
 		};
 /* End PBXNativeTarget section */
 
-/* Begin PBXTargetDependency section */
-		A1000000000000000000E007 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A10000000000000000000006 /* TCRoof */;
-			targetProxy = A1000000000000000000E008 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXProject section */
 		A10000000000000000000009 /* Project object */ = {
 			isa = PBXProject;
@@ -178,8 +174,8 @@
 			mainGroup = A10000000000000000000004;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */,
 				A1000000000000000000F100 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000005 /* Products */;
@@ -209,6 +205,27 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		250A7FEF7897D6B6D8349AB1 /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(SRCROOT)/tools/crashlytics/$(CONFIGURATION).xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "Upload Crashlytics Symbols";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000007 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -226,6 +243,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A1000000000000000000E007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000006 /* TCRoof */;
+			targetProxy = A1000000000000000000E008 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000012 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -235,7 +260,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -280,16 +305,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P6UFU8KQT3;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = P6UFU8KQT3;
+				ENABLE_DEBUG_DYLIB = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์ ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์";
-				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ใช้ตำแหน่งเพื่อบันทึกพิกัดหน้างานในแบบสำรวจ";
+				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "บันทึกรูปที่ถ่ายในแอปลงคลังภาพของเครื่อง พร้อมพิกัดและทิศที่ถ่าย";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "ใช้คลังภาพเพื่อแนบรูปหน้างานและสแกนบาร์โค้ดจากรูป";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -301,6 +328,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tcroof.internal;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = NO;
@@ -317,16 +347,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P6UFU8KQT3;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = P6UFU8KQT3;
+				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TCRoof;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "ใช้กล้องเพื่อสแกนบาร์โค้ดอุปกรณ์ ถ่ายรูปหน้างาน และอ่านตัวเลขจากป้ายอุปกรณ์";
-				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "ใช้ตำแหน่งเพื่อบันทึกพิกัดหน้างานในแบบสำรวจ";
+				INFOPLIST_KEY_NSMotionUsageDescription = "ใช้วัดมุมเอียงหลังคาและตรวจภาพเอียง";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "บันทึกรูปที่ถ่ายในแอปลงคลังภาพของเครื่อง พร้อมพิกัดและทิศที่ถ่าย";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "ใช้คลังภาพเพื่อแนบรูปหน้างานและสแกนบาร์โค้ดจากรูป";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -338,6 +370,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tcroof.internal;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = NO;
@@ -352,6 +387,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = P6UFU8KQT3;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -374,6 +410,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = P6UFU8KQT3;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -436,12 +473,17 @@
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.19.2;
+				minimumVersion = 13.1.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		08A5317E9EAB7ACB91F764B6 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1000000000000000000F100 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
 		A1000000000000000000F005 /* TCRoofUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TCRoofUI;

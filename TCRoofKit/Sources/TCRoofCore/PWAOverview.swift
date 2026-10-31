@@ -1,9 +1,9 @@
 import Foundation
 
 /// One permit of a station on the iPad install row's `งานขออนุญาต` block (docs/ui/pwa-solar-survey-ipad-v3 FIX-01).
-public struct InstallPermit: Hashable, Sendable {
+public struct InstallPermit: Codable, Hashable, Sendable {
     /// Who the permit is from, in the row's order: อปท. | กกพ. | กฟภ. | กว.
-    public enum Authority: String, CaseIterable, Sendable {
+    public enum Authority: String, Codable, CaseIterable, Sendable {
         case local, erc, pea, engineer
 
         public var title: String {
@@ -17,7 +17,7 @@ public struct InstallPermit: Hashable, Sendable {
     }
 
     /// Got, handed in and waiting, not handed in yet, or past its planned end.
-    public enum State: String, Sendable { case done, submitted, pending, overdue }
+    public enum State: String, Codable, Sendable { case done, submitted, pending, overdue }
 
     public var authority: Authority
     public var state: State
@@ -27,7 +27,7 @@ public struct InstallPermit: Hashable, Sendable {
 
 /// One station of the PWA project in its installation phase, as the survey home's `งานติดตั้ง` overview shows it
 /// (docs/ui/pwa-solar-survey-iphone-v2 §4). The host app fills it from the station's MP plan and daily reports.
-public struct InstallStationSummary: Identifiable, Hashable, Sendable {
+public struct InstallStationSummary: Codable, Identifiable, Hashable, Sendable {
     public var id: String
     public var mpNumber: Int?
     public var name: String

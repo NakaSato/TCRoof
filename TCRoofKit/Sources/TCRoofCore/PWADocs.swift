@@ -161,6 +161,18 @@ public enum PWADocs {
         return MasterSchedule.plan(input).first { $0.task == task }?.start
     }
 
+    /// A station's plan is shared by all of its papers, rather than rebuilt for each paper/package pair.
+    static func dueDates(_ st: PWAPlan.Station) -> [StationDocs.Package: Date] {
+        let plan = st.input.map { MasterSchedule.plan($0) } ?? []
+        var dates: [StationDocs.Package: Date] = [:]
+        for package in StationDocs.Package.allCases {
+            if let explicit = st.docs.due(package) { dates[package] = explicit }
+            else if package == .handover || package == .commissioning { dates[package] = st.input?.installEnd }
+            else if let task = PWAPlan.submissionTask(package) { dates[package] = plan.first { $0.task == task }?.start }
+        }
+        return dates
+    }
+
     /// Who an outside paper waits on, short: `เทศบาล / อบต.` → `เทศบาล`.
     static func office(_ kind: StationDocs.Kind) -> String {
         (kind.obtainFrom ?? "หน่วยงานนอก").components(separatedBy: " / ").first ?? ""
@@ -296,10 +308,11 @@ public enum PWADocs {
         var items: [Item] = []
         for st in stations {
             let packages = StationDocs.packages(st.docsContext)
+            let dates = dueDates(st)
             for kind in sitePapers(st.docsContext) {
                 let status = StationDocs.state(kind, station: st.docs, library: library).status
                 guard !status.isReady, status != .notNeeded else { continue }
-                let dated = kind.packages.filter(packages.contains).compactMap { p in due(p, st).map { (p, $0) } }.min { $0.1 < $1.1 }
+                let dated = kind.packages.filter(packages.contains).compactMap { p in dates[p].map { (p, $0) } }.min { $0.1 < $1.1 }
                 items.append(Item(kind: kind, status: status, station: st,
                                   package: dated?.0 ?? kind.packages.first(where: packages.contains), due: dated?.1))
             }

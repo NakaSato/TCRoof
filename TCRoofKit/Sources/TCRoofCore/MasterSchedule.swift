@@ -317,6 +317,12 @@ public enum MasterSchedule {
 
     /// Planned weight points of each task per week: the task's weight spread evenly over the weeks it spans.
     public static func plannedPoints(_ plan: [PlannedTask], calendar cal: Calendar = calendar) -> [Task: [Date: Double]] {
+        PlannedPointsCache.shared.points(for: plan, calendar: cal) {
+            makePlannedPoints(plan, calendar: cal)
+        }
+    }
+
+    private static func makePlannedPoints(_ plan: [PlannedTask], calendar cal: Calendar) -> [Task: [Date: Double]] {
         var out: [Task: [Date: Double]] = [:]
         for p in plan where p.weight > 0 {
             guard let s = p.start, let e = p.end else { continue }

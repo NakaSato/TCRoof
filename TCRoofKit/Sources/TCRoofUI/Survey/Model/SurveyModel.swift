@@ -11,13 +11,19 @@ import DriveSync
 @MainActor @Observable
 public final class SurveyModel {
     public let store: JobStore
-    public private(set) var jobs: [Job] = []
+    public private(set) var jobs: [Job] = [] {
+        didSet { jobsRevision &+= 1 }
+    }
+    /// Invalidates project-list results for local edits, imports, Drive links and remote changes alike.
+    public private(set) var jobsRevision = 0
     public var settings: SurveySettings { didSet { settings.save() } }
     public let google: GoogleAuth
     /// Set by a host app whose own login is this Google account, so signing out here also ends its session.
     @ObservationIgnored public var signOutHandler: (@MainActor () -> Void)?
 
     @ObservationIgnored private var pendingSave: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var remoteSaves: [UUID: (version: UUID, job: Job)] = [:]
+    @ObservationIgnored private var remoteSaveTasks: [UUID: Task<Void, Never>] = [:]
     /// Called after a job is created, edited, duplicated or deleted here (not for `applyRemote`/`removeRemote`).
     @ObservationIgnored public var onChange: (() -> Void)?
     /// Jobs the host app's cloud (TCRoof: Firestore) doesn't hold in their latest form yet.
@@ -72,8 +78,16 @@ public final class SurveyModel {
     }
 
     public func reload() {
+#if DEBUG
+        let started = Date()
+        defer { print("SurveyModel: local reload \(jobs.count) projects in \(Int(Date().timeIntervalSince(started) * 1000)) ms") }
+#endif
         for id in Array(pendingSave.keys) { flush(id) }
         jobs = store.loadAll()
+        for entry in remoteSaves.values {
+            if let i = jobs.firstIndex(where: { $0.id == entry.job.id }) { jobs[i] = entry.job }
+            else { jobs.append(entry.job) }
+        }
     }
 
     public func job(_ id: UUID) -> Job? { jobs.first { $0.id == id } }
@@ -92,6 +106,8 @@ public final class SurveyModel {
     /// Keeps the list current at once and writes to disk shortly after the last change.
     @discardableResult
     public func update(_ job: Job) -> Bool {
+        _ = store.reserveSave(job.id)
+        remoteSaves[job.id] = nil
         var j = job
         // only answers count as an edit — a Drive link landing after a save mustn't make the job look unsaved again
         if let old = self.job(j.id), old.values == j.values, old.modules == j.modules, old.jobSyncID == j.jobSyncID,
@@ -115,6 +131,7 @@ public final class SurveyModel {
     }
 
     public func delete(_ id: UUID) {
+        remoteSaves[id] = nil
         if let j = job(id) { onDeleted?(j) }
         pendingSave[id]?.cancel()
         try? store.delete(id)
@@ -252,11 +269,33 @@ public final class SurveyModel {
         var job = job
         if let local = self.job(job.id)?.drive { job.drive = job.drive.map { $0.merged(with: local) } ?? local }
         if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job } else { jobs.insert(job, at: 0) }
-        try? store.save(job)
+        let version = store.reserveSave(job.id)
+        let snapshot = job
+        remoteSaves[job.id] = (version, snapshot)
+        remoteSaveTasks[job.id] = Task { [store] in
+            await Task.detached(priority: .utility) {
+#if DEBUG
+                let started = Date()
+                defer { print("SurveyModel: remote file save in \(Int(Date().timeIntervalSince(started) * 1000)) ms (worker)") }
+#endif
+                try? store.save(snapshot, ifCurrent: version)
+            }.value
+            if remoteSaves[snapshot.id]?.version == version {
+                remoteSaves[snapshot.id] = nil
+                remoteSaveTasks[snapshot.id] = nil
+            }
+        }
+    }
+
+    /// Sync must finish persistence before recording its durable acknowledgement of a remote batch.
+    public func finishRemoteSaves() async {
+        let tasks = Array(remoteSaveTasks.values)
+        for task in tasks { await task.value }
     }
 
     /// A job deleted on another device.
     public func removeRemote(_ id: UUID) {
+        remoteSaves[id] = nil
         pendingSave[id]?.cancel(); pendingSave[id] = nil
         try? store.delete(id)
         jobs.removeAll { $0.id == id }

@@ -81,7 +81,7 @@ struct PadTabs<HomeRoot: View>: View {
                 case .pwa: AnyView(PWARoot())
                 // every PWA station's papers (docs/ui/pwa-docs-ipad); the residential library is the settings sheet's
                 // `เอกสารงานบ้าน` row, as on the iPhone
-                case .docs: AnyView(PWADocsPadView())
+                case .docs: AnyView(PWADocsPadView(isActive: dock.tab == .docs))
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
                 case .tools: AnyView(ToolsView(modules: [.plan, .travel]))

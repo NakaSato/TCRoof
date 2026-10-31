@@ -8,6 +8,11 @@ import TCRoofCore
 /// selected view: stations with the selected one's panel, the to-do columns, or the library. Papers open the document
 /// sheet, which edits the same `StationDocs.DocState` as `StationDocSheet`. The iPad dock's `เอกสาร` tab is its root.
 struct PWADocsPadView: View {
+    let isActive: Bool
+    @State private var overviewCache = PWADocsOverviewCache()
+
+    init(isActive: Bool = true) { self.isActive = isActive }
+
     typealias Pane = PWADocsHomeView.Pane
 
     /// A paper a sheet opens: one station's, or a library paper (no station).
@@ -73,7 +78,7 @@ struct PWADocsPadView: View {
     var body: some View {
         Group {
             if width < Self.minWidth {
-                PWADocsHomeView()
+                PWADocsHomeView(isActive: isActive)
             } else if permissions.canView(.stationDocsDrafts) {
                 content
             } else {
@@ -178,12 +183,14 @@ struct PWADocsPadView: View {
     }
 
     var data: PageData {
-        let (stations, library) = source
-        let groups = PWADocs.todo(stations, library: library)
-        return PageData(stations: stations, library: library, summary: PWADocs.summary(stations, library: library),
-                        rows: PWADocs.rows(stations, library: library, today: today), groups: groups,
-                        libraryRows: PWADocs.library(library, today: today, warnDays: 60),
-                        dueNow: PWADocs.dueNow(groups, today: today))
+        let snapshot: PWADocsOverviewCache.Result
+        if isActive {
+            let (stations, library) = source
+            snapshot = overviewCache.result(stations: stations, library: library, today: today, warnDays: 60)
+        } else { snapshot = overviewCache.cached }
+        return PageData(stations: snapshot.stations, library: snapshot.sourceLibrary, summary: snapshot.summary,
+                        rows: snapshot.rows, groups: snapshot.groups, libraryRows: snapshot.libraryRows,
+                        dueNow: isActive ? PWADocs.dueNow(snapshot.groups, today: today) : 0)
     }
 
     /// The PWA stations, the installing ones first; a contractor's, only those assigned to them.

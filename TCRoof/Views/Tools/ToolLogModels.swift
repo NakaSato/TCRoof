@@ -47,7 +47,7 @@ final class CompanyVehicle {
 }
 
 extension ToolEvent: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Sendable {
         var event: String
         var at: Int64
     }
@@ -69,7 +69,7 @@ extension ToolEvent: CloudSynced {
 }
 
 extension CompanyVehicle: CloudSynced {
-    struct Record: Codable {
+    struct Record: Codable, Sendable {
         var vehicle: String
     }
 

@@ -460,14 +460,17 @@ extension PlanCalendarView {
 
     private func appointmentRow(_ job: Job) -> some View {
         let time = ThaiFormat.time.string(from: job.surveyDate)
-        return NavigationLink { SurveyFormView(job: job) } label: {
-            PlanAgendaRow(rule: Theme.survey, title: job.projectName, subtitle: "นัดสำรวจ | ทีม \(job.team.rawValue)") {
-                Text("\(time) น.").font(.sarabun(15, .bold, relativeTo: .body)).monospacedDigit().foregroundStyle(Theme.navy)
+        return VStack(spacing: 0) {
+            NavigationLink { SurveyFormView(job: job) } label: {
+                PlanAgendaRow(rule: Theme.survey, title: job.projectName, subtitle: "นัดสำรวจ | ทีม \(job.team.rawValue)") {
+                    Text("\(time) น.").font(.sarabun(15, .bold, relativeTo: .body)).monospacedDigit().foregroundStyle(Theme.navy)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("นัดสำรวจ \(job.projectName) \(time)")
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("นัดสำรวจ \(job.projectName) \(time)")
+            .buttonStyle(.plain)
+            if permissions.can(.jobEdit), job.hasSurveyAppointment { AppointmentActions(job: job) }
         }
-        .buttonStyle(.plain)
     }
 
     /// A NO.224 report dated that day with no appointment of its own: a survey row with the `แบบ กปภ.` badge.

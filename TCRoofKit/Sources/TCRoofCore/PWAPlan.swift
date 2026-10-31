@@ -17,7 +17,7 @@ public enum PWAPlan {
     // MARK: Station
 
     /// One PWA job as the page needs it.
-    public struct Station: Identifiable, Sendable {
+    public struct Station: Identifiable, Equatable, Sendable {
         public var id: String
         public var mpNumber: Int?
         /// The job code, shown where a station has no MP number.

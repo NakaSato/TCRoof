@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 struct TCRoofApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     /// One container for the process: the scene's, and `DriveBackgroundWork`'s when iOS launches the app for it.
-    let container = TCRoofApp.sharedContainer
+    let container: ModelContainer
     static let sharedContainer: ModelContainer = {
         let schema = Schema([
             Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
@@ -48,6 +48,8 @@ struct TCRoofApp: App {
 
     init() {
         FirebaseApp.configure()
+        CrashReporting.configure()
+        container = TCRoofApp.sharedContainer
         // before any Firestore call (sign-in's membership check is one): settings can't change once it has started
         CloudSync.configureCache()
         AppFont.register()

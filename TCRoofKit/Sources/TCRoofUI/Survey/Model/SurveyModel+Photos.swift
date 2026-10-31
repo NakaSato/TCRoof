@@ -61,10 +61,18 @@ extension SurveyModel {
     /// Downloads the job's missing photos from its Drive folder, four at a time. Does nothing while signed out.
     public func fetchMissingPhotos(_ id: UUID) async {
         guard photoFetch[id]?.running != true, google.isSignedIn, let job = job(id) else { return }
-        let todo = downloadablePhotos(job)
-        guard !todo.isEmpty else { return }
+        let store = self.store
+        let todo = await Task.detached(priority: .utility) {
+            let files = job.drive?.photoFiles ?? [:]
+            return job.allPhotos.compactMap { photo -> (photo: Photo, fileID: String)? in
+                guard let fileID = files[photo.id.uuidString], !store.hasPhoto(photo, in: job.id) else { return nil }
+                return (photo, fileID)
+            }
+        }.value
+        guard !Task.isCancelled, self.job(id) == job, google.isSignedIn,
+              photoFetch[id]?.running != true, !todo.isEmpty else { return }
         photoFetch[id] = PhotoTransfer(total: todo.count)
-        let client = DriveClient(tokens: google), store = self.store
+        let client = DriveClient(tokens: google)
         await withTaskGroup(of: String?.self) { group in
             var next = todo.makeIterator()
             func start() -> Bool {

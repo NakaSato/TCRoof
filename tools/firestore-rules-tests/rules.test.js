@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { test, before, after, beforeEach } from 'node:test';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, getDocsFromCache, getDocsFromServer, onSnapshot, disableNetwork, enableNetwork, documentId, orderBy, limit, startAfter, endAt, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
 
 const TEAM = 'team@tcroof.co', BOSS = 'boss@tcroof.co', CON = 'foreman@contractor.co', OTHER = 'other@contractor.co';
 const DEV = 'dev@tcroof.co', DEV2 = 'dev2@tcroof.co';
@@ -618,4 +618,108 @@ test('the tool and vehicle log is the team\'s: the team reads and writes it, con
   await assertFails(setDoc(doc(db(CON), 'toolEvents', 'e3'), { event: '{}', at: 1 }));
   await assertFails(getDoc(doc(db('stranger@gmail.com'), 'toolEvents', 'e1')));
   await assertSucceeds(deleteDoc(doc(me, 'toolEvents', 'e1')));
+});
+
+
+test('projects fetch ten per request and retain role filters across cursor ranges', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+        const d = ctx.firestore();
+        const batch = writeBatch(d);
+        for (let i = 0; i < 25; i++) {
+            batch.set(doc(d, 'jobs', `page-${String(i).padStart(2, '0')}`),
+                { code: `P-${i}`, externals: i % 2 === 0 ? [CON] : [OTHER] });
+        }
+        await batch.commit();
+    });
+    for (const [email, expected] of [[TEAM, 27], [CON, 14]]) {
+        const d = db(email);
+        const filters = email === CON ? [where('externals', 'array-contains', CON)] : [];
+        const base = query(collection(d, 'jobs'), ...filters, orderBy(documentId()));
+        let cursor;
+        const ids = [], windows = [];
+        while (true) {
+            const remaining = cursor ? query(base, startAfter(cursor)) : base;
+            const page = await assertSucceeds(getDocs(query(remaining, limit(10))));
+            assert.ok(page.size <= 10);
+            if (page.size) {
+                const last = page.docs.at(-1);
+                windows.push(query(remaining, endAt(last)));
+                cursor = last;
+                ids.push(...page.docs.map(d => d.id));
+            }
+            if (page.size < 10) break;
+        }
+        windows.push(cursor ? query(base, startAfter(cursor)) : base);
+        assert.equal(ids.length, expected);
+        assert.equal(new Set(ids).size, expected);
+        // New IDs on both sides of a page boundary remain covered by exactly one live range.
+        await env.withSecurityRulesDisabled(async ctx => {
+            const writer = ctx.firestore();
+            for (const id of [`0-${email}`, `zz-${email}`]) {
+                await setDoc(doc(writer, 'jobs', id), { code: id, externals: [email] });
+            }
+        });
+        const live = [];
+        for (const window of windows) {
+            const snapshot = await assertSucceeds(getDocs(window));
+            live.push(...snapshot.docs.map(d => d.id));
+        }
+        assert.equal(live.length, expected + 2);
+        assert.equal(new Set(live).size, live.length);
+    }
+});
+
+
+test('project cache is shown first but a short cache page never truncates server refresh', async (t) => {
+    await env.withSecurityRulesDisabled(async ctx => {
+        const writer = ctx.firestore();
+        await deleteDoc(doc(writer, 'jobs', 'mine'));
+        await deleteDoc(doc(writer, 'jobs', 'theirs'));
+        for (let i = 0; i < 3; i++) {
+            await setDoc(doc(writer, 'jobs', `cached-${String(i).padStart(2, '0')}`), { code: 'old' });
+        }
+    });
+    const client = db(TEAM);
+    const base = query(collection(client, 'jobs'), orderBy(documentId()));
+    // Pin the web SDK's memory cache, then simulate an offline cached snapshot.
+    let stop;
+    await new Promise((resolve, reject) => {
+        stop = onSnapshot(query(base, limit(10)), snapshot => {
+            if (!snapshot.metadata.fromCache) resolve();
+        }, reject);
+    });
+    t.after(() => stop());
+    await disableNetwork(client);
+    await env.withSecurityRulesDisabled(async ctx => {
+        const writer = ctx.firestore();
+        const batch = writeBatch(writer);
+        for (let i = 3; i < 23; i++) {
+            batch.set(doc(writer, 'jobs', `cached-${String(i).padStart(2, '0')}`), { code: 'new' });
+        }
+        batch.update(doc(writer, 'jobs', 'cached-00'), { code: 'updated' });
+        batch.delete(doc(writer, 'jobs', 'cached-01'));
+        await batch.commit();
+    });
+    const cached = await getDocsFromCache(query(base, limit(10)));
+    assert.equal(cached.size, 3);
+    assert.equal(cached.metadata.fromCache, true);
+    assert.equal(cached.docs.find(d => d.id === 'cached-00').data().code, 'old');
+    await enableNetwork(client);
+    // Start the authoritative pass from the beginning, not after the last cached document.
+    let cursor;
+    const ids = [], sizes = [];
+    while (true) {
+        const remaining = cursor ? query(base, startAfter(cursor)) : base;
+        const page = await getDocsFromServer(query(remaining, limit(10)));
+        sizes.push(page.size);
+        ids.push(...page.docs.map(d => d.id));
+        if (page.size < 10) break;
+        cursor = page.docs.at(-1);
+    }
+    assert.deepEqual(sizes, [10, 10, 2]);
+    assert.equal(ids.length, new Set(ids).size);
+    assert.ok(ids.includes('cached-00'));
+    assert.ok(!ids.includes('cached-01'));
+    const refreshed = await getDocsFromCache(query(base, limit(10)));
+    assert.equal(refreshed.docs.find(d => d.id === 'cached-00').data().code, 'updated');
 });

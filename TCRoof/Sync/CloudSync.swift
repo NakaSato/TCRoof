@@ -24,28 +24,6 @@ final class CloudSync {
         case failed(String)
     }
 
-    @MainActor private final class SnapshotWaiter {
-        private var continuation: CheckedContinuation<Bool, Never>?
-        private var finished = false
-        private(set) var documentCount: Int?
-
-        func wait() async -> Bool {
-            guard !finished else { return timedOut }
-            return await withCheckedContinuation { continuation = $0 }
-        }
-
-        func resume(timedOut: Bool = false, documentCount: Int? = nil) {
-            guard !finished else { return }
-            finished = true
-            self.timedOut = timedOut
-            self.documentCount = documentCount
-            continuation?.resume(returning: timedOut)
-            continuation = nil
-        }
-
-        private var timedOut = false
-    }
-
     private(set) var state = State.off
     private(set) var lastSync: Date?
     /// The last pull to refresh found no network or couldn't reach the server; the feed says it shows what's here.
@@ -60,15 +38,19 @@ final class CloudSync {
     @ObservationIgnored private var listeners: [ListenerRegistration] = []
     @ObservationIgnored private var listeningCollections = Set<String>()
     @ObservationIgnored private var connectTask: Task<Void, Never>?
-    @ObservationIgnored private var startupSnapshotTimedOut = false
+    @ObservationIgnored private var startupBarrier: StartupLoadBarrier?
+    @ObservationIgnored private var initialServerProjectIDs = Set<String>()
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var surveyRecords: [UUID: (job: TCRoofCore.Job, externals: [String]?, record: SurveyRecord, fingerprint: String)] = [:]
     @ObservationIgnored private var pushTask: Task<Void, Never>?
-    /// Initial collection snapshots often arrive together. Apply them in one main-actor batch so SwiftData only saves
-    /// once per burst and relationship lookups are shared across the batch.
-    @ObservationIgnored private var pendingSnapshotWork: [@MainActor () -> Void] = []
+    @ObservationIgnored private var uploadScans = UploadScanState()
+    /// Preserve listener order while preparing remote values off-main, then commit bounded main-actor chunks.
+    /// Relationship lookups are shared across each queued burst.
+    @ObservationIgnored private var pendingSnapshotWork: [@MainActor () async -> Void] = []
     @ObservationIgnored private var snapshotApplyTask: Task<Void, Never>?
+    @ObservationIgnored private var snapshotSession = UUID()
+    private static let snapshotWorker = SnapshotPreparationWorker()
     @ObservationIgnored private var snapshotJobIndex: [String: Job]?
     @ObservationIgnored private var applyingRemoteSnapshots = false
     @ObservationIgnored private var remoteSavePushSuppressions = Set<ObjectIdentifier>()
@@ -97,17 +79,14 @@ final class CloudSync {
     private static let contactsSplitKey = "cloudSync.contactsSplit"
     private var db: Firestore { Firestore.firestore() }
 
-    /// Keeps every synced document on the device with no size limit. With the default 100 MB cap, documents
-    /// the listeners aren't using get evicted and have to be downloaded again. On a restart the listeners
-    /// then start from this cache and download only what changed. Must run before the first Firestore call: Firestore
-    /// throws (and the app aborts) on settings changed once it has started, so the app sets them at launch, right after
-    /// `FirebaseApp.configure()`; sign-in reads `members/<email>` before sync starts.
+    /// Disposable Firestore copies are bounded separately from the app's durable projects and files.
+    /// Configure before the first Firestore call (including account membership checks).
     private static var cacheConfigured = false
     static func configureCache() {
         guard !cacheConfigured else { return }
         cacheConfigured = true
         let settings = Firestore.firestore().settings
-        settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: FirestoreCacheSizeUnlimited))
+        settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: 100 * 1024 * 1024))
         Firestore.firestore().settings = settings
     }
 
@@ -118,7 +97,8 @@ final class CloudSync {
         Self.configureCache()
         self.context = context
         self.survey = survey
-        startupSnapshotTimedOut = false
+        startupBarrier?.cancel(); startupBarrier = nil
+        initialServerProjectIDs.removeAll()
         loadingCollections = []
         Job.contactsSplit = UserDefaults.standard.bool(forKey: Self.contactsSplitKey)
         // the survey home shows what Firestore still lacks, even before sign-in finishes
@@ -135,16 +115,19 @@ final class CloudSync {
     }
 
     func stop() {
+        snapshotSession = UUID()
         connectTask?.cancel(); connectTask = nil
-        startupSnapshotTimedOut = false
+        startupBarrier?.cancel(); startupBarrier = nil
         listeners.forEach { $0.remove() }
         listeners = []
         listeningCollections = []
+        initialServerProjectIDs.removeAll()
         loadingCollections = []
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
         timer?.invalidate(); timer = nil
         pushTask?.cancel(); pushTask = nil
+        uploadScans = UploadScanState()
         survey?.onChange = nil
         survey?.cloudPush = nil
         survey?.cloudPending = nil
@@ -186,40 +169,35 @@ final class CloudSync {
             let me = MemberRole.shared.permissions
             external = me.role == .external && !me.email.isEmpty ? me.email : nil
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
-            // Stage the large collections: don't start the next initial download until this listener has its first
-            // server snapshot (or the short offline timeout expires). Each listener stays live once registered.
-            guard await listenInitial(Job.self) else { return }
+            // Start each collection after its first received data has applied; retain its live listener afterward.
+            guard try await loadProjectsInBatches() else { return }
             guard await listenInitial(SurveyForm.self) else { return }
             guard await listenInitial(InstallLog.self) else { return }
             guard await listenInitial(Inspection.self) else { return }
             guard await listenInitial(PhotoAsset.self, optional: true) else { return }
-            // Screen-specific records are registered on first use (scan, install sheets, travel, tools).
+            // Secondary collections also wait for their initial application, rather than overlapping on timers.
             if external == nil, !me.email.isEmpty {
-                guard await paceInitialSync() else { return }
-                listenClaimReviews(owner: me.email)
+                guard await waitForStartup("claim reviews", register: { listenClaimReviews(owner: me.email, barrier: $0) }) else { return }
             }
-            guard await paceInitialSync() else { return }
             guard await listenSurveysInitial() else { return }
-            guard await paceInitialSync() else { return }
-            listenRevisions()
-            guard await paceInitialSync() else { return }
-            listenFeedAcks()
-            guard await paceInitialSync() else { return }
-            listenDesigns()
-            guard await paceInitialSync() else { return }
-            listenTankStandard()
-            guard await paceInitialSync() else { return }
-            listenContacts()
-            guard await paceInitialSync() else { return }
-            listenDirectory()
-            guard await paceInitialSync() else { return }
-            listenConfig()
+            if external == nil {
+                guard await waitForStartup("survey revisions", register: { listenRevisions(barrier: $0) }) else { return }
+            }
+            guard await waitForStartup("feed acknowledgements", register: { listenFeedAcks(barrier: $0) }) else { return }
+            guard await waitForStartup("designs", register: { listenDesigns(barrier: $0) }) else { return }
+            guard await waitForStartup("design sheets", register: { listenDesignSheets(barrier: $0) }) else { return }
+            guard await waitForStartup("tank standard", register: { listenTankStandard(barrier: $0) }) else { return }
+            if external == nil {
+                guard await waitForStartup("contacts", register: { listenContacts(barrier: $0) }) else { return }
+                guard await waitForStartup("directory", register: { listenDirectory(barrier: $0) }) else { return }
+            }
+            guard await waitForStartup("configuration", register: { listenConfig(barrier: $0) }) else { return }
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] notification in
                 MainActor.assumeIsolated {
                     if let self {
                         if let context = notification.object as? ModelContext {
                             if self.remoteSavePushSuppressions.remove(ObjectIdentifier(context)) == nil {
-                                self.schedulePush()
+                                self.schedulePush(collections: UploadSaveScope.collections(in: notification))
                             }
                         } else if !self.applyingRemoteSnapshots {
                             self.schedulePush()
@@ -230,7 +208,9 @@ final class CloudSync {
                 }
             })
             if let context, let survey { PhotoSync.shared.start(context: context, survey: survey) }
-            survey?.onChange = { [weak self] in self?.schedulePush() }
+            survey?.onChange = { [weak self] in
+                self?.schedulePush(collections: [Self.surveyCollection, Self.revisionCollection])
+            }
             // Persist edits that haven't autosaved yet. The save notification schedules a push, avoiding a full
             // collection scan on every timer tick when the device is idle.
             timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
@@ -249,50 +229,180 @@ final class CloudSync {
         return try await GoogleSession.firebaseUser(google)
     }
 
-    /// Gives the preceding listener a short head start to deliver and apply its initial snapshot before registering
-    /// another collection. Stop/retry can clear the context while this task is suspended.
-    private func paceInitialSync() async -> Bool {
-        do {
-            try await Task.sleep(for: .milliseconds(300))
-            return context != nil && !Task.isCancelled
-        } catch {
-            return false
+    private func waitForStartup(_ label: String, register: (StartupLoadBarrier) -> Void) async -> Bool {
+        let session = snapshotSession
+        guard snapshotIsCurrent(session) else { return false }
+        let barrier = StartupLoadBarrier()
+        startupBarrier = barrier
+        let started = Date()
+        CrashReporting.startupStage(label, state: "begin")
+#if DEBUG
+        print("CloudSync: startup begin \(label)")
+#endif
+        register(barrier)
+        let timeout = Task { @MainActor in
+            do { try await Task.sleep(for: .milliseconds(700)) } catch { return }
+            // A slow mobile response is not an offline launch. Give the server time before using local data.
+            if await Self.isOnline() {
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            }
+            guard !Task.isCancelled else { return }
+            barrier.allowOfflineFallback()
+        }
+        let result = await barrier.wait()
+        timeout.cancel()
+        if startupBarrier === barrier { startupBarrier = nil }
+        CrashReporting.startupStage(label, state: String(describing: result),
+                                    elapsedMilliseconds: Int(Date().timeIntervalSince(started) * 1000))
+#if DEBUG
+        print("CloudSync: startup end \(label): \(result), \(Int(Date().timeIntervalSince(started) * 1000)) ms")
+#endif
+        guard result != .cancelled, snapshotIsCurrent(session) else { return false }
+        return await pauseSnapshotApplication(session)
+    }
+
+    private func enqueueStartupSnapshot(_ barrier: StartupLoadBarrier?, session: UUID, isFromCache: Bool,
+                                        apply: @escaping @MainActor () async -> Void) {
+        guard snapshotIsCurrent(session) else { return }
+        barrier?.received()
+        enqueueSnapshotApplication { [weak self] in
+            guard let self, self.snapshotIsCurrent(session) else { return }
+            await apply()
+            barrier?.applied(isFromCache: isFromCache)
         }
     }
 
-    /// Registers one collection, then waits for its first server-backed snapshot. A cache-only/offline launch moves
-    /// on after a bounded wait so the local app can continue while the live listener catches up in the background.
+    private func listenStartupQuery(_ query: Query, barrier: StartupLoadBarrier?,
+                                    apply: @escaping @MainActor (QuerySnapshot?, Error?) -> Void) {
+        let session = snapshotSession
+        let registration = query.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                self?.enqueueStartupSnapshot(barrier, session: session, isFromCache: snapshot?.metadata.isFromCache ?? false) {
+                    apply(snapshot, error)
+                }
+            }
+        }
+        listeners.append(registration)
+    }
+
+    private func listenStartupDocument(_ document: DocumentReference, barrier: StartupLoadBarrier?,
+                                       apply: @escaping @MainActor (DocumentSnapshot?, Error?) -> Void) {
+        let session = snapshotSession
+        let registration = document.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                self?.enqueueStartupSnapshot(barrier, session: session, isFromCache: snapshot?.metadata.isFromCache ?? false) {
+                    apply(snapshot, error)
+                }
+            }
+        }
+        listeners.append(registration)
+    }
+
+    /// Restore missing local projects from Firestore's cache without replacing local edits.
+    private func restoreCachedProjects(_ ordered: Query, session: UUID) async -> Set<String> {
+        var cursor: DocumentSnapshot?
+        var restored = Set<String>()
+        while snapshotIsCurrent(session) {
+            let remaining = cursor.map { ordered.start(afterDocument: $0) } ?? ordered
+            guard let page = try? await remaining.limit(to: 10).getDocuments(source: .cache),
+                  snapshotIsCurrent(session), let context else { break }
+            guard !page.documents.isEmpty else { break }
+            // Compare the optional column directly: coalescing inside IN produces unsupported SQL on iOS.
+            let ids = page.documents.map { Optional($0.documentID) }
+            guard let existing = try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { ids.contains($0.syncID) })) else { break }
+            let localIDs = Set(existing.compactMap(\.syncID))
+            let missing = page.documentChanges.filter { change in
+                let id = change.document.documentID, key = "\(Job.collection)/\(id)"
+                // A known record missing locally may be the user's pending deletion.
+                return change.type != .removed && ProjectCacheReconciliation.canRestore(existsLocally: localIDs.contains(id),
+                    wasPreviouslySynced: known[key] != nil, hasPendingWrite: unconfirmed[key] != nil)
+            }
+            await receive(Job.self, missing, session: session)
+            restored.formUnion(missing.map { $0.document.documentID })
+            guard let last = page.documents.last, page.documents.count == 10 else { break }
+            cursor = last
+            guard await pauseSnapshotApplication(session) else { break }
+        }
+#if DEBUG
+        print("CloudSync: restored \(restored.count) missing projects from Firestore cache")
+#endif
+        return restored
+    }
+
+    /// Only a complete server enumeration may reconcile cache records that no longer exist remotely.
+    private func reconcileRestoredProjects(_ restored: Set<String>, serverIDs: Set<String>) {
+        guard let context else { return }
+        let missing = restored.subtracting(serverIDs).map { Optional($0) }
+        guard !missing.isEmpty,
+              let projects = try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { missing.contains($0.syncID) })) else { return }
+        saveUncommittedChanges()
+        applyingRemoteSnapshots = true
+        for project in projects {
+            guard let id = project.syncID else { continue }
+            let key = "\(Job.collection)/\(id)"
+            if ProjectCacheReconciliation.canRemove(serverContainsID: serverIDs.contains(id), knownFingerprint: known[key],
+                                                    localFingerprint: fingerprint(project.record), hasPendingWrite: unconfirmed[key] != nil) {
+                known[key] = nil
+                pending[key] = nil
+                context.delete(project)
+            }
+        }
+        saveSnapshotChanges()
+    }
+
+    /// Fetch ten projects per request and publish each batch before requesting the next.
+    private func loadProjectsInBatches() async throws -> Bool {
+        let session = snapshotSession
+        guard snapshotIsCurrent(session) else { return false }
+        loadingCollections.insert(Job.collection)
+        defer {
+            if snapshotSession == session {
+                loadingCollections.remove(Job.collection)
+                initialServerProjectIDs.removeAll()
+            }
+        }
+        let ordered = query(Job.collection).order(by: FieldPath.documentID())
+        let restored = await restoreCachedProjects(ordered, session: session)
+        guard snapshotIsCurrent(session) else { return false }
+        var serverIDs = Set<String>()
+        var cursor: DocumentSnapshot?
+        var received = 0
+        while snapshotIsCurrent(session) {
+            let remaining = cursor.map { ordered.start(afterDocument: $0) } ?? ordered
+            // A short cached page is not proof that the server has no more projects.
+            let page = try await remaining.limit(to: 10).getDocuments(source: .server)
+            guard snapshotIsCurrent(session) else { return false }
+            serverIDs.formUnion(page.documents.map(\.documentID))
+            await receive(Job.self, page.documentChanges, session: session)
+            guard snapshotIsCurrent(session) else { return false }
+            if let last = page.documents.last {
+                listen(Job.self, queryOverride: remaining.end(atDocument: last))
+                cursor = last
+            }
+            received += page.documents.count
+#if DEBUG
+            print("CloudSync: project request \(page.documents.count)/10, loaded \(received), cache \(page.metadata.isFromCache)")
+#endif
+            if page.documents.count < 10 {
+                let tail = cursor.map { ordered.start(afterDocument: $0) } ?? ordered
+                listen(Job.self, queryOverride: tail)
+                // Include live additions behind a cursor, which may arrive while later pages are fetched.
+                reconcileRestoredProjects(restored, serverIDs: serverIDs.union(initialServerProjectIDs))
+                saveKnown()
+                return true
+            }
+            guard await pauseSnapshotApplication(session) else { return false }
+        }
+        return false
+    }
+
     private func listenInitial<M: CloudSynced>(_ type: M.Type, optional: Bool = false, owner: String? = nil) async -> Bool {
-        guard context != nil, !Task.isCancelled else { return false }
         loadingCollections.insert(M.collection)
-        let finishLoading: () -> Void = { [weak self] in self?.loadingCollections.remove(M.collection) }
-        if startupSnapshotTimedOut {
-            listen(type, optional: optional, owner: owner, onFirstSnapshot: finishLoading)
-            return await paceInitialSync()
+        return await waitForStartup(M.collection) { barrier in
+            listen(type, optional: optional, owner: owner, onFirstSnapshot: { [weak self] in
+                self?.loadingCollections.remove(M.collection)
+            }, barrier: barrier)
         }
-        let waiter = SnapshotWaiter()
-#if DEBUG
-        let startedAt = Date()
-#endif
-        let timeout = Task { @MainActor in
-            do { try await Task.sleep(for: .milliseconds(700)) } catch { return }
-            waiter.resume(timedOut: true)
-        }
-        listen(type, optional: optional, owner: owner, onServerSnapshot: { count in
-            if let count { waiter.resume(documentCount: count) }
-            else { waiter.resume(timedOut: true) }
-        }, onFirstSnapshot: finishLoading)
-        let timedOut = await waiter.wait()
-        timeout.cancel()
-        guard context != nil, !Task.isCancelled else { return false }
-#if DEBUG
-        let elapsedMS = Int(Date().timeIntervalSince(startedAt) * 1_000)
-        let result = timedOut ? "no server snapshot" : "\(waiter.documentCount ?? 0) documents"
-        print("CloudSync: initial \(M.collection): \(result) in \(elapsedMS) ms")
-#endif
-        if timedOut { startupSnapshotTimedOut = true }
-        // Let the coalesced SwiftData save for this snapshot complete before opening the next large collection.
-        return await paceInitialSync()
     }
 
     private var knownKey: String { "cloudSync.known.\(uid ?? "")" }
@@ -319,6 +429,10 @@ final class CloudSync {
     }
 
     private func fingerprint<T: Encodable>(_ value: T) -> String {
+        Self.recordFingerprint(value)
+    }
+
+    nonisolated private static func recordFingerprint<T: Encodable>(_ value: T) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let data = (try? encoder.encode(value)) ?? Data()
@@ -393,13 +507,14 @@ final class CloudSync {
 
     // MARK: push
 
-    private func schedulePush() {
+    private func schedulePush(collections: Set<String>? = nil) {
         guard !applyingRemoteSnapshots else { return }
+        uploadScans.mark(collections)
         pushTask?.cancel()
         pushTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
-            self?.push()
+            self?.push(fullScan: false)
         }
     }
 
@@ -412,37 +527,58 @@ final class CloudSync {
         }
     }
 
-    private func enqueueSnapshotApplication(_ work: @escaping @MainActor () -> Void) {
+    private func enqueueSnapshotApplication(_ work: @escaping @MainActor () async -> Void) {
         pendingSnapshotWork.append(work)
         guard snapshotApplyTask == nil else { return }
+        let session = snapshotSession
         snapshotApplyTask = Task { @MainActor [weak self] in
             // Let the other collection listeners deliver their initial cache/server snapshots into this same batch.
             try? await Task.sleep(for: .milliseconds(50))
-            guard let self, !Task.isCancelled else { return }
-            let batch = self.pendingSnapshotWork
-            self.pendingSnapshotWork.removeAll(keepingCapacity: true)
-            self.snapshotJobIndex = nil
-            self.pendingModelIndexes.removeAll(keepingCapacity: true)
-            self.applyingRemoteSnapshots = true
-            for apply in batch { apply() }
-            if let context = self.context {
-                if context.hasChanges {
-                    let contextID = ObjectIdentifier(context)
-                    self.remoteSavePushSuppressions.insert(contextID)
-                    do {
-                        try context.save()
-                    } catch {
-                        self.remoteSavePushSuppressions.remove(contextID)
-                        print("CloudSync: remote save: \(error.localizedDescription)")
-                    }
+            guard let self, self.snapshotIsCurrent(session) else { return }
+            // Callbacks can arrive while decoding or between apply chunks. Drain them before releasing the task.
+            while !self.pendingSnapshotWork.isEmpty {
+                let batch = self.pendingSnapshotWork
+                self.pendingSnapshotWork.removeAll(keepingCapacity: true)
+                self.snapshotJobIndex = nil
+                self.pendingModelIndexes.removeAll(keepingCapacity: true)
+                for apply in batch {
+                    guard self.snapshotIsCurrent(session) else { return }
+                    await apply()
                 }
+                guard self.snapshotIsCurrent(session) else { return }
+                self.saveKnown()
+                self.snapshotJobIndex = nil
+                self.pendingModelIndexes.removeAll(keepingCapacity: true)
             }
-            self.saveKnown()
-            self.applyingRemoteSnapshots = false
-            self.snapshotJobIndex = nil
-            self.pendingModelIndexes.removeAll(keepingCapacity: true)
             self.snapshotApplyTask = nil
         }
+    }
+
+    private func snapshotIsCurrent(_ session: UUID) -> Bool {
+        snapshotSession == session && context != nil && !Task.isCancelled
+    }
+
+    /// A yield may immediately resume this task. Leave a frame interval between database batches instead.
+    private func pauseSnapshotApplication(_ session: UUID) async -> Bool {
+        do { try await Task.sleep(for: .milliseconds(24)) }
+        catch { return false }
+        return snapshotIsCurrent(session)
+    }
+
+    /// No suspension occurs between applying a chunk and saving it. UI edits between chunks are saved separately.
+    private func saveSnapshotChanges() {
+        if let context, context.hasChanges {
+            let contextID = ObjectIdentifier(context)
+            // Startup saves have no upload observer yet; don't let their marker swallow the first later UI edit.
+            if !observers.isEmpty { remoteSavePushSuppressions.insert(contextID) }
+            do {
+                try context.save()
+            } catch {
+                remoteSavePushSuppressions.remove(contextID)
+                print("CloudSync: remote save: \(error.localizedDescription)")
+            }
+        }
+        applyingRemoteSnapshots = false
     }
 
     private func jobIndexForSnapshotBatch() -> [String: Job] {
@@ -460,49 +596,62 @@ final class CloudSync {
         let fingerprint: String?
     }
 
-    /// Sends every record that changed since it was last in step, and deletes documents removed here.
-    private func push() {
+    /// Scheduled saves inspect affected collections. Startup, manual refresh and config changes recover with a full scan.
+    private func push(fullScan: Bool = true) {
         // an outdated build sends nothing (`config/app.minSyncVersion`); its edits wait here for the update
         guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
+        // A partial initial download must never be mistaken for local deletions during an upload scan.
+        guard !loadingCollections.contains(Job.collection) else { return }
+        guard let plan = uploadScans.takePlan(fullScan: fullScan) else { return }
+        let session = snapshotSession
+        var scanned = Set<String>()
         var changes: [Change] = []
         var present = Set<String>()
         // an external member changes only a job's IEC test (`iec.fill_submit`) and weekly requests (`weekly.request`), and only reads the ICL (`icl.checklist`)
-        collect(Job.self, context, &changes, &present, external == nil ? .full : .iecOnly)
-        collect(SurveyForm.self, context, &changes, &present)
-        collect(ScannedDevice.self, context, &changes, &present)
-        collect(InstallLog.self, context, &changes, &present)
-        collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly)
+        collect(Job.self, context, &changes, &present, external == nil ? .full : .iecOnly, plan: plan, scanned: &scanned)
+        collect(SurveyForm.self, context, &changes, &present, plan: plan, scanned: &scanned)
+        collect(ScannedDevice.self, context, &changes, &present, plan: plan, scanned: &scanned)
+        collect(InstallLog.self, context, &changes, &present, plan: plan, scanned: &scanned)
+        collect(Inspection.self, context, &changes, &present, external == nil ? .full : .readOnly, plan: plan, scanned: &scanned)
         // the site ICL: a contractor fills and sends their sheets (`icl.site_fill`); the rules refuse a sent or signed one.
         // Committed on its own, so a refusal (rules not deployed yet, a sheet signed meanwhile) never holds back the rest.
         var iclSheets: [Change] = []
-        collect(ICLSheet.self, context, &iclSheets, &present)
+        collect(ICLSheet.self, context, &iclSheets, &present, plan: plan, scanned: &scanned)
         var photos: [Change] = []
-        collect(PhotoAsset.self, context, &photos, &present)
+        collect(PhotoAsset.self, context, &photos, &present, plan: plan, scanned: &scanned)
         // the travel log goes in its own batches: a refusal (rules not deployed yet) mustn't hold back the jobs
         var travel: [Change] = []
         if external == nil {
-            collect(Trip.self, context, &travel, &present)
-            collect(Expense.self, context, &travel, &present)
-            collect(ClaimMonth.self, context, &travel, &present)
+            collect(Trip.self, context, &travel, &present, plan: plan, scanned: &scanned)
+            collect(Expense.self, context, &travel, &present, plan: plan, scanned: &scanned)
+            collect(ClaimMonth.self, context, &travel, &present, plan: plan, scanned: &scanned)
         }
         // the tool and vehicle log in its own batches too
         var tools: [Change] = []
         if external == nil {
-            collect(ToolEvent.self, context, &tools, &present)
-            collect(CompanyVehicle.self, context, &tools, &present)
+            collect(ToolEvent.self, context, &tools, &present, plan: plan, scanned: &scanned)
+            collect(CompanyVehicle.self, context, &tools, &present, plan: plan, scanned: &scanned)
         }
-        var contacts = external == nil ? contactChanges(context, &present) : []
-        for job in survey.jobs {
-            let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
-            present.insert(key)
-            guard let (record, fingerprint) = surveyRecord(job), known[key] != fingerprint else { continue }
-            if let external, record.externals?.contains(external) != true { continue }
-            let ref = db.document(key)
-            changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: fingerprint))
+        var contacts = external == nil ? contactChanges(context, &present, plan: plan, scanned: &scanned) : []
+        if plan.includes(Self.surveyCollection) {
+            scanned.insert(Self.surveyCollection)
+            for job in survey.jobs {
+                let key = "\(Self.surveyCollection)/\(job.id.uuidString)"
+                present.insert(key)
+                guard let (record, fingerprint) = surveyRecord(job), known[key] != fingerprint else { continue }
+                if let external, record.externals?.contains(external) != true { continue }
+                let ref = db.document(key)
+                changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: fingerprint))
+            }
+            surveyRecords = surveyRecords.filter { present.contains("\(Self.surveyCollection)/\($0.key.uuidString)") }
         }
-        surveyRecords = surveyRecords.filter { present.contains("\(Self.surveyCollection)/\($0.key.uuidString)") }
-        let revisions = external == nil ? revisionChanges(survey, &present) : []
-        for key in known.keys where !present.contains(key) {
+        var revisions: [Change] = []
+        if external == nil, plan.includes(Self.revisionCollection) {
+            revisions = revisionChanges(survey, &present)
+            scanned.insert(Self.revisionCollection)
+        }
+        let deleted = plan.deletions(known: Set(known.keys), present: present, scanned: scanned)
+        for key in deleted {
             let ref = db.document(key)
             let change = Change(key: key, write: { $0.deleteDocument(ref) }, fingerprint: nil)
             if key.hasPrefix("\(PhotoAsset.collection)/") { photos.append(change) }
@@ -513,6 +662,9 @@ final class CloudSync {
             else { changes.append(change) }
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
+#if DEBUG
+        print("CloudSync: upload scan \(scanned.sorted().joined(separator: ", ")); \(deleted.count) deletions")
+#endif
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
         commitSeparately(contacts, "contact upload")
@@ -534,14 +686,18 @@ final class CloudSync {
             let batch = db.batch()
             var previous: [String: String?] = [:]
             for change in slice {
-                do { try change.write(batch) } catch { failed(error); continue }
+                do { try change.write(batch) } catch {
+                    uploadScans.retry(keys: [change.key])
+                    failed(error)
+                    continue
+                }
                 previous[change.key] = known[change.key]
                 known[change.key] = change.fingerprint
                 unconfirmed[change.key, default: 0] += 1
             }
             batch.commit { [weak self] error in
                 MainActor.assumeIsolated {
-                    guard let self else { return }
+                    guard let self, self.snapshotSession == session else { return }
                     // Firestore calls back once the server has the batch, or has refused it
                     for key in previous.keys {
                         let left = (self.unconfirmed[key] ?? 1) - 1
@@ -549,6 +705,7 @@ final class CloudSync {
                     }
                     defer { self.refreshSurveyPending() }
                     if let error {
+                        self.uploadScans.retry(keys: Set(previous.keys))
                         // Put back what the server still has so the next push tries again.
                         for (key, old) in previous { self.known[key] = old }
                         self.saveKnown()
@@ -597,17 +754,22 @@ final class CloudSync {
     /// Their own batches (REVs, photos): a refusal here (rules not deployed yet) must not hold back the jobs. Tried
     /// again on the next push.
     private func commitSeparately(_ changes: [Change], _ label: String, size: Int = 400) {
+        let session = snapshotSession
         for start in stride(from: 0, to: changes.count, by: size) {
             let batch = db.batch()
             var previous: [String: String?] = [:]
             for change in changes[start..<min(start + size, changes.count)] {
-                guard (try? change.write(batch)) != nil else { continue }
+                guard (try? change.write(batch)) != nil else {
+                    uploadScans.retry(keys: [change.key])
+                    continue
+                }
                 previous[change.key] = known[change.key]
                 known[change.key] = change.fingerprint
             }
             batch.commit { [weak self] error in
                 MainActor.assumeIsolated {
-                    guard let self, let error else { return }
+                    guard let self, self.snapshotSession == session, let error else { return }
+                    self.uploadScans.retry(keys: Set(previous.keys))
                     for (key, old) in previous { self.known[key] = old }
                     self.saveKnown()
                     print("CloudSync: \(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
@@ -621,8 +783,13 @@ final class CloudSync {
     // iecOnly: a job's IEC test, and the weekly requests and WBS ticks its contractor changed
 
     private func collect<M: CloudSynced>(_ type: M.Type, _ context: ModelContext, _ changes: inout [Change], _ present: inout Set<String>,
-                                         _ upload: Upload = .full) {
-        guard let models = try? context.fetch(FetchDescriptor<M>()) else { return }
+                                         _ upload: Upload = .full, plan: UploadScanState.Plan, scanned: inout Set<String>) {
+        guard plan.includes(M.collection) else { return }
+        guard let models = try? context.fetch(FetchDescriptor<M>()) else {
+            uploadScans.mark([M.collection])
+            return
+        }
+        scanned.insert(M.collection)
         let me = MemberRole.shared.permissions.email
         for model in models {
             if model.syncID == nil { model.syncID = UUID().uuidString }
@@ -662,8 +829,14 @@ final class CloudSync {
 
     /// Each job's phone and address in `jobContacts`, written by the team whether or not the job's own document still
     /// carries them, so they are all there when `contactsSplit` is switched on.
-    private func contactChanges(_ context: ModelContext, _ present: inout Set<String>) -> [Change] {
-        guard let jobs = try? context.fetch(FetchDescriptor<Job>()) else { return [] }
+    private func contactChanges(_ context: ModelContext, _ present: inout Set<String>,
+                                plan: UploadScanState.Plan, scanned: inout Set<String>) -> [Change] {
+        guard plan.includes(Self.contactCollection) else { return [] }
+        guard let jobs = try? context.fetch(FetchDescriptor<Job>()) else {
+            uploadScans.mark([Self.contactCollection])
+            return []
+        }
+        scanned.insert(Self.contactCollection)
         var out: [Change] = []
         for job in jobs {
             guard let id = job.syncID else { continue }
@@ -685,28 +858,40 @@ final class CloudSync {
     /// `optional`: a refused listener (its rule not deployed yet) is logged and the rest still syncs.
     /// `owner`: only the documents of that person (`ownerEmail`), the one query the rules allow for the travel log.
     private func listen<M: CloudSynced>(_ type: M.Type, optional: Bool = false, owner: String? = nil,
-                                        onServerSnapshot: ((Int?) -> Void)? = nil, onFirstSnapshot: (() -> Void)? = nil) {
-        guard !listeningCollections.contains(M.collection) else { onServerSnapshot?(nil); onFirstSnapshot?(); return }
+                                        onServerSnapshot: ((Int?) -> Void)? = nil, onFirstSnapshot: (() -> Void)? = nil,
+                                        queryOverride: Query? = nil, barrier: StartupLoadBarrier? = nil) {
+        guard queryOverride != nil || !listeningCollections.contains(M.collection) else { onServerSnapshot?(nil); onFirstSnapshot?(); return }
         listeningCollections.insert(M.collection)
-        let q = owner.map { db.collection(M.collection).whereField("ownerEmail", isEqualTo: $0) } ?? query(M.collection)
+        let session = snapshotSession
+        let q = queryOverride ?? owner.map { db.collection(M.collection).whereField("ownerEmail", isEqualTo: $0) } ?? query(M.collection)
         let registration = q.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
-                guard let self else { return }
+                guard let self, self.snapshotSession == session else { return }
                 if let error {
-                    onServerSnapshot?(nil)
-                    onFirstSnapshot?()
-                    if optional { return print("CloudSync: \(M.collection) listener: \(error.localizedDescription)") }
-                    return self.failed(error)
+                    self.enqueueStartupSnapshot(barrier, session: session, isFromCache: false) { [weak self] in
+                        guard let self, self.snapshotIsCurrent(session) else { return }
+                        onServerSnapshot?(nil)
+                        onFirstSnapshot?()
+                        if optional { print("CloudSync: \(M.collection) listener: \(error.localizedDescription)") }
+                        else { self.failed(error) }
+                    }
+                    return
                 }
                 guard let snapshot else { onServerSnapshot?(nil); onFirstSnapshot?(); return }
-                onFirstSnapshot?()
-                let changes = snapshot.documentChanges
-                if !changes.isEmpty {
-                    self.enqueueSnapshotApplication { [weak self] in self?.receive(M.self, changes) }
+                if M.self == Job.self, !snapshot.metadata.isFromCache, self.loadingCollections.contains(Job.collection) {
+                    self.initialServerProjectIDs.formUnion(snapshot.documents.map(\.documentID))
                 }
-                if !snapshot.metadata.isFromCache {
-                    onServerSnapshot?(snapshot.documents.count)
-                    if !optional { self.synced() }
+                let changes = snapshot.documentChanges
+                // Metadata-only acknowledgements and errors must not overtake earlier data snapshots.
+                self.enqueueStartupSnapshot(barrier, session: session, isFromCache: snapshot.metadata.isFromCache) { [weak self] in
+                    guard let self else { return }
+                    await self.receive(M.self, changes, session: session)
+                    guard self.snapshotIsCurrent(session) else { return }
+                    onFirstSnapshot?()
+                    if !snapshot.metadata.isFromCache {
+                        onServerSnapshot?(snapshot.documents.count)
+                        if !optional { self.synced() }
+                    }
                 }
             }
         }
@@ -743,42 +928,111 @@ final class CloudSync {
         listenOnDemand(CompanyVehicle.self, optional: true)
     }
 
-    private func receive<M: CloudSynced>(_ type: M.Type, _ changes: [DocumentChange]) {
-        guard let context, !changes.isEmpty else { return }
+    private func receive<M: CloudSynced>(_ type: M.Type, _ documents: [DocumentChange], session: UUID) async {
+        // Publish the first batch before decoding the rest of an initial collection snapshot.
+        for start in stride(from: 0, to: documents.count, by: 16) {
+            guard snapshotIsCurrent(session) else { return }
+            await receiveBatch(type, Array(documents[start..<min(start + 16, documents.count)]), session: session)
+            snapshotJobIndex = nil
+            pendingModelIndexes.removeAll(keepingCapacity: true)
+            guard await pauseSnapshotApplication(session) else { return }
+        }
+    }
+
+    private func receiveBatch<M: CloudSynced>(_ type: M.Type, _ documents: [DocumentChange], session: UUID) async {
+        guard snapshotIsCurrent(session), !documents.isEmpty else { return }
+        let recordType = M.Record.self
+        let prepared = try? await Self.snapshotWorker.prepare(documents) { change -> PreparedDocumentChange<M.Record>? in
+            let id = change.document.documentID
+            if change.type == .removed { return .removed(id: id) }
+            guard let record = try? change.document.data(as: recordType) else { return nil }
+            return .updated(id: id, record: record, fingerprint: Self.recordFingerprint(record))
+        }
+        guard snapshotIsCurrent(session), let changes = prepared, let context else { return }
+        // A cache/server echo needs no SwiftData fetch or save, but recheck known at the actual apply below too.
+        guard changes.contains(where: { change in
+            switch change {
+            case .removed: true
+            case .updated(let id, _, let fingerprint): known["\(M.collection)/\(id)"] != fingerprint
+            }
+        }) else { return }
 #if DEBUG
         let applyStartedAt = Date()
+        var activeTime = 0.0
+        var longestChunk = 0.0
+        var chunks = 0
         defer {
             let elapsedMS = Int(Date().timeIntervalSince(applyStartedAt) * 1_000)
-            print("CloudSync: applied \(changes.count) \(M.collection) changes in \(elapsedMS) ms")
+            print("CloudSync: applied \(changes.count) \(M.collection) changes in \(elapsedMS) ms; active \(Int(activeTime * 1000)) ms, max chunk \(Int(longestChunk * 1000)) ms, \(chunks) chunks")
         }
 #endif
-        let local = Dictionary(((try? context.fetch(FetchDescriptor<M>())) ?? []).compactMap { m in m.syncID.map { ($0, m) } },
-                               uniquingKeysWith: { a, _ in a })
-        let jobs = jobIndexForSnapshotBatch()
-        for change in changes {
-            let id = change.document.documentID
-            let key = "\(M.collection)/\(id)"
-            if change.type == .removed {
-                if let model = local[id] { context.delete(model) }
-                known[key] = nil
-                pending[key] = nil
-                continue
+        var index = 0
+        while index < changes.count {
+            guard snapshotIsCurrent(session) else { return }
+            let started = Date()
+            // A local edit made while the worker ran or between chunks must keep its normal upload notification.
+            saveUncommittedChanges()
+            // UI edits can insert or delete models while we yield. Never retain an outdated model index across it.
+            if index > 0 {
+                snapshotJobIndex = nil
+                pendingModelIndexes.removeAll(keepingCapacity: true)
             }
-            guard let record = try? change.document.data(as: M.Record.self), known[key] != fingerprint(record) else { continue }
-            if !upsert(M.self, id: id, record: record, existing: local[id], jobs: jobs) {
-                pending[key] = { [weak self] in
-                    guard let self else { return true }
-                    let existing = self.model(M.self, syncID: id)
-                    return self.upsert(M.self, id: id, record: record, existing: existing,
-                                       jobs: self.jobIndexForSnapshotBatch())
+            let limit = min(index + 16, changes.count)
+            let ids = changes[index..<limit].map(\.id)
+            let local = Dictionary(((try? M.fetchForSync(in: context, ids: ids)) ?? []).compactMap { model in
+                model.syncID.map { ($0, model) }
+            }, uniquingKeysWith: { first, _ in first })
+            // Projects have no parent project. Avoid a second full-table lookup for every project chunk.
+            let jobs = M.self == Job.self ? [:] : jobIndexForSnapshotBatch()
+#if DEBUG
+            let lookupFinished = Date()
+#endif
+            applyingRemoteSnapshots = true
+            repeat {
+                let change = changes[index]
+                let id = change.id
+                let key = "\(M.collection)/\(id)"
+                switch change {
+                case .removed:
+                    if let model = local[id] { context.delete(model) }
+                    known[key] = nil
+                    pending[key] = nil
+                case .updated(_, let record, let fingerprint):
+                    if known[key] != fingerprint,
+                       !upsert(M.self, id: id, record: record, existing: local[id], jobs: jobs) {
+                        pending[key] = { [weak self] in
+                            guard let self else { return true }
+                            let existing = self.model(M.self, syncID: id)
+                            return self.upsert(M.self, id: id, record: record, existing: existing,
+                                               jobs: self.jobIndexForSnapshotBatch())
+                        }
+                    }
                 }
+                index += 1
+            } while index < limit && Date().timeIntervalSince(started) < 0.008
+#if DEBUG
+            let saveStarted = Date()
+#endif
+            saveSnapshotChanges()
+#if DEBUG
+            let duration = Date().timeIntervalSince(started)
+            print("CloudSync: \(M.collection) lookup \(Int(lookupFinished.timeIntervalSince(started) * 1000)) ms, save \(Int(Date().timeIntervalSince(saveStarted) * 1000)) ms")
+            activeTime += duration
+            longestChunk = max(longestChunk, duration)
+            chunks += 1
+#endif
+            if index < changes.count {
+                guard await pauseSnapshotApplication(session) else { return }
             }
         }
+        guard snapshotIsCurrent(session) else { return }
         if M.self == Job.self { snapshotJobIndex = nil }
         // records waiting for their job, and photos waiting for their log or inspection
-        if M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self {
+        if !pending.isEmpty && (M.self == Job.self || M.self == InstallLog.self || M.self == Inspection.self || M.self == ICLSheet.self) {
+            applyingRemoteSnapshots = true
             pendingModelIndexes.removeAll(keepingCapacity: true)
             for (key, retry) in pending where retry() { pending[key] = nil }
+            saveSnapshotChanges()
         }
     }
 
@@ -817,68 +1071,100 @@ final class CloudSync {
     }
 
     private func listenSurveysInitial() async -> Bool {
-        guard context != nil, !Task.isCancelled else { return false }
-        if startupSnapshotTimedOut {
-            listenSurveys()
-            return await paceInitialSync()
-        }
-        let waiter = SnapshotWaiter()
-#if DEBUG
-        let startedAt = Date()
-#endif
-        let timeout = Task { @MainActor in
-            do { try await Task.sleep(for: .milliseconds(700)) } catch { return }
-            waiter.resume(timedOut: true)
-        }
-        listenSurveys { count in
-            if let count { waiter.resume(documentCount: count) }
-            else { waiter.resume(timedOut: true) }
-        }
-        let timedOut = await waiter.wait()
-        timeout.cancel()
-        guard context != nil, !Task.isCancelled else { return false }
-#if DEBUG
-        let elapsedMS = Int(Date().timeIntervalSince(startedAt) * 1_000)
-        let result = timedOut ? "no server snapshot" : "\(waiter.documentCount ?? 0) documents"
-        print("CloudSync: initial surveys: \(result) in \(elapsedMS) ms")
-#endif
-        if timedOut { startupSnapshotTimedOut = true }
-        return await paceInitialSync()
+        await waitForStartup("surveys") { listenSurveys(barrier: $0) }
     }
 
-    private func listenSurveys(onServerSnapshot: ((Int?) -> Void)? = nil) {
+    private func listenSurveys(barrier: StartupLoadBarrier? = nil) {
+        let session = snapshotSession
         let registration = query(Self.surveyCollection).addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if let error { onServerSnapshot?(nil); return self.failed(error) }
-                guard let snapshot else { onServerSnapshot?(nil); return }
-                let changes = snapshot.documentChanges
-                if !changes.isEmpty {
-                    self.enqueueSnapshotApplication { [weak self] in self?.receiveSurveys(changes) }
+                self.enqueueStartupSnapshot(barrier, session: session, isFromCache: snapshot?.metadata.isFromCache ?? false) { [weak self] in
+                    guard let self else { return }
+                    if let error { self.failed(error); return }
+                    guard let snapshot else { return }
+                    await self.receiveSurveys(snapshot.documentChanges, session: session)
+                    guard self.snapshotIsCurrent(session) else { return }
+                    if !snapshot.metadata.isFromCache { self.synced() }
                 }
-                if !snapshot.metadata.isFromCache { onServerSnapshot?(snapshot.documents.count); self.synced() }
             }
         }
         listeners.append(registration)
     }
 
-    private func receiveSurveys(_ changes: [DocumentChange]) {
+    private struct PreparedSurvey: Sendable {
+        let job: TCRoofCore.Job
+        let fingerprint: String
+    }
+
+    private func receiveSurveys(_ changes: [DocumentChange], session: UUID) async {
         guard let survey else { return }
-        for change in changes {
-            let key = "\(Self.surveyCollection)/\(change.document.documentID)"
-            if change.type == .removed {
-                if let id = UUID(uuidString: change.document.documentID) { survey.removeRemote(id) }
-                known[key] = nil
-                continue
+        let before = Dictionary(survey.jobs.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let started = Date()
+        var nextIndex = 0
+        var preparedCount = 0
+        var longestChunk = 0.0
+        while nextIndex < changes.count {
+            guard snapshotIsCurrent(session) else { return }
+            let batch = try? await Self.snapshotWorker.prepareBatch(changes, startingAt: nextIndex, limit: 8) { change -> PreparedDocumentChange<PreparedSurvey>? in
+                let id = change.document.documentID
+                if change.type == .removed { return .removed(id: id) }
+                guard let record = try? change.document.data(as: SurveyRecord.self),
+                      let job = try? JSONDecoder().decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { return nil }
+                let fingerprint = record.fingerprint
+                return .updated(id: id, record: PreparedSurvey(job: job, fingerprint: fingerprint), fingerprint: fingerprint)
             }
-            guard let record = try? change.document.data(as: SurveyRecord.self), known[key] != record.fingerprint,
-                  let job = try? JobStore.decoder.decode(TCRoofCore.Job.self, from: Data(record.json.utf8)) else { continue }
-            survey.applyRemote(job)
-            known[key] = surveyRecord(job)?.fingerprint
-            // its photos taken on the other device, from Drive, without waiting for the editor to open
-            if !survey.downloadablePhotos(job).isEmpty { Task { await survey.fetchMissingPhotos(job.id) } }
+            guard let batch, snapshotIsCurrent(session) else { return }
+            nextIndex = batch.nextIndex
+            let prepared = batch.values
+            preparedCount += prepared.count
+            var acknowledgements: [String: String] = [:]
+            var removals = Set<String>()
+            var chunkStart = Date()
+            var chunkCount = 0
+            for (offset, change) in prepared.enumerated() {
+                guard snapshotIsCurrent(session) else { return }
+                let key = "\(Self.surveyCollection)/\(change.id)"
+                let id = UUID(uuidString: change.id)
+                // An edit made during worker preparation or between chunks must still upload.
+                let unchanged = id.map { survey.job($0) == before[$0] } ?? false
+                switch change {
+                case .removed:
+                    if unchanged, let id { survey.removeRemote(id) }
+                    removals.insert(key)
+                case .updated(_, let value, let fingerprint):
+                    if known[key] != fingerprint {
+                        if unchanged {
+                            survey.applyRemote(value.job)
+                            acknowledgements[key] = surveyRecord(value.job)?.fingerprint
+                            // Project cards need photo counts, not image bytes. Editor/export fetch on demand.
+                        } else {
+                            acknowledgements[key] = fingerprint
+                        }
+                    }
+                }
+                chunkCount += 1
+                let elapsed = Date().timeIntervalSince(chunkStart)
+                if chunkCount >= 8 || elapsed >= 0.008 {
+                    longestChunk = max(longestChunk, elapsed)
+                    if offset + 1 < prepared.count {
+                        guard await pauseSnapshotApplication(session) else { return }
+                    }
+                    chunkStart = Date()
+                    chunkCount = 0
+                }
+            }
+            longestChunk = max(longestChunk, Date().timeIntervalSince(chunkStart))
+            await survey.finishRemoteSaves()
+            guard snapshotIsCurrent(session) else { return }
+            for key in removals { known[key] = nil }
+            known.merge(acknowledgements, uniquingKeysWith: { _, latest in latest })
+            guard await pauseSnapshotApplication(session) else { return }
         }
         refreshSurveyPending()
+#if DEBUG
+        print("CloudSync: surveys \(preparedCount), local \(survey.jobs.count), total \(Int(Date().timeIntervalSince(started) * 1000)) ms, max apply chunk \(Int(longestChunk * 1000)) ms")
+#endif
     }
 
     /// A whole collection for the team; for an external member only the documents of their jobs, the one query
@@ -890,9 +1176,9 @@ final class CloudSync {
     }
 
     /// REVs issued on other devices: their snapshots are stored next to the job, as if issued here. The team's only.
-    private func listenRevisions() {
+    private func listenRevisions(barrier: StartupLoadBarrier? = nil) {
         guard external == nil else { return }
-        let registration = db.collection(Self.revisionCollection).addSnapshotListener { [weak self] snapshot, error in
+        listenStartupQuery(db.collection(Self.revisionCollection), barrier: barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
                 // never fail the whole sync over REVs (rules not deployed yet): the jobs still sync
@@ -908,7 +1194,6 @@ final class CloudSync {
                 self.saveKnown()
             }
         }
-        listeners.append(registration)
     }
 
     /// The home feed's acknowledgements, live. A toggle adds or removes only its own member (`arrayUnion` /
@@ -917,7 +1202,7 @@ final class CloudSync {
     /// The standard design library (docs/specs/standard-designs.md §2): every member takes the designs saved on other
     /// devices (the higher revision wins); a design saved, renamed, archived or imported here is sent, by the team only
     /// (`design.library`; firestore.rules refuses anyone else and an older revision).
-    private func listenDesigns() {
+    private func listenDesigns(barrier: StartupLoadBarrier? = nil) {
         let collection = db.collection("standardDesigns")
         DesignLibrary.shared.onChange = { [weak self] d in
             guard let self, self.external == nil else { return }
@@ -946,7 +1231,7 @@ final class CloudSync {
                 if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
             }
         }
-        let registration = collection.addSnapshotListener { snapshot, error in
+        listenStartupQuery(collection, barrier: barrier) { snapshot, error in
             // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
             if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
@@ -959,9 +1244,10 @@ final class CloudSync {
                 }
             }
         }
-        listeners.append(registration)
-        // sheet pages taken on other devices
-        let pages = db.collection("standardDesignSheets").addSnapshotListener { snapshot, error in
+    }
+
+    private func listenDesignSheets(barrier: StartupLoadBarrier? = nil) {
+        listenStartupQuery(db.collection("standardDesignSheets"), barrier: barrier) { snapshot, error in
             if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
                 let data = change.document.data()
@@ -972,13 +1258,12 @@ final class CloudSync {
                 DesignLibrary.shared.storeSheetPage(jpeg, width: data["width"] as? Int ?? 0, height: data["height"] as? Int ?? 0, id: id)
             }
         }
-        listeners.append(pages)
     }
 
     /// The team's tank structure standard (`config/tankStandard`, docs/specs/tank-mounting-layout.md §1): every member
     /// takes a newer revision; a manager's save here is sent (`tank.standard`; firestore.rules refuses anyone else and
     /// an older revision).
-    private func listenTankStandard() {
+    private func listenTankStandard(barrier: StartupLoadBarrier? = nil) {
         let ref = db.document("config/tankStandard")
         TankStandard.Store.shared.onChange = { s in
             guard MemberRole.shared.permissions.can(.tankStandard) else { return }
@@ -986,16 +1271,15 @@ final class CloudSync {
                 if let error { print("CloudSync: tank standard refused: \(error.localizedDescription)") }
             }
         }
-        let registration = ref.addSnapshotListener { snapshot, error in
+        listenStartupDocument(ref, barrier: barrier) { snapshot, error in
             // never fail the whole sync over the standard (rules not deployed yet): the jobs still sync
             if let error { return print("CloudSync: tank standard listener: \(error.localizedDescription)") }
             guard let json = snapshot?.data()?["json"] as? String, let s = TankStandard.decode(json) else { return }
             TankStandard.Store.shared.receive(s)
         }
-        listeners.append(registration)
     }
 
-    private func listenFeedAcks() {
+    private func listenFeedAcks(barrier: StartupLoadBarrier? = nil) {
         let acks = FeedAcks.shared
         acks.send = { [weak self] post, member, on in
             guard let self else { return }
@@ -1010,7 +1294,7 @@ final class CloudSync {
             for (post, set) in acks.members where set.contains(me) { acks.send?(post, me, true) }
             UserDefaults.standard.set(true, forKey: uploaded)
         }
-        let registration = db.collection(Self.ackCollection).addSnapshotListener { snapshot, error in
+        listenStartupQuery(db.collection(Self.ackCollection), barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
                 // never fail the whole sync over acknowledgements (rule not deployed yet): the jobs still sync
                 if let error { return print("CloudSync: acknowledgement listener: \(error.localizedDescription)") }
@@ -1021,25 +1305,23 @@ final class CloudSync {
                 }
             }
         }
-        listeners.append(registration)
     }
 
     /// The team's names and emails (team only, `TeamDirectory`): this member's own entry goes up first, with the name in
     /// settings, so the people invited before the directory existed are listed too.
     /// Managers' decisions on this person's submitted months (`ClaimReviews`); refused until the rule is deployed.
-    private func listenClaimReviews(owner email: String) {
+    private func listenClaimReviews(owner email: String, barrier: StartupLoadBarrier? = nil) {
         ClaimReviews.shared.start(owner: email)
         let q = db.collection(ClaimReviews.collection).whereField("ownerEmail", isEqualTo: Permissions.normalized(email))
-        let registration = q.addSnapshotListener { snapshot, error in
+        listenStartupQuery(q, barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
                 if let error { return print("CloudSync: claimReviews listener: \(error.localizedDescription)") }
                 if let snapshot { ClaimReviews.shared.receive(snapshot.documents) }
             }
         }
-        listeners.append(registration)
     }
 
-    private func listenDirectory() {
+    private func listenDirectory(barrier: StartupLoadBarrier? = nil) {
         guard external == nil else { return TeamDirectory.shared.clear() }
         let me = MemberRole.shared.permissions.email
         if !me.isEmpty {
@@ -1048,20 +1330,19 @@ final class CloudSync {
                 if let error { print("CloudSync: directory entry refused: \(error.localizedDescription)") }
             }
         }
-        let registration = db.collection(TeamDirectory.collection).addSnapshotListener { snapshot, error in
+        listenStartupQuery(db.collection(TeamDirectory.collection), barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
                 // never fail the whole sync over the directory (rule not deployed yet): the jobs still sync
                 if let error { return print("CloudSync: directory listener: \(error.localizedDescription)") }
                 TeamDirectory.shared.receive(snapshot?.documents ?? [])
             }
         }
-        listeners.append(registration)
     }
 
     /// The customers' phones and addresses (team only). A contact whose job hasn't arrived yet waits for it.
-    private func listenContacts() {
+    private func listenContacts(barrier: StartupLoadBarrier? = nil) {
         guard external == nil else { return }
-        let registration = db.collection(Self.contactCollection).addSnapshotListener { [weak self] snapshot, error in
+        listenStartupQuery(db.collection(Self.contactCollection), barrier: barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self, let context = self.context else { return }
                 // never fail the whole sync over contacts (rule not deployed yet): the jobs still sync
@@ -1084,14 +1365,13 @@ final class CloudSync {
                 self.saveKnown()
             }
         }
-        listeners.append(registration)
     }
 
     /// `config/app`, set in the Firebase console: `centerDriveFolder`, `driveShareWith` and `claimShareWith` (`DriveConfig`),
     /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
     /// once every device runs this version: the jobs are then sent again without their phone and address.
-    private func listenConfig() {
-        let registration = db.document(Self.configDocument).addSnapshotListener { [weak self] snapshot, error in
+    private func listenConfig(barrier: StartupLoadBarrier? = nil) {
+        listenStartupDocument(db.document(Self.configDocument), barrier: barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
@@ -1111,7 +1391,6 @@ final class CloudSync {
                 self.push()
             }
         }
-        listeners.append(registration)
     }
 
     /// A post id as a document id: Firestore ids can't hold `/`.
@@ -1148,7 +1427,7 @@ private extension Array {
 }
 
 /// A NO.224 survey report job as one document; the job's own JSON keeps every field the survey module has.
-private struct SurveyRecord: Codable {
+private struct SurveyRecord: Codable, Sendable {
     var projectName: String
     var updated: Int64
     var json: String

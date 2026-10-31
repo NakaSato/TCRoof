@@ -133,7 +133,8 @@ public extension Job {
     var nextStep: SurveyStep? { steps.first { $0.completion.total > 0 && !$0.completion.isComplete } }
     /// Each step with its colour on the step bar: done, the next one to fill, started but short, or untouched.
     var stepStatuses: [(step: SurveyStep, status: SurveyStep.Status)] {
-        let next = nextStep?.page
+        let steps = steps
+        let next = steps.first { $0.completion.total > 0 && !$0.completion.isComplete }?.page
         return steps.map { s in
             let c = s.completion
             let status: SurveyStep.Status = s.page == next ? .current

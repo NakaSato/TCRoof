@@ -122,7 +122,7 @@ extension SurveyHomeView {
     /// The station rows: one under another on iPhone, three columns on iPad (two in portrait).
     @ViewBuilder private func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
         if compact {
-            rows()
+            LazyVStack(alignment: .leading, spacing: 10) { rows() }
         } else {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: padColumns), spacing: 16) { rows() }
         }
@@ -150,21 +150,14 @@ extension SurveyHomeView {
     /// The host's install stations that no survey here is linked to (stations added from their own plan files): the
     /// project list shows them under the survey cards, so `ทั้งหมด` lists every project. Narrowed by the search.
     var unsurveyedStations: [InstallStationSummary] {
-        let linked = Set(model.jobs.compactMap(\.jobSyncID) + model.jobs.map(\.id.uuidString))
-        let q = search.trimmingCharacters(in: .whitespaces)
-        let given = (host.installStations ?? []).filter { s in
-            !linked.contains(s.id)
-                && (q.isEmpty || s.name.localizedCaseInsensitiveContains(q) || s.contractor.localizedCaseInsensitiveContains(q)
-                    || s.mpNumber.map { "MP \($0)".localizedCaseInsensitiveContains(q) } == true)
-        }
-        return InstallOverview.rows(given, filter: .all, threshold: threshold)
+        cachedUnsurveyedStations
     }
 
     /// `งานติดตั้ง | n สถานี` and the install overview's station cards; a tap opens the station.
-    @ViewBuilder func unsurveyedSection(_ stations: [InstallStationSummary]) -> some View {
+    @ViewBuilder func unsurveyedSection(_ stations: [InstallStationSummary], total: Int) -> some View {
         HStack(spacing: 8) {
             Text("งานติดตั้ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-            Text("\(stations.count) สถานี | ไม่มีรายงานสำรวจในแอป").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            Text("\(total) สถานี | ไม่มีรายงานสำรวจในแอป").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
         }
         .padding(.top, 6)
         .accessibilityElement(children: .combine)
@@ -183,7 +176,9 @@ extension SurveyHomeView {
 
     @ViewBuilder var installOverview: some View {
         let stations = installStations
-        if stations.isEmpty {
+        if stations.isEmpty, host.installLoading {
+            ProgressView("กำลังโหลดโครงการ…").frame(maxWidth: .infinity, minHeight: 120)
+        } else if stations.isEmpty {
             stageEmpty
         } else {
             let totals = InstallOverview.totals(stations, threshold: threshold)

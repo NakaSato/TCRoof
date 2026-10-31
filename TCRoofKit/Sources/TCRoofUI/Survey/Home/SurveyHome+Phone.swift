@@ -42,7 +42,7 @@ extension SurveyHomeView {
 
     private var homeScroll: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: compact ? 10 : 16) {
+            LazyVStack(alignment: .leading, spacing: compact ? 10 : 16) {
                 if let message { Label(message, systemImage: "checkmark.circle").font(.sarabunFixed(13)).foregroundStyle(Paper.tick) }
                 if page == .settings {
                     settingsGroups
@@ -60,6 +60,13 @@ extension SurveyHomeView {
             .padding(.bottom, page == .project && tab == .survey ? (compact ? 82 : 98) : 20)
         }
         .scrollDismissesKeyboard(.immediately)
+        .coordinateSpace(name: "pwaProjectScroll")
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { projectViewportHeight = $0 }
+        .onChange(of: search) { projectWindow.reset() }
+        .onChange(of: filter) { projectWindow.reset() }
+        .onChange(of: sort) { projectWindow.reset() }
+        .onChange(of: onlyMine) { projectWindow.reset() }
+        .onChange(of: tab) { projectWindow.reset() }
     }
 
     // MARK: header
@@ -416,9 +423,25 @@ extension SurveyHomeView {
         }
         // stations with no survey here (added from their plan files) follow the survey cards in ทั้งหมด
         let stations = filter == .all ? unsurveyedStations : []
-        if shown.isEmpty && stations.isEmpty { empty }
+        let loading = filter == .all && host.installLoading
+        if loading && stations.isEmpty {
+            ProgressView("กำลังโหลดโครงการ…").frame(maxWidth: .infinity, minHeight: 80)
+        }
+        if shown.isEmpty && stations.isEmpty && !loading { empty }
         if !shown.isEmpty { grid }
-        if !stations.isEmpty { unsurveyedSection(stations) }
+        let visibleStations = Array(stations.prefix(projectWindow.stationLimit(surveyCount: shown.count)))
+        if !visibleStations.isEmpty { unsurveyedSection(visibleStations, total: stations.count) }
+        if projectWindow.hasMore(total: shown.count + stations.count) {
+            ProgressView("กำลังโหลดโครงการเพิ่มเติม…")
+                .frame(maxWidth: .infinity).padding(.vertical, 16)
+                .accessibilityIdentifier("pwaHome.loadMore")
+                .onGeometryChange(for: Bool.self) { proxy in
+                    let frame = proxy.frame(in: .named("pwaProjectScroll"))
+                    return projectViewportHeight > 0 && frame.minY < projectViewportHeight + 150 && frame.maxY > 0
+                } action: { nearBottom in
+                    if nearBottom { projectWindow.revealMore() }
+                }
+        }
     }
 
     /// 60 pt (iPad 64), the board's gradient, no shadow.

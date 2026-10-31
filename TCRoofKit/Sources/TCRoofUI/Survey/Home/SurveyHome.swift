@@ -47,6 +47,9 @@ struct SurveyHomeView: View {
     /// Pushed by the host app (TCRoof) rather than the root of its own scene — show a back button.
     @Environment(\.isPresented) var isPushed
     @State var search = ""
+    @State private var listCache = SurveyHomeListCache()
+    @State var projectWindow = ProjectListWindow()
+    @State var projectViewportHeight: CGFloat = 0
     @State var filter = Filter.all
     @State var sort = Sort.updated
     /// `งานของฉัน`: only the surveys of jobs that name the signed-in member (`PWAOverviewHost.mine`); kept between launches.
@@ -95,12 +98,12 @@ struct SurveyHomeView: View {
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }
     struct PendingSync: Identifiable { let id = UUID(); let notes: [String] }
 
-    enum Filter: CaseIterable {
+    enum Filter: CaseIterable, Equatable {
         case all, active, draft, unsynced
         var title: String { [.all: "ทั้งหมด", .active: "กำลังสำรวจ", .draft: "ร่าง", .unsynced: "รอซิงก์"][self]! }
         var heading: String { self == .all ? "งานทั้งหมด" : title }
     }
-    enum Sort: CaseIterable {
+    enum Sort: CaseIterable, Equatable {
         case updated, docNo, progress
         var title: String { [.updated: "แก้ไขล่าสุด", .docNo: "เลขที่", .progress: "ความคืบหน้า"][self]! }
     }
@@ -116,6 +119,10 @@ struct SurveyHomeView: View {
 
     /// The tab's jobs matching the search.
     var searched: [Job] {
+        listResults.searched
+    }
+
+    private func searchJobs() -> [Job] {
         let q = search.trimmingCharacters(in: .whitespaces)
         let jobs = mineOn ? model.jobs(in: tab).filter(isMine) : model.jobs(in: tab)
         guard !q.isEmpty else { return jobs }
@@ -131,6 +138,26 @@ struct SurveyHomeView: View {
     func isMine(_ job: Job) -> Bool { job.jobSyncID.map { host.mine?.contains($0) == true } ?? false }
 
     var shown: [Job] {
+        listResults.shown
+    }
+
+    var cachedUnsurveyedStations: [InstallStationSummary] {
+        listCache.stations.rows(owner: ObjectIdentifier(model), revision: model.jobsRevision, jobs: model.jobs,
+                                stations: host.installStations ?? [], search: search, threshold: threshold)
+    }
+
+    private var listResults: SurveyHomeListCache.Result {
+        let key = SurveyHomeListCache.Key(model: ObjectIdentifier(model), revision: model.jobsRevision,
+                                           search: search, stage: tab, filter: filter, sort: sort,
+                                           mine: mineOn ? host.mine : nil,
+                                           pending: filter == .unsynced ? model.cloudPending : nil)
+        return listCache.result(for: key) {
+            let searched = searchJobs()
+            return .init(searched: searched, shown: sortJobs(searched))
+        }
+    }
+
+    private func sortJobs(_ searched: [Job]) -> [Job] {
         let list = tab == .survey ? searched.filter { matches($0, filter) } : searched
         switch sort {
         case .updated: return list.sorted { $0.updated > $1.updated }
@@ -242,7 +269,7 @@ struct SurveyHomeView: View {
         } message: { p in Text(p.notes.joined(separator: "\n")) }
         .overlay { if let busy { BusyOverlay(text: busy) } }
         .errorAlert($error)
-        .onAppear { model.reload(); model.linkInstallJobs() }
+        .onAppear { model.linkInstallJobs() }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {
@@ -255,7 +282,7 @@ struct SurveyHomeView: View {
     var grid: some View {
         let stations = phaseStations
         return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns), spacing: compact ? 10 : 16) {
-            ForEach(shown) { j in
+            ForEach(shown.prefix(projectWindow.limit)) { j in
                 let station = stations[j.id]
                 let mode: JobCard.Mode = tab == .install ? .install : .survey
                 Button { if let station { openStation(station) } else { open(j, mode) } } label: {
@@ -339,7 +366,7 @@ struct SurveyHomeView: View {
         @Environment(SurveyModel.self) private var model
 
         func body(content: Content) -> some View {
-            let complete = job.canMoveToInstall
+            let complete = asking?.id == job.id && job.canMoveToInstall
             return content.confirmationDialog("ย้ายไปงานติดตั้ง?", isPresented: Binding(get: { asking?.id == job.id }, set: { if !$0 { asking = nil } }),
                                               titleVisibility: .visible) {
                 Button(complete ? "ย้าย \(job.projectName) ไปงานติดตั้ง" : "ย้ายทั้งที่ยังไม่ครบ") {

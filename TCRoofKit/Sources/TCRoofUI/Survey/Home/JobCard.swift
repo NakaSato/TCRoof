@@ -95,7 +95,7 @@ struct JobCard: View {
 
     @ViewBuilder var surveyProgress: some View {
         let steps = job.stepStatuses
-        let next = job.nextStep
+        let next = steps.first { $0.status == .current }?.step
         let nextIndex = next.flatMap { n in steps.firstIndex { $0.step.page == n.page } }
         HStack(spacing: 2) {
             ForEach(steps, id: \.step.id) { s in Capsule().fill(color(s.status)).frame(height: 6) }

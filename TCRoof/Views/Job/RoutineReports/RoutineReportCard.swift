@@ -15,7 +15,8 @@ struct RoutineReportCard: View {
         let week = RoutineReport.week(of: today)
         let worked = RoutineReport.workingDays(settings: settings, from: week.lowerBound, to: week.upperBound)
         let reported = worked.filter { job.dailyLog(on: $0) != nil }.count
-        let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: week.lowerBound)!)
+        let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: week.lowerBound) ?? week.lowerBound)
+        let pendingAck = job.pendingAckLogs.count
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("รายงานประจำ").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
@@ -26,6 +27,12 @@ struct RoutineReportCard: View {
             HStack(spacing: 10) {
                 Text("วันนี้").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.inkMuted)
                 todayChip(today, working: RoutineReport.isWorkingDay(today, settings: settings))
+                if pendingAck > 0 {
+                    NavigationLink { DailyReportListView(job: job) } label: {
+                        TCStatusChip("รอรับทราบ \(pendingAck) วัน", fill: Theme.warningSoft, text: Theme.pending)
+                    }
+                    .buttonStyle(.plain)
+                }
                 Spacer()
             }
             facts(reported: reported, of: worked.count, next: next)
@@ -38,7 +45,12 @@ struct RoutineReportCard: View {
 
     @ViewBuilder private func todayChip(_ today: Date, working: Bool) -> some View {
         switch job.dailyState(on: today) {
-        case .signed: TCStatusChip("ส่งแล้ว", fill: Theme.okSoft, text: Theme.okText)
+        case .signed:
+            if job.dailyLog(on: today)?.inspectorAckAt != nil {
+                TCStatusChip("อนุมัติแล้ว", fill: Theme.okSoft, text: Theme.okText)
+            } else {
+                TCStatusChip("ส่งแล้ว | รอรับทราบ", fill: Theme.warningSoft, text: Theme.pending)
+            }
         case .draft: TCStatusChip("ร่าง", fill: Theme.warningSoft, text: Theme.pending)
         case .none:
             let late = RoutineReport.calendar.component(.hour, from: .now) >= 17

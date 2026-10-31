@@ -38,7 +38,7 @@ struct MPOverviewView: View {
 
     private var rows: [Row] {
         let cal = MasterSchedule.calendar, week = MasterSchedule.weekStart(.now)
-        let weekEnd = cal.date(byAdding: .day, value: 6, to: week)!
+        let weekEnd = cal.date(byAdding: .day, value: 6, to: week) ?? week
         return jobs.pwaStations.compactMap { job -> Row? in
             guard let input = job.scheduleInput else { return nil }
             let plan = MasterSchedule.plan(input), st = MasterSchedule.status(plan: plan, actual: job.scheduleActual, through: .now)
@@ -281,12 +281,17 @@ struct MPOverviewView: View {
         let plan = zip(rows, weights).reduce(0) { $0 + $1.0.status.planned * $1.1 } / total
         let actual = zip(rows, weights).reduce(0) { $0 + $1.0.status.actual * $1.1 } / total
         let behind = rows.filter { $0.status.variance < -0.05 }.count
-        let cols = isPhone ? [GridItem(.flexible()), GridItem(.flexible())] : Array(repeating: GridItem(.flexible()), count: 4)
+        let pendingAck = rows.reduce(0) { $0 + $1.job.pendingAckLogs.count }
+        let count = isPhone ? 2 : (pendingAck > 0 ? 5 : 4)
+        let cols = Array(repeating: GridItem(.flexible()), count: count)
         return LazyVGrid(columns: cols, alignment: .leading, spacing: 12) {
             figure("สถานีที่มีแผน", "\(rows.count)")
             figure("ช้ากว่าแผน", "\(behind)", color: behind > 0 ? Theme.dangerText : Theme.navy)
             figure("แผนเฉลี่ย", MPFormat.percent(plan))
             figure("ทำได้เฉลี่ย", MPFormat.percent(actual))
+            if pendingAck > 0 {
+                figure("รายงานรอรับทราบ", "\(pendingAck) วัน", color: Theme.warningText)
+            }
         }
         .cardStyle()
         .accessibilityElement(children: .combine)
@@ -306,12 +311,16 @@ struct MPOverviewRow: View {
 
     var body: some View {
         let st = row.status, job = row.job
+        let pendingAck = job.pendingAckLogs.count
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(job.mpNumber.map { "MP \($0)" } ?? job.code).font(.sarabun(15, .semibold, relativeTo: .subheadline).monospacedDigit())
                         .foregroundStyle(Theme.primary)
                     Text(job.projectName).font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy).lineLimit(1)
+                    if pendingAck > 0 {
+                        TCStatusChip("รอรับทราบ \(pendingAck) วัน", fill: Theme.warningTint, text: Theme.warningText)
+                    }
                 }
                 let contractor = job.routineSettings.subcontractor.trimmingCharacters(in: .whitespaces)
                 Text([row.current.map { "\($0.task.code) \($0.task.title)" } ?? "ไม่มีงานตามแผนสัปดาห์นี้",

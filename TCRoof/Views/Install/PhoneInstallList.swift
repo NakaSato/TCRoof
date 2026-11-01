@@ -28,8 +28,12 @@ struct PhoneInstallList: View {
             } status: {
                 switch tab {
                 case .logs:
-                    CompactStatusBox(key: "บันทึกประจำวัน", value: job.logs.isEmpty ? "ยังไม่มีบันทึก" : "\(job.logs.count) รายการ",
-                                     valueColor: job.logs.isEmpty ? Theme.inkMuted : Theme.navy)
+                    let pendingAck = job.pendingAckLogs.count
+                    let text = job.logs.isEmpty
+                        ? "ยังไม่มีบันทึก"
+                        : pendingAck > 0 ? "\(job.logs.count) รายการ | รอรับทราบ \(pendingAck) วัน" : "\(job.logs.count) รายการ"
+                    let color = job.logs.isEmpty ? Theme.inkMuted : (pendingAck > 0 ? Theme.pending : Theme.navy)
+                    CompactStatusBox(key: "บันทึกประจำวัน", value: text, valueColor: color)
                 case .inspection:
                     let s = InstallRecordsView.inspectionStatus(job)
                     CompactStatusBox(key: "ใบตรวจรับ", value: s.text, valueColor: s.color)

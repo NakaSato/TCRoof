@@ -182,7 +182,8 @@ struct PhoneNotificationsView: View {
         case .calibration: ("แตะเพื่อเปิดทะเบียนเครื่อง", Theme.pending)
         case .report: ("แตะเพื่อทำรายงานวันนี้", Theme.pending)
         case .claim(let approved): ("แตะเพื่อเปิดใบเบิก", approved ? Theme.primary : Theme.dangerText)
-        case .feed(let kind) where n.link != nil && n.link != .home: (kind.link, n.todo ? Theme.dangerText : Theme.primary)
+        case .feed(let kind) where n.link != nil && n.link != .home:
+            (kind.link, kind == .waitingInspector ? Theme.pending : (n.todo ? Theme.dangerText : Theme.primary))
         default: nil
         }
     }

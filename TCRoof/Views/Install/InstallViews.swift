@@ -87,11 +87,25 @@ private struct LogCard: View {
                     Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
                 }
                 Spacer()
-                Text(log.recorder)
-                    .font(.sarabun(12, .bold, relativeTo: .caption))
-                    .foregroundStyle(Theme.pending)
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(.orange.opacity(0.12), in: Capsule())
+                if log.reportJSON != nil {
+                    let status: (text: String, color: Color, fill: Color) = log.inspectorAckAt != nil
+                        ? ("อนุมัติแล้ว", Theme.successInk, Theme.successSoft)
+                        : log.engineerSignedAt != nil
+                            ? ("รอรับทราบ", Theme.pending, Theme.warningSoft)
+                            : ("ร่าง", Theme.muted, Theme.paperBand)
+                    Text(status.text)
+                        .font(.sarabun(12, .bold, relativeTo: .caption))
+                        .foregroundStyle(status.color)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(status.fill, in: Capsule())
+                }
+                if !log.recorder.isEmpty {
+                    Text(log.recorder)
+                        .font(.sarabun(12, .bold, relativeTo: .caption))
+                        .foregroundStyle(Theme.pending)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(.orange.opacity(0.12), in: Capsule())
+                }
                 Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
             }
             Text(log.detailLines.prefix(3).joined(separator: " | "))

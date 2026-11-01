@@ -75,6 +75,15 @@ struct JobInstallLogsView: View {
     }
 }
 
+fileprivate extension InstallLog {
+    var routineStatus: (text: String, color: Color, fill: Color)? {
+        guard reportJSON != nil else { return nil }
+        if inspectorAckAt != nil { return ("อนุมัติแล้ว", Theme.successInk, Theme.successSoft) }
+        if engineerSignedAt != nil { return ("รอรับทราบ", Theme.pending, Theme.warningSoft) }
+        return ("ร่าง", Theme.muted, Theme.paperBand)
+    }
+}
+
 private struct LogCard: View {
     let log: InstallLog
     let job: Job
@@ -87,12 +96,7 @@ private struct LogCard: View {
                     Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.primary)
                 }
                 Spacer()
-                if log.reportJSON != nil {
-                    let status: (text: String, color: Color, fill: Color) = log.inspectorAckAt != nil
-                        ? ("อนุมัติแล้ว", Theme.successInk, Theme.successSoft)
-                        : log.engineerSignedAt != nil
-                            ? ("รอรับทราบ", Theme.pending, Theme.warningSoft)
-                            : ("ร่าง", Theme.muted, Theme.paperBand)
+                if let status = log.routineStatus {
                     Text(status.text)
                         .font(.sarabun(12, .bold, relativeTo: .caption))
                         .foregroundStyle(status.color)
@@ -241,6 +245,28 @@ struct InstallLogDetailView: View {
                                 .padding(.horizontal, 8).padding(.vertical, 2)
                                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
                             Spacer()
+                            if let status = log.routineStatus {
+                                Text(status.text)
+                                    .font(.sarabun(12, .bold, relativeTo: .caption))
+                                    .foregroundStyle(status.color)
+                                    .padding(.horizontal, 8).padding(.vertical, 3)
+                                    .background(status.fill, in: Capsule())
+                            }
+                        }
+                        if let job = log.job, log.reportJSON != nil {
+                            Divider()
+                            NavigationLink {
+                                DailyReportScreen(job: job, date: log.date)
+                            } label: {
+                                HStack {
+                                    Label("เปิดรายงานประจำวัน (R2)", systemImage: "doc.text.magnifyingglass")
+                                        .font(.sarabun(15, .semibold, relativeTo: .subheadline))
+                                        .foregroundStyle(Theme.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
+                                }
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .foregroundStyle(Theme.navy)
@@ -315,7 +341,17 @@ struct InstallLogHistoryView: View {
                 ForEach(logs) { log in
                     PadLink { InstallLogDetailView(log: log) } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(log.job?.code ?? "-") | \(log.job?.projectName ?? "")").bold()
+                            HStack {
+                                Text("\(log.job?.code ?? "-") | \(log.job?.projectName ?? "")").bold()
+                                Spacer()
+                                if let status = log.routineStatus {
+                                    Text(status.text)
+                                        .font(.sarabun(11, .bold, relativeTo: .caption2))
+                                        .foregroundStyle(status.color)
+                                        .padding(.horizontal, 8).padding(.vertical, 2)
+                                        .background(status.fill, in: Capsule())
+                                }
+                            }
                             Text("\(log.date.thaiLong) | \(log.recorder) | \(log.sortedPhotos.count) รูป")
                                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                             Text(log.detailLines.joined(separator: " | ")).font(.sarabun(15, relativeTo: .subheadline)).lineLimit(1)

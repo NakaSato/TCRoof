@@ -181,7 +181,11 @@ struct JobDetailView: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: isPhone ? 1 : 2), spacing: 16) {
             action(job.surveyDraft == nil ? "เพิ่มแบบสำรวจ" : "ทำแบบสำรวจต่อ (ร่าง)", "list.bullet.clipboard", "\(job.savedSurveys.count) ฉบับ") { SurveyFormView(job: job) }
             action("สแกนอุปกรณ์", "barcode.viewfinder", "\(job.devices.count) รายการ") { JobDevicesView(job: job) }
-            action("บันทึกงานติดตั้ง", "hammer", "\(job.logs.count) บันทึก") { JobInstallLogsView(job: job) }
+            let pendingAck = job.pendingAckLogs.count
+            action("บันทึกงานติดตั้ง", "hammer",
+                   pendingAck > 0 ? "\(job.logs.count) บันทึก | รอรับทราบ \(pendingAck) วัน" : "\(job.logs.count) บันทึก") {
+                JobInstallLogsView(job: job)
+            }
             action("ใบตรวจรับงาน (ICL)", "checkmark.seal", inspectionStatus) { InspectionView(job: job) }
             if job.kind == .pwa {
                 action("ICL ตรวจหน้างาน (กปภ.)", "checklist.checked", siteICLStatus) { SiteICLScreen(job: job) }

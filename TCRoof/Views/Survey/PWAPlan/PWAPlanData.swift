@@ -41,7 +41,8 @@ extension Job {
         return PWAPlan.Station(id: overviewID, mpNumber: mpNumber, code: code, name: stationName, kWp: capacityKW,
                         contractor: contractor, team: contractor.isEmpty ? team.rawValue : "",
                         input: scheduleInput, actual: scheduleActual, handedOver: status == .completed,
-                        reportSentToday: sentDailyReportToday, surveyAt: surveyDate, inspections: routineSettings.inspections,
+                        reportSentToday: sentDailyReportToday, pendingAckDays: pendingAckLogs.count, surveyAt: surveyDate,
+                        inspections: routineSettings.inspections,
                         workingWeekdays: routineSettings.workingWeekdays,
                         workStart: routineSettings.workStart, workEnd: routineSettings.workEnd, docs: stationDocs, docsContext: stationContext,
                         holidays: Set(routineSettings.holidays))
@@ -124,7 +125,7 @@ enum PWAPlanDemo {
 
     static func board(today: Date) -> PWAPlanBoard {
         let cal = PWAPlan.calendar, today = cal.startOfDay(for: today)
-        func day(_ offset: Int) -> Date { cal.date(byAdding: .day, value: offset, to: today)! }
+        func day(_ offset: Int) -> Date { cal.date(byAdding: .day, value: offset, to: today) ?? today }
         func minutes(_ s: String) -> Int? {
             let p = s.split(separator: ":").compactMap { Int($0) }
             return p.count == 2 ? p[0] * 60 + p[1] : nil
@@ -164,7 +165,7 @@ enum PWAPlanDemo {
         let logistic = (0...20).map { 100 / (1 + exp(-(Double($0) - 11.4) / 2.6)) }
         let scale = planned.rounded() / logistic[11]
         let thisWeek = MasterSchedule.weekStart(today)
-        let weeks = (0...20).map { MasterSchedule.calendar.date(byAdding: .day, value: ($0 - 11) * 7, to: thisWeek)! }
+        let weeks = (0...20).map { MasterSchedule.calendar.date(byAdding: .day, value: ($0 - 11) * 7, to: thisWeek) ?? thisWeek }
         let curve = PWAPlan.Curve(weeks: weeks, plan: logistic.map { min(100, $0 * scale) }, actual: actualByWeek + [done.rounded()],
                                   todayIndex: 11, planned: planned, done: done)
 

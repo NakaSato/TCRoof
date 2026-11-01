@@ -143,13 +143,16 @@ extension PWAPlanPhoneView {
     private var curveHeight: CGFloat { pad ? 268 : 120 }
 
     private func ganttRow(_ bar: PWAPlan.Bar, axis: PWAPlanAxis) -> some View {
-        let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor)].filter { !$0.isEmpty }.joined(separator: " | ")
+        let pending = bar.pendingAckDays > 0 ? "รอรับทราบ \(bar.pendingAckDays) วัน" : ""
+        let who = [bar.ref, bar.contractor.isEmpty ? bar.team : PWAPlan.contractorTitle(bar.contractor), pending]
+            .filter { !$0.isEmpty }.joined(separator: " | ")
         let due = PWAPlanFormat.numeric.string(from: bar.due)
         return Button { open(.schedule, station: bar.id) } label: {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(bar.name).font(.sarabunFixed(pad ? 13 : 12, .bold)).foregroundStyle(Theme.navy).frame(height: pad ? 15 : 14)
-                    Text(who).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.85).frame(height: pad ? 15 : 13)
+                    Text(who).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(bar.pendingAckDays > 0 ? Theme.pending : Theme.inkMuted)
+                        .minimumScaleFactor(0.85).frame(height: pad ? 15 : 13)
                 }
                 .lineLimit(1)
                 .frame(width: ganttNameWidth, alignment: .leading)
@@ -163,7 +166,8 @@ extension PWAPlanPhoneView {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(bar.fullName) | จริง \(PWAPlanFormat.percent(bar.actual)) แผน \(PWAPlanFormat.percent(bar.planned)) | ส่งมอบ \(due)")
+        .accessibilityLabel("\(bar.fullName) | จริง \(PWAPlanFormat.percent(bar.actual)) แผน \(PWAPlanFormat.percent(bar.planned)) | ส่งมอบ \(due)"
+            + (pending.isEmpty ? "" : " | \(pending)"))
         .accessibilityAddTraits(.isButton)
     }
 }

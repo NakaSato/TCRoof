@@ -32,6 +32,7 @@ public enum PWAPlan {
         public var actual: MasterSchedule.Actual
         public var handedOver: Bool
         public var reportSentToday: Bool
+        public var pendingAckDays: Int
         public var surveyAt: Date?
         /// The PWA representative's inspection appointments.
         public var inspections: [RoutineReport.Inspection]
@@ -47,14 +48,15 @@ public enum PWAPlan {
 
         public init(id: String, mpNumber: Int? = nil, code: String = "", name: String, kWp: Double = 0, contractor: String = "",
                     team: String = "", input: MasterSchedule.Input? = nil, actual: MasterSchedule.Actual = .init(),
-                    handedOver: Bool = false, reportSentToday: Bool = true, surveyAt: Date? = nil,
+                    handedOver: Bool = false, reportSentToday: Bool = true, pendingAckDays: Int = 0, surveyAt: Date? = nil,
                     inspections: [RoutineReport.Inspection] = [],
                     workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], workStart: Int? = nil, workEnd: Int? = nil,
                     docs: StationDocs.Station = .init(),
                     docsContext: StationDocs.Context? = nil, holidays: Set<String> = []) {
             self.id = id; self.mpNumber = mpNumber; self.code = code; self.name = name; self.kWp = kWp
             self.contractor = contractor; self.team = team; self.input = input; self.actual = actual
-            self.handedOver = handedOver; self.reportSentToday = reportSentToday; self.surveyAt = surveyAt
+            self.handedOver = handedOver; self.reportSentToday = reportSentToday; self.pendingAckDays = pendingAckDays
+            self.surveyAt = surveyAt
             self.inspections = inspections; self.workingWeekdays = workingWeekdays; self.docs = docs
             self.workStart = workStart; self.workEnd = workEnd; self.holidays = holidays
             self.docsContext = docsContext ?? StationDocs.Context(docs, inverterKW: input?.over200kVA == true ? 200 : nil)
@@ -238,6 +240,14 @@ public enum PWAPlan {
                                           subtitle: "ยังไม่ส่ง \(missing.count) สถานี | " + missing.map(\.shortName).joined(separator: " "),
                                           status: .alert, station: first.id, opens: .dailies))
                 }
+                let pending = stations.filter { !$0.handedOver && $0.pendingAckDays > 0 }
+                if let first = pending.first {
+                    let total = pending.reduce(0) { $0 + $1.pendingAckDays }
+                    out.append(AgendaItem(id: "ack-\(key)", day: d, start: reportReminder, type: .notice, ref: "รออนุมัติ",
+                                          title: "รับทราบรายงานประจำวัน (รวม \(total) วัน)",
+                                          subtitle: "รอรับทราบ \(pending.count) สถานี | " + pending.map { "\($0.shortName) (\($0.pendingAckDays))" }.joined(separator: " "),
+                                          status: .waiting, station: first.id, opens: .dailies))
+                }
             }
         }
         return sorted(out)
@@ -420,11 +430,13 @@ public enum PWAPlan {
         public var actual: Double
         public var planned: Double
         public var behind: Bool
+        public var pendingAckDays: Int
 
         public init(id: String, ref: String, name: String, fullName: String, contractor: String = "", team: String = "",
-                    start: Date, due: Date, actual: Double, planned: Double, behind: Bool) {
+                    start: Date, due: Date, actual: Double, planned: Double, behind: Bool, pendingAckDays: Int = 0) {
             self.id = id; self.ref = ref; self.name = name; self.fullName = fullName; self.contractor = contractor
             self.team = team; self.start = start; self.due = due; self.actual = actual; self.planned = planned; self.behind = behind
+            self.pendingAckDays = pendingAckDays
         }
 
         public func matches(search: String) -> Bool { PWAPlan.matches([ref, fullName], search) }
@@ -438,7 +450,7 @@ public enum PWAPlan {
             let st = MasterSchedule.status(plan: MasterSchedule.plan(input, calendar: cal), actual: s.actual, through: today, calendar: cal)
             return Bar(id: s.id, ref: s.ref, name: s.shortName, fullName: s.name, contractor: s.contractor, team: s.team,
                        start: cal.startOfDay(for: input.installStart), due: cal.startOfDay(for: input.installEnd),
-                       actual: st.actual, planned: st.planned, behind: -st.variance >= threshold)
+                       actual: st.actual, planned: st.planned, behind: -st.variance >= threshold, pendingAckDays: s.pendingAckDays)
         }
         .sorted { $0.due < $1.due }
     }

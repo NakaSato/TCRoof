@@ -272,6 +272,30 @@ final class PWAPlanTests: XCTestCase {
         XCTAssertEqual(items.filter { $0.day == today }.last?.type, .notice)
     }
 
+    func testAgendaRemindsTodayAboutPendingAcknowledgements() {
+        var a = station("a", start: day(2026, 9, 1), end: day(2026, 11, 15))
+        var b = station("b", start: day(2026, 9, 1), end: day(2026, 11, 15))
+        var c = station("c", start: day(2026, 9, 1), end: day(2026, 11, 15))
+        a.pendingAckDays = 2
+        b.pendingAckDays = 1
+        c.pendingAckDays = 3
+        c.handedOver = true
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
+        let acks = PWAPlan.agenda([a, b, c], deadlines: [], days: [today, tomorrow], today: today).filter { $0.id.hasPrefix("ack-") }
+        XCTAssertEqual(acks.count, 1)
+        XCTAssertEqual(acks[0].day, today)
+        XCTAssertEqual(acks[0].title, "รับทราบรายงานประจำวัน (รวม 3 วัน)")
+        XCTAssertEqual(acks[0].subtitle, "รอรับทราบ 2 สถานี | a (2) b (1)")
+        XCTAssertEqual(acks[0].status, .waiting)
+        XCTAssertEqual(acks[0].opens, .dailies)
+        XCTAssertEqual(acks[0].station, "a")
+        // the count reaches the Gantt row
+        XCTAssertEqual(PWAPlan.bars([a], today: today).first?.pendingAckDays, 2)
+        // nothing pending: no row
+        a.pendingAckDays = 0; b.pendingAckDays = 0
+        XCTAssertTrue(PWAPlan.agenda([a, b], deadlines: [], days: [today], today: today).filter { $0.id.hasPrefix("ack-") }.isEmpty)
+    }
+
     func testAgendaShowsSurveyAppointmentAndDocumentDeadline() {
         var s = PWAPlan.Station(id: "s", code: "TC-0012", name: "สถานีผลิตน้ำ 1", team: "TCR02")
         s.surveyAt = day(2026, 10, 12, hour: 9, minute: 30)

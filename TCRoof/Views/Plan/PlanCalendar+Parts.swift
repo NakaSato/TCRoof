@@ -278,11 +278,20 @@ struct PlanDayJobRow: View {
             .font(.system(size: 14)).foregroundStyle(Theme.inkMuted)
             .labelStyle(TightIconLabel(spacing: 4))
             HStack(spacing: 6) {
-                Circle().fill(job.team.color).frame(width: 8, height: 8)
-                Text("ทีม \(job.team.rawValue)").font(.system(size: 12, weight: .bold))
+                HStack(spacing: 6) {
+                    Circle().fill(job.team.color).frame(width: 8, height: 8)
+                    Text("ทีม \(job.team.rawValue)").font(.system(size: 12, weight: .bold))
+                }
+                .padding(.horizontal, 8).frame(height: 22)
+                .overlay(Capsule().strokeBorder(Theme.borderControl))
+                let pending = job.pendingAckLogs.count
+                if pending > 0 {
+                    let log = job.dailyLog(on: date)
+                    let todayPending = log?.engineerSignedAt != nil && log?.inspectorAckAt == nil
+                    TCStatusChip(todayPending ? "รอรับทราบวันนี้" : "รอรับทราบ \(pending) วัน",
+                                 fill: Theme.pending.opacity(0.14), text: Theme.pending)
+                }
             }
-            .padding(.horizontal, 8).frame(height: 22)
-            .overlay(Capsule().strokeBorder(Theme.borderControl))
         }
         .foregroundStyle(Theme.navy)
         .padding(14).padding(.leading, 4)

@@ -490,8 +490,12 @@ extension PlanCalendarView {
     private func installRow(_ job: Job) -> some View {
         let day = job.installDay(on: selected) ?? 1
         let total = max(job.installDays, 1)
+        let pending = job.pendingAckLogs.count
+        let log = job.dailyLog(on: selected)
+        let pendingToday = log?.engineerSignedAt != nil && log?.inspectorAckAt == nil
+        let pendingNote = pendingToday ? " | รอรับทราบวันนี้" : pending > 0 ? " | รอรับทราบ \(pending) วัน" : ""
         return NavigationLink { JobDetailView(job: job) } label: {
-            PlanAgendaRow(rule: job.team.color, title: job.projectName, subtitle: "งานติดตั้ง | ทีม \(job.team.rawValue)",
+            PlanAgendaRow(rule: job.team.color, title: job.projectName, subtitle: "งานติดตั้ง | ทีม \(job.team.rawValue)" + pendingNote,
                           progress: (day, total, job.team.color)) {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("วัน \(day)/\(total)").font(.sarabun(15, .bold, relativeTo: .body)).monospacedDigit().foregroundStyle(Theme.navy)
@@ -499,7 +503,7 @@ extension PlanCalendarView {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("งานติดตั้ง \(job.projectName) วันที่ \(day) จาก \(total)")
+            .accessibilityLabel("งานติดตั้ง \(job.projectName) วันที่ \(day) จาก \(total)" + pendingNote)
         }
         .buttonStyle(.plain)
     }

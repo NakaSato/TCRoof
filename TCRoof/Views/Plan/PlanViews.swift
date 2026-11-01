@@ -13,6 +13,10 @@ struct PlanJobRow: View {
                 TeamTag(team: job.team)
                 Text(job.code).font(.sarabun(15, .bold, relativeTo: .subheadline))
                 Spacer()
+                if !job.pendingAckLogs.isEmpty {
+                    TCStatusChip("รอรับทราบ \(job.pendingAckLogs.count) วัน",
+                                 fill: Theme.pending.opacity(0.14), text: Theme.pending)
+                }
                 if let day = job.installDay(on: date) {
                     Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption))
                 }
@@ -43,7 +47,7 @@ struct PlanListView: View {
         // stations imported without install dates (`Job.unscheduled`) have no month here; their dates come with the MP plan
         let filtered = jobs.filter { $0.isScheduled && $0.matches(search) }
         let dict = Dictionary(grouping: filtered) { $0.installStart.startOfMonth }
-        return dict.keys.sorted().map { ($0, dict[$0]!) }
+        return dict.keys.sorted().compactMap { k in dict[k].map { (k, $0) } }
     }
 
     var body: some View {
@@ -61,11 +65,13 @@ struct PlanListView: View {
                     Text(group.month.thaiMonthYear).font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.navy)
                     LazyVGrid(columns: cardColumns, spacing: 16) {
                         ForEach(group.jobs) { job in
+                            let pending = job.pendingAckLogs.count
                             JobCard(job: job, dateLabel: "วันเริ่มติดตั้ง", date: job.installStart) {
                                 JobDetailView(job: job)
                             } footer: {
                                 JobCardStrip(key: "ช่วงติดตั้ง",
-                                             value: "\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน")
+                                             value: "\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน"
+                                                 + (pending > 0 ? " | รอรับทราบ \(pending) วัน" : ""))
                             }
                         }
                     }
@@ -87,6 +93,7 @@ struct PlanListView: View {
             ForEach(grouped, id: \.month) { group in
                 PadSection(group.month.thaiMonthYear) {
                     ForEach(group.jobs) { job in
+                        let pending = job.pendingAckLogs.count
                         PadLink { JobDetailView(job: job) } label: {
                             HStack(spacing: 12) {
                                 RoundedRectangle(cornerRadius: 2).fill(job.team.color).frame(width: 4)
@@ -101,7 +108,8 @@ struct PlanListView: View {
                                         Spacer(minLength: 4)
                                         TCStatusChip(job.status.title, fill: job.status.color.opacity(0.12), text: job.status.color).fixedSize()
                                     }
-                                    Text("\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน | \(job.capacityKW.kw)")
+                                    Text("\(job.installStart.thaiShort) – \(job.installEnd.thaiShort) | \(job.installDays) วัน | \(job.capacityKW.kw)"
+                                         + (pending > 0 ? " | รอรับทราบ \(pending) วัน" : ""))
                                         .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
                                 }
                             }

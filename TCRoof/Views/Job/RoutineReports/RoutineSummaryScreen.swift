@@ -12,11 +12,13 @@ struct RoutineSummaryScreen: View {
     @Bindable var job: Job
     let period: Period
     @Environment(\.modelContext) private var context
+    @Environment(\.permissions) private var permissions
     @State private var anchor: Date
     @State private var pdf: Data?
     @State private var share: ReportShare?
     @State private var filed = false
     @State private var slidesError: String?
+    @State private var ackingAll = false
 
     init(job: Job, period: Period, anchor: Date = .now) {
         self.job = job; self.period = period
@@ -25,6 +27,17 @@ struct RoutineSummaryScreen: View {
 
     private var built: RoutineReportFiles.Built {
         period == .week ? RoutineReportFiles.weekly(job, week: anchor) : RoutineReportFiles.monthly(job, month: anchor)
+    }
+
+    private var pendingInPeriod: [InstallLog] {
+        let cal = RoutineReport.calendar
+        switch period {
+        case .week:
+            let range = RoutineReport.week(of: anchor)
+            return job.pendingAckLogs.filter { range.contains(cal.startOfDay(for: $0.date)) }
+        case .month:
+            return job.pendingAckLogs.filter { cal.isDate($0.date, equalTo: anchor, toGranularity: .month) }
+        }
     }
 
     private var label: String {
@@ -49,6 +62,26 @@ struct RoutineSummaryScreen: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 6)
             .background(Theme.surface)
+            let pending = pendingInPeriod
+            if !pending.isEmpty {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Theme.pending)
+                    Text("มีรายงานประจำวันรอรับทราบ \(pending.count) วัน — ความคืบหน้าจะยังไม่ถูกนับเข้าแผนหลักจนกว่าจะรับทราบ")
+                        .font(.sarabun(14, .semibold, relativeTo: .subheadline))
+                        .foregroundStyle(Theme.navy)
+                    Spacer()
+                    if permissions.can(.dailySign, on: job.access) {
+                        Button("รับทราบทั้งหมด (\(pending.count) วัน)") { ackingAll = true }
+                            .font(.sarabun(14, .bold, relativeTo: .subheadline))
+                            .foregroundStyle(Theme.onPrimary)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(Theme.pending, in: Capsule())
+                    }
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(Theme.warningSoft)
+            }
             if let pdf {
                 PDFPreview(data: pdf)
             } else {
@@ -87,12 +120,20 @@ struct RoutineSummaryScreen: View {
             Button("ตกลง", role: .cancel) {}
         } message: { Text(slidesError ?? "") }
         .sheet(item: $share) { ActivitySheet(items: [$0.url]).presentationDetents([.medium, .large]) }
+        .sheet(isPresented: $ackingAll) {
+            let pending = pendingInPeriod
+            InspectorAckSheet(title: "รับทราบทั้งหมด (\(pending.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAckAll(pending, name: name, at: when, signature: drawn, context: context)
+                pdf = built.data
+                filed = false
+            }
+        }
         .task(id: anchor) { pdf = built.data; filed = false }
     }
 
     private func shift(_ n: Int) {
         let cal = RoutineReport.calendar
-        anchor = period == .week ? cal.date(byAdding: .day, value: 7 * n, to: anchor)! : cal.date(byAdding: .month, value: n, to: anchor)!
+        anchor = (period == .week ? cal.date(byAdding: .day, value: 7 * n, to: anchor) : cal.date(byAdding: .month, value: n, to: anchor)) ?? anchor
     }
 
     private func fileIt() {

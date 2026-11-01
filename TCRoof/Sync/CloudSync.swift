@@ -27,12 +27,12 @@ final class CloudSync {
         case failed(String)
     }
 
-    private(set) var state = State.off
-    private(set) var lastSync: Date?
+    var state = State.off
+    var lastSync: Date?
     /// The last pull to refresh found no network or couldn't reach the server; the feed says it shows what's here.
-    private(set) var refreshFailed = false
+    var refreshFailed = false
     /// Pulls to refresh so far: the feed rebuilds after each, at the time it ends.
-    private(set) var refreshes = 0
+    var refreshes = 0
     var loadingCollections = Set<String>()
 
     @ObservationIgnored var context: ModelContext?
@@ -467,130 +467,6 @@ final class CloudSync {
         state = .synced
         lastSync = .now
         refreshFailed = false
-    }
-
-    // MARK: pull to refresh
-
-    /// The home's pull to refresh. The listeners already bring every change in, so this restarts a failed sync or
-    /// pushes what's waiting, then waits up to 8 s for the server. Offline, Firestore keeps serving its cache and the
-    /// state stays `.synced`, so the network is checked too.
-    func refresh() async {
-        defer { refreshes += 1 }
-        guard context != nil else { return }
-        if case .failed = state { retry() } else { push() }
-        for _ in 0..<32 where state != .synced { try? await Task.sleep(for: .milliseconds(250)) }
-        let online = await Self.isOnline()
-        refreshFailed = !online || state != .synced
-    }
-
-    /// Before the account signs out: sends what is waiting, then waits up to `seconds` for the server to confirm
-    /// every write Firestore holds for this account, those queued in earlier launches too. False offline or on
-    /// timeout; the writes then stay queued under this account until it signs in here again.
-    func flush(seconds: Double = 10) async -> Bool {
-        guard context != nil, Auth.auth().currentUser != nil else { return true }
-        if case .failed = state { retry() } else { push() }
-        let done = Flag()
-        return await withCheckedContinuation { cont in
-            db.waitForPendingWrites { error in
-                MainActor.assumeIsolated { if done.set() { cont.resume(returning: error == nil) } }
-            }
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(seconds))
-                if done.set() { cont.resume(returning: false) }
-            }
-        }
-    }
-
-    /// Resumes a continuation once, from whichever of two callbacks comes first.
-    @MainActor private final class Flag {
-        private var isSet = false
-        func set() -> Bool { defer { isSet = true }; return !isSet }
-    }
-
-    static func isOnline() async -> Bool {
-        await withCheckedContinuation { done in
-            let monitor = NWPathMonitor()
-            monitor.pathUpdateHandler = { path in
-                monitor.cancel()
-                done.resume(returning: path.status == .satisfied)
-            }
-            monitor.start(queue: DispatchQueue(label: "cloudSync.path"))
-        }
-    }
-
-    func failed(_ error: Error) {
-        let e = error as NSError
-        if e.domain == FirestoreErrorDomain, e.code == FirestoreErrorCode.permissionDenied.rawValue {
-            // firestore.rules only lets in accounts listed under members/
-            let who = survey?.google.email.flatMap { $0.isEmpty ? nil : $0 } ?? "บัญชีนี้"
-            state = .failed("\(who) ยังไม่ได้รับสิทธิ์ใช้ข้อมูลทีม — ติดต่อผู้ดูแลให้เพิ่มในรายชื่อสมาชิก")
-        } else {
-            state = .failed(error.localizedDescription)
-        }
-    }
-
-    func enqueueSnapshotApplication(_ work: @escaping @MainActor () async -> Void) {
-        pendingSnapshotWork.append(work)
-        guard snapshotApplyTask == nil else { return }
-        let session = snapshotSession
-        snapshotApplyTask = Task { @MainActor [weak self] in
-            // Let the other collection listeners deliver their initial cache/server snapshots into this same batch.
-            try? await Task.sleep(for: .milliseconds(50))
-            guard let self, self.snapshotIsCurrent(session) else { return }
-            // Callbacks can arrive while decoding or between apply chunks. Drain them before releasing the task.
-            while !self.pendingSnapshotWork.isEmpty {
-                let batch = self.pendingSnapshotWork
-                self.pendingSnapshotWork.removeAll(keepingCapacity: true)
-                self.snapshotJobIndex = nil
-                self.pendingModelIndexes.removeAll(keepingCapacity: true)
-                for apply in batch {
-                    guard self.snapshotIsCurrent(session) else { return }
-                    await apply()
-                }
-                guard self.snapshotIsCurrent(session) else { return }
-                self.saveKnown()
-                self.snapshotJobIndex = nil
-                self.pendingModelIndexes.removeAll(keepingCapacity: true)
-            }
-            self.refreshSurveyPending()
-            self.snapshotApplyTask = nil
-        }
-    }
-
-    func snapshotIsCurrent(_ session: UUID) -> Bool {
-        snapshotSession == session && context != nil && !Task.isCancelled
-    }
-
-    /// A yield may immediately resume this task. Leave a frame interval between database batches instead.
-    func pauseSnapshotApplication(_ session: UUID) async -> Bool {
-        do { try await Task.sleep(for: .milliseconds(24)) }
-        catch { return false }
-        return snapshotIsCurrent(session)
-    }
-
-    /// No suspension occurs between applying a chunk and saving it. UI edits between chunks are saved separately.
-    func saveSnapshotChanges() {
-        if let context, context.hasChanges {
-            let contextID = ObjectIdentifier(context)
-            // Startup saves have no upload observer yet; don't let their marker swallow the first later UI edit.
-            if !observers.isEmpty { remoteSavePushSuppressions.insert(contextID) }
-            do {
-                try context.save()
-            } catch {
-                remoteSavePushSuppressions.remove(contextID)
-                print("CloudSync: remote save: \(error.localizedDescription)")
-            }
-        }
-        applyingRemoteSnapshots = false
-    }
-
-    func jobIndexForSnapshotBatch() -> [String: Job] {
-        if let snapshotJobIndex { return snapshotJobIndex }
-        let jobs = (try? context?.fetch(FetchDescriptor<Job>())) ?? []
-        let index = Dictionary(jobs.compactMap { job in job.syncID.map { ($0, job) } },
-                               uniquingKeysWith: { first, _ in first })
-        snapshotJobIndex = index
-        return index
     }
 }
 

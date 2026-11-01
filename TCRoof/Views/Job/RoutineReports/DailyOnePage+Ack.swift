@@ -151,10 +151,23 @@ struct DailyAckBar: View {
 
     private var acked: Bool { page.ackAt != nil }
 
+    private var otherPending: [InstallLog] {
+        page.job.pendingAckLogs.filter { !RoutineReport.calendar.isDate($0.date, inSameDayAs: page.date) }
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             status
             Spacer(minLength: 12)
+            if let next = otherPending.first {
+                Button { page.actions.open(next.date) } label: {
+                    Text("วันรอรับทราบถัดไป (\(otherPending.count))")
+                        .font(.sarabunFixed(15, .bold))
+                        .foregroundStyle(Theme.pending)
+                        .padding(.horizontal, 14).frame(height: 44)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card))
+            }
             sendBackButton
             previewButton
             confirmButton

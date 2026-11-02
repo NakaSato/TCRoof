@@ -49,7 +49,7 @@ test('the team reads and writes everything, as before roles', async () => {
   await assertSucceeds(getDocs(collection(d, 'jobs')));
   await assertSucceeds(getDoc(doc(d, 'jobContacts', 'mine')));
   await assertSucceeds(updateDoc(doc(d, 'jobs', 'mine'), { status: 'completed' }));
-  await assertSucceeds(updateDoc(doc(d, 'installLogs', 'log1'), { engineerSignedAt: 1 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'installLogs', 'log1'), { engineerSignedAt: 1 }));
   await assertSucceeds(getDocs(collection(d, 'pwaSurveyRevisions')));
   await assertSucceeds(getDocs(collection(db(BOSS), 'jobs')));
 });
@@ -317,14 +317,17 @@ test('a new contractor sees a job only once assigned to it, and everything once 
   await assertSucceeds(getDoc(doc(d, 'jobContacts', 'mine')));
 });
 
-test('the team names who works on a job; a contractor can\'t change it', async () => {
-  await assertSucceeds(updateDoc(doc(db(TEAM), 'jobs', 'mine'), { teamMembers: [TEAM, BOSS] }));
+test('only a manager assigns the team and supervisor who approve reports', async () => {
+  await assertFails(updateDoc(doc(db(TEAM), 'jobs', 'mine'), { teamMembers: [TEAM, BOSS] }));
+  await assertFails(updateDoc(doc(db(TEAM), 'jobs', 'mine'), { supervisor: TEAM }));
+  await assertFails(setDoc(doc(db(TEAM), 'jobs', 'selfAssigned'), { teamMembers: [TEAM] }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { teamMembers: [TEAM, BOSS] }));
   await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { teamMembers: [] }));
   const d = db(CON);
   await assertFails(updateDoc(doc(d, 'jobs', 'mine'), { teamMembers: [CON] }));
   await assertFails(setDoc(doc(d, 'jobs', 'mine'), { iecReport: '{}', iecState: 'open', teamMembers: [CON] }, { merge: true }));
   // naming opens nothing: a contractor on the team list still can't read a job not assigned to them
-  await assertSucceeds(updateDoc(doc(db(TEAM), 'jobs', 'theirs'), { teamMembers: [CON] }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'theirs'), { teamMembers: [CON] }));
   await assertFails(getDoc(doc(d, 'jobs', 'theirs')));
 });
 
@@ -369,8 +372,8 @@ test('a job that names its people: only they or a manager sign its daily reports
   await assertSucceeds(updateDoc(doc(db(BOSS), 'installLogs', 'log1'), { inspectorAckAt: 3 }));
   await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { supervisor: TEAM }));
   await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { engineerSignedAt: 4 }));
-  // a job naming none of ours: any team member (the first test signs log1 so)
-  await assertSucceeds(updateDoc(doc(db(TEAM), 'installLogs', 'log2'), { engineerSignedAt: 5 }));
+  // An unassigned internal member cannot approve even when no reviewer is named.
+  await assertFails(updateDoc(doc(db(TEAM), 'installLogs', 'log2'), { inspectorAckAt: 5 }));
 });
 
 test('an issued REV goes only with its survey, or by a manager', async () => {
@@ -724,4 +727,21 @@ test('project cache is shown first but a short cache page never truncates server
     assert.ok(!ids.includes('cached-01'));
     const refreshed = await getDocsFromCache(query(base, limit(10)));
     assert.equal(refreshed.docs.find(d => d.id === 'cached-00').data().code, 'updated');
+});
+
+
+test('manager assigns an internal reviewer; external submits; only assigned reviewer approves', async () => {
+  const ENG = 'reviewer@tcroof.co';
+  await env.withSecurityRulesDisabled(async ctx => {
+    await setDoc(doc(ctx.firestore(), 'members', ENG), { role: 'internal' });
+  });
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'mine'), { teamMembers: [ENG] }));
+  await assertFails(updateDoc(doc(db(ENG), 'installLogs', 'log1'), { inspectorAckAt: 9 }));
+  await assertSucceeds(updateDoc(doc(db(CON), 'installLogs', 'log1'), { report: '{"work":"done"}', engineerSignedAt: 10 }));
+  await assertFails(updateDoc(doc(db(CON), 'installLogs', 'log1'), { inspectorAckAt: 11 }));
+  await assertFails(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { inspectorAckAt: 11 }));
+  await assertSucceeds(updateDoc(doc(db(BOSS), 'jobs', 'theirs'), { teamMembers: [TEAM] }));
+  await assertFails(updateDoc(doc(db(TEAM), 'installLogs', 'log1'), { jobID: 'theirs', inspectorAckAt: 11 }));
+  await assertSucceeds(updateDoc(doc(db(ENG), 'installLogs', 'log1'), { inspectorAckAt: 12 }));
+  await assertFails(updateDoc(doc(db(CON), 'installLogs', 'log1'), { report: '{}' }));
 });

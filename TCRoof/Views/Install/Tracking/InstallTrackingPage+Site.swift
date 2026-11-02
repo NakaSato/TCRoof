@@ -12,6 +12,7 @@ extension InstallTrackingPage {
 
     func go(_ target: InstallPageData.Target) {
         sheet = nil
+        guard target != .docs || canOpen(.docs) else { return }
         // the iPad's เอกสาร is a tab of the page; the iPhone pushes the station's papers
         if target == .docs, sizeClass != .compact { tab = .docs; return }
         // and so is คำขอรายสัปดาห์
@@ -40,7 +41,7 @@ extension InstallTrackingPage {
     static let docTileInset: CGFloat = 3
 
     @ViewBuilder func siteRow(_ data: InstallPageData) -> some View {
-        let docs = data.docs, site = data.site
+        let docs = permissions.role == .external ? [] : data.docs, site = data.site
         if !docs.isEmpty || site != nil {
             GeometryReader { g in
                 // documents wider, 1.45 : 1; one card alone takes the width
@@ -382,7 +383,7 @@ extension InstallTrackingPage {
                 .accessibilityHidden(true)
             switch s {
             case .actions: actionsSheet(data.actions)
-            case .doc(let id): if let t = data.docs.first(where: { $0.id == id }) { docSheet(t) }
+            case .doc(let id): if permissions.role != .external, let t = data.docs.first(where: { $0.id == id }) { docSheet(t) }
             }
         }
         .transition(.opacity)

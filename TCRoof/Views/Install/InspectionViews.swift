@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import SwiftData
+import TCRoofCore
 
 /// Step-by-step installation checklist (ICL), ending with customer sign-off. The team fills and signs it; a member who
 /// may only view it (`icl.checklist`: an external member) sees the submitted report, never a form: their device

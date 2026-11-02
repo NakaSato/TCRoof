@@ -68,15 +68,13 @@ service cloud.firestore {
       return sheetID is string
         && listsMe(get(/databases/$(database)/documents/iclSheets/$(sheetID)).data);
     }
-    // The signed-in team member signs the daily reports of this job: on its team, its supervisor, or the job names
-    // none of ours (Permissions.signsDaily).
+    // The manager assigns the team members and supervisor who approve daily reports.
     function signsFor(jobID) {
       let job = get(/databases/$(database)/documents/jobs/$(jobID)).data;
       let team = job.get('teamMembers', []);
       let supervisor = job.get('supervisor', '');
       return jobID is string
-        && ((team.size() == 0 && (supervisor == '' || supervisor == null))
-            || signedInEmail() in team || supervisor == signedInEmail());
+        && (signedInEmail() in team || supervisor == signedInEmail());
     }
     // The fields an update changes.
     function changedKeys() {
@@ -188,14 +186,16 @@ service cloud.firestore {
     // sent or closed, only the team sends it back or reopens it. Team devices drop a close the state doesn't record.
     match /jobs/{doc} {
       allow read: if isTeam() || readsMine();
-      allow create: if isTeam();
+      allow create: if isTeam() && (isManager()
+        || (request.resource.data.get('teamMembers', []).size() == 0
+            && request.resource.data.get('supervisor', '') in ['', null]));
       // ลบงาน (job.delete): the team and managers, never a contractor
       allow delete: if isTeam();
       // A contractor changes only the IEC test (while it is open, and never closes it), the weekly requests R1
       // (weekly.request) and the plan's WBS ticks, signing the latter two with their own email in `weeklyRequestsBy` /
       // `wbsTicksBy`: a rule can't read inside the JSON, so team devices drop a contractor's change to a week already
       // sent or approved (RoutineReport.WeeklyRequest.trusting) and to a tick the team made (WBSTick.trusting).
-      allow update: if isTeam()
+      allow update: if (isTeam() && (isManager() || !changedKeys().hasAny(['teamMembers', 'supervisor'])))
         || (isExternal() && listsMe(resource.data)
             && changedKeys().hasOnly(['iecReport', 'iecState', 'weeklyRequests', 'weeklyRequestsBy', 'wbsTicks', 'wbsTicksBy'])
             && (!changedKeys().hasAny(['iecReport', 'iecState'])
@@ -212,13 +212,17 @@ service cloud.firestore {
       allow read, write: if isTeam();
     }
 
-    // Daily reports: the contractor's foreman fills them; only our engineer signs or records the inspector, and on a job
-    // that names its people (teamMembers, supervisor) only they or a manager do (daily.sign). Anyone of the team may keep
+    // Daily reports: the contractor submits them; the manager or assigned internal reviewers approve (daily.sign).
+    // Unassigned internal members cannot approve, including jobs with no reviewers. Anyone of the team may keep
     // a signature or clear it, as editing a signed report does.
     match /installLogs/{doc} {
       allow read: if isTeam() || readsMine();
-      allow create, update: if isTeam() && (isManager() || signaturesKeptOrCleared()
-        || signsFor(request.resource.data.get('jobID', null)));
+      allow create, update: if isTeam()
+        && (resource == null || unchanged('jobID'))
+        && (unchanged('inspectorAckAt') || request.resource.data.get('inspectorAckAt', null) == null
+            || request.resource.data.get('engineerSignedAt', null) != null)
+        && (isManager() || signaturesKeptOrCleared()
+            || signsFor(request.resource.data.get('jobID', null)));
       allow delete: if isTeam();
       // a contractor changes or signs (submits) a report only while it is unsigned; once signed (engineerSignedAt != null)
       // it awaits inspector approval (inspectorAckAt) and only the team may approve, send back, or edit it

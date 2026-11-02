@@ -41,8 +41,8 @@ extension DailyReportEditor {
             if let ack = log?.inspectorAckAt {
                 Label("Inspector รับทราบ \(ack.thaiLong)", systemImage: "person.fill.checkmark").foregroundStyle(Theme.okText)
             } else {
-                Button("บันทึก Inspector รับทราบ", action: requestAck).frame(minHeight: touchMin)
                 if canSign {
+                    Button("อนุมัติรายงาน", action: requestAck).frame(minHeight: touchMin)
                     Button("ส่งกลับให้แก้", role: .destructive) { askSendBack = true }
                         .frame(minHeight: touchMin)
                         .accessibilityIdentifier("dailySendBack")
@@ -93,7 +93,7 @@ extension DailyReportEditor {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button(action: requestSign) {
-                Text("ตรวจ & ลงนาม").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
+                Text(permissions.role == .external ? "ลงนามและส่งให้ทีมภายใน" : "ตรวจ & ลงนาม").font(.sarabun(17, .semibold, relativeTo: .body)).frame(maxWidth: .infinity, minHeight: touchMin)
             }
             .buttonStyle(TCButtonStyle(.primary, size: .card))
             .accessibilityIdentifier("dailySign")
@@ -222,7 +222,12 @@ extension DailyReportEditor {
         job.feedMP()   // write() booked it as a draft, which doesn't count
         if let built = RoutineReportFiles.daily(job, log: target) {
             let data = RoutineReportFiles.file(built, job: job, context: context)
-            if let url = try? RoutineReportFiles.temporaryURL(built, data: data) { share = ReportShare(url: url) }
+            if let url = try? RoutineReportFiles.temporaryURL(built, data: data) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(350))
+                    share = ReportShare(url: url)
+                }
+            }
         }
         if let excel = RoutineReportFiles.dailyExcel(job, log: target) { RoutineReportFiles.file(excel, job: job, context: context) }
         try? context.save()
@@ -230,12 +235,13 @@ extension DailyReportEditor {
     }
 
     func acknowledge(name: String, at when: Date, signature: Data?) {
-        guard let target = log else { return }
+        guard canSign, !dirty, let target = log, target.engineerSignedAt != nil else { return }
         job.recordInspectorAck(target, name: name, at: when, signature: signature, context: context)
     }
 
     func exportPDF() {
-        guard let log, let built = RoutineReportFiles.daily(job, log: log), let url = try? RoutineReportFiles.temporaryURL(built) else { return }
+        let target = (dirty ? nil : log) ?? write()
+        guard let built = RoutineReportFiles.daily(job, log: target), let url = try? RoutineReportFiles.temporaryURL(built) else { return }
         share = ReportShare(url: url)
     }
 

@@ -125,9 +125,15 @@ struct InstallKeyPlanPanel: View {
         .padding(.bottom, 6)
         .tcToast($toast)
         .task {
+            #if DEBUG
             if demo { picture = (Job.demoPicture.image, false) } else if let p = job.keyPlanPicture {
                 picture = (p.image, job.uploadedKeyPlan != nil)
             }
+            #else
+            if let p = job.keyPlanPicture {
+                picture = (p.image, job.uploadedKeyPlan != nil)
+            }
+            #endif
             loaded = true
             #if DEBUG
             applyDebug()

@@ -23,7 +23,8 @@ extension InstallTrackingPage {
         switch r {
         case .request(let week): WeeklyRequestScreen(job: job, week: week)
         case .weekly(let week): RoutineSummaryScreen(job: job, period: .week, anchor: week)
-        case .docs(let package, let paper): StationDocsScreen(job: job, package: package, paper: paper.flatMap(StationDocs.kind))
+        case .docs(let package, let paper):
+            if canOpen(.docs) { StationDocsScreen(job: job, package: package, paper: paper.flatMap(StationDocs.kind)) }
         case .access: PhoneAccessScreen(job: job)
         }
     }
@@ -67,13 +68,13 @@ extension InstallTrackingPage {
         case .overview:
             phoneKPIs(data)
             if let g = data.gantt { phoneProgressCard(data, g) }
-            if !data.docs.isEmpty { phoneDocsCard(data.docs) }
+            if permissions.role != .external, !data.docs.isEmpty { phoneDocsCard(data.docs) }
             if let s = data.site { phoneSitePanel(s) }
         case .daily: phoneDailyTab(dailyData)
         case .request: phoneRequestTab()
         case .weekly: phoneWeeklyTab()
         case .iec: phoneIECTab()
-        case .docs: phoneDocsTab()
+        case .docs: if canOpen(.docs) { phoneDocsTab() }
         case .plan: phonePlanTab(data)
         }
     }

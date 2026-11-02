@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import SwiftData
+import TCRoofCore
 
 /// Root tabs of the iPad (regular width) behind the floating dock (docs/ui/tcroof-home-ipad-v2).
 enum PadTab: String, CaseIterable {

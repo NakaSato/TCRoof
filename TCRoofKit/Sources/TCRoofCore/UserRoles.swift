@@ -141,7 +141,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .jobEdit: (.allow, .allow, .deny),
         .jobDelete: (.allow, .allow, .deny),
         .assignExternal: (.allow, .allow, .deny),
-        .assignTeam: (.allow, .allow, .deny),
+        .assignTeam: (.allow, .deny, .deny),
         .mpSetup: (.allow, .allow, .deny),
         .mpProgress: (.allow, .allow, .deny),
         .mpWBSTick: (.allow, .allow, .conditional),
@@ -244,11 +244,10 @@ public struct Permissions: Equatable, Sendable {
     /// The job names this member: on its team, its supervisor, or an assigned external (`งานของฉัน`).
     public func isNamed(_ job: JobAccess?) -> Bool { isOnTeam(job) || isSupervisor(job) || isAssigned(job) }
 
-    /// The team's half of `daily.sign`: on the job's team, its supervisor, or the job names none of ours (firestore.rules
-    /// `signsFor`). No job to ask about: true.
+    /// The team's half of `daily.sign`: a manager assigns the job's team or supervisor (firestore.rules `signsFor`).
     public func signsDaily(_ job: JobAccess?) -> Bool {
-        guard let job else { return true }
-        return !job.hasOwners || isOnTeam(job) || isSupervisor(job)
+        guard let job else { return false }
+        return isOnTeam(job) || isSupervisor(job)
     }
 
     /// Whether a job's news (a daily report sent, a test result, an issue) is announced on this member's device: a
@@ -267,8 +266,7 @@ public struct Permissions: Equatable, Sendable {
     /// - an external member acts only on the jobs assigned to them (signing ones included: the job's signing
     ///   engineer is an assigned external);
     /// - final acceptance (`handover.final_signoff`) is signed by the manager or the job's supervising engineer;
-    /// - a daily report (`daily.sign`) is signed by the job's own people: its team members and supervisor, or, on a job
-    ///   that names none of ours, any team member (`signsDaily`);
+    /// - a daily report (`daily.sign`) is signed by the job's own people: its assigned team members and supervisor (`signsDaily`);
     /// - the team's other conditions (an engineer with a licence certifies, change requests and punch-list steps) are
     ///   left to the person: the app doesn't know licences.
     public func can(_ capability: Capability, on job: JobAccess? = nil) -> Bool {

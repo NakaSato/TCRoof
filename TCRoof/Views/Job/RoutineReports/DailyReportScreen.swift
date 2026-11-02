@@ -108,7 +108,7 @@ struct DailyReportEditor: View {
             }
         }
         .sheet(isPresented: $showAck) {
-            InspectorAckSheet(title: "Inspector รับทราบ", name: job.routineSettings.inspector, date: log?.inspectorAckAt ?? .now,
+            InspectorAckSheet(title: "อนุมัติรายงานประจำวัน", name: job.routineSettings.inspector, date: log?.inspectorAckAt ?? .now,
                               signs: true) { name, when, drawn in
                 acknowledge(name: name, at: when, signature: drawn)
             }
@@ -225,7 +225,7 @@ struct DailyReportEditor: View {
     }
     /// Who signs, for the line a member who can't sees: our engineers for a contractor, and for a team member not on
     /// a job that names its people (`Permissions.signsDaily`), that job's team, its supervisor or a manager.
-    var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานของงานนี้ ผู้ควบคุมงาน หรือผู้จัดการ" }
+    var signers: String { permissions.role == .external ? "วิศวกรของเรา" : "ทีมงานหรือผู้ควบคุมงานที่ผู้จัดการมอบหมาย หรือผู้จัดการ" }
 
     func requestSign() {
         if log?.engineerSignedAt != nil, !canSign { return withAnimation { toast = signedForOthers } }

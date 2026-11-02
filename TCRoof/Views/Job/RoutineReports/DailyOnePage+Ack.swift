@@ -216,7 +216,7 @@ struct DailyAckBar: View {
             HStack(spacing: 8) {
                 VStack(spacing: 0) {
                     Text(acked ? "เซ็นแล้ว" : "ยังไม่ได้เซ็นรับทราบ").font(.sarabunFixed(12)).opacity(0.85).lineLimit(1)
-                    Text("ยืนยันรับทราบ").font(.sarabunFixed(16, .bold))
+                    Text("อนุมัติรายงาน").font(.sarabunFixed(16, .bold))
                 }
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
             }

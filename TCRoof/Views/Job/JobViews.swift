@@ -39,7 +39,7 @@ struct JobDetailView: View {
                 JobAccessCard(job: job)
                 if job.kind == .pwa { PWASurveyCard(job: job) }
                 surveysCard
-                documentsCard
+                if permissions.role != .external { documentsCard }
             }
             .padding(isPhone ? 16 : 24)
             .frame(maxWidth: 1100)

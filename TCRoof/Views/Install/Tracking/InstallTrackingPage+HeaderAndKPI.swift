@@ -94,6 +94,9 @@ extension InstallTrackingPage {
         if !canOpen(tab) { tab = .overview }
         if [.weekly, .docs, .plan].contains(phoneTab) { phoneTab = .overview }
         phoneSettings = false
+        if case .doc = sheet { sheet = nil }
+        if route == .docs { route = nil }
+        if case .docs = phoneRoute { phoneRoute = nil }
     }
 
     func tabBar(_ data: InstallPageData) -> some View {

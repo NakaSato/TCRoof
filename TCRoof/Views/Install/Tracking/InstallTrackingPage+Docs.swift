@@ -25,7 +25,7 @@ extension InstallTrackingPage {
     var docsReadOnly: Bool { !permissions.can(.stationDocsDrafts, on: job.access) }
 
     @ViewBuilder func docsTab() -> some View {
-        if permissions.canView(.stationDocsDrafts, on: job.access) {
+        if canOpen(.docs), permissions.canView(.stationDocsDrafts, on: job.access) {
             let src = docsSource
             let steps = StationDocs.path(station: src.station, library: src.library, src.ctx)
             let selected = docsStage ?? StationDocs.defaultStep(steps)

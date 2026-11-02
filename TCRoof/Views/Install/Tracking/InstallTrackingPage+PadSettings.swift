@@ -185,7 +185,7 @@ enum PadPersonRole: String {
     var tone: InstallPageData.Tone { self == .external ? .warn : .info }
 
     /// The capability `JobAccessCard` checks for this part (the supervisor sits in its external part).
-    var capability: Capability { self == .team ? .assignTeam : .assignExternal }
+    var capability: Capability { self == .external ? .assignExternal : .assignTeam }
 }
 
 /// `-installDemo YES`: the board's station in memory, so nothing is saved (empty in release builds).

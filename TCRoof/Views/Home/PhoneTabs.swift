@@ -1,6 +1,7 @@
 import SwiftUI
 import TCRoofUI
 import SwiftData
+import TCRoofCore
 
 /// Root tabs of the iPhone (compact width) behind the floating tab dock (docs/ui/tcroof-home-iphone-v3).
 enum PhoneTab: String {

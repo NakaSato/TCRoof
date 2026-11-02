@@ -105,11 +105,12 @@ final class RoleTableTests: XCTestCase {
         // naming on the team opens nothing: the team sees every job anyway, and an external member only theirs
         XCTAssertTrue(other.can(.dailyFill, on: job))
         XCTAssertFalse(Permissions(role: .external, email: "eng@tcroof.co").can(.dailyFill, on: JobAccess(teamMembers: ["eng@tcroof.co"])))
-        XCTAssertTrue(eng.can(.assignTeam) && boss.can(.assignTeam))
+        XCTAssertFalse(eng.can(.assignTeam))
+        XCTAssertTrue(boss.can(.assignTeam))
         XCTAssertFalse(con.can(.assignTeam, on: job))
     }
 
-    /// Daily reports are signed by the job's own people; a job naming none of ours, by any team member.
+    /// Daily reports are approved by the manager or assigned internal reviewers.
     func testDailyReportsAreSignedByTheJobsPeople() {
         let job = JobAccess(externals: ["con@x.co"], supervisor: "sup@tcroof.co", teamMembers: ["eng@tcroof.co"])
         XCTAssertTrue(Permissions(role: .internalTeam, email: "eng@tcroof.co").can(.dailySign, on: job))
@@ -117,8 +118,8 @@ final class RoleTableTests: XCTestCase {
         XCTAssertTrue(Permissions(role: .manager, email: "boss@tcroof.co").can(.dailySign, on: job))
         XCTAssertFalse(Permissions(role: .internalTeam, email: "other@tcroof.co").can(.dailySign, on: job), "not on this job")
         XCTAssertFalse(Permissions(role: .external, email: "con@x.co").can(.dailySign, on: job), "the contractor fills, never signs")
-        XCTAssertTrue(Permissions(role: .internalTeam, email: "other@tcroof.co").can(.dailySign, on: JobAccess(externals: ["con@x.co"])),
-                      "a job naming none of ours: any team member")
+        XCTAssertFalse(Permissions(role: .internalTeam, email: "other@tcroof.co").can(.dailySign, on: JobAccess(externals: ["con@x.co"])),
+                       "a manager must assign a reviewer first")
     }
 
     func testViewOnlyCells() {
@@ -153,7 +154,7 @@ final class RoleTableTests: XCTestCase {
     func testTeamAndManager() {
         let team = Permissions.team
         XCTAssertTrue(team.can(.iecClose))
-        XCTAssertTrue(team.can(.dailySign))
+        XCTAssertFalse(team.can(.dailySign))
         XCTAssertTrue(team.can(.jobDelete))
         XCTAssertFalse(Permissions(role: .external, email: "c@x.co").can(.jobDelete))
         XCTAssertFalse(team.can(.usersManage))

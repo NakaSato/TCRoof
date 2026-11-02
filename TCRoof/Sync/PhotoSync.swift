@@ -123,27 +123,28 @@ final class PhotoSync {
     private func download(_ context: ModelContext, _ survey: SurveyModel) async throws {
         guard canRunAutomatically else { return }
         let todo = (try? context.fetch(FetchDescriptor<PhotoAsset>(predicate: #Predicate { $0.needsDownload }))) ?? []
-        let files = todo.compactMap { p in p.driveFileID.map { (p, $0) } }
+        let files = todo.compactMap { p in p.driveFileID.map { (p.persistentModelID, $0) } }
         guard !files.isEmpty else { return }
         var failure: Error?
-        await withTaskGroup(of: (PhotoAsset, Result<Data, Error>).self) { group in
+        await withTaskGroup(of: (PersistentIdentifier, Result<Data, Error>).self) { group in
             var next = files.makeIterator()
             func start(allowed: Bool) {
                 guard allowed else { return }
-                guard let (photo, id) = next.next() else { return }
+                guard let (modelID, id) = next.next() else { return }
                 group.addTask { @MainActor in
-                    do { return (photo, .success(try await survey.driveDownload(id))) } catch { return (photo, .failure(error)) }
+                    do { return (modelID, .success(try await survey.driveDownload(id))) } catch { return (modelID, .failure(error)) }
                 }
             }
             for _ in 0..<4 { start(allowed: canRunAutomatically) }
-            for await (photo, result) in group {
+            for await (modelID, result) in group {
                 switch result {
-                case .success(let data) where !photo.isDeleted:
-                    photo.data = data
-                    photo.needsDownload = false
-                    try? context.save()
+                case .success(let data):
+                    if let photo = context.model(for: modelID) as? PhotoAsset, !photo.isDeleted {
+                        photo.data = data
+                        photo.needsDownload = false
+                        try? context.save()
+                    }
                 case .failure(let error): failure = error
-                default: break
                 }
                 start(allowed: canRunAutomatically)
             }

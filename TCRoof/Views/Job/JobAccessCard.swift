@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import TCRoofUI
 import TCRoofCore
 
@@ -31,14 +32,14 @@ struct JobAccessCard: View {
     }
 
     /// Our team members on the job: it shows in their `งานของฉัน`, and its news reaches them (and the supervisor) rather
-    /// than the whole team. It opens nothing: the team sees every job.
+    /// than the whole team. The assigned internal members can approve daily reports.
     private var teamPart: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("ทีมงานของเรา").font(.sarabun(17, .semibold, relativeTo: .headline)).foregroundStyle(Theme.navy)
-            Text("งานนี้อยู่ใน งานของฉัน ของคนในทีมงาน | แจ้งเตือนรายงานและผลทดสอบของงานนี้ไปถึงทีมงานและผู้ควบคุมงาน ไม่ใช่ทั้งทีม")
+            Text("ผู้จัดการมอบหมายทีมงานและผู้ควบคุมงานเพื่อตรวจอนุมัติรายงานประจำวัน | งานและแจ้งเตือนปรากฏใน งานของฉัน")
                 .font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
             if job.teamMembers.isEmpty {
-                Text("ยังไม่ได้กำหนด | แจ้งเตือนไปถึงทุกคนในทีม").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                Text("ยังไม่ได้กำหนด | ผู้จัดการต้องมอบหมายผู้ตรวจอนุมัติรายงาน").font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
             ForEach(job.teamMembers, id: \.self) { email in
                 HStack {
@@ -112,11 +113,13 @@ struct JobAccessCard: View {
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                     .disabled(!Self.isEmail(newEmail))
             }
-            Divider()
-            TCFieldLabel("ผู้ควบคุมงาน (ลงนามตรวจรับงานขั้นสุดท้ายได้)")
-            TCTextField("อีเมลวิศวกรของเรา", text: $supervisor, keyboard: .emailAddress)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .onSubmit(saveSupervisor)
+            if permissions.role.managesTeam {
+                Divider()
+                TCFieldLabel("ผู้ควบคุมงาน (ลงนามตรวจรับงานขั้นสุดท้ายได้)")
+                TCTextField("อีเมลวิศวกรของเรา", text: $supervisor, keyboard: .emailAddress)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .onSubmit(saveSupervisor)
+            }
         }
     }
 
@@ -144,16 +147,19 @@ struct JobAccessCard: View {
     }
 
     private func addMember(_ email: String) {
+        guard permissions.can(.assignTeam, on: job.access) else { return }
         job.teamMembers.append(email)
         try? context.save()
     }
 
     private func removeMember(_ email: String) {
+        guard permissions.can(.assignTeam, on: job.access) else { return }
         job.teamMembers.removeAll { $0 == email }
         try? context.save()
     }
 
     private func saveSupervisor() {
+        guard permissions.role.managesTeam else { return }
         let v = Permissions.normalized(supervisor)
         let next: String? = v.isEmpty ? nil : v
         guard job.supervisorEmail != next else { return }

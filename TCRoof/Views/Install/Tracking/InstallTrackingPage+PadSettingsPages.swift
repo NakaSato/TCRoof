@@ -10,10 +10,10 @@ extension InstallTrackingPage {
         return VStack(alignment: .leading, spacing: 18) {
             padSection("วิศวกรผู้ควบคุมงาน", footer: "ลงนามรายงานประจำวันและปิดการทดสอบ IEC") {
                 if let s = padSupervisor { padPersonRow(s, role: .supervisor, first: true) } else { padNoteRow("ยังไม่ระบุ", first: true) }
-                if externals { padActionRow("เปลี่ยนวิศวกรผู้ควบคุมงาน") { padSheet = .access } }
+                if team { padActionRow("เปลี่ยนวิศวกรผู้ควบคุมงาน") { padSheet = .access } }
             }
             padSection("ทีมงานของเรา", footer: "งานนี้อยู่ใน งานของฉัน ของคนเหล่านี้") {
-                if padTeam.isEmpty { padNoteRow("ยังไม่ระบุ (ทุกคนในทีม)", first: true) }
+                if padTeam.isEmpty { padNoteRow("รอผู้จัดการมอบหมายผู้ตรวจอนุมัติ", first: true) }
                 ForEach(Array(padTeam.enumerated()), id: \.offset) { i, e in padPersonRow(e, role: .team, first: i == 0) }
                 if team { padActionRow("เพิ่มคนจากรายชื่อทีม") { padSheet = .access } }
             }

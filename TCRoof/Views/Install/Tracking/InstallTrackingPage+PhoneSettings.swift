@@ -211,10 +211,10 @@ extension InstallTrackingPage {
         return VStack(alignment: .leading, spacing: 14) {
             section("วิศวกรผู้ควบคุมงาน", footer: "ลงนามรายงานประจำวันและปิดการทดสอบ IEC") {
                 if supervisor.isEmpty { valueRow("ยังไม่ระบุ", "", first: true) } else { personRow(supervisor, role: "ผู้ควบคุมงาน", tone: .info, first: true) }
-                if externals { actionRow("+ เปลี่ยนวิศวกรผู้ควบคุมงาน") { phoneRoute = .access } }
+                if team { actionRow("+ เปลี่ยนวิศวกรผู้ควบคุมงาน") { phoneRoute = .access } }
             }
             section("ทีมงานของเรา", footer: "งานนี้อยู่ใน งานของฉัน ของคนเหล่านี้") {
-                if job.teamMembers.isEmpty { valueRow("ยังไม่ระบุ (ทุกคนในทีม)", "", first: true) }
+                if job.teamMembers.isEmpty { valueRow("รอผู้จัดการมอบหมายผู้ตรวจอนุมัติ", "", first: true) }
                 ForEach(Array(job.teamMembers.enumerated()), id: \.offset) { i, e in personRow(e, role: "ทีมงาน", tone: .info, first: i == 0) }
                 if team { actionRow("+ เพิ่มคนจากรายชื่อทีม") { phoneRoute = .access } }
             }

@@ -80,7 +80,7 @@ final class MemberDirectory {
     /// isn't. Written after the member's own document, which the rules check.
     private func listInDirectory(_ email: String, role: UserRole?) {
         let doc = db.document("\(TeamDirectory.collection)/\(email)")
-        let done: (Error?) -> Void = { e in if let e { print("MemberDirectory: directory: \(e.localizedDescription)") } }
+        let done: @Sendable (Error?) -> Void = { e in if let e { print("MemberDirectory: directory: \(e.localizedDescription)") } }
         if let role, role != .external { doc.setData(TeamDirectory.entry(email: email, name: nil), merge: true, completion: done) }
         else { doc.delete(completion: done) }
     }

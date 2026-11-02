@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import TCRoofUI
 import TCRoofCore
 import ExcelExport
@@ -286,7 +287,7 @@ struct InstallTrackingPage: View {
         switch r {
         case .request: WeeklyRequestScreen(job: job)
         case .weekly: RoutineSummaryScreen(job: job, period: .week)
-        case .docs: StationDocsScreen(job: job)
+        case .docs: if canOpen(.docs) { StationDocsScreen(job: job) }
         case .plan: MPScheduleScreen(job: job)
         case .dailies: DailyReportListView(job: job)
         case .day(let d): DailyReportScreen(job: job, date: d)

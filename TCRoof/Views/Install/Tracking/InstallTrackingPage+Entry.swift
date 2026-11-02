@@ -11,9 +11,27 @@ extension Job {
     }
 }
 
+/// An action that navigates to a tab in the install tracking page on iPad.
+struct InstallTabAction: Equatable {
+    private let id = UUID()
+    private let action: (InstallTrackingPage.Tab) -> Void
+
+    init(_ action: @escaping (InstallTrackingPage.Tab) -> Void) {
+        self.action = action
+    }
+
+    func callAsFunction(_ tab: InstallTrackingPage.Tab) {
+        action(tab)
+    }
+
+    static func == (lhs: InstallTabAction, rhs: InstallTabAction) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 extension EnvironmentValues {
     /// Set on the screens the install tracking page pushes: goes back to the page and selects a tab.
-    @Entry var installTab: ((InstallTrackingPage.Tab) -> Void)?
+    @Entry var installTab: InstallTabAction?
 }
 
 /// `tab` of the station's install tracking page on iPad, else `fallback`.

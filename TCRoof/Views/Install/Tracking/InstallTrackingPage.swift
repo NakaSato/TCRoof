@@ -158,7 +158,7 @@ struct InstallTrackingPage: View {
         #endif
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $route) { r in
-            destination(r).environment(\.installTab) { t in route = nil; if canOpen(t) { tab = t } }
+            destination(r).environment(\.installTab, InstallTabAction { t in route = nil; if canOpen(t) { tab = t } })
         }
         .navigationDestination(item: $phoneRoute) { phoneDestination($0) }
     }

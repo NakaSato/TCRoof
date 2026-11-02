@@ -43,12 +43,18 @@ enum PadTab: String, CaseIterable {
 struct PadTabs<HomeRoot: View>: View {
     @ViewBuilder let home: () -> HomeRoot
 
+    @Environment(\.permissions) private var permissions
+
     @State private var dock = PadDock(Self.initialTab)
     @State private var notificationService = NotificationService.shared
 
+    private var availableTabs: [PadTab] {
+        PadTab.stacks.filter { $0 != .docs || permissions.role != .external }
+    }
+
     var body: some View {
         ZStack {
-            ForEach(PadTab.stacks, id: \.self) { t in
+            ForEach(availableTabs, id: \.self) { t in
                 if dock.opened.contains(t) {
                     let shown = t == dock.tab
                     stack(t)
@@ -59,6 +65,9 @@ struct PadTabs<HomeRoot: View>: View {
             }
         }
         .environment(dock)
+        .onChange(of: availableTabs, initial: true) { _, tabs in
+            if !tabs.contains(dock.tab) { dock.select(.home) }
+        }
         .debugBoard()
         .sheet(isPresented: $dock.showSettings) {
             SettingsView().presentationDetents([.large]).formSheetSizing()
@@ -106,6 +115,7 @@ struct PadTabs<HomeRoot: View>: View {
 /// The iPad dock (`TCTabBar`): `PadTabs` puts it under each tab's root, and a pushed page that keeps the dock
 /// (the install tracking page, docs/ui/install-tracking-ipad) puts it under itself. Outside `PadTabs` it is not shown.
 struct PadDockBar: View {
+    @Environment(\.permissions) private var permissions
     @Environment(PadDock.self) private var dock: PadDock?
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
@@ -118,7 +128,7 @@ struct PadDockBar: View {
     private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
-            TCTabItem(.home, title: "หน้าแรก", symbol: "house"),
+            TCTabItem<PadTab>(.home, title: "หน้าแรก", symbol: "house"),
             TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
@@ -126,7 +136,7 @@ struct PadDockBar: View {
             TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),
             // not a tab: settings stays a sheet, as on the iPhone
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape", accessibilityLabel: "ตั้งค่าและบัญชี") { dock.showSettings = true },
-        ]
+        ].filter { $0.id != .docs || permissions.role != .external }
     }
 }
 

@@ -82,7 +82,8 @@ flowchart TD
 Every view queries `@Environment(\.permissions) private var permissions`:
 - **Member Directory**: `if permissions.can(.usersManage)` in `PhoneSettings.swift`.
 - **จัดการผู้ใช้และสิทธิ์**: `if permissions.can(.usersAdmin)` in `PhoneSettings.swift` (`นักพัฒนา`), and the page itself refuses anyone else.
-- **เอกสาร PWA**: `canView(.stationDocsDrafts, on: job.access)` opens the papers; `can` decides whether anything is editable, so a contractor sees their stations read only.
+- **Main เอกสาร menu (iPhone and iPad)**: `PhoneTabs` / `PhoneDockBar` and `PadTabs` / `PadDockBar` exclude `.docs` when `permissions.role == .external`. The documents root stack is excluded too, and iPhone tab swipes use only the available tabs. If the selected tab becomes unavailable (including on initial load or a role change), selection returns to `หน้าหลัก`. Managers, internal team members and Maintainers retain the menu. This role-based navigation rule is independent of capability overrides.
+- **เอกสาร PWA within assigned jobs**: `canView(.stationDocsDrafts, on: job.access)` opens the papers; `can` decides whether anything is editable, so a contractor sees their stations read only. Hiding the main เอกสาร menu does not change this capability or Firestore access rules.
 - **Job Assignment**: `if permissions.can(.assignExternal, on: job.access)` in `JobAccessCard.swift`.
 - **Job Deletion**: the team and managers (`.jobDelete`, internal allowed since 2026-10-20; never a contractor). The survey home's `ลบงาน` checks `.jobDelete` and deletes the local survey job only; there is still no button that deletes a synced job (it must check `permissions.can(.jobDelete)` too). `firestore.rules` already refuses a delete from anyone but a manager.
 - **Daily Report Sign-off**: Contractor fills (`.dailyFill`), internal engineer signs (`.dailySign`).
@@ -197,3 +198,13 @@ Settings › นักพัฒนา › `จัดการผู้ใช้�
 4. **ประวัติการแก้ไข.** The `auditLog`.
 
 Every change waits in the pending bar; `บันทึกและซิงก์` writes them in one Firestore `WriteBatch` with one audit entry each, then the team directory and the invites' share sheet. Not recorded, so not shown: last seen, devices, remote sign-out, and an idle-account rule (decided 2026-10-18).
+
+### 4.6 Main เอกสาร Menu — Validation (2026-11-02)
+
+The external-user menu restriction passed iOS Simulator and signed physical-device builds. The updated app was installed successfully on an iPhone 14 Pro and an iPad Air 11-inch (M2). Installation confirms delivery; the following on-device behavior checks remain pending:
+
+- [ ] On both devices, sign in as an external user and confirm เอกสาร is absent from the main menu.
+- [ ] On iPhone, swipe between root tabs and confirm เอกสาร cannot be opened.
+- [ ] Switch from a team account with เอกสาร selected to an external account and confirm the app returns to หน้าหลัก.
+- [ ] Confirm manager, internal and Maintainer accounts retain the เอกสาร menu.
+- [ ] Confirm an external user can still view permitted documents within an assigned job, read only.

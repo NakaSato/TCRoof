@@ -47,12 +47,12 @@ enum PhoneTab: String {
     }
 
     /// A swipe to the left goes to the next tab of the dock, to the right to the one before.
-    func swipe(dx: CGFloat, dy: CGFloat) {
+    func swipe(dx: CGFloat, dy: CGFloat, tabs: [PhoneTab]) {
         guard atRoot.contains(tab), abs(dx) > 70, abs(dx) > 2.5 * abs(dy),
-              let i = PhoneTab.stacks.firstIndex(of: tab) else { return }
+              let i = tabs.firstIndex(of: tab) else { return }
         let next = i + (dx < 0 ? 1 : -1)
-        guard PhoneTab.stacks.indices.contains(next) else { return }
-        withAnimation(.easeInOut(duration: 0.2)) { select(PhoneTab.stacks[next]) }
+        guard tabs.indices.contains(next) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) { select(tabs[next]) }
     }
 }
 
@@ -64,12 +64,18 @@ enum PhoneTab: String {
 struct PhoneTabs<HomeRoot: View>: View {
     @ViewBuilder let home: () -> HomeRoot
 
+    @Environment(\.permissions) private var permissions
+
     @State private var dock = PhoneDock(Self.initialTab)
     @State private var notificationService = NotificationService.shared
 
+    private var availableTabs: [PhoneTab] {
+        PhoneTab.stacks.filter { $0 != .docs || permissions.role != .external }
+    }
+
     var body: some View {
         ZStack {
-            ForEach(PhoneTab.stacks, id: \.self) { t in
+            ForEach(availableTabs, id: \.self) { t in
                 if dock.opened.contains(t) {
                     let shown = t == dock.tab
                     stack(t)
@@ -80,7 +86,10 @@ struct PhoneTabs<HomeRoot: View>: View {
             }
         }
         .environment(dock)
-        .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { dock.swipe(dx: $0.translation.width, dy: $0.translation.height) })
+        .onChange(of: availableTabs, initial: true) { _, tabs in
+            if !tabs.contains(dock.tab) { dock.select(.home) }
+        }
+        .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { dock.swipe(dx: $0.translation.width, dy: $0.translation.height, tabs: availableTabs) })
         .sheet(isPresented: $dock.showSettings) {
             SettingsView(pwa: dock.tab == .pwa).presentationDetents([.large]).environment(\.homeInk, .outdoor)
         }
@@ -126,6 +135,7 @@ struct PhoneTabs<HomeRoot: View>: View {
 /// The iPhone dock (`TCTabBar`): `PhoneTabs` puts it under each tab's root, and a pushed page that keeps the dock puts
 /// it under itself (`phoneDock`). Outside `PhoneTabs` it is not shown.
 struct PhoneDockBar: View {
+    @Environment(\.permissions) private var permissions
     @Environment(PhoneDock.self) private var dock: PhoneDock?
     @Query(sort: \Job.installStart) private var jobs: [Job]
 
@@ -138,13 +148,13 @@ struct PhoneDockBar: View {
     private func items(_ dock: PhoneDock) -> [TCTabItem<PhoneTab>] {
         let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
         return [
-            TCTabItem(.home, title: "หน้าหลัก", symbol: "house"),
+            TCTabItem<PhoneTab>(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { dock.showSettings = true },
-        ]
+        ].filter { $0.id != .docs || permissions.role != .external }
     }
 }
 

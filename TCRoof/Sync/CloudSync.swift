@@ -86,6 +86,13 @@ final class CloudSync {
     static let contactsSplitKey = "cloudSync.contactsSplit"
     var db: Firestore { Firestore.firestore() }
 
+    /// Pacing delay between sequential collection loads from Firebase to prevent network spikes and UI stutters.
+    static let sequenceLoadDelay: Duration = .milliseconds(60)
+
+    private func delaySequenceLoad() async throws {
+        try await Task.sleep(for: Self.sequenceLoadDelay)
+    }
+
     /// Disposable Firestore copies are bounded separately from the app's durable projects and files.
     /// Configure before the first Firestore call (including account membership checks).
     private static var cacheConfigured = false
@@ -185,27 +192,41 @@ final class CloudSync {
             let me = MemberRole.shared.permissions
             external = me.role == .external && !me.email.isEmpty ? me.email : nil
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
-            // Start each collection after its first received data has applied; retain its live listener afterward.
+            // Start each collection sequentially with pacing delays to prevent request bursts.
             guard try await loadProjectsInBatches() else { return }
+            try await delaySequenceLoad()
             guard await listenInitial(SurveyForm.self) else { return }
+            try await delaySequenceLoad()
             guard await listenInitial(InstallLog.self) else { return }
+            try await delaySequenceLoad()
             guard await listenInitial(Inspection.self) else { return }
+            try await delaySequenceLoad()
             guard await listenInitial(PhotoAsset.self, optional: true) else { return }
-            // Secondary collections also wait for their initial application, rather than overlapping on timers.
+            try await delaySequenceLoad()
+            // Secondary collections also wait for their initial application with sequential delays.
             if external == nil, !me.email.isEmpty {
                 guard await waitForStartup("claim reviews", register: { listenClaimReviews(owner: me.email, barrier: $0) }) else { return }
+                try await delaySequenceLoad()
             }
             guard await listenSurveysInitial() else { return }
+            try await delaySequenceLoad()
             if external == nil {
                 guard await waitForStartup("survey revisions", register: { listenRevisions(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
             }
             guard await waitForStartup("feed acknowledgements", register: { listenFeedAcks(barrier: $0) }) else { return }
+            try await delaySequenceLoad()
             guard await waitForStartup("designs", register: { listenDesigns(barrier: $0) }) else { return }
+            try await delaySequenceLoad()
             guard await waitForStartup("design sheets", register: { listenDesignSheets(barrier: $0) }) else { return }
+            try await delaySequenceLoad()
             guard await waitForStartup("tank standard", register: { listenTankStandard(barrier: $0) }) else { return }
+            try await delaySequenceLoad()
             if external == nil {
                 guard await waitForStartup("contacts", register: { listenContacts(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
                 guard await waitForStartup("directory", register: { listenDirectory(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
             }
             guard await waitForStartup("configuration", register: { listenConfig(barrier: $0) }) else { return }
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] notification in

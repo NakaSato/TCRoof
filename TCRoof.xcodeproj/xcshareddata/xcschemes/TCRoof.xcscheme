@@ -30,6 +30,18 @@
       <Testables>
          <TestableReference
             skipped = "NO"
+            parallelizable = "YES"
+            useTestSelectionWhitelist = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A1000000000000000000T006"
+               BuildableName = "TCRoofTests.xctest"
+               BlueprintName = "TCRoofTests"
+               ReferencedContainer = "container:TCRoof.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
             parallelizable = "NO"
             useTestSelectionWhitelist = "NO">
             <BuildableReference

@@ -117,8 +117,8 @@ final class UserAdminStore {
         #if DEBUG
         if demo { return seedDemo() }
         #endif
-        listeners.append(db.collection("members").addSnapshotListener(includeMetadataChanges: true) { [weak self] snap, error in
-            MainActor.assumeIsolated {
+        listeners.append(db.collection("members").addSnapshotListener(includeMetadataChanges: true) { @Sendable [weak self] snap, error in
+            Task { @MainActor in
                 guard let self else { return }
                 if let error { self.error = Self.message(error); return }
                 guard let snap else { return }
@@ -136,8 +136,8 @@ final class UserAdminStore {
                 self.loaded = true
             }
         })
-        listeners.append(db.collection("auditLog").order(by: "at", descending: true).limit(to: 200).addSnapshotListener { [weak self] snap, _ in
-            MainActor.assumeIsolated {
+        listeners.append(db.collection("auditLog").order(by: "at", descending: true).limit(to: 200).addSnapshotListener { @Sendable [weak self] snap, _ in
+            Task { @MainActor in
                 self?.log = (snap?.documents ?? []).compactMap { d in
                     guard let kind = (d.get("kind") as? String).flatMap(AuditKind.init) else { return nil }
                     return AuditEntry(id: d.documentID, at: (d.get("at") as? Timestamp)?.dateValue(), by: d.get("by") as? String ?? "",
@@ -145,8 +145,8 @@ final class UserAdminStore {
                 }
             }
         })
-        listeners.append(db.document("config/roleOverrides").addSnapshotListener { [weak self] snap, _ in
-            MainActor.assumeIsolated {
+        listeners.append(db.document("config/roleOverrides").addSnapshotListener { @Sendable [weak self] snap, _ in
+            Task { @MainActor in
                 guard let self, let snap else { return }
                 let o = RoleOverrides(document: snap.data() ?? [:])
                 // a cell edited here stays as edited; the others follow the server
@@ -158,8 +158,10 @@ final class UserAdminStore {
                 self.overrides = next
             }
         })
-        db.document("config/app").getDocument { [weak self] snap, _ in
-            MainActor.assumeIsolated { self?.installLink = (snap?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 } }
+        db.document("config/app").getDocument { @Sendable [weak self] snap, _ in
+            Task { @MainActor in
+                self?.installLink = (snap?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 }
+            }
         }
         loadKey()
     }

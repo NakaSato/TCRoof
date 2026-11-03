@@ -35,8 +35,8 @@ final class MemberDirectory {
         #if DEBUG
         if UserDefaults.standard.bool(forKey: "membersDemo") { return seedDemo() }
         #endif
-        registration = db.collection("members").addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
-            MainActor.assumeIsolated {
+        registration = db.collection("members").addSnapshotListener(includeMetadataChanges: true) { @Sendable [weak self] snapshot, error in
+            Task { @MainActor in
                 guard let self else { return }
                 if let error { self.error = Self.message(error); return }
                 self.members = (snapshot?.documents ?? []).map { doc in
@@ -48,8 +48,10 @@ final class MemberDirectory {
                 self.loaded = true
             }
         }
-        db.document("config/app").getDocument { [weak self] snapshot, _ in
-            MainActor.assumeIsolated { self?.installLink = (snapshot?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 } }
+        db.document("config/app").getDocument { @Sendable [weak self] snapshot, _ in
+            Task { @MainActor in
+                self?.installLink = (snapshot?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 }
+            }
         }
     }
 
@@ -70,8 +72,9 @@ final class MemberDirectory {
     /// Adds the account with its role. Firestore keeps the write offline and sends it later.
     func invite(_ email: String, role: UserRole, by me: String) {
         error = nil
-        db.document("members/\(email)").setData(["role": role.rawValue, "invitedBy": me, "invitedAt": FieldValue.serverTimestamp()]) { [weak self] e in
-            MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
+        db.document("members/\(email)").setData(["role": role.rawValue, "invitedBy": me, "invitedAt": FieldValue.serverTimestamp()]) { @Sendable [weak self] e in
+            guard let e else { return }
+            Task { @MainActor in self?.error = Self.message(e) }
         }
         listInDirectory(email, role: role)
     }
@@ -87,8 +90,9 @@ final class MemberDirectory {
 
     func setRole(_ role: UserRole, of email: String) {
         error = nil
-        db.document("members/\(email)").updateData(["role": role.rawValue]) { [weak self] e in
-            MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
+        db.document("members/\(email)").updateData(["role": role.rawValue]) { @Sendable [weak self] e in
+            guard let e else { return }
+            Task { @MainActor in self?.error = Self.message(e) }
         }
         listInDirectory(email, role: role)
     }
@@ -96,8 +100,9 @@ final class MemberDirectory {
     /// Takes the account off the list: it can't sign in again, and the app signs it out at its next sync.
     func remove(_ email: String) {
         error = nil
-        db.document("members/\(email)").delete { [weak self] e in
-            MainActor.assumeIsolated { if let e { self?.error = Self.message(e) } }
+        db.document("members/\(email)").delete { @Sendable [weak self] e in
+            guard let e else { return }
+            Task { @MainActor in self?.error = Self.message(e) }
         }
         listInDirectory(email, role: nil)
     }

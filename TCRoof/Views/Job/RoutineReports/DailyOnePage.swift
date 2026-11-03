@@ -119,7 +119,10 @@ struct DailyOnePage: View {
         .onChange(of: shotItem) { _, item in
             guard let item, let s = libraryShot else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) { took(s, ImageUtil.compressed(data)) }
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let compressed = await ImageUtil.compressedAsync(data)
+                    took(s, compressed)
+                }
                 shotItem = nil; libraryShot = nil
             }
         }

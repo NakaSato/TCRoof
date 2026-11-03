@@ -170,7 +170,10 @@ struct HomeLibraryItemSheet: View {
             guard !items.isEmpty else { return }
             Task {
                 for p in items {
-                    if let data = try? await p.loadTransferable(type: Data.self) { addFile(ImageUtil.compressed(data), ext: "jpg") }
+                    if let data = try? await p.loadTransferable(type: Data.self) {
+                        let compressed = await ImageUtil.compressedAsync(data)
+                        addFile(compressed, ext: "jpg")
+                    }
                 }
                 photoItems = []
             }

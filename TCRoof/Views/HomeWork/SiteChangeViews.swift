@@ -32,7 +32,10 @@ struct SitePhotoStrip: View {
             guard !items.isEmpty else { return }
             Task {
                 for i in items {
-                    if let d = try? await i.loadTransferable(type: Data.self) { photos.append(store.addPhoto(ImageUtil.compressed(d))) }
+                    if let d = try? await i.loadTransferable(type: Data.self) {
+                        let compressed = await ImageUtil.compressedAsync(d)
+                        photos.append(store.addPhoto(compressed))
+                    }
                 }
                 picks = []
             }

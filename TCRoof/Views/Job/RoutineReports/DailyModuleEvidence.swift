@@ -80,7 +80,10 @@ struct ModuleEvidenceRow: View {
             guard !picked.isEmpty else { return }
             Task {
                 for item in picked {
-                    if let data = try? await item.loadTransferable(type: Data.self) { photos.append(.init(data: ImageUtil.compressed(data), tag: kind.tag)) }
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        let compressed = await ImageUtil.compressedAsync(data)
+                        photos.append(.init(data: compressed, tag: kind.tag))
+                    }
                 }
                 items = []
             }

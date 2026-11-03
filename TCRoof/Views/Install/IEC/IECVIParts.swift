@@ -442,7 +442,10 @@ struct IECShutter: ViewModifier {
             .onChange(of: picked) { _, item in
                 guard let item, let s = pending else { return }
                 Task {
-                    if let data = try? await item.loadTransferable(type: Data.self) { store(s, ImageUtil.compressed(data)) }
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        let compressed = await ImageUtil.compressedAsync(data)
+                        store(s, compressed)
+                    }
                     picked = nil; pending = nil
                 }
             }

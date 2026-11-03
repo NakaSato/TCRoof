@@ -87,7 +87,10 @@ struct IECPhotoTile: View {
         .onChange(of: picked) { _, item in
             guard let item else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) { store(ImageUtil.compressed(data)) }
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let compressed = await ImageUtil.compressedAsync(data)
+                    store(compressed)
+                }
                 picked = nil
             }
         }

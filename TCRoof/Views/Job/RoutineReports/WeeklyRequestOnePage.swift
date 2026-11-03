@@ -118,7 +118,8 @@ struct WeeklyRequestOnePage: View {
         guard let item else { return }
         Task {
             if let data = try? await item.loadTransferable(type: Data.self), !demo {
-                job.setKeyPlan(ImageUtil.compressed(data), context: context)
+                let compressed = await ImageUtil.compressedAsync(data)
+                job.setKeyPlan(compressed, context: context)
                 keyPlanVersion += 1
             }
             uploadItem = nil

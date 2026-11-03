@@ -9,6 +9,13 @@ enum ImageUtil {
         return compressed(image, maxDimension: maxDimension)
     }
 
+    /// Asynchronously downscales and compresses image data on a background thread.
+    static func compressedAsync(_ data: Data, maxDimension: CGFloat = 1600) async -> Data {
+        await Task.detached(priority: .userInitiated) {
+            compressed(data, maxDimension: maxDimension)
+        }.value
+    }
+
     static func compressed(_ image: UIImage, maxDimension: CGFloat = 1600) -> Data {
         let size = image.size
         let scale = min(1, maxDimension / max(size.width, size.height))

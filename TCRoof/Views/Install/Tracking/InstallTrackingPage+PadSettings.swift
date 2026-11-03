@@ -253,7 +253,7 @@ extension InstallTrackingPage {
         return HStack(alignment: .top, spacing: 18) {
             ScrollView { padSettingsLeft(data).padding(.vertical, 2) }
                 .scrollIndicators(.hidden)
-                .frame(width: 330)
+                .frame(minWidth: 280, idealWidth: 320, maxWidth: 350)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     padHeadCard

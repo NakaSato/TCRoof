@@ -120,7 +120,7 @@ struct InstallKeyPlanPanel: View {
             Rectangle().fill(Theme.hairline).frame(width: 1)
             KeyPlanList(model: model, filter: $filter, selected: selected, placing: placing, canEdit: canEdit && picture != nil,
                         select: select, arm: { placing = $0; selected = $0 }, remove: remove)
-                .frame(width: 360)
+                .frame(minWidth: 280, idealWidth: 340, maxWidth: 380)
         }
         .padding(.bottom, 6)
         .tcToast($toast)
@@ -248,7 +248,7 @@ struct KeyPlanBoard: View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.primary)
             Text("แตะบนผังเพื่อวาง \(p.label) · \(p.location ?? "")").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
             Button("ยกเลิก", action: cancel).buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
         }
         .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 4)
@@ -379,7 +379,7 @@ struct KeyPlanRow: View {
                 }
                 .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(point.location ?? "ไม่ระบุตำแหน่ง").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(point.location ?? "ไม่ระบุตำแหน่ง").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                     Text(point.placed ? "อยู่บนผัง · \(point.label)" : point.location == nil ? "ยังไม่กำหนดตำแหน่งในงาน" : "ยังไม่วางบนผัง")
                         .font(.sarabunFixed(13, point.placed ? .regular : .bold))
                         .foregroundStyle(point.placed ? Theme.inkMuted : Theme.dangerText).lineLimit(1)

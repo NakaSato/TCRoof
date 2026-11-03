@@ -138,16 +138,45 @@ struct PhoneTabs<HomeRoot: View>: View {
 struct PhoneDockBar: View {
     @Environment(\.permissions) private var permissions
     @Environment(PhoneDock.self) private var dock: PhoneDock?
-    @Query(sort: \Job.installStart) private var jobs: [Job]
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var today = Calendar.current.startOfDay(for: .now)
 
     var body: some View {
         if let dock {
-            TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings)
+            PhoneDockBarContent(dock: dock, permissions: permissions, today: today)
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        let currentStart = Calendar.current.startOfDay(for: .now)
+                        if currentStart != today { today = currentStart }
+                    }
+                }
         }
+    }
+}
+
+private struct PhoneDockBarContent: View {
+    let dock: PhoneDock
+    let permissions: Permissions
+    let today: Date
+    @Query private var jobsToday: [Job]
+
+    init(dock: PhoneDock, permissions: Permissions, today: Date) {
+        self.dock = dock
+        self.permissions = permissions
+        self.today = today
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today
+        _jobsToday = Query(filter: #Predicate<Job> {
+            $0.surveyDate >= today && $0.surveyDate < end
+        })
+    }
+
+    var body: some View {
+        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings)
     }
 
     private func items(_ dock: PhoneDock) -> [TCTabItem<PhoneTab>] {
-        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
+        let home = jobsToday.filter { $0.kind == .home }.count
+        let pwa = jobsToday.filter { $0.kind == .pwa }.count
         return [
             TCTabItem<PhoneTab>(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),

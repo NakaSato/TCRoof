@@ -118,16 +118,45 @@ struct PadTabs<HomeRoot: View>: View {
 struct PadDockBar: View {
     @Environment(\.permissions) private var permissions
     @Environment(PadDock.self) private var dock: PadDock?
-    @Query(sort: \Job.installStart) private var jobs: [Job]
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var today = Calendar.current.startOfDay(for: .now)
 
     var body: some View {
         if let dock {
-            TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
+            PadDockBarContent(dock: dock, permissions: permissions, today: today)
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        let currentStart = Calendar.current.startOfDay(for: .now)
+                        if currentStart != today { today = currentStart }
+                    }
+                }
         }
+    }
+}
+
+private struct PadDockBarContent: View {
+    let dock: PadDock
+    let permissions: Permissions
+    let today: Date
+    @Query private var jobsToday: [Job]
+
+    init(dock: PadDock, permissions: Permissions, today: Date) {
+        self.dock = dock
+        self.permissions = permissions
+        self.today = today
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today
+        _jobsToday = Query(filter: #Predicate<Job> {
+            $0.surveyDate >= today && $0.surveyDate < end
+        })
+    }
+
+    var body: some View {
+        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
     }
 
     private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {
-        let home = jobs.surveyToday(.home), pwa = jobs.surveyToday(.pwa)
+        let home = jobsToday.filter { $0.kind == .home }.count
+        let pwa = jobsToday.filter { $0.kind == .pwa }.count
         return [
             TCTabItem<PadTab>(.home, title: "หน้าแรก", symbol: "house"),
             TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),

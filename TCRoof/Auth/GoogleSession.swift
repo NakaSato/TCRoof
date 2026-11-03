@@ -121,7 +121,9 @@ final class GoogleSession {
     private static func membership(of email: String, google: GoogleAuth) async throws -> MemberRole.Membership {
         do { _ = try await firebaseUser(google) }
         catch is CancellationError { throw CancellationError() }
-        catch { return .unknown }
+        // Surface Firebase authentication failures. Treating these as a membership lookup outage made
+        // first-time users see the generic "offline" message even when OAuth/Firebase rejected the login.
+        catch { throw error }
         return await MemberRole.shared.membership(of: email)
     }
 

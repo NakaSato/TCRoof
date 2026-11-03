@@ -1,0 +1,48 @@
+#!/bin/sh
+# TCRoof pre-commit hook
+# Prevents accidental staging and commitment of secrets, credentials, and sensitive local files.
+
+set -e
+
+# Disallowed files pattern check
+FORBIDDEN_PATTERNS=(
+    "^.*\.env(\..+)?$"
+    "^.*Secrets\.xcconfig$"
+    "^.*\.pem$"
+    "^.*\.p12$"
+    "^.*\.mobileprovision$"
+)
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+FAILED=0
+
+for FILE in $STAGED_FILES; do
+    # 1. Match forbidden filenames
+    for PATTERN in "${FORBIDDEN_PATTERNS[@]}"; do
+        if echo "$FILE" | grep -qE "$PATTERN"; then
+            echo "❌ [Pre-Commit Security] Staging blocked: sensitive file matching '$PATTERN': $FILE" >&2
+            FAILED=1
+        fi
+    done
+
+    # 2. Check for GCP / Firebase service account private keys staged in JSON
+    if [[ "$FILE" =~ \.json$ ]] && [ -f "$FILE" ]; then
+        if grep -q '"type": "service_account"' "$FILE" 2>/dev/null && grep -q '"private_key":' "$FILE" 2>/dev/null; then
+            echo "❌ [Pre-Commit Security] Staging blocked: Google Cloud / Firebase service account key detected in $FILE" >&2
+            FAILED=1
+        fi
+    fi
+done
+
+if [ $FAILED -ne 0 ]; then
+    echo "⚠️ Commit aborted to protect repository credentials. Unstage with 'git reset HEAD <file>'." >&2
+    exit 1
+fi
+
+exit 0

@@ -4,10 +4,11 @@ set -euo pipefail
 
 usage() {
     cat <<'HELP'
-Usage: tools/apple/validate.sh [--output DIR] [--simulator UDID] [--ui-tests] [--package-tests]
+Usage: tools/apple/validate.sh [--output DIR] [--simulator UDID] [--unit-tests] [--ui-tests] [--package-tests]
 
 Builds Debug and Release against the iOS Simulator SDK using Xcode 26+.
 --simulator UDID   Select an installed simulator; defaults to generic/platform=iOS Simulator.
+--unit-tests       Run the TCRoofTests unit suite on the selected simulator (requires --simulator).
 --ui-tests         Run the existing UI suite on the selected simulator (requires --simulator).
 --package-tests    Run the focused package tests on the Mac after app builds.
 --output DIR      Write logs, result bundles, and isolated DerivedData here; DIR must be new.
@@ -19,6 +20,7 @@ HELP
 
 output=""
 simulator=""
+unit_tests=false
 ui_tests=false
 package_tests=false
 while [ "$#" -gt 0 ]; do
@@ -28,6 +30,7 @@ while [ "$#" -gt 0 ]; do
             [ "$#" -ge 2 ] || { printf 'Missing value for %s\n' "$1" >&2; exit 2; }
             if [ "$1" = --output ]; then output="$2"; else simulator="$2"; fi
             shift 2 ;;
+        --unit-tests) unit_tests=true; shift ;;
         --ui-tests) ui_tests=true; shift ;;
         --package-tests) package_tests=true; shift ;;
         *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
@@ -41,8 +44,8 @@ fi
 for command in xcodebuild xcrun swift git; do
     command -v "$command" >/dev/null || { printf 'Missing command: %s\n' "$command" >&2; exit 2; }
 done
-if $ui_tests && [ -z "$simulator" ]; then
-    printf '%s\n' '--ui-tests requires --simulator UDID.' >&2
+if ( $ui_tests || $unit_tests ) && [ -z "$simulator" ]; then
+    printf '%s\n' '--unit-tests and --ui-tests require --simulator UDID.' >&2
     exit 2
 fi
 xcode_version="$(xcodebuild -version)"
@@ -95,6 +98,13 @@ if $package_tests; then
         --filter 'OAuthBrowserAuthorizationTests|OAuthTokenSessionTests|BackgroundWorkTests|ReviewTests|ZipArchiveTests|SingleLineRenderTests|SingleLineTests'
 else
     printf 'NOT_RUN\tpackage-tests\n' >> "$output/results.tsv"
+fi
+if $unit_tests; then
+    run_step unit-tests xcodebuild -quiet -project TCRoof.xcodeproj -scheme TCRoofTests \
+        -configuration Debug -destination "$destination" -derivedDataPath "$output/DerivedData" \
+        -resultBundlePath "$output/UnitTests.xcresult" CODE_SIGNING_ALLOWED=NO test
+else
+    printf 'NOT_RUN\tunit-tests\n' >> "$output/results.tsv"
 fi
 if $ui_tests; then
     run_step ui-tests xcodebuild -quiet -project TCRoof.xcodeproj -scheme TCRoofUITests \

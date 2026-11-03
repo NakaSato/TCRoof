@@ -28,20 +28,21 @@ enum LocalData {
             // Sync deletes in Firestore what it once knew and no longer finds here; forgetting what it knew first keeps
             // this removal on the device.
             for key in d.dictionaryRepresentation().keys where key.hasPrefix("cloudSync.known.") { d.removeObject(forKey: key) }
-            try context.delete(model: InstallLog.self)
-            try context.delete(model: Inspection.self)
-            try context.delete(model: ICLSheet.self)
-            try context.delete(model: ScannedDevice.self)
-            try context.delete(model: SurveyForm.self)
-            try context.delete(model: PhotoAsset.self)
-            try context.delete(model: DocumentAsset.self)
-            try context.delete(model: Job.self)
-            try context.delete(model: Trip.self)
-            try context.delete(model: Expense.self)
-            try context.delete(model: ClaimMonth.self)
-            try context.delete(model: ToolEvent.self)
-            try context.delete(model: CompanyVehicle.self)
-            try context.save()
+            // Delete through object graph to avoid SQLite batch delete constraint trigger violations
+            deleteAll(Job.self, in: context)
+            deleteAll(SurveyForm.self, in: context)
+            deleteAll(ScannedDevice.self, in: context)
+            deleteAll(InstallLog.self, in: context)
+            deleteAll(Inspection.self, in: context)
+            deleteAll(ICLSheet.self, in: context)
+            deleteAll(PhotoAsset.self, in: context)
+            deleteAll(DocumentAsset.self, in: context)
+            deleteAll(Trip.self, in: context)
+            deleteAll(Expense.self, in: context)
+            deleteAll(ClaimMonth.self, in: context)
+            deleteAll(ToolEvent.self, in: context)
+            deleteAll(CompanyVehicle.self, in: context)
+            try? context.save()
             try survey.removeLocalAccountData()
             let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             for folder in ["Permits", "StationDocs"] {
@@ -49,6 +50,15 @@ enum LocalData {
                 do { try FileManager.default.removeItem(at: url) }
                 catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError { }
             }
+        }
+    }
+
+    private static func deleteAll<T: PersistentModel>(_ type: T.Type, in context: ModelContext) {
+        do {
+            let items = try context.fetch(FetchDescriptor<T>())
+            for item in items { context.delete(item) }
+        } catch {
+            try? context.delete(model: type)
         }
     }
 }

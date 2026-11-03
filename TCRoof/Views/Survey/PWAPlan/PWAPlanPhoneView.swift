@@ -46,7 +46,8 @@ struct PWAPlanPhoneView: View {
     @State var showDueMenu = Debug.dueMenuOpen
     @State var route: Route?
     @State private var library = StationDocsStore.loadLibrary()
-    @State private var survey = SurveyModel.shared
+    @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
+    private var survey: SurveyModel { envSurvey ?? SurveyModel.shared }
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.isPresented) private var isPushed
     @Environment(\.dismiss) private var dismiss

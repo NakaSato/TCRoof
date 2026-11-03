@@ -79,6 +79,8 @@ struct TCRoofApp: App {
                 if let link = DeepLink(url: url) { NotificationService.shared.link = link }
             }
             .environment(session)
+            .environment(session.survey)
+            .environment(MemberRole.shared)
             // light everywhere, the login page included (it's on the design system's light page)
             .preferredColorScheme(.light)
             .tint(Theme.primary)

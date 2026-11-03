@@ -36,7 +36,8 @@ func surveyReportSummary(_ r: TCRoofCore.Job) -> String {
 /// Job detail card: the job's NO.224 reports, a new one pre-filled from the job, or an existing one linked to it.
 struct PWASurveyCard: View {
     @Bindable var job: Job
-    @State private var model = SurveyModel.shared
+    @Environment(SurveyModel.self) private var envModel: SurveyModel?
+    private var model: SurveyModel { envModel ?? SurveyModel.shared }
     @State private var pickTemplate = false
     @State private var open: OpenSurveyReport?
     @AppStorage("userName") private var userName = ""

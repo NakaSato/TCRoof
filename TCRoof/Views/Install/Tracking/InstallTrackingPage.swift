@@ -46,7 +46,8 @@ struct InstallTrackingPage: View {
     @State var showWBSDependencies = false
     /// `-installDemo YES` keeps its picked late causes here instead of in a job.
     @State private var demoCauses: [String: MasterSchedule.LateCause] = [:]
-    @State private var survey = SurveyModel.shared
+    @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
+    private var survey: SurveyModel { envSurvey ?? SurveyModel.shared }
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) var context
     @Environment(\.horizontalSizeClass) var sizeClass

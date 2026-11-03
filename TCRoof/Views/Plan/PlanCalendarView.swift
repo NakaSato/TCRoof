@@ -11,7 +11,8 @@ struct PlanCalendarView: View {
     @State var selected = Self.today.startOfDay
     /// nil shows every team.
     @State var team: Team?
-    @State var surveyModel = SurveyModel.shared
+    @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
+    var surveyModel: SurveyModel { envSurvey ?? SurveyModel.shared }
     /// iPhone: `เดือน` or `สัปดาห์`, and whether the team menu is open.
     @State var phoneMode = PlanPhoneMode.month
     @State var teamMenuOpen = false

@@ -163,6 +163,52 @@ struct InstallDailyData {
                     reports.filter { w.contains(cal.startOfDay(for: $0.date)) }.count)
         }
     }
+
+    // MARK: KPIs & Summary
+
+    struct KPI: Identifiable {
+        var id: String { label }
+        let label: String
+        let value: String
+        let ink: Color
+        let note: String
+    }
+
+    func kpis() -> [KPI] {
+        var out: [KPI] = []
+        let n = workingThroughYesterday, x = sentThroughYesterday
+        out.append(KPI(label: "ส่งแล้ว", value: "\(x) / \(n) วัน", ink: x >= n ? Theme.successInk : Theme.warningInk, note: "นับถึงเมื่อวาน"))
+        let dates = { (ds: [Date]) in ds.sorted().map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") }
+        let waitNote = [drafts.isEmpty ? nil : "ร่าง " + dates(drafts),
+                        unacknowledged.isEmpty ? nil : "ผู้ตรวจยังไม่รับทราบ " + dates(unacknowledged)].compactMap { $0 }
+        out.append(KPI(label: "รอลงนาม | รับทราบ", value: "\(drafts.count) | \(unacknowledged.count)",
+                       ink: drafts.isEmpty && unacknowledged.isEmpty ? Theme.successInk : Theme.warningInk,
+                       note: waitNote.isEmpty ? "ครบทุกฉบับ" : waitNote.joined(separator: " | ")))
+        let todayRow = rows.first { $0.date == today }
+        let (value, ink, note): (String, Color, String) = switch todayRow?.state {
+        case .signed?, .stopped?: ("ส่งแล้ว", Theme.successInk, todayRow?.ackAt == nil ? "รอผู้ตรวจรับทราบ" : "ผู้ตรวจรับทราบแล้ว")
+        case .draft?: ("ร่างไว้", Theme.warningInk, "ยังไม่ลงนาม | ส่งก่อน \(workEnd)")
+        case .today?, .missing?: ("ยังไม่ส่ง", Theme.dangerText, "ส่งก่อน \(workEnd)")
+        case nil: ("ไม่ต้องส่ง", Theme.inkMuted, inWindow ? "วันหยุดของหน้างาน" : "นอกช่วงติดตั้ง")
+        }
+        out.append(KPI(label: "วันนี้ " + ThaiFormat.dayMonth.string(from: today), value: value, ink: ink, note: note))
+        if hasReports {
+            let avg = workedDays > 0 ? Double(manDays) / Double(workedDays) : 0
+            out.append(KPI(label: "คน-วันรวม", value: "\(manDays)", ink: Theme.navy,
+                           note: "เฉลี่ย \(avg.formatted(.number.precision(.fractionLength(0...1)))) คน/วันที่ทำงาน"))
+            out.append(KPI(label: "หยุดเพราะฝน", value: "\(rainStops) วัน", ink: Theme.navy, note: "ฝนรวม \(rainHours) ชม. จากรายงาน"))
+        }
+        return out
+    }
+
+    /// `PDF รวม`: every daily report's R2 pages in one file.
+    @MainActor static func shareAllDailies(job: Job) -> URL? {
+        let built = job.dailyLogs.compactMap { RoutineReportFiles.daily(job, log: $0) }
+        guard !built.isEmpty else { return nil }
+        let all = RoutineReportFiles.Built(pages: built.flatMap(\.pages), images: built.reduce(into: [:]) { $0.merge($1.images) { a, _ in a } },
+                                           name: "รายงานประจำวันรวม-\(job.stationName).pdf", folder: [], title: RoutineReport.Kind.daily.title)
+        return try? RoutineReportFiles.temporaryURL(all)
+    }
 }
 
 #if DEBUG

@@ -203,7 +203,7 @@ extension InstallTrackingPage {
 
     // MARK: shared parts
 
-    func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
+    static func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return content()
             .padding(padding)
@@ -213,15 +213,23 @@ extension InstallTrackingPage {
             .cardShadow()
     }
 
-    func cardHeading(_ title: String, note: String? = nil) -> some View {
+    func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
+        Self.phoneCard(padding: padding, content)
+    }
+
+    static func cardHeading(_ title: String, note: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             if let note { Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
         }
     }
 
+    func cardHeading(_ title: String, note: String? = nil) -> some View {
+        Self.cardHeading(title, note: note)
+    }
+
     /// A tile of a 2 × 2 summary: label, value, note.
-    func statCell(_ label: String, _ value: String, ink: Color, note: String, valueSize: CGFloat = 26) -> some View {
+    static func statCell(_ label: String, _ value: String, ink: Color, note: String, valueSize: CGFloat = 26) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             Text(value).font(.sarabunFixed(valueSize, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
@@ -232,8 +240,12 @@ extension InstallTrackingPage {
         .accessibilityElement(children: .combine)
     }
 
+    func statCell(_ label: String, _ value: String, ink: Color, note: String, valueSize: CGFloat = 26) -> some View {
+        Self.statCell(label, value, ink: ink, note: note, valueSize: valueSize)
+    }
+
     /// Cells two by two inside one card, with hairlines between them.
-    func statGrid(_ cells: [AnyView]) -> some View {
+    static func statGrid(_ cells: [AnyView]) -> some View {
         let rows = stride(from: 0, to: cells.count, by: 2).map { Array(cells[$0..<min($0 + 2, cells.count)]) }
         return VStack(spacing: 0) {
             ForEach(rows.indices, id: \.self) { r in
@@ -250,8 +262,12 @@ extension InstallTrackingPage {
         }
     }
 
+    func statGrid(_ cells: [AnyView]) -> some View {
+        Self.statGrid(cells)
+    }
+
     /// A small tile on the page's tint: label over a bold value.
-    func factTile(_ label: String, _ value: String, ink: Color = Theme.navy) -> some View {
+    static func factTile(_ label: String, _ value: String, ink: Color = Theme.navy) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
             Text(value).font(.sarabunFixed(17, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
@@ -260,6 +276,10 @@ extension InstallTrackingPage {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    func factTile(_ label: String, _ value: String, ink: Color = Theme.navy) -> some View {
+        Self.factTile(label, value, ink: ink)
     }
 
     /// `‹ สัปดาห์ที่ n ›` over the week's dates.

@@ -5,34 +5,59 @@ import TCRoofCore
 /// `ความคืบหน้าเทียบแผน`'s third view, `Key Plan` (docs/ui/install-tracking-ipad-keyplan): the station's key plan with a
 /// pin per MP task × location coloured by its progress against today's plan, beside the list of those points. Placing
 /// a point writes its location's `Settings.keyPoints`, so every task at that location moves with it.
-extension InstallTrackingPage {
-    /// The settings the view reads and writes: the job's, or the board's example in memory with `-installDemo YES`.
-    var keySettings: RoutineReport.Settings {
+struct InstallKeyPlanTabView: View {
+    let job: Job
+    let data: InstallPageData
+    let canEdit: Bool
+    let demo: Bool
+
+    @Environment(\.modelContext) private var context
+    #if DEBUG
+    @State private var keyDemo: RoutineReport.Settings?
+    #endif
+
+    private var settings: RoutineReport.Settings {
         #if DEBUG
-        if Debug.demo { return keyDemo ?? KeyPlanDemo.settings }
+        if demo { return keyDemo ?? KeyPlanDemo.settings }
         #endif
         return job.routineSettings
     }
 
-    func keyPlanModel(_ data: InstallPageData) -> InstallKeyPlan {
+    private var model: InstallKeyPlan {
         #if DEBUG
-        if Debug.demo { return InstallKeyPlan(rows: KeyPlanDemo.rows, planned: KeyPlanDemo.planned, settings: keySettings) }
+        if demo { return InstallKeyPlan(rows: KeyPlanDemo.rows, planned: KeyPlanDemo.planned, settings: settings) }
         #endif
-        return InstallKeyPlan(rows: data.gantt?.rows ?? [], planned: data.plannedByTask, settings: keySettings)
+        return InstallKeyPlan(rows: data.gantt?.rows ?? [], planned: data.plannedByTask, settings: settings)
     }
 
-    /// Saves the way `KeyPlanSheet` does.
-    func saveKeySettings(_ s: RoutineReport.Settings) {
+    private func saveSettings(_ s: RoutineReport.Settings) {
         #if DEBUG
-        if Debug.demo { keyDemo = s; return }
+        if demo { keyDemo = s; return }
         #endif
         job.routineSettings = s
         try? context.save()
     }
 
+    var body: some View {
+        InstallKeyPlanPanel(job: job, model: model, settings: settings, save: saveSettings, canEdit: canEdit, demo: demo)
+    }
+}
+
+extension InstallTrackingPage {
+    func keyPlanModel(_ data: InstallPageData) -> InstallKeyPlan {
+        #if DEBUG
+        if Debug.demo { return InstallKeyPlan(rows: KeyPlanDemo.rows, planned: KeyPlanDemo.planned, settings: KeyPlanDemo.settings) }
+        #endif
+        return InstallKeyPlan(rows: data.gantt?.rows ?? [], planned: data.plannedByTask, settings: job.routineSettings)
+    }
+
     func keyPlanPanel(_ data: InstallPageData) -> some View {
-        InstallKeyPlanPanel(job: job, model: keyPlanModel(data), settings: keySettings, save: saveKeySettings,
-                            canEdit: permissions.can(.dailyFill, on: job.access), demo: Debug.demo)
+        InstallKeyPlanTabView(
+            job: job,
+            data: data,
+            canEdit: permissions.can(.dailyFill, on: job.access),
+            demo: Debug.demo
+        )
     }
 
     /// `เสร็จ · ตามแผน · ช้ากว่าแผน · ยังไม่เริ่ม`.

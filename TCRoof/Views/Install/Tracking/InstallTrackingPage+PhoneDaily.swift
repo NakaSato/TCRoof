@@ -5,23 +5,41 @@ import TCRoofCore
 /// iPhone `รายงานประจำวัน` (docs/ui/install-tracking-iphone §4.3): the iPad's KPIs two by two, the filter with its
 /// counts and `PDF รวม`, then one card a day, newest first, each opening that day's `DailyReportScreen`. The engineer,
 /// inspector and photo chips are left out, as the board does.
-extension InstallTrackingPage {
-    func phoneDailyTab(_ d: InstallDailyData) -> some View {
+struct InstallPhoneDailyTabView: View {
+    let job: Job
+    let data: InstallDailyData
+    @Binding var phoneTab: InstallTrackingPage.PhoneTab
+    @Binding var route: InstallTrackingPage.Route?
+
+    @State private var dailyFilter = InstallTrackingPage.Debug.dailyFilter
+    @State private var ackingAllDailies = false
+    @State private var shared: InstallTrackingPage.Shared?
+
+    @Environment(\.permissions) private var permissions
+    @Environment(\.modelContext) private var context
+
+    func rowNeedsWork(_ r: InstallDailyData.Row) -> Bool {
+        r.needsWork || (r.isPendingAck && permissions.can(.dailySign, on: job.access))
+    }
+
+    var body: some View {
         let rows: [InstallDailyData.Row] = switch dailyFilter {
-        case 1: d.rows.filter(rowNeedsWork)
-        case 2: d.rows.filter(\.hasProblem)
-        default: d.rows
+        case 1: data.rows.filter(rowNeedsWork)
+        case 2: data.rows.filter(\.hasProblem)
+        default: data.rows
         }
         return VStack(alignment: .leading, spacing: 14) {
-            phoneCard(padding: 0) {
-                statGrid(kpis(d).prefix(4).map { AnyView(statCell($0.label, $0.value, ink: $0.ink, note: $0.note, valueSize: 22)) })
+            InstallTrackingPage.phoneCard(padding: 0) {
+                InstallTrackingPage.statGrid(data.kpis().prefix(4).map {
+                    AnyView(InstallTrackingPage.statCell($0.label, $0.value, ink: $0.ink, note: $0.note, valueSize: 22))
+                })
             }
             HStack(spacing: 8) {
-                filterCapsule("ทั้งหมด", d.rows.count, 0)
-                filterCapsule("ต้องทำ", d.rows.filter(rowNeedsWork).count, 1)
-                filterCapsule("มีปัญหา", d.rows.filter(\.hasProblem).count, 2)
+                filterCapsule("ทั้งหมด", data.rows.count, 0)
+                filterCapsule("ต้องทำ", data.rows.filter(rowNeedsWork).count, 1)
+                filterCapsule("มีปัญหา", data.rows.filter(\.hasProblem).count, 2)
                 Spacer(minLength: 0)
-                if d.hasReports {
+                if data.hasReports {
                     Button { shareAllDailies() } label: {
                         Image(systemName: "arrow.down.to.line").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.navy)
                             .frame(width: 52, height: 44)
@@ -33,23 +51,29 @@ extension InstallTrackingPage {
                     .accessibilityLabel("PDF รวม")
                 }
             }
-            if !d.unacknowledged.isEmpty, permissions.can(.dailySign, on: job.access) {
+            if !data.unacknowledged.isEmpty, permissions.can(.dailySign, on: job.access) {
                 Button { ackingAllDailies = true } label: {
-                    Label("รับทราบทั้งหมด (\(d.unacknowledged.count) วัน)", systemImage: "checkmark.seal.fill").frame(maxWidth: .infinity)
+                    Label("รับทราบทั้งหมด (\(data.unacknowledged.count) วัน)", systemImage: "checkmark.seal.fill").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))
                 .accessibilityIdentifier("dailyAckAll")
             }
             if rows.isEmpty {
-                Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                Text(data.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 80)
             }
-            ForEach(rows) { dayCard($0, workEnd: d.workEnd) }
-            if let w = d.week {
+            ForEach(rows) { dayCard($0, workEnd: data.workEnd) }
+            if let w = data.week {
                 Button { phoneTab = .weekly } label: {
                     Label("สร้าง Weekly Report W\(w.number) จากรายงาน \(w.reports) ฉบับ", systemImage: "doc.text").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true))
+            }
+        }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .sheet(isPresented: $ackingAllDailies) {
+            InspectorAckSheet(title: "รับทราบทั้งหมด (\(job.pendingAckLogs.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAckAll(job.pendingAckLogs, name: name, at: when, signature: drawn, context: context)
             }
         }
     }
@@ -68,13 +92,20 @@ extension InstallTrackingPage {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
+    private func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
+            .padding(.horizontal, 9).frame(height: 24)
+            .background(InstallTrackingPage.fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .fixedSize()
+    }
+
     private func dayCard(_ r: InstallDailyData.Row, workEnd: String) -> some View {
         let urgent = r.state == .today
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(spacing: 0) {
-                    Text(Self.dayLabel(r.date).split(separator: " ").first.map(String.init) ?? "").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text(InstallTrackingPage.dayLabel(r.date).split(separator: " ").first.map(String.init) ?? "").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     Text("\(RoutineReport.calendar.component(.day, from: r.date))").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 }
                 .frame(width: 36)
@@ -156,6 +187,25 @@ extension InstallTrackingPage {
         }
         return Button { route = .day(r.date) } label: { Text(title).frame(maxWidth: .infinity) }
             .buttonStyle(TCButtonStyle(prominent ? .primary : .secondary, size: .card, fullWidth: true))
-            .accessibilityLabel(title + " " + Self.dayLabel(r.date))
+            .accessibilityLabel(title + " " + InstallTrackingPage.dayLabel(r.date))
+    }
+
+    func shareAllDailies() {
+        if let url = InstallDailyData.shareAllDailies(job: job) {
+            shared = InstallTrackingPage.Shared(url: url)
+        }
+    }
+}
+
+// MARK: - Compatibility Extension
+
+extension InstallTrackingPage {
+    func phoneDailyTab(_ d: InstallDailyData) -> some View {
+        InstallPhoneDailyTabView(
+            job: job,
+            data: d,
+            phoneTab: $phoneTab,
+            route: $route
+        )
     }
 }

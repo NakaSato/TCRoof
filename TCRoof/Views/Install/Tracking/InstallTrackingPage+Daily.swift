@@ -4,34 +4,33 @@ import TCRoofCore
 
 /// `รายงานประจำวัน` (docs/ui/install-tracking-ipad-daily): the KPI strip, then `ทุกรายงาน` with its filter and one row a
 /// working day, running down to the dock. Each row's cumulative progress is set against the MP plan.
-extension InstallTrackingPage {
-    /// A file to hand to the share sheet.
-    struct Shared: Identifiable {
-        let url: URL
-        var id: URL { url }
-    }
+struct InstallDailyTabView: View {
+    let job: Job
+    let data: InstallDailyData
+    let viewport: CGFloat
+    @Binding var route: InstallTrackingPage.Route?
+    var onGoWeekly: (() -> Void)?
 
-    /// `พ. 30/9`, as on the board (the Thai `EEE` spells the day out).
-    static func dayLabel(_ d: Date) -> String {
-        let short = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."][(RoutineReport.calendar.component(.weekday, from: d) + 6) % 7]
-        return short + " " + ThaiFormat.dayMonth.string(from: d)
-    }
+    @State private var dailyFilter: Int = InstallTrackingPage.Debug.dailyFilter
+    @State private var ackingAllDailies = false
+    @State private var shared: InstallTrackingPage.Shared?
 
-    var dailyData: InstallDailyData {
-        #if DEBUG
-        if Debug.demo { return .demo() }
-        #endif
-        return InstallDailyData(job: job)
-    }
+    @Environment(\.permissions) private var permissions
+    @Environment(\.modelContext) private var context
 
-    /// The KPI strip's height.
     static let dailyKPIHeight: CGFloat = 52
 
-    func dailyTab(_ d: InstallDailyData) -> some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            dailyKPIs(d)
+            dailyKPIs(data)
             // the reports card takes the rest of the height, down to the dock
-            reportsCard(d).frame(height: max(viewport - 14 - Self.dailyKPIHeight - 14 - Self.dockClearance, 300))
+            reportsCard(data).frame(height: max(viewport - 14 - Self.dailyKPIHeight - 14 - InstallTrackingPage.dockClearance, 300))
+        }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+        .sheet(isPresented: $ackingAllDailies) {
+            InspectorAckSheet(title: "รับทราบทั้งหมด (\(job.pendingAckLogs.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
+                job.recordInspectorAckAll(job.pendingAckLogs, name: name, at: when, signature: drawn, context: context)
+            }
         }
     }
 
@@ -44,45 +43,16 @@ extension InstallTrackingPage {
             .cardShadow()
     }
 
+    private func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
+            .padding(.horizontal, 9).frame(height: 24)
+            .background(InstallTrackingPage.fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
     // MARK: KPI row
 
-    struct DailyKPI: Identifiable {
-        var id: String { label }
-        let label: String
-        let value: String
-        let ink: Color
-        let note: String
-    }
-
-    func kpis(_ d: InstallDailyData) -> [DailyKPI] {
-        var out: [DailyKPI] = []
-        let n = d.workingThroughYesterday, x = d.sentThroughYesterday
-        out.append(DailyKPI(label: "ส่งแล้ว", value: "\(x) / \(n) วัน", ink: x >= n ? Theme.successInk : Theme.warningInk, note: "นับถึงเมื่อวาน"))
-        let dates = { (ds: [Date]) in ds.sorted().map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") }
-        let waitNote = [d.drafts.isEmpty ? nil : "ร่าง " + dates(d.drafts),
-                        d.unacknowledged.isEmpty ? nil : "ผู้ตรวจยังไม่รับทราบ " + dates(d.unacknowledged)].compactMap { $0 }
-        out.append(DailyKPI(label: "รอลงนาม | รับทราบ", value: "\(d.drafts.count) | \(d.unacknowledged.count)",
-                            ink: d.drafts.isEmpty && d.unacknowledged.isEmpty ? Theme.successInk : Theme.warningInk,
-                            note: waitNote.isEmpty ? "ครบทุกฉบับ" : waitNote.joined(separator: " | ")))
-        let today = d.rows.first { $0.date == d.today }
-        let (value, ink, note): (String, Color, String) = switch today?.state {
-        case .signed?, .stopped?: ("ส่งแล้ว", Theme.successInk, today?.ackAt == nil ? "รอผู้ตรวจรับทราบ" : "ผู้ตรวจรับทราบแล้ว")
-        case .draft?: ("ร่างไว้", Theme.warningInk, "ยังไม่ลงนาม | ส่งก่อน \(d.workEnd)")
-        case .today?, .missing?: ("ยังไม่ส่ง", Theme.dangerText, "ส่งก่อน \(d.workEnd)")
-        case nil: ("ไม่ต้องส่ง", Theme.inkMuted, d.inWindow ? "วันหยุดของหน้างาน" : "นอกช่วงติดตั้ง")
-        }
-        out.append(DailyKPI(label: "วันนี้ " + ThaiFormat.dayMonth.string(from: d.today), value: value, ink: ink, note: note))
-        if d.hasReports {
-            let avg = d.workedDays > 0 ? Double(d.manDays) / Double(d.workedDays) : 0
-            out.append(DailyKPI(label: "คน-วันรวม", value: "\(d.manDays)", ink: Theme.navy,
-                                note: "เฉลี่ย \(avg.formatted(.number.precision(.fractionLength(0...1)))) คน/วันที่ทำงาน"))
-            out.append(DailyKPI(label: "หยุดเพราะฝน", value: "\(d.rainStops) วัน", ink: Theme.navy, note: "ฝนรวม \(d.rainHours) ชม. จากรายงาน"))
-        }
-        return out
-    }
-
     private func dailyKPIs(_ d: InstallDailyData) -> some View {
-        let cells = kpis(d)
+        let cells = d.kpis()
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return HStack(spacing: 0) {
             ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
@@ -189,7 +159,7 @@ extension InstallTrackingPage {
                 .accessibilityIdentifier("dailyAckAll")
             }
             if let w = d.week {
-                Button { go(.weekly) } label: {
+                Button { onGoWeekly?() } label: {
                     Label(short ? "Weekly Report W\(w.number)" : "สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
@@ -225,7 +195,7 @@ extension InstallTrackingPage {
     private func reportRow(_ r: InstallDailyData.Row, today: Date, col: Col) -> some View {
         let urgent = r.state == .today
         return HStack(spacing: 10) {
-            Text(Self.dayLabel(r.date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text(InstallTrackingPage.dayLabel(r.date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: col.date, alignment: .leading)
             stateChip(r.state).frame(width: col.status, alignment: .leading)
             weatherCell(r).frame(width: col.weather, alignment: .leading)
@@ -340,15 +310,65 @@ extension InstallTrackingPage {
         }
         return Button { route = .day(r.date) } label: { Text(title).frame(maxWidth: .infinity) }
             .buttonStyle(TCButtonStyle(prominent ? .primary : .secondary, size: .card))
-            .accessibilityLabel(title + " " + Self.dayLabel(r.date))
+            .accessibilityLabel(title + " " + InstallTrackingPage.dayLabel(r.date))
     }
 
     /// `PDF รวม`: every daily report's R2 pages in one file, to the share sheet.
     func shareAllDailies() {
-        let built = job.dailyLogs.compactMap { RoutineReportFiles.daily(job, log: $0) }
-        guard !built.isEmpty else { return }
-        let all = RoutineReportFiles.Built(pages: built.flatMap(\.pages), images: built.reduce(into: [:]) { $0.merge($1.images) { a, _ in a } },
-                                           name: "รายงานประจำวันรวม-\(job.stationName).pdf", folder: [], title: RoutineReport.Kind.daily.title)
-        if let url = try? RoutineReportFiles.temporaryURL(all) { shared = Shared(url: url) }
+        if let url = InstallDailyData.shareAllDailies(job: job) {
+            shared = InstallTrackingPage.Shared(url: url)
+        }
+    }
+}
+
+// MARK: - Compatibility Extension
+
+extension InstallTrackingPage {
+    /// A file to hand to the share sheet.
+    struct Shared: Identifiable {
+        let url: URL
+        var id: URL { url }
+    }
+
+    typealias DailyKPI = InstallDailyData.KPI
+
+    /// `พ. 30/9`, as on the board (the Thai `EEE` spells the day out).
+    static func dayLabel(_ d: Date) -> String {
+        let short = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."][(RoutineReport.calendar.component(.weekday, from: d) + 6) % 7]
+        return short + " " + ThaiFormat.dayMonth.string(from: d)
+    }
+
+    var dailyData: InstallDailyData {
+        #if DEBUG
+        if Debug.demo { return .demo() }
+        #endif
+        return InstallDailyData(job: job)
+    }
+
+    /// The KPI strip's height.
+    static let dailyKPIHeight: CGFloat = InstallDailyTabView.dailyKPIHeight
+
+    func dailyTab(_ d: InstallDailyData) -> some View {
+        InstallDailyTabView(
+            job: job,
+            data: d,
+            viewport: viewport,
+            route: $route,
+            onGoWeekly: { go(.weekly) }
+        )
+    }
+
+    func kpis(_ d: InstallDailyData) -> [DailyKPI] {
+        d.kpis()
+    }
+
+    func rowNeedsWork(_ r: InstallDailyData.Row) -> Bool {
+        r.needsWork || (r.isPendingAck && permissions.can(.dailySign, on: job.access))
+    }
+
+    func shareAllDailies() {
+        if let url = InstallDailyData.shareAllDailies(job: job) {
+            shared = Shared(url: url)
+        }
     }
 }

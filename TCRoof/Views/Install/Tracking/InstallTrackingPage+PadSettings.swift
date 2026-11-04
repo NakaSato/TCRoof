@@ -207,10 +207,23 @@ struct PadSettingsDemo {
     }
 }
 
-extension InstallTrackingPage {
+/// The isolated iPad settings tab view, encapsulating category selection, sheets, and demo state.
+struct InstallPadSettingsTabView: View {
+    let job: Job
+    let data: InstallPageData
+    @Binding var settingsDraft: SettingsDraft
+    var leave: ((InstallTrackingPage.Leave) -> Void)? = nil
+
+    @State var padCategory = InstallTrackingPage.Debug.padCategory
+    @State var padSheet: PadSettingsSheet?
+    @State var padDemo = PadSettingsDemo.initial
+
+    @Environment(\.permissions) var permissions
+    @Environment(\.modelContext) var context
+
     // MARK: data (the job's, or the demo's)
 
-    var padDemoOn: Bool { Debug.demo }
+    var padDemoOn: Bool { InstallTrackingPage.Debug.demo }
 
     var settingsKept: RoutineReport.Settings { padDemoOn ? padDemo.settings : job.routineSettings }
     var sellsPowerKept: Bool { padDemoOn ? padDemo.sellsPower : job.stationDocs.sellsPower }
@@ -240,7 +253,7 @@ extension InstallTrackingPage {
         switch c {
         case .team: "\(padPeopleCount) คน"
         case .drawings: padDrawings.isEmpty ? "" : "\(padDrawings.count) แบบ"
-        case .routine: Self.weekdaysSummary(settingsShown.workingWeekdays)
+        case .routine: InstallTrackingPage.weekdaysSummary(settingsShown.workingWeekdays)
         case .connection: sellsPowerShown ? "ขนานไฟ" : "Zero Export"
         case .header, .reference: ""
         }
@@ -248,7 +261,7 @@ extension InstallTrackingPage {
 
     // MARK: layout
 
-    func padSettingsTab(_ data: InstallPageData) -> some View {
+    var body: some View {
         let frame = RoundedRectangle(cornerRadius: 20, style: .continuous)
         return HStack(alignment: .top, spacing: 18) {
             ScrollView { padSettingsLeft(data).padding(.vertical, 2) }
@@ -300,7 +313,7 @@ extension InstallTrackingPage {
 
     private func padStationCard(_ data: InstallPageData) -> some View {
         let name = padDemoOn ? data.title : job.stationName
-        return phoneCard(padding: 14) {
+        return InstallTrackingPage.phoneCard(padding: 14) {
             HStack(spacing: 12) {
                 Text(String(name.prefix(2))).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 48, height: 48).background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -357,7 +370,7 @@ extension InstallTrackingPage {
 
     private var padHeadCard: some View {
         let c = padCategory
-        return phoneCard(padding: 14) {
+        return InstallTrackingPage.phoneCard(padding: 14) {
             HStack(spacing: 14) {
                 padIconTile(c.symbol, c.tint, size: 46)
                 VStack(alignment: .leading, spacing: 0) {
@@ -488,14 +501,14 @@ extension InstallTrackingPage {
                 HStack(spacing: 14) {
                     Text(Self.avatarLetters(name.isEmpty ? email : name, count: 1)).font(.sarabunFixed(18, .bold))
                         .foregroundStyle(Theme.onPrimary)
-                        .frame(width: 44, height: 44).background(Self.ink(role.tone), in: Circle())
+                        .frame(width: 44, height: 44).background(InstallTrackingPage.ink(role.tone), in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(name.isEmpty ? email : name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                         if !name.isEmpty { Text(email).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
                     }
                     Spacer(minLength: 4)
-                    toneChip(role.chip, role.tone)
+                    InstallTrackingPage.toneChip(role.chip, role.tone)
                     Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
                 }
                 .padding(.horizontal, 20).frame(minHeight: 64)
@@ -536,5 +549,27 @@ extension InstallTrackingPage {
             Text(text).font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading).padding(.horizontal, 20)
         }
+    }
+}
+
+extension InstallTrackingPage {
+    func padSettingsTab(_ data: InstallPageData) -> some View {
+        InstallPadSettingsTabView(
+            job: job,
+            data: data,
+            settingsDraft: $settingsDraft,
+            leave: { [self] target in self.leave(to: target) }
+        )
+    }
+
+    // Forwarding helpers for backwards compatibility
+    var settingsKept: RoutineReport.Settings { job.routineSettings }
+    var sellsPowerKept: Bool { job.stationDocs.sellsPower }
+    var settingsShown: RoutineReport.Settings { settingsDraft.merged(settingsKept) }
+    var sellsPowerShown: Bool { settingsDraft.sellsPower ?? sellsPowerKept }
+    var settingsChanges: [SettingsDraft.Field] { settingsDraft.changes(from: settingsKept, sellsPower: sellsPowerKept) }
+
+    static func avatarLetters(_ name: String, count: Int) -> String {
+        InstallPadSettingsTabView.avatarLetters(name, count: count)
     }
 }

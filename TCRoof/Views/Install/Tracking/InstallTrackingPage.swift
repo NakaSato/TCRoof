@@ -105,13 +105,9 @@ struct InstallTrackingPage: View {
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?
     @State var phoneSheet: PhoneSheet?
-    /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the category shown, the edits not saved yet, the
-    /// open sheet, where the person was going when asked about unsaved edits, and `-installDemo YES`'s station.
-    @State var padCategory = Debug.padCategory
+    /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the edits not saved yet, and where the person was going when asked about unsaved edits.
     @State var settingsDraft = SettingsDraft()
-    @State var padSheet: PadSettingsSheet?
     @State var leaving: Leave?
-    @State var padDemo = PadSettingsDemo.initial
 
     var body: some View {
         let data = self.data

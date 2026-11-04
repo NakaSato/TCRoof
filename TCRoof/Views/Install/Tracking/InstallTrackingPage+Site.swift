@@ -111,10 +111,14 @@ extension InstallTrackingPage {
         .accessibilityHint("เปิดรายการ")
     }
 
-    func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
+    static func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(ink(tone)).lineLimit(1)
             .padding(.horizontal, 9).frame(height: 24)
-            .background(Self.fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .background(fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        Self.chip(text, tone)
     }
 
     static func ink(_ tone: InstallPageData.Tone) -> Color {

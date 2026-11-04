@@ -337,8 +337,12 @@ extension InstallTrackingPage {
         .accessibilityLabel("ขั้น \(min(current + 1, titles.count)) จาก \(titles.count) | " + (titles.indices.contains(current) ? titles[current] : "ครบ"))
     }
 
-    func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+    static func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
         chip(text, tone).fixedSize()
+    }
+
+    func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        Self.toneChip(text, tone)
     }
 }
 

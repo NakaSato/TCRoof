@@ -6,7 +6,7 @@ import TCRoofCore
 /// The sheets of iPad `ตั้งค่าโครงการ`: the text editor and work time (state 09), the person (13), a drawing's history
 /// (11) and the upload (12). The editors the iPhone opens (`JobAccessCard`, `RoutineSettingsSheet`,
 /// `StationFactsSheet`) are called as they are.
-extension InstallTrackingPage {
+extension InstallPadSettingsTabView {
     @ViewBuilder func padSheetView(_ s: PadSettingsSheet) -> some View {
         switch s {
         case .text(let f):
@@ -63,12 +63,12 @@ extension InstallTrackingPage {
 
     #if DEBUG
     /// `-installSettingsState upload` opens the upload with a file and a reason already given.
-    static var prefillUpload: Bool { Debug.demo && Debug.settingsState == "upload" }
+    static var prefillUpload: Bool { InstallTrackingPage.Debug.demo && InstallTrackingPage.Debug.settingsState == "upload" }
     nonisolated(unsafe) private static var settingsStateApplied = false
 
     /// `-installSettingsState edit|dirty|history|upload|person` with `-installDemo YES`: states 09–13, in memory.
     func applySettingsState() {
-        guard Debug.demo, let state = Debug.settingsState, !Self.settingsStateApplied else { return }
+        guard InstallTrackingPage.Debug.demo, let state = InstallTrackingPage.Debug.settingsState, !Self.settingsStateApplied else { return }
         Self.settingsStateApplied = true
         switch state {
         case "edit":

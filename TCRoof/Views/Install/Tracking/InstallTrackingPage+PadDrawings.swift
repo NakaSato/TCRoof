@@ -28,7 +28,7 @@ extension Job {
 }
 
 /// `แบบก่อสร้าง` (states 03, 11, 12): the drawings, their revision history and the upload.
-extension InstallTrackingPage {
+extension InstallPadSettingsTabView {
     var padDrawings: [StationDrawing] { padDemoOn ? padDemo.drawings : job.drawings }
 
     /// Uploads are the team's and managers' (`stationdocs.drafts`, as station papers); contractors view and open.
@@ -144,4 +144,11 @@ extension InstallTrackingPage {
         }
         return r.driveID.flatMap { URL(string: "https://drive.google.com/file/d/\($0)/view") }
     }
+}
+
+extension InstallTrackingPage {
+    static func fileTint(_ ext: String) -> Color { InstallPadSettingsTabView.fileTint(ext) }
+    static func fileTile(_ ext: String, size: CGFloat = 44) -> some View { InstallPadSettingsTabView.fileTile(ext, size: size) }
+    static func revChip(_ rev: String, latest: Bool = true) -> some View { InstallPadSettingsTabView.revChip(rev, latest: latest) }
+    var padDrawings: [StationDrawing] { job.drawings }
 }

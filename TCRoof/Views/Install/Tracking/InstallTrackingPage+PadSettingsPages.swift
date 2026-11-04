@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-extension InstallTrackingPage {
+extension InstallPadSettingsTabView {
     // MARK: ทีมและสิทธิ์
 
     var padTeamPage: some View {
@@ -92,7 +92,7 @@ extension InstallTrackingPage {
         let s = settingsShown
         let picked = Self.weekdayOptions.firstIndex { $0.days == s.workingWeekdays }
         return VStack(alignment: .leading, spacing: 18) {
-            padSection(nil, footer: picked == nil ? "วันทำงานตอนนี้: " + Self.weekdaysSummary(s.workingWeekdays) : nil) {
+            padSection(nil, footer: picked == nil ? "วันทำงานตอนนี้: " + InstallTrackingPage.weekdaysSummary(s.workingWeekdays) : nil) {
                 padPickerRow(SettingsDraft.Field.weekdays.title, hint: "วันหยุดราชการไม่นับ", options: Self.weekdayOptions.map(\.title),
                              selected: picked, first: true, editable: editsRoutine) { i in
                     settingsDraft.weekdays = Self.weekdayOptions[i].days
@@ -131,7 +131,7 @@ extension InstallTrackingPage {
             }
             padSection("การทดสอบ IEC 62446") {
                 padValueRow("เครื่องมือวัด", value: instruments.isEmpty ? "ยังไม่ได้ตั้งค่า" : instruments, first: true,
-                            id: "padSettings.instruments") { leave(to: .tab(.iec)) }
+                            id: "padSettings.instruments") { leave?(.tab(.iec)) }
                 padValueRow("อินเวอร์เตอร์", value: job.iecReport.map { "\($0.inverters.count) เครื่อง | \($0.stringCount) สตริง" } ?? "ยังไม่ได้ตั้งค่า")
             }
         }
@@ -152,7 +152,7 @@ extension InstallTrackingPage {
             padSection(nil, footer: "แก้ที่หน้ารายละเอียดงาน") {
                 padValueRow("ประเภทงาน", hint: "มีแผน MP | รายงานประจำ | เอกสาร กปภ.", value: job.kind.title, first: true, locked: true)
                 padValueRow("รายงานสำรวจ", hint: "ดูอย่างเดียว", value: survey.map(surveyLine) ?? "ไม่มีรายงานที่เชื่อมไว้",
-                            id: "padSettings.survey", action: survey.map { id in { leave(to: .route(.survey(id))) } })
+                            id: "padSettings.survey", action: survey.map { id in { leave?(.route(.survey(id))) } })
                 padValueRow("ผังตำแหน่งงาน (Key Plan)", hint: "ใช้ในหน้า 2 ของ DAILY REPORT",
                             value: job.uploadedKeyPlan != nil ? "อัปโหลดแล้ว" : (survey == nil ? "ยังไม่มี" : "ภาพ A2 จากรายงานสำรวจ"))
             }
@@ -163,7 +163,7 @@ extension InstallTrackingPage {
                 padValueRow("ทีม", value: job.team.rawValue)
                 padValueRow("ช่วงติดตั้ง", value: ThaiFormat.numericDate.string(from: job.installStart) + " – " + ThaiFormat.numericDate.string(from: job.installEnd))
                 padValueRow("สาขา กปภ.", value: job.stationDocs.branch)
-                padValueRow("รายละเอียดงาน", value: "", id: "padSettings.detail") { leave(to: .route(.detail)) }
+                padValueRow("รายละเอียดงาน", value: "", id: "padSettings.detail") { leave?(.route(.detail)) }
             }
         }
     }
@@ -209,6 +209,21 @@ extension InstallTrackingPage {
             if let v = draft.sellsPower { padDemo.sellsPower = v }
             return
         }
+        let s = draft.merged(job.routineSettings)
+        if s != job.routineSettings { job.routineSettings = s }
+        if let v = draft.sellsPower, v != job.stationDocs.sellsPower {
+            var station = job.stationDocs
+            station.sellsPower = v
+            job.stationDocs = station
+        }
+        try? context.save()
+    }
+}
+
+extension InstallTrackingPage {
+    func saveSettingsDraft() {
+        let draft = settingsDraft
+        settingsDraft = SettingsDraft()
         let s = draft.merged(job.routineSettings)
         if s != job.routineSettings { job.routineSettings = s }
         if let v = draft.sellsPower, v != job.stationDocs.sellsPower {

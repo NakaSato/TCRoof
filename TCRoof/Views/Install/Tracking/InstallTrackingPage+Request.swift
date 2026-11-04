@@ -2,11 +2,26 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// The iPad page's `คำขอรายสัปดาห์` tab (docs/ui/install-tracking-ipad-weekly-request): the R1 request in the page, a
+/// The isolated iPad page's `คำขอรายสัปดาห์` tab (docs/ui/install-tracking-ipad-weekly-request): the R1 request in the page, a
 /// header card over the form (crew × day, tools, work × day, risks) and the approval panel on the right
 /// (`InstallTrackingPage+RequestPanel.swift`). It keeps the request as `WeeklyRequestScreen` does (`WeeklyRequestStore`).
-extension InstallTrackingPage {
-    enum RequestSheet: String, Identifiable { case sign, pdf, approve, addLine; var id: String { rawValue } }
+struct InstallWeeklyRequestTabView: View {
+    let job: Job
+    @Binding var requestWeek: Int
+    let requestWeekStart: Date
+
+    @State var request: RoutineReport.WeeklyRequest?
+    @State var reqSignature: Data?
+    @State var reqSignedAt: Date?
+    @State var reqName = ""
+    @State var reqSheet: InstallTrackingPage.RequestSheet?
+    @State var reqToast: String?
+    @State var reqPulledAt: Date?
+    @State var reqPulling = false
+    @State var shared: InstallTrackingPage.Shared?
+
+    @Environment(\.permissions) var permissions
+    @Environment(\.modelContext) var context
 
     var reqExternal: Bool { permissions.role == .external }
     /// The contractor sends it; the team approves, sends back and reopens it.
@@ -28,7 +43,7 @@ extension InstallTrackingPage {
         guard r != request else { return }
         request = r
         #if DEBUG
-        if Debug.demo { return }
+        if InstallTrackingPage.Debug.demo { return }
         #endif
         WeeklyRequestStore.save(r, job: job, external: reqExternal, file: false, context: context)
     }
@@ -36,7 +51,7 @@ extension InstallTrackingPage {
     /// The week's request with its kept signature (none in the board's example), and the requester's name.
     func loadRequest() {
         #if DEBUG
-        if Debug.demo { request = Self.demoRequest(week: requestWeekStart, back: -requestWeek); reqSignature = nil; reqName = "นายสมชาย ใจดี"; return }
+        if InstallTrackingPage.Debug.demo { request = Self.demoRequest(week: requestWeekStart, back: -requestWeek); reqSignature = nil; reqName = "นายสมชาย ใจดี"; return }
         #endif
         let r = WeeklyRequestStore.load(job, requestWeekStart)
         request = r
@@ -46,8 +61,18 @@ extension InstallTrackingPage {
         reqName = reqSettings.siteEngineer
     }
 
+    var body: some View {
+        requestContent
+            .task(id: requestWeek) {
+                loadRequest()
+                #if DEBUG
+                applyRequestState()
+                #endif
+            }
+    }
+
     /// The tab: the header card, then the form scrolling on the left and the panel on the right.
-    @ViewBuilder func requestTab() -> some View {
+    @ViewBuilder private var requestContent: some View {
         if let r = request {
             let editable = reqEditable(r)
             VStack(spacing: 14) {
@@ -70,7 +95,7 @@ extension InstallTrackingPage {
                         #if DEBUG
                         // `-installScrollEnd YES` opens the form at its end (board state 09)
                         .task {
-                            guard Debug.scrollEnd else { return }
+                            guard InstallTrackingPage.Debug.scrollEnd else { return }
                             try? await Task.sleep(for: .milliseconds(500))
                             proxy.scrollTo("requestEnd", anchor: .bottom)
                         }
@@ -82,6 +107,7 @@ extension InstallTrackingPage {
             .padding(.horizontal, 24).padding(.top, 14)
             .overlay(alignment: .bottom) { if let t = reqToast { toast(t) } }
             .sheet(item: $reqSheet) { requestSheet($0, r) }
+            .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         } else {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -111,7 +137,7 @@ extension InstallTrackingPage {
         case .sent: ("ส่งแล้ว | รอผู้ตรวจ กฟภ. อนุมัติ", .waiting)
         case .approved: ("อนุมัติแล้ว", .ok)
         }
-        return chip(text, tone).fixedSize().accessibilityIdentifier("requestStatus")
+        return InstallTrackingPage.chip(text, tone).fixedSize().accessibilityIdentifier("requestStatus")
     }
 
     func stepperPair(_ name: String, minus: Bool, plus: Bool, id: String, change: @escaping (Int) -> Void) -> some View {
@@ -200,7 +226,7 @@ extension InstallTrackingPage {
         Task {
             try? await Task.sleep(for: .milliseconds(350))
             #if DEBUG
-            let draft = Debug.demo ? Self.demoRequest(week: requestWeekStart, back: 0) : WeeklyRequestStore.draft(job, requestWeekStart)
+            let draft = InstallTrackingPage.Debug.demo ? Self.demoRequest(week: requestWeekStart, back: 0) : WeeklyRequestStore.draft(job, requestWeekStart)
             #else
             let draft = WeeklyRequestStore.draft(job, requestWeekStart)
             #endif
@@ -325,7 +351,7 @@ extension InstallTrackingPage {
     func previousRequest(_ r: RoutineReport.WeeklyRequest) -> RoutineReport.WeeklyRequest? {
         let prev = RoutineReport.add(r.weekStart, -7)
         #if DEBUG
-        if Debug.demo { var p = Self.demoRequest(week: prev, back: 1); p.crew = p.crew.map { c in var c = c; if c.name == "ผู้ปฏิบัติงาน" { c.count = 3 }; return c }; return p }
+        if InstallTrackingPage.Debug.demo { var p = Self.demoRequest(week: prev, back: 1); p.crew = p.crew.map { c in var c = c; if c.name == "ผู้ปฏิบัติงาน" { c.count = 3 }; return c }; return p }
         #endif
         return job.weeklyRequest(for: prev)
     }
@@ -383,7 +409,7 @@ extension InstallTrackingPage {
     func calibration(_ name: String) -> (text: String, ink: Color, state: Instrument.Calibration)? {
         let key = name.trimmingCharacters(in: .whitespaces).lowercased()
         #if DEBUG
-        let all = Debug.demo ? Self.demoInstruments : InstrumentStore.shared.all
+        let all = InstallTrackingPage.Debug.demo ? Self.demoInstruments : InstrumentStore.shared.all
         #else
         let all = InstrumentStore.shared.all
         #endif
@@ -395,5 +421,21 @@ extension InstallTrackingPage {
         case .ok: ("สอบเทียบถึง " + due, Theme.successInk, state)
         case .dueSoon, .overdue: ("สอบเทียบครบ " + due, Theme.warningInk, state)
         }
+    }
+}
+
+extension InstallTrackingPage {
+    enum RequestSheet: String, Identifiable { case sign, pdf, approve, addLine; var id: String { rawValue } }
+
+    @ViewBuilder func requestTab() -> some View {
+        InstallWeeklyRequestTabView(
+            job: job,
+            requestWeek: $requestWeek,
+            requestWeekStart: requestWeekStart
+        )
+    }
+
+    static func weekNumber(_ r: RoutineReport.WeeklyRequest) -> Int {
+        InstallWeeklyRequestTabView.weekNumber(r)
     }
 }

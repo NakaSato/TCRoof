@@ -65,17 +65,6 @@ struct InstallTrackingPage: View {
     @State var requestWeek = Debug.requestWeek
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
-    /// iPad `คำขอรายสัปดาห์` (docs/ui/install-tracking-ipad-weekly-request): the week's request as edited, the
-    /// requester's drawn signature and name (kept only until it is sent: `engineerSignedAt` records the signing), the open
-    /// sheet, a short note, and `ดึงจากแผน MP`'s time and spinner.
-    @State var request: RoutineReport.WeeklyRequest?
-    @State var reqSignature: Data?
-    @State var reqSignedAt: Date?
-    @State var reqName = ""
-    @State var reqSheet: RequestSheet?
-    @State var reqToast: String?
-    @State var reqPulledAt: Date?
-    @State var reqPulling = false
     @State var reportWeek = Debug.reportWeek
     /// iPad `Weekly Report` (docs/ui/install-tracking-ipad-weekly-report): the selected slide (0…7), the recipients picked
     /// for a week not sent yet (nil: the default two), the download menu, the .pptx sheet, the share sheet's files, the
@@ -180,12 +169,6 @@ struct InstallTrackingPage: View {
             // narrower, the R1 form scrolls and keeps its panel still
             } else if tab == .request {
                 requestTab()
-                    .task(id: requestWeek) {
-                        loadRequest()
-                        #if DEBUG
-                        applyRequestState()
-                        #endif
-                    }
             } else if tab == .settings {
                 padSettingsTab(data)
             } else if tab == .iec {

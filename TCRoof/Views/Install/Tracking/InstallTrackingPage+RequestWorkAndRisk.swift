@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-extension InstallTrackingPage {
+extension InstallWeeklyRequestTabView {
     // MARK: 3 งานที่ขอเข้าปฏิบัติ
 
     func workCard(_ r: RoutineReport.WeeklyRequest, editable: Bool) -> some View {
@@ -12,7 +12,7 @@ extension InstallTrackingPage {
                 HStack(spacing: 12) {
                     numbered(3, "งานที่ขอเข้าปฏิบัติ")
                     Text("\(r.work.count) งาน | \(r.work.count - r.linesWithoutDay) มีวัน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                    if let at = reqPulledAt { chip("✓ ดึงจากแผน MP " + String(format: "%02d:%02d", RoutineReport.calendar.component(.hour, from: at), RoutineReport.calendar.component(.minute, from: at)), .ok).fixedSize() }
+                    if let at = reqPulledAt { InstallTrackingPage.chip("✓ ดึงจากแผน MP " + String(format: "%02d:%02d", RoutineReport.calendar.component(.hour, from: at), RoutineReport.calendar.component(.minute, from: at)), .ok).fixedSize() }
                     Spacer(minLength: 8)
                     legendSwatch(Theme.primary, "วันทำงาน", outlined: false)
                     legendSwatch(Theme.warning, "ยกมา", outlined: false)
@@ -79,7 +79,7 @@ extension InstallTrackingPage {
                 Text(line.description.isEmpty ? (line.task?.title ?? "งานอื่น") : line.description)
                     .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 HStack(spacing: 6) {
-                    chip(tag, tone).fixedSize()
+                    InstallTrackingPage.chip(tag, tone).fixedSize()
                     Text([line.location, qty].filter { !$0.isEmpty }.joined(separator: " | ")).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
@@ -121,7 +121,7 @@ extension InstallTrackingPage {
     /// A line carried over: its task should have ended before this week; how many days late it is by Monday.
     func lateDays(_ line: RoutineReport.PlanLine, plan: [MasterSchedule.PlannedTask]?, weekStart: Date) -> Int? {
         #if DEBUG
-        if Debug.demo { return line.task == .monitoring ? 1 : nil }
+        if InstallTrackingPage.Debug.demo { return line.task == .monitoring ? 1 : nil }
         #endif
         guard let t = line.task, let end = plan?.first(where: { $0.task == t })?.end, end < weekStart else { return nil }
         let monday = RoutineReport.add(weekStart, 1)

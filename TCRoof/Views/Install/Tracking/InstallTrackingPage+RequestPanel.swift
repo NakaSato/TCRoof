@@ -5,7 +5,7 @@ import TCRoofCore
 
 /// `คำขอรายสัปดาห์`'s right panel (docs/ui/install-tracking-ipad-weekly-request §4.6): the approval flow, the checks
 /// before sending, the requester's signature and name, the action; and the tab's sheets.
-extension InstallTrackingPage {
+extension InstallWeeklyRequestTabView {
     func requestPanel(_ r: RoutineReport.WeeklyRequest, editable: Bool) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 12) {
@@ -68,7 +68,7 @@ extension InstallTrackingPage {
     /// The checks before sending: warnings, except the signature and the name, which hold the send.
     func requestChecks(_ r: RoutineReport.WeeklyRequest) -> [(ok: Bool, title: String, why: String?)] {
         #if DEBUG
-        let draft = Debug.demo ? Self.demoRequest(week: r.weekStart, back: 0) : WeeklyRequestStore.draft(job, r.weekStart)
+        let draft: RoutineReport.WeeklyRequest = InstallTrackingPage.Debug.demo ? Self.demoRequest(week: r.weekStart, back: 0) : WeeklyRequestStore.draft(job, r.weekStart)
         #else
         let draft = WeeklyRequestStore.draft(job, r.weekStart)
         #endif
@@ -207,7 +207,7 @@ extension InstallTrackingPage {
         reqSignature = png
         reqSignedAt = png == nil ? nil : .now
         #if DEBUG
-        if Debug.demo { return }
+        if InstallTrackingPage.Debug.demo { return }
         #endif
         if let r = request { job.setRequestSignature(png, for: r, context: context) }
     }
@@ -221,7 +221,7 @@ extension InstallTrackingPage {
     private func sendRequest() {
         reqChange { $0.send(by: permissions.email, signs: !reqExternal) }
         #if DEBUG
-        if Debug.demo { reqSheet = .pdf; return }
+        if InstallTrackingPage.Debug.demo { reqSheet = .pdf; return }
         #endif
         if let r = request { WeeklyRequestStore.save(r, job: job, external: reqExternal, file: true, context: context) }
         reqSheet = .pdf
@@ -229,7 +229,7 @@ extension InstallTrackingPage {
 
     // MARK: sheets
 
-    @ViewBuilder func requestSheet(_ s: RequestSheet, _ r: RoutineReport.WeeklyRequest) -> some View {
+    @ViewBuilder func requestSheet(_ s: InstallTrackingPage.RequestSheet, _ r: RoutineReport.WeeklyRequest) -> some View {
         switch s {
         case .sign:
             RequestSignSheet(name: reqName) { png, name in
@@ -237,12 +237,12 @@ extension InstallTrackingPage {
                 if !name.isEmpty { reqName = name }
             }
         case .pdf:
-            RequestPDFSheet(job: job, request: r, week: Self.weekNumber(r), demo: Self.isDemo) { url in shared = Shared(url: url) }
+            RequestPDFSheet(job: job, request: r, week: Self.weekNumber(r), demo: Self.isDemo) { url in shared = InstallTrackingPage.Shared(url: url) }
         case .approve:
             InspectorAckSheet(title: "บันทึกอนุมัติแล้ว", name: r.approvedBy.isEmpty ? reqSettings.inspector : r.approvedBy, date: r.approvedAt ?? .now) { name, when, _ in
                 reqChange { $0.approve(by: name, at: when) }
                 #if DEBUG
-                if Debug.demo { return }
+                if InstallTrackingPage.Debug.demo { return }
                 #endif
                 if let r = request { WeeklyRequestStore.save(r, job: job, external: reqExternal, file: true, context: context) }
             }
@@ -253,7 +253,7 @@ extension InstallTrackingPage {
 
     static var isDemo: Bool {
         #if DEBUG
-        Debug.demo
+        InstallTrackingPage.Debug.demo
         #else
         false
         #endif
@@ -307,10 +307,10 @@ extension InstallTrackingPage {
 }
 
 #if DEBUG
-extension InstallTrackingPage {
+extension InstallWeeklyRequestTabView {
     /// `-installRequestState`: the board's states 02–08 on the opened week (in memory with `-installDemo YES`).
     func applyRequestState() {
-        guard let state = Debug.requestState else { return }
+        guard let state = InstallTrackingPage.Debug.requestState else { return }
         switch state {
         case "sign": reqSheet = .sign
         case "signed": reqSignature = Self.demoSignature; reqSignedAt = .now

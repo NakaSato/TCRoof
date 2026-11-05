@@ -89,22 +89,36 @@ extension InstallTrackingPage {
 
     // MARK: เอกสาร
 
+    func phoneDocsTab() -> some View {
+        InstallPhoneDocsTabView(
+            job: job,
+            phoneRoute: $phoneRoute
+        )
+    }
+}
+
+/// The iPhone page's in-page Station Docs summary (docs/ui/install-tracking-iphone §4.7).
+struct InstallPhoneDocsTabView: View {
+    let job: Job
+    @Binding var phoneRoute: InstallTrackingPage.PhoneRoute?
+
+    @State private var docsStage: StationDocs.Package? = InstallTrackingPage.Debug.docsPackage
+
     /// The three submissions of the permit route, in order: the municipality, the PEA's grid connection, the ERC's พค.2.
     private static let permitRoute: [(StationDocs.Package, String, String)] = [
         (.building, "เทศบาล", "อ.1 / แจ้งเทศบาล"), (.gridConnection, "กฟภ.", "ขนานไฟ (กฟภ.)"), (.pk2, "กกพ.", "พค.2 (กกพ.)"),
     ]
 
-    func phoneDocsTab() -> some View {
+    var body: some View {
         let ctx = job.stationContext, station = job.stationDocs, library = StationDocsStore.loadLibrary()
         let applies = Set(StationDocs.packages(ctx))
-        var seen = Set<String>(), papers: [StationDocs.Kind] = []
-        for p in StationDocs.packages(ctx) { for k in StationDocs.papers(in: p, ctx) where seen.insert(k.id).inserted { papers.append(k) } }
+        let papers = collectPapers(ctx)
         let states = papers.map { StationDocs.state($0, station: station, library: library).status }.filter { $0 != .notNeeded }
         let ready = states.filter(\.isReady).count, waiting = states.filter { $0 == .requested }.count
         let todo = states.count - ready - waiting
         let route = Self.permitRoute
         let selected = docsStage ?? route.first { applies.contains($0.0) && !StationDocs.progress($0.0, station: station, library: library, ctx).isComplete }?.0 ?? .building
-        return VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 14) {
             phoneCard {
                 VStack(alignment: .leading, spacing: 10) {
                     cardHeading("เอกสารโครงการ", note: "ขออนุญาตของสถานีนี้")
@@ -142,6 +156,16 @@ extension InstallTrackingPage {
                           ctx: ctx, station: station, library: library)
             }
         }
+    }
+
+    private func collectPapers(_ ctx: StationDocs.Context) -> [StationDocs.Kind] {
+        var seen = Set<String>(), papers: [StationDocs.Kind] = []
+        for p in StationDocs.packages(ctx) {
+            for k in StationDocs.papers(in: p, ctx) where seen.insert(k.id).inserted {
+                papers.append(k)
+            }
+        }
+        return papers
     }
 
     private func legendDot(_ c: Color, _ title: String) -> some View {
@@ -217,7 +241,7 @@ extension InstallTrackingPage {
         return HStack(spacing: 12) {
             Text("PDF").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 40, height: 46, alignment: .bottom).padding(.bottom, 4)
-                .background(s == .missing || s == .notNeeded ? Theme.inkFaint : Self.ink(tone), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(s == .missing || s == .notNeeded ? Theme.inkFaint : InstallTrackingPage.ink(tone), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(k.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
@@ -236,5 +260,17 @@ extension InstallTrackingPage {
         .frame(minHeight: 64)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+
+    private func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
+        InstallTrackingPage.phoneCard(padding: padding, content)
+    }
+
+    private func cardHeading(_ title: String, note: String? = nil) -> some View {
+        InstallTrackingPage.cardHeading(title, note: note)
+    }
+
+    private func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        InstallTrackingPage.toneChip(text, tone)
     }
 }

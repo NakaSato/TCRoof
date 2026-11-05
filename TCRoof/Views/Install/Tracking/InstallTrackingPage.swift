@@ -54,8 +54,6 @@ struct InstallTrackingPage: View {
     @State var requestWeek = Debug.requestWeek
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
-    /// `เอกสาร`'s selected permit stage.
-    @State var docsStage: StationDocs.Package? = Debug.docsPackage
     @Environment(PadDock.self) var dock: PadDock?
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?

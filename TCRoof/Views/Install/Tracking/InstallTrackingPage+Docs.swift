@@ -9,7 +9,6 @@ extension InstallTrackingPage {
     @ViewBuilder func docsTab() -> some View {
         InstallStationDocsTabView(
             job: job,
-            docsStage: $docsStage,
             route: $route
         )
     }
@@ -19,8 +18,9 @@ extension InstallTrackingPage {
 /// `เส้นทางขออนุญาต`, the selected package's papers and a detail panel. The papers open `StationDocsScreen`'s own sheet.
 struct InstallStationDocsTabView: View {
     let job: Job
-    @Binding var docsStage: StationDocs.Package?
     @Binding var route: InstallTrackingPage.Route?
+
+    @State var docsStage: StationDocs.Package? = InstallTrackingPage.Debug.docsPackage
 
     @State var docsPaper: String? = InstallTrackingPage.Debug.docsPaper
     @State var docsSheet: StationDocs.Kind?

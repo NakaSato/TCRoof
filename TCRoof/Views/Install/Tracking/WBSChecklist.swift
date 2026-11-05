@@ -12,12 +12,26 @@ struct WBSChecklist: View {
     let canTick: Bool
     let canTakeBack: (MasterSchedule.WBSTick) -> Bool
     var canEdit = false
+    var currentUserEmail = ""
     let toggle: (MasterSchedule.WorkItem) -> Void
     let setDocument: (MasterSchedule.WorkItem, String) -> Void
+    var updateTick: (MasterSchedule.WorkItem, MasterSchedule.WBSTick?) -> Void = { _, _ in }
     var updateItem: (MasterSchedule.WorkItem) -> Void = { _ in }
     @State private var documentFor: MasterSchedule.WorkItem?
     @State private var document = ""
-    @State private var editingItem: MasterSchedule.WorkItem?
+
+    private enum ActiveSheet: Identifiable {
+        case edit(MasterSchedule.WorkItem)
+        case updateTick(MasterSchedule.WorkItem)
+
+        var id: String {
+            switch self {
+            case .edit(let item): return "edit-\(item.code)"
+            case .updateTick(let item): return "update-\(item.code)"
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
@@ -40,8 +54,19 @@ struct WBSChecklist: View {
         } message: { item in
             Text(item.evidence ?? item.title)
         }
-        .sheet(item: $editingItem) { item in
-            WBSItemEditSheet(item: item, onSave: updateItem)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .edit(let item):
+                WBSItemEditSheet(item: item, onSave: updateItem)
+            case .updateTick(let item):
+                WBSTickUpdateSheet(item: item,
+                                   tick: ticks[item.code],
+                                   canTick: canTick,
+                                   canTakeBack: ticks[item.code].map(canTakeBack) ?? canTick,
+                                   currentUserEmail: currentUserEmail) { newTick in
+                    updateTick(item, newTick)
+                }
+            }
         }
     }
 
@@ -96,38 +121,61 @@ struct WBSChecklist: View {
             .accessibilityLabel(item.title.trimmingCharacters(in: .whitespaces))
             .accessibilityValue(tick == nil ? "ยังไม่เสร็จ" : "เสร็จแล้ว")
             .accessibilityIdentifier("wbs.\(item.code)")
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(item.code).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
-                    Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
-                        .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                activeSheet = .updateTick(item)
+            } label: {
+                HStack(alignment: .top, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(item.code).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
+                            Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let evidence = item.evidence {
+                            Text("หลักฐาน: \(evidence)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let tick { Text(tickLine(tick)).font(.sarabunFixed(12)).foregroundStyle(Theme.successInk) }
+                    }
+                    Spacer(minLength: 4)
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(item.weight > 0 ? Self.weight(item.weight) : "ไม่นับ").font(.sarabunFixed(13, .bold).monospacedDigit())
+                            .foregroundStyle(Theme.muted)
+                        if let who = item.responsible { Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                    }
                 }
-                if let evidence = item.evidence {
-                    Text("หลักฐาน: \(evidence)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let tick { Text(tickLine(tick)).font(.sarabunFixed(12)).foregroundStyle(Theme.successInk) }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(item.weight > 0 ? Self.weight(item.weight) : "ไม่นับ").font(.sarabunFixed(13, .bold).monospacedDigit())
-                    .foregroundStyle(Theme.muted)
-                if let who = item.responsible { Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
-            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("อัปเดตงานย่อย WBS \(item.code) \(item.title.trimmingCharacters(in: .whitespaces))")
+            .accessibilityIdentifier("wbs.row.\(item.code)")
+
             if canEdit {
-                Button { editingItem = item } label: {
+                Button { activeSheet = .edit(item) } label: {
                     Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("แก้ไขงานย่อย WBS \(item.code)")
                 .accessibilityIdentifier("wbs.edit.\(item.code)")
+            } else if enabled {
+                Button { activeSheet = .updateTick(item) } label: {
+                    Image(systemName: "square.and.pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("อัปเดตงานย่อย WBS \(item.code)")
+                .accessibilityIdentifier("wbs.update.\(item.code)")
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
         .background(tick != nil ? Theme.successSoft.opacity(0.45) : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.borderSubtle))
         .contextMenu {
+            Button("อัปเดตงานย่อย WBS", systemImage: "square.and.pencil") {
+                activeSheet = .updateTick(item)
+            }
             if tick != nil && enabled {
                 Button("ใส่เลขที่เอกสาร", systemImage: "doc.text") {
                     document = tick?.document ?? ""
@@ -136,7 +184,7 @@ struct WBSChecklist: View {
             }
             if canEdit {
                 Button("แก้ไขงานย่อย WBS", systemImage: "pencil") {
-                    editingItem = item
+                    activeSheet = .edit(item)
                 }
             }
         }
@@ -225,7 +273,10 @@ struct WBSItemEditSheet: View {
             .navigationTitle("แก้ไข WBS \(item.code)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("ยกเลิก") { dismiss() }
+                        .accessibilityIdentifier("wbsEdit.cancel")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("บันทึก") {
                         var updated = item
@@ -244,6 +295,136 @@ struct WBSItemEditSheet: View {
                         dismiss()
                     }
                     .accessibilityIdentifier("wbsEdit.save")
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// Sheet for updating a WBS sub-task's completion status, completion date, and evidence / document number.
+/// Accessible to contractors (external users) on their assigned jobs and internal team members.
+struct WBSTickUpdateSheet: View {
+    let item: MasterSchedule.WorkItem
+    let tick: MasterSchedule.WBSTick?
+    let canTick: Bool
+    let canTakeBack: Bool
+    let currentUserEmail: String
+    let onSave: (MasterSchedule.WBSTick?) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isDone: Bool
+    @State private var completedAt: Date
+    @State private var document: String
+
+    init(item: MasterSchedule.WorkItem,
+         tick: MasterSchedule.WBSTick?,
+         canTick: Bool,
+         canTakeBack: Bool,
+         currentUserEmail: String,
+         onSave: @escaping (MasterSchedule.WBSTick?) -> Void) {
+        self.item = item
+        self.tick = tick
+        self.canTick = canTick
+        self.canTakeBack = canTakeBack
+        self.currentUserEmail = currentUserEmail
+        self.onSave = onSave
+        let cal = MasterSchedule.calendar
+        let done = tick != nil || canTick
+        _isDone = State(initialValue: done)
+        _completedAt = State(initialValue: tick?.at ?? cal.startOfDay(for: .now))
+        _document = State(initialValue: tick?.document ?? "")
+    }
+
+    private var mayModify: Bool {
+        if tick != nil {
+            return canTakeBack
+        } else {
+            return canTick
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("รายละเอียดงานย่อย WBS") {
+                    LabeledContent("รหัสงาน", value: item.code)
+                    LabeledContent("งาน") {
+                        Text(item.title.trimmingCharacters(in: .whitespaces))
+                            .multilineTextAlignment(.trailing)
+                    }
+                    if item.weight > 0 {
+                        LabeledContent("น้ำหนัก", value: WBSChecklist.weight(item.weight))
+                    }
+                    if let responsible = item.responsible {
+                        LabeledContent("ผู้รับผิดชอบ", value: responsible)
+                    }
+                    if let evidence = item.evidence {
+                        LabeledContent("หลักฐานที่ต้องใช้") {
+                            Text(evidence).multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+
+                Section("สถานะการดำเนินงาน") {
+                    Toggle("ดำเนินการเสร็จแล้ว", isOn: $isDone)
+                        .disabled(!mayModify)
+                        .accessibilityIdentifier("wbsTick.isDone")
+
+                    if isDone {
+                        DatePicker("วันที่เสร็จ", selection: $completedAt, displayedComponents: .date)
+                            .disabled(!mayModify)
+                            .accessibilityIdentifier("wbsTick.date")
+
+                        LabeledContent("เลขที่เอกสาร") {
+                            TextField("เช่น MOM-001 (ถ้ามี)", text: $document)
+                                .multilineTextAlignment(.trailing)
+                                .disabled(!mayModify)
+                                .accessibilityIdentifier("wbsTick.document")
+                        }
+                    }
+                    if !mayModify {
+                        Text(tick != nil ? "รายการนี้บันทึกโดยบุคคลอื่น คุณไม่มีสิทธิ์แก้ไข" : "คุณไม่มีสิทธิ์บันทึกรายการนี้")
+                            .font(.sarabunFixed(12))
+                            .foregroundStyle(Theme.inkMuted)
+                    }
+                }
+
+                if let tick {
+                    Section("ประวัติการบันทึก") {
+                        let who = TeamDirectory.shared.person(tick.by)?.label ?? tick.by
+                        LabeledContent("ผู้บันทึก", value: who)
+                        LabeledContent("วันที่บันทึก", value: ThaiFormat.numericDate.string(from: tick.at))
+                        if let doc = tick.document, !doc.isEmpty {
+                            LabeledContent("เลขที่เอกสาร", value: doc)
+                        }
+                    }
+                }
+            }
+            .environment(\.locale, ThaiFormat.locale)
+            .navigationTitle("อัปเดต WBS \(item.code)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("ยกเลิก") { dismiss() }
+                        .accessibilityIdentifier("wbsTick.cancel")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("บันทึก") {
+                        let cal = MasterSchedule.calendar
+                        if isDone {
+                            let trimmedDoc = document.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let doc = trimmedDoc.isEmpty ? nil : trimmedDoc
+                            let by = currentUserEmail.isEmpty ? (tick?.by ?? "unknown") : currentUserEmail
+                            let newTick = MasterSchedule.WBSTick(by: by, at: cal.startOfDay(for: completedAt), document: doc)
+                            onSave(newTick)
+                        } else {
+                            onSave(nil)
+                        }
+                        dismiss()
+                    }
+                    .disabled(!mayModify)
+                    .accessibilityIdentifier("wbsTick.save")
                 }
             }
         }

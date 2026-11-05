@@ -24,8 +24,10 @@ struct InstallStageSheet: View {
     var canTick = false
     var canTakeBack: (MasterSchedule.WBSTick) -> Bool = { _ in false }
     var canEditWBS = false
+    var currentUserEmail = ""
     var toggleWBS: (MasterSchedule.WorkItem) -> Void = { _ in }
     var setDocument: (MasterSchedule.WorkItem, String) -> Void = { _, _ in }
+    var updateWBSTick: (MasterSchedule.WorkItem, MasterSchedule.WBSTick?) -> Void = { _, _ in }
     var updateWBSItem: (MasterSchedule.WorkItem) -> Void = { _ in }
 
     var body: some View {
@@ -39,8 +41,9 @@ struct InstallStageSheet: View {
                         if !row.subs.isEmpty { checklist }
                         if !wbs.isEmpty {
                             WBSChecklist(items: wbs, ticks: ticks, canTick: canTick, canTakeBack: canTakeBack,
-                                         canEdit: canEditWBS, toggle: toggleWBS, setDocument: setDocument,
-                                         updateItem: updateWBSItem)
+                                         canEdit: canEditWBS, currentUserEmail: currentUserEmail,
+                                         toggle: toggleWBS, setDocument: setDocument,
+                                         updateTick: updateWBSTick, updateItem: updateWBSItem)
                         }
                     }
                     .padding(.vertical, 16)

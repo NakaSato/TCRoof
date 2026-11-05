@@ -46,8 +46,38 @@ final class WBSChecklistUITests: XCTestCase {
         XCTAssertTrue(editButton.waitForExistence(timeout: slow), "internal role should see WBS edit button")
         editButton.tap()
 
-        XCTAssertTrue(app.navigationBars["แก้ไขงานย่อย WBS"].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "แก้ไข WBS")).firstMatch.waitForExistence(timeout: 5),
                       "tapping edit button should open WBSItemEditSheet")
-        app.buttons["ยกเลิก"].tap()
+        let cancel = app.buttons["wbsEdit.cancel"]
+        if cancel.waitForExistence(timeout: 2) {
+            cancel.tap()
+        } else if app.buttons["Cancel"].exists {
+            app.buttons["Cancel"].tap()
+        } else {
+            app.buttons["ยกเลิก"].tap()
+        }
+    }
+
+    func testExternalCanOpenDialogToUpdateWBS() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
+                               "-installStage", "1", "-role", "external", "-noNotificationPrompt", "YES"]
+        app.launch()
+
+        let updateButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.update.")).firstMatch
+        XCTAssertTrue(updateButton.waitForExistence(timeout: slow), "external role should see WBS update button")
+        updateButton.tap()
+
+        XCTAssertTrue(app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "อัปเดต WBS")).firstMatch.waitForExistence(timeout: 5),
+                      "tapping update button should open WBSTickUpdateSheet")
+        let docField = app.textFields["wbsTick.document"]
+        if docField.waitForExistence(timeout: 3) {
+            docField.tap()
+            docField.typeText("MOM-001")
+        }
+        app.buttons["wbsTick.save"].tap()
+
+        let count = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "งานย่อย WBS 1/")).firstMatch
+        XCTAssertTrue(count.waitForExistence(timeout: 5), "saving update should tick WBS item")
     }
 }

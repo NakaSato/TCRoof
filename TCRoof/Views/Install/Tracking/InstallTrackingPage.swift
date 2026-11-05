@@ -239,7 +239,9 @@ struct InstallTrackingPage: View {
                               wbs: wbsItems(row.id), ticks: job.wbsTicks, canTick: permissions.mayTickWBS(on: job.access),
                               canTakeBack: { permissions.mayTakeBack($0, on: job.access) },
                               canEditWBS: permissions.can(.mpSetup, on: job.access),
-                              toggleWBS: toggleWBS, setDocument: setWBSDocument, updateWBSItem: updateWBSItem)
+                              currentUserEmail: permissions.email,
+                              toggleWBS: toggleWBS, setDocument: setWBSDocument,
+                              updateWBSTick: updateWBSTick, updateWBSItem: updateWBSItem)
         }
         .transition(.opacity)
     }
@@ -269,6 +271,22 @@ struct InstallTrackingPage: View {
         guard let tick = ticks[item.code], permissions.mayTakeBack(tick, on: job.access) else { return }
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         ticks[item.code]?.document = t.isEmpty ? nil : t
+        saveWBS(ticks)
+    }
+
+    private func updateWBSTick(_ item: MasterSchedule.WorkItem, _ tick: MasterSchedule.WBSTick?) {
+        var ticks = job.wbsTicks
+        if let tick {
+            if let existing = ticks[item.code] {
+                guard permissions.mayTakeBack(existing, on: job.access) else { return }
+            } else {
+                guard permissions.mayTickWBS(on: job.access) else { return }
+            }
+            ticks[item.code] = tick
+        } else {
+            guard let existing = ticks[item.code], permissions.mayTakeBack(existing, on: job.access) else { return }
+            ticks[item.code] = nil
+        }
         saveWBS(ticks)
     }
 

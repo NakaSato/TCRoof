@@ -91,6 +91,9 @@ struct PWARoot: View {
                     }
                     pick.wbsTicks = [:]
                     pick.scheduleWBS = wbs
+                    if !pick.externals.contains("uitest@tcroof.test") {
+                        pick.externals.append("uitest@tcroof.test")
+                    }
                     try? context.save()
                 }
                 station = pick

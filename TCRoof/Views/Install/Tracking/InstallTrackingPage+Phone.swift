@@ -160,7 +160,6 @@ extension InstallTrackingPage {
                         Button {
                             guard permissions.role != .external || ![.weekly, .docs, .plan].contains(t) else { return }
                             phoneTab = t
-                            if t != .plan { planEditing = false }
                         } label: {
                             HStack(spacing: 7) {
                                 Image(systemName: item.symbol).font(.system(size: 15, weight: .semibold))

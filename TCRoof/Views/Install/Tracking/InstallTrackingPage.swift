@@ -15,12 +15,6 @@ struct InstallTrackingPage: View {
     let job: Job
     @State var tab = Debug.tab
     @State var view = Debug.view
-    /// `แผนก่อสร้าง`'s `Gantt | ตาราง`.
-    @State var planView = Debug.planView
-    /// Stages opened or closed against their default: the running stage and the next start open, or none with
-    /// `-installPlanCollapsed YES`.
-    @State var planToggled: Set<String> = []
-    @State var planAllClosed = Debug.planCollapsed
     /// The scroll view's height: the Gantt card ends above the dock.
     @State var viewport: CGFloat = 0
     /// Task rows opened or closed against their default (the running task starts open).
@@ -57,10 +51,6 @@ struct InstallTrackingPage: View {
     @State var phoneTab = Debug.phoneTab
     @State var phoneSettings = Debug.settings
     @State var settingsCategory: SettingsCategory? = Debug.settingsCategory
-    /// `แผนก่อสร้าง`'s edit mode: the stages' new start and days by id, and the reason.
-    @State var planEditing = false
-    @State var planDraft: [String: PlanDraft] = [:]
-    @State var planReason = ""
     /// `คำขอรายสัปดาห์` and `Weekly Report`: weeks from their default one.
     @State var requestWeek = Debug.requestWeek
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
@@ -101,8 +91,6 @@ struct InstallTrackingPage: View {
             if Debug.iec {
                 if sizeClass == .compact { route = .iec } else { tab = .iec }
             }
-            // `-installPlanEdit YES` opens แผนก่อสร้าง's edit mode (iPhone)
-            if Debug.planEdit, sizeClass == .compact { startPlanEdit(data) }
             guard let n = Debug.stage, let rows = data.gantt?.rows, rows.indices.contains(n - 1) else { return }
             stage = rows[n - 1]
         }

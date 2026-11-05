@@ -195,7 +195,7 @@ extension InstallTrackingPage {
         }
     }
 
-    func checkRow(_ title: String, ok: Bool, note: String) -> some View {
+    static func checkRow(_ title: String, ok: Bool, note: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(ok ? Theme.successInk : Theme.warningInk)
@@ -208,6 +208,10 @@ extension InstallTrackingPage {
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(ok ? "ครบ" : "ยังไม่ครบ")
+    }
+
+    func checkRow(_ title: String, ok: Bool, note: String) -> some View {
+        Self.checkRow(title, ok: ok, note: note)
     }
 
     // MARK: Weekly Report

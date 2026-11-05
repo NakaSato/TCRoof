@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-extension InstallTrackingPage {
+extension InstallPlanTabView {
     // MARK: right column
 
     func planSide(_ p: InstallPlan) -> some View {
@@ -92,7 +92,7 @@ extension InstallTrackingPage {
                             Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
-                        chip(left < 0 ? "ผ่านแล้ว" : left == 0 ? "วันนี้" : "อีก \(left) วัน", left < 0 ? .ok : .info)
+                        InstallTrackingPage.chip(left < 0 ? "ผ่านแล้ว" : left == 0 ? "วันนี้" : "อีก \(left) วัน", left < 0 ? .ok : .info)
                     }
                     .padding(.vertical, 4)
                     .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }

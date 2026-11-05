@@ -2,7 +2,7 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-extension InstallTrackingPage {
+extension InstallPhonePlanTabView {
     // MARK: table
 
     private func showsCrewPhone(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.crew != nil } }

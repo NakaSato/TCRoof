@@ -263,6 +263,7 @@ extension InstallTrackingPage {
         static let phoneTab = PhoneTab.overview
         static let settings = false
         static let settingsCategory: SettingsCategory? = nil
+        static let planEdit = false
         static let demo = false
         static let dailyFilter = 0
         static let tab = Tab.overview

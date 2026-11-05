@@ -3,24 +3,62 @@ import TCRoofUI
 import TCRoofCore
 import PDFReport
 
+/// Extension on `InstallTrackingPage` for opening the isolated iPad plan tab.
+extension InstallTrackingPage {
+    enum PlanView: String { case gantt, table }
+
+    @ViewBuilder func planTab(_ data: InstallPageData) -> some View {
+        InstallPlanTabView(
+            job: job,
+            data: data,
+            viewport: viewport,
+            route: $route,
+            showWBSDependencies: $showWBSDependencies,
+            workbook: $workbook
+        )
+    }
+
+    /// A row's slip from its baseline: red when later, green otherwise, a dash without one.
+    static func slipLabel(_ slip: Int?) -> some View {
+        Text(slip.map(InstallPlan.slipText) ?? "–")
+            .foregroundStyle(slip.map { $0 > 0 ? Theme.dangerText : Theme.successInk } ?? Theme.inkMuted)
+    }
+
+    func slipLabel(_ slip: Int?) -> some View {
+        Self.slipLabel(slip)
+    }
+}
+
 /// `แผนก่อสร้าง` (docs/ui/install-tracking-ipad-v2 §6, `states/05`–`07`): the install plan by WBS as a Gantt or a table,
 /// with the critical path outlined and the sub-tasks' float dotted, and beside it the planned crew, the milestones and
 /// the next stage's make-ready. `แก้ไขแผน` opens the MP plan screen. Crew, links, the baseline and the make-ready show
 /// only when there is a source (`InstallPlan`).
-extension InstallTrackingPage {
-    enum PlanView: String { case gantt, table }
+struct InstallPlanTabView: View {
+    let job: Job
+    let data: InstallPageData
+    let viewport: CGFloat
+    @Binding var route: InstallTrackingPage.Route?
+    @Binding var showWBSDependencies: Bool
+    @Binding var workbook: MPWorkbookFlow
+
+    @State var planView = InstallTrackingPage.Debug.planView
+    @State var planToggled: Set<String> = []
+    @State var planAllClosed = InstallTrackingPage.Debug.planCollapsed
+    @State private var shared: InstallTrackingPage.Shared?
+
+    @Environment(\.permissions) var permissions
 
     static let planHeaderHeight: CGFloat = 84
     static let planSideWidth: CGFloat = 340
     /// The grid's columns before the days.
-    private enum PlanCol {
+    enum PlanCol {
         static let wbs: CGFloat = 44, days: CGFloat = 40, crew: CGFloat = 44, after: CGFloat = 60, left: CGFloat = 470
         static let stageRow: CGFloat = 40, subRow: CGFloat = 32
     }
 
-    @ViewBuilder func planTab(_ data: InstallPageData) -> some View {
+    var body: some View {
         if let p = data.plan, let g = data.gantt {
-            let body = max(viewport - 14 - Self.planHeaderHeight - 14 - Self.dockClearance, 440)
+            let body = max(viewport - 14 - Self.planHeaderHeight - 14 - InstallTrackingPage.dockClearance, 440)
             VStack(alignment: .leading, spacing: 14) {
                 planHeader(p)
                 if !p.dependencyIssues.isEmpty {
@@ -39,6 +77,7 @@ extension InstallTrackingPage {
                     planSide(p).frame(width: Self.planSideWidth, height: body)
                 }
             }
+            .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         } else {
             VStack(spacing: 16) {
                 TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP ของงาน หรือนำเข้าไฟล์แผนของสถานี"))
@@ -88,12 +127,18 @@ extension InstallTrackingPage {
             Spacer(minLength: 8)
             TCCountSegments([.init("Gantt"), .init("ตาราง")],
                             selection: Binding(get: { planView == .gantt ? 0 : 1 }, set: { planView = $0 == 0 ? .gantt : .table }), equalWidths: false, fontSize: 16)
-                .fixedSize()
                 .accessibilityLabel("มุมมองแผน")
-            Button("แก้ไขแผน") { route = .plan }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityIdentifier("plan.view")
+            Button(planAllClosed ? "เปิดทั้งหมด" : "ปิดทั้งหมด") {
+                withAnimation(.snappy) {
+                    planAllClosed.toggle()
+                    planToggled = []
+                }
+            }
+            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            .accessibilityLabel(planAllClosed ? "เปิดงานย่อยทั้งหมด" : "ปิดงานย่อยทั้งหมด")
             if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
-                Button { showWBSDependencies = true } label: { Image(systemName: "arrow.triangle.branch") }
+                Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                     .accessibilityLabel("งานก่อนหน้า WBS")
             }
@@ -102,13 +147,22 @@ extension InstallTrackingPage {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
             .accessibilityLabel("ไฟล์แผน Excel")
-            Button("ส่งออก PDF", action: exportPlanPDF)
-                .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
-                .disabled(job.scheduleInput == nil)
-                .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
+            Button { exportPDF(p) } label: {
+                Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
+                    .font(.sarabunFixed(17, .semibold))
+            }
+            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+            .disabled(job.scheduleInput == nil)
+            .accessibilityLabel("ส่งออก PDF แผนก่อสร้าง")
+            .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
+            if permissions.can(.mpSetup, on: job.access) || InstallTrackingPage.Debug.demo {
+                Button("แก้ไขแผน") { route = .plan }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                    .accessibilityIdentifier("plan.edit")
+            }
         }
-        .padding(.horizontal, 18)
-        .frame(height: Self.planHeaderHeight)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: Self.planHeaderHeight)
         .background(Theme.surface, in: frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
         .cardShadow()
@@ -121,18 +175,17 @@ extension InstallTrackingPage {
         }
         .padding(.horizontal, 12).padding(.vertical, 5)
         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .accessibilityElement(children: .combine)
     }
 
-    /// The MP plan's A3 page (the Gantt and this week's Weekly Update), to the share sheet.
-    private func exportPlanPDF() {
+    /// The MP plan's A3 page, as the job screen's `ส่งออก PDF`.
+    private func exportPDF(_ p: InstallPlan) {
         guard let input = job.scheduleInput else { return }
         let week = MasterSchedule.weekStart(.now)
         let title = [job.mpNumber.map { "MP \($0)" }, job.projectName.isEmpty ? nil : job.projectName].compactMap { $0 }.joined(separator: " ")
         let sketch = MasterScheduleSheet.page(input: input, actual: job.scheduleActual, week: week, title: title.isEmpty ? job.code : title)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("แผนก่อสร้าง-\(job.stationName)-\(ISODate.string(week)).pdf")
         guard (try? PDFRenderer.pdf(sketch, title: "แผนก่อสร้าง " + title).write(to: url, options: .atomic)) != nil else { return }
-        shared = Shared(url: url)
+        shared = InstallTrackingPage.Shared(url: url)
     }
 
     // MARK: Gantt
@@ -147,9 +200,12 @@ extension InstallTrackingPage {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(p.stages) { s in
+                        let open = planOpen(s, p)
                         planStageRow(s, p, axis: axis)
-                        if planOpen(s, p) {
-                            ForEach(s.subs) { planSubRow($0, stage: s.row, p, axis: axis) }
+                        if open {
+                            ForEach(s.subs) { r in
+                                planSubRow(r, stage: s.row, p, axis: axis)
+                            }
                         }
                     }
                     if !p.milestones.isEmpty { milestoneRow(p, axis: axis) }
@@ -258,12 +314,13 @@ extension InstallTrackingPage {
     private func planSubRow(_ r: InstallPlan.Row, stage: InstallPlan.Row, _ p: InstallPlan, axis: InstallAxis) -> some View {
         HStack(spacing: 0) {
             planLeft(r, p, bold: false) {
-                Text(r.title).font(.sarabunFixed(15)).lineLimit(1).padding(.leading, 22)
+                Text(r.title).font(.sarabunFixed(15)).lineLimit(1).padding(.leading, 12)
             }
             GeometryReader { geo in PlanSubBar(row: r, stage: stage, axis: axis, width: geo.size.width) }
                 .padding(.trailing, 16)
         }
         .frame(height: PlanCol.subRow)
+        .overlay(alignment: .top) { Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(planAccessibility(r))
     }
@@ -387,8 +444,7 @@ extension InstallTrackingPage {
 
     /// A row's slip from its baseline: red when later, green otherwise, a dash without one.
     func slipLabel(_ slip: Int?) -> some View {
-        Text(slip.map(InstallPlan.slipText) ?? "–")
-            .foregroundStyle(slip.map { $0 > 0 ? Theme.dangerText : Theme.successInk } ?? Theme.inkMuted)
+        InstallTrackingPage.slipLabel(slip)
     }
 
     private func statusPill(_ s: InstallGantt.Status) -> some View {
@@ -397,7 +453,7 @@ extension InstallTrackingPage {
         case .current: ("กำลังทำ", .info)
         case .waiting: ("ตามแผน", .idle)
         }
-        return Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(Self.ink(tone))
-            .padding(.horizontal, 10).frame(height: 24).background(Self.fill(tone), in: Capsule())
+        return Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone))
+            .padding(.horizontal, 10).frame(height: 24).background(InstallTrackingPage.fill(tone), in: Capsule())
     }
 }

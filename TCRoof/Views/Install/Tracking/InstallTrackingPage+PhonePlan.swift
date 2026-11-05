@@ -1,14 +1,45 @@
 import SwiftUI
+import SwiftData
 import TCRoofUI
 import TCRoofCore
 import PDFReport
+
+/// Extension on `InstallTrackingPage` for opening the isolated iPhone plan tab.
+extension InstallTrackingPage {
+    @ViewBuilder func phonePlanTab(_ data: InstallPageData) -> some View {
+        InstallPhonePlanTabView(
+            job: job,
+            data: data,
+            showWBSDependencies: $showWBSDependencies,
+            workbook: $workbook,
+            route: $route
+        )
+    }
+}
 
 /// iPhone `แผนก่อสร้าง` (docs/ui/install-tracking-iphone §4.8): the iPad tab's header, Gantt and table at phone width,
 /// with the crew, milestones and make-ready cards under them (each only with a source, as on iPad). `แก้ไขแผน` edits
 /// the MP stages' start and days in the table; `บันทึก` needs a reason and saves a re-plan as the assistant's confirmed
 /// re-plan does (`PendingAction.replanned`: the dates become fixed, the first re-plan keeps the old plan as the
 /// baseline, the change goes into the plan's audit lines). Its REV number is the count of those re-plans.
-extension InstallTrackingPage {
+struct InstallPhonePlanTabView: View {
+    let job: Job
+    let data: InstallPageData
+    @Binding var showWBSDependencies: Bool
+    @Binding var workbook: MPWorkbookFlow
+    @Binding var route: InstallTrackingPage.Route?
+
+    @State var planView: InstallTrackingPage.PlanView = InstallTrackingPage.Debug.planView
+    @State var planEditing: Bool = InstallTrackingPage.Debug.planEdit
+    @State var planDraft: [String: InstallTrackingPage.PlanDraft] = [:]
+    @State var planReason: String = ""
+    @State var planToggled: Set<String> = []
+    @State var planAllClosed: Bool = InstallTrackingPage.Debug.planCollapsed
+    @State private var shared: InstallTrackingPage.Shared?
+
+    @Environment(\.permissions) var permissions
+    @Environment(\.modelContext) var context
+
     enum PCol {
         static let name: CGFloat = 150, stage: CGFloat = 50, sub: CGFloat = 34
         static let date: CGFloat = 64, days: CGFloat = 44, crew: CGFloat = 44, after: CGFloat = 60, status: CGFloat = 92
@@ -18,7 +49,7 @@ extension InstallTrackingPage {
     /// Re-plans saved on this station so far: `REV 0n`. The board's example starts from its baseline, REV 01.
     private var revisions: Int {
         #if DEBUG
-        if Debug.demo { return 1 }
+        if InstallTrackingPage.Debug.demo { return 1 }
         #endif
         return job.scheduleActual.confirmations.filter(\.replan).count
     }
@@ -27,44 +58,69 @@ extension InstallTrackingPage {
 
     private var mayEditPlan: Bool { permissions.can(.mpSetup, on: job.access) && job.scheduleInput != nil }
 
-    @ViewBuilder func phonePlanTab(_ data: InstallPageData) -> some View {
-        if let p = data.plan, let g = data.gantt {
-            phonePlanHeader(p)
-            if mayEditPlan, !job.scheduleWBS.isEmpty {
-                Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card))
-            }
-            if !p.dependencyIssues.isEmpty {
-                Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
-            }
-            if planEditing { editStrip }
-            Group {
-                if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g, dayLimit: 31, forecast: p), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
-            }
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
-            .cardShadow()
-            if !planEditing {
-                if !p.crew.isEmpty { phoneCrewCard(p) }
-                if !p.milestones.isEmpty { phoneMilestones(p) }
-                if let r = p.ready { phoneReady(r) }
-            }
-        } else {
-            VStack(spacing: 16) {
-                TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP ของงาน หรือนำเข้าไฟล์แผนของสถานี"))
-                if permissions.can(.mpSetup) {
-                    Button { startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)", systemImage: "square.and.arrow.down") }
-                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+    var body: some View {
+        VStack(spacing: 14) {
+            if let p = data.plan, let g = data.gantt {
+                phonePlanHeader(p)
+                if mayEditPlan, !job.scheduleWBS.isEmpty {
+                    Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 }
+                if !p.dependencyIssues.isEmpty {
+                    Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
+                }
+                if planEditing { editStrip }
+                Group {
+                    if planView == .gantt && !planEditing { phonePlanGantt(p, axis: InstallAxis(g, dayLimit: 31, forecast: p), waitLabel: data.waitLabel) } else { phonePlanTable(p) }
+                }
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+                .cardShadow()
+                if !planEditing {
+                    if !p.crew.isEmpty { phoneCrewCard(p) }
+                    if !p.milestones.isEmpty { phoneMilestones(p) }
+                    if let r = p.ready { phoneReady(r) }
+                }
+            } else {
+                VStack(spacing: 16) {
+                    TCEmptyState("ยังไม่มีแผน MP", systemImage: "calendar", description: Text("สร้างแผนจากการ์ดแผนงาน MP ของงาน หรือนำเข้าไฟล์แผนของสถานี"))
+                    if permissions.can(.mpSetup) {
+                        Button { startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)", systemImage: "square.and.arrow.down") }
+                            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 320)
             }
-            .frame(maxWidth: .infinity, minHeight: 320)
         }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
     }
 
     private func startImport() {
         workbook.confirmsInSheet = true
         workbook.startImport()
+    }
+
+    // MARK: helpers
+
+    func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
+        InstallTrackingPage.phoneCard(padding: padding, content)
+    }
+
+    func factTile(_ label: String, _ value: String, ink: Color = Theme.navy) -> some View {
+        InstallTrackingPage.factTile(label, value, ink: ink)
+    }
+
+    func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        InstallTrackingPage.toneChip(text, tone)
+    }
+
+    func checkRow(_ title: String, ok: Bool, note: String) -> some View {
+        InstallTrackingPage.checkRow(title, ok: ok, note: note)
+    }
+
+    func slipLabel(_ slip: Int?) -> some View {
+        InstallTrackingPage.slipLabel(slip)
     }
 
     // MARK: header
@@ -117,7 +173,7 @@ extension InstallTrackingPage {
                             .disabled(changed == 0 || planReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             .accessibilityIdentifier("plan.save")
                     } else {
-                        if mayEditPlan || Debug.demo {
+                        if mayEditPlan || InstallTrackingPage.Debug.demo {
                             Button("แก้ไขแผน") { withAnimation(.snappy) { startPlanEdit(nil) } }
                                 .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true))
                                 .accessibilityIdentifier("plan.edit")
@@ -163,7 +219,7 @@ extension InstallTrackingPage {
         let sketch = MasterScheduleSheet.page(input: input, actual: job.scheduleActual, week: week, title: title.isEmpty ? job.code : title)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("แผนก่อสร้าง-\(job.stationName)-\(ISODate.string(week)).pdf")
         guard (try? PDFRenderer.pdf(sketch, title: "แผนก่อสร้าง " + title).write(to: url, options: .atomic)) != nil else { return }
-        shared = Shared(url: url)
+        shared = InstallTrackingPage.Shared(url: url)
     }
 
     // MARK: edit mode
@@ -184,9 +240,9 @@ extension InstallTrackingPage {
     /// A stage can move while it isn't done.
     func editable(_ r: InstallPlan.Row) -> Bool { r.status != .done }
 
-    func draft(_ r: InstallPlan.Row) -> PlanDraft { planDraft[r.id] ?? PlanDraft(days: r.days) }
+    func draft(_ r: InstallPlan.Row) -> InstallTrackingPage.PlanDraft { planDraft[r.id] ?? InstallTrackingPage.PlanDraft(days: r.days) }
 
-    func setDraft(_ r: InstallPlan.Row, _ change: (inout PlanDraft) -> Void) {
+    func setDraft(_ r: InstallPlan.Row, _ change: (inout InstallTrackingPage.PlanDraft) -> Void) {
         var d = draft(r)
         change(&d)
         d.days = max(d.days, 1)
@@ -250,7 +306,7 @@ extension InstallTrackingPage {
     // MARK: Gantt
 
     private func phonePlanGantt(_ p: InstallPlan, axis: InstallAxis, waitLabel: String?) -> some View {
-        let cw = Self.phoneColumn(axis), width = cw * CGFloat(axis.columns.count)
+        let cw = InstallTrackingPage.phoneColumn(axis), width = cw * CGFloat(axis.columns.count)
         let todayIndex = axis.columns.firstIndex { axis.unit == .day ? MasterSchedule.calendar.isDate($0, inSameDayAs: axis.today) : axis.contains(axis.today, week: $0) }
         return VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {

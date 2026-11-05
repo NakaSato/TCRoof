@@ -50,11 +50,10 @@ struct InstallTrackingPage: View {
     @State var phoneTab = Debug.phoneTab
     @State var phoneSettings = Debug.settings
     @State var settingsCategory: SettingsCategory? = Debug.settingsCategory
-    /// `คำขอรายสัปดาห์` and `Weekly Report`: weeks from their default one.
+    /// `คำขอรายสัปดาห์`: weeks from its default one.
     @State var requestWeek = Debug.requestWeek
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
-    @State var reportWeek = Debug.reportWeek
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
     @Environment(PadDock.self) var dock: PadDock?

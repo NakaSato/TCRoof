@@ -216,6 +216,24 @@ extension InstallTrackingPage {
 
     // MARK: Weekly Report
 
+    func phoneWeeklyTab() -> some View {
+        InstallPhoneWeeklyTabView(
+            job: job,
+            phoneRoute: $phoneRoute,
+            onGoDaily: { phoneTab = .daily }
+        )
+    }
+}
+
+/// The iPhone page's in-page summary for Weekly Report (R3).
+struct InstallPhoneWeeklyTabView: View {
+    let job: Job
+    @Binding var phoneRoute: InstallTrackingPage.PhoneRoute?
+    var onGoDaily: (() -> Void)? = nil
+
+    @State private var reportWeek = InstallTrackingPage.Debug.reportWeek
+    @State private var shared: InstallTrackingPage.Shared?
+
     var reportWeekRange: ClosedRange<Date> {
         let cal = RoutineReport.calendar
         let anchor = cal.date(byAdding: .day, value: 7 * reportWeek, to: .now) ?? .now
@@ -223,15 +241,15 @@ extension InstallTrackingPage {
         return WeeklySlides.week(of: anchor)
     }
 
-    func phoneWeeklyTab() -> some View {
+    var body: some View {
         let cal = RoutineReport.calendar, w = reportWeekRange, today = cal.startOfDay(for: .now)
         let logs = job.dailyLogs.filter { w.contains(cal.startOfDay(for: $0.date)) }
         let reports = logs.compactMap(\.report)
-        let checks = weeklyChecks(week: w)
+        let checks = InstallTrackingPage.weeklyChecks(job: job, week: w)
         let ready = checks.filter(\.ok).count
         let filed = job.documents.contains { $0.name == RoutineReport.fileName(.weekly, date: MasterSchedule.weekStart(w.lowerBound), station: job.stationName) }
         let step = filed ? 3 : ready == checks.count ? 1 : 0
-        return VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 14) {
             phoneCard {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
@@ -262,7 +280,7 @@ extension InstallTrackingPage {
                         HStack(spacing: 8) {
                             checkRow(c.title, ok: c.ok, note: c.note)
                             if !c.ok && c.fixable {
-                                Button("ไปแก้") { phoneTab = .daily }
+                                Button("ไปแก้") { onGoDaily?() }
                                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                             }
                         }
@@ -272,10 +290,10 @@ extension InstallTrackingPage {
                     HStack(spacing: 10) {
                         Menu {
                             Button("PDF", systemImage: "doc") {
-                                if let url = try? RoutineReportFiles.temporaryURL(RoutineReportFiles.weekly(job, week: w.lowerBound)) { shared = Shared(url: url) }
+                                if let url = try? RoutineReportFiles.temporaryURL(RoutineReportFiles.weekly(job, week: w.lowerBound)) { shared = InstallTrackingPage.Shared(url: url) }
                             }
                             Button("PowerPoint", systemImage: "rectangle.on.rectangle") {
-                                if let url = try? RoutineReportFiles.weeklySlides(job, week: w.lowerBound) { shared = Shared(url: url) }
+                                if let url = try? RoutineReportFiles.weeklySlides(job, week: w.lowerBound) { shared = InstallTrackingPage.Shared(url: url) }
                             }
                         } label: {
                             Image(systemName: "arrow.down.to.line").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.navy)
@@ -290,6 +308,7 @@ extension InstallTrackingPage {
                 }
             }
         }
+        .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
     }
 
     /// The deck's slides as `WeeklySlides.outline` lists them (the template's 8, as the iPad rail). Green when its data
@@ -329,5 +348,25 @@ extension InstallTrackingPage {
                 .scrollIndicators(.hidden)
             }
         }
+    }
+
+    private func phoneCard<C: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> C) -> some View {
+        InstallTrackingPage.phoneCard(padding: padding, content)
+    }
+
+    private func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
+        InstallTrackingPage.toneChip(text, tone)
+    }
+
+    private func weekSwitcher(_ week: Date, shift: @escaping (Int) -> Void) -> some View {
+        InstallTrackingPage.weekSwitcher(week, shift: shift)
+    }
+
+    private func stepLine(_ titles: [String], current: Int) -> some View {
+        InstallTrackingPage.stepLine(titles, current: current)
+    }
+
+    private func checkRow(_ title: String, ok: Bool, note: String) -> some View {
+        InstallTrackingPage.checkRow(title, ok: ok, note: note)
     }
 }

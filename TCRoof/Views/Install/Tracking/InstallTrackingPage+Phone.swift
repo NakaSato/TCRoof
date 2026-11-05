@@ -282,7 +282,7 @@ extension InstallTrackingPage {
     }
 
     /// `‹ สัปดาห์ที่ n ›` over the week's dates.
-    func weekSwitcher(_ week: Date, shift: @escaping (Int) -> Void) -> some View {
+    static func weekSwitcher(_ week: Date, shift: @escaping (Int) -> Void) -> some View {
         let end = RoutineReport.calendar.date(byAdding: .day, value: 6, to: week) ?? week
         let number = Calendar(identifier: .iso8601).component(.weekOfYear, from: end)
         return HStack(spacing: 0) {
@@ -310,8 +310,12 @@ extension InstallTrackingPage {
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
+    func weekSwitcher(_ week: Date, shift: @escaping (Int) -> Void) -> some View {
+        Self.weekSwitcher(week, shift: shift)
+    }
+
     /// `① ร่าง —— ② ส่ง —— ③ อนุมัติ`: steps before `current` done, `current` orange.
-    func stepLine(_ titles: [String], current: Int) -> some View {
+    static func stepLine(_ titles: [String], current: Int) -> some View {
         HStack(spacing: 6) {
             ForEach(titles.indices, id: \.self) { i in
                 if i > 0 { Rectangle().fill(Theme.borderSubtle).frame(height: 1).frame(minWidth: 8) }
@@ -334,6 +338,10 @@ extension InstallTrackingPage {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("ขั้น \(min(current + 1, titles.count)) จาก \(titles.count) | " + (titles.indices.contains(current) ? titles[current] : "ครบ"))
+    }
+
+    func stepLine(_ titles: [String], current: Int) -> some View {
+        Self.stepLine(titles, current: current)
     }
 
     static func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {

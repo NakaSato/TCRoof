@@ -58,7 +58,6 @@ extension InstallTrackingPage {
     @ViewBuilder func weeklyTab() -> some View {
         InstallWeeklyReportTabView(
             job: job,
-            reportWeek: $reportWeek,
             onGoDaily: { tab = .daily }
         )
     }
@@ -69,8 +68,9 @@ extension InstallTrackingPage {
 /// and the .pptx sheet. The slides are `WeeklySlides`' content, the same the .pptx is written from.
 struct InstallWeeklyReportTabView: View {
     let job: Job
-    @Binding var reportWeek: Int
     var onGoDaily: (() -> Void)? = nil
+
+    @State var reportWeek = InstallTrackingPage.Debug.reportWeek
 
     @State var reportSlide = InstallTrackingPage.Debug.reportSlide
     @State var reportTo: [String]?

@@ -85,27 +85,49 @@ extension InstallTrackingPage {
     // MARK: site panel
 
     func phoneSitePanel(_ s: InstallPageData.Site) -> some View {
-        let tabs: [SiteTab] = [.info] + (s.risks.isEmpty ? [] : [.risk]) + (s.labour.isEmpty ? [] : [.labour])
+        InstallPhoneSitePanel(site: s)
+    }
+
+    static func swatch(_ color: Color, _ title: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 14, height: 12)
+            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        }
+    }
+
+    func swatch(_ color: Color, _ title: String) -> some View {
+        Self.swatch(color, title)
+    }
+}
+
+/// The isolated iPhone site panel in `ภาพรวม`.
+struct InstallPhoneSitePanel: View {
+    let site: InstallPageData.Site
+
+    @State private var siteTab = InstallTrackingPage.Debug.site
+
+    var body: some View {
+        let tabs: [InstallTrackingPage.SiteTab] = [.info] + (site.risks.isEmpty ? [] : [.risk]) + (site.labour.isEmpty ? [] : [.labour])
         let current = tabs.contains(siteTab) ? siteTab : .info
-        return phoneCard {
+        return InstallTrackingPage.phoneCard {
             VStack(alignment: .leading, spacing: 12) {
                 if tabs.count > 1 {
                     TCCountSegments(tabs.map { t in
                         switch t {
                         case .info: .init("ข้อมูลหน้างาน")
-                        case .risk: .init("ความเสี่ยง", count: s.risks.count)
+                        case .risk: .init("ความเสี่ยง", count: site.risks.count)
                         case .labour: .init("แรงงาน")
                         }
                     }, selection: Binding(get: { tabs.firstIndex(of: current) ?? 0 }, set: { siteTab = tabs[$0] }), fontSize: 15)
                 } else {
-                    cardHeading("ข้อมูลหน้างาน")
+                    InstallTrackingPage.cardHeading("ข้อมูลหน้างาน")
                 }
-                Text("ณ " + ThaiFormat.numericDate.string(from: s.asOf)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 switch current {
-                case .info: phoneSiteInfo(s)
-                case .risk: phoneSiteRisks(s)
-                case .labour: phoneSiteLabour(s)
+                case .info: phoneSiteInfo(site)
+                case .risk: phoneSiteRisks(site)
+                case .labour: phoneSiteLabour(site)
                 }
             }
         }
@@ -165,7 +187,7 @@ extension InstallTrackingPage {
         VStack(spacing: 10) {
             ForEach(s.risks) { r in
                 HStack(alignment: .top, spacing: 12) {
-                    priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
+                    InstallTrackingPage.priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(r.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                         if !r.prevention.isEmpty {
@@ -220,10 +242,7 @@ extension InstallTrackingPage {
         }
     }
 
-    func swatch(_ color: Color, _ title: String) -> some View {
-        HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 14, height: 12)
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-        }
+    private func swatch(_ color: Color, _ title: String) -> some View {
+        InstallTrackingPage.swatch(color, title)
     }
 }

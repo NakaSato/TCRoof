@@ -48,7 +48,7 @@ extension InstallTrackingPage {
                 let both = !docs.isEmpty && site != nil
                 HStack(alignment: .top, spacing: 14) {
                     if !docs.isEmpty { docsCard(docs).frame(width: both ? (g.size.width - 14) * 1.45 / 2.45 : g.size.width) }
-                    if let site { sitePanel(site) }
+                    if let site { InstallSitePanel(site: site, route: $route) }
                 }
             }
             .frame(height: Self.siteRowHeight)
@@ -145,12 +145,43 @@ extension InstallTrackingPage {
 
     // MARK: site panel
 
-    private func siteTabs(_ s: InstallPageData.Site) -> [SiteTab] {
+    static func priorityChip(_ tone: InstallPageData.Tone, _ text: String) -> some View {
+        Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(ink(tone))
+            .frame(width: 48, height: 32)
+            .background(fill(tone), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    func priorityChip(_ tone: InstallPageData.Tone, _ text: String) -> some View {
+        Self.priorityChip(tone, text)
+    }
+
+    func sitePanel(_ s: InstallPageData.Site) -> some View {
+        InstallSitePanel(site: s, route: $route)
+    }
+}
+
+/// The isolated iPad site panel beside `เอกสารโครงการ`.
+struct InstallSitePanel: View {
+    let site: InstallPageData.Site
+    @Binding var route: InstallTrackingPage.Route?
+
+    @State private var siteTab = InstallTrackingPage.Debug.site
+
+    private func siteTabs(_ s: InstallPageData.Site) -> [InstallTrackingPage.SiteTab] {
         [.info] + (s.risks.isEmpty ? [] : [.risk]) + (s.labour.isEmpty ? [] : [.labour])
     }
 
-    private func sitePanel(_ s: InstallPageData.Site) -> some View {
-        let tabs = siteTabs(s), current = tabs.contains(siteTab) ? siteTab : .info
+    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return content()
+            .padding(16)
+            .background(Theme.surface, in: frame)
+            .overlay(frame.strokeBorder(Theme.borderSubtle))
+            .cardShadow()
+    }
+
+    var body: some View {
+        let tabs = siteTabs(site), current = tabs.contains(siteTab) ? siteTab : .info
         return card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
@@ -158,7 +189,7 @@ extension InstallTrackingPage {
                         TCCountSegments(tabs.map { t in
                             switch t {
                             case .info: .init("ข้อมูลหน้างาน")
-                            case .risk: .init("ความเสี่ยง", count: s.risks.count)
+                            case .risk: .init("ความเสี่ยง", count: site.risks.count)
                             case .labour: .init("แรงงาน")
                             }
                         }, selection: Binding(get: { tabs.firstIndex(of: current) ?? 0 }, set: { siteTab = tabs[$0] }),
@@ -169,14 +200,14 @@ extension InstallTrackingPage {
                     }
                     Spacer(minLength: 8)
                     detailButton
-                    Text("ณ " + ThaiFormat.numericDate.string(from: s.asOf)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).fixedSize()
                 }
                 Group {
                     switch current {
-                    case .info: siteInfo(s)
-                    case .risk: siteRisks(s)
-                    case .labour: siteLabour(s)
+                    case .info: siteInfo(site)
+                    case .risk: siteRisks(site)
+                    case .labour: siteLabour(site)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -283,7 +314,6 @@ extension InstallTrackingPage {
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        // read as the tile was: label, value, note
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([f.label, f.value, f.note].joined(separator: ", "))
     }
@@ -304,7 +334,7 @@ extension InstallTrackingPage {
         VStack(spacing: 6) {
             ForEach(s.risks) { r in
                 HStack(spacing: 12) {
-                    priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
+                    InstallTrackingPage.priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(r.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                         if !r.prevention.isEmpty {
@@ -322,12 +352,6 @@ extension InstallTrackingPage {
         .frame(maxHeight: spread ? .infinity : nil, alignment: .top)
     }
 
-    func priorityChip(_ tone: InstallPageData.Tone, _ text: String) -> some View {
-        Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(Self.ink(tone))
-            .frame(width: 48, height: 32)
-            .background(Self.fill(tone), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
     /// The working days' crew: the week's request in grey, the daily report in blue; the chart takes the height left.
     private func siteLabour(_ s: InstallPageData.Site) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -338,7 +362,6 @@ extension InstallTrackingPage {
                 Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " | แผนทั้งโครงการ \($0)" } ?? ""))
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
-            // the value line (16), the day line (about 15) and their two 4 pt gaps sit around the bars
             GeometryReader { g in labourBars(s, chartHeight: max(g.size.height - 16 - 15 - 8, 20)) }
         }
     }
@@ -377,6 +400,9 @@ extension InstallTrackingPage {
             Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
         }
     }
+}
+
+extension InstallTrackingPage {
 
     // MARK: sheets
 

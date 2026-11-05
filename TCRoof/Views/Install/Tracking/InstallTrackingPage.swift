@@ -23,7 +23,6 @@ struct InstallTrackingPage: View {
     @State var stage: InstallGantt.Row?
     @State var route: Route?
     @State var sheet: Sheet? = Debug.sheet
-    @State var siteTab = Debug.site
     @State var shared: Shared?
     /// `แผนก่อสร้าง`'s plan file: import and export of the station's own workbook.
     @State var workbook = MPWorkbookFlow()

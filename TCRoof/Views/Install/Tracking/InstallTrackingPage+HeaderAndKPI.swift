@@ -84,9 +84,13 @@ extension InstallTrackingPage {
     }
 
     /// External users can work in the daily report, weekly request and IEC tabs, but the four team-only tabs stay hidden.
-    func canOpen(_ tab: Tab) -> Bool {
-        guard permissions.role == .external else { return true }
+    static func canOpen(_ tab: Tab, role: UserRole) -> Bool {
+        guard role == .external else { return true }
         return ![Tab.weekly, .docs, .plan, .settings].contains(tab)
+    }
+
+    func canOpen(_ tab: Tab) -> Bool {
+        Self.canOpen(tab, role: permissions.role)
     }
 
     func enforceRoleTabAccess() {

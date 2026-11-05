@@ -4,9 +4,34 @@ import TCRoofUI
 import TCRoofCore
 import ExcelExport
 
-/// The iPad page's `เอกสาร` tab (docs/ui/install-tracking-ipad-docs): the summary card, the permit path
-/// `เส้นทางขออนุญาต`, the selected package's papers and a detail panel. The papers open `StationDocsScreen`'s own sheet.
+/// Extension on `InstallTrackingPage` for opening the isolated station docs tab.
 extension InstallTrackingPage {
+    @ViewBuilder func docsTab() -> some View {
+        InstallStationDocsTabView(
+            job: job,
+            docsStage: $docsStage,
+            route: $route
+        )
+    }
+}
+
+/// The isolated iPad page's `เอกสาร` tab (docs/ui/install-tracking-ipad-docs): the summary card, the permit path
+/// `เส้นทางขออนุญาต`, the selected package's papers and a detail panel. The papers open `StationDocsScreen`'s own sheet.
+struct InstallStationDocsTabView: View {
+    let job: Job
+    @Binding var docsStage: StationDocs.Package?
+    @Binding var route: InstallTrackingPage.Route?
+
+    @State var docsPaper: String? = InstallTrackingPage.Debug.docsPaper
+    @State var docsSheet: StationDocs.Kind?
+    @State var docsLibrary = StationDocsStore.loadLibrary()
+    @State var docsThumbnail: UIImage?
+    @State var docsNote: String?
+    @State private var shared: InstallTrackingPage.Shared?
+
+    @Environment(PadDock.self) var dock: PadDock?
+    @Environment(\.permissions) var permissions
+
     /// What the tab reads: the station's papers, the shared library and the station's facts (or the board's example).
     struct DocsSource {
         var station: StationDocs.Station
@@ -16,7 +41,7 @@ extension InstallTrackingPage {
 
     var docsSource: DocsSource {
         #if DEBUG
-        if Debug.demo { return Self.demoDocs }
+        if InstallTrackingPage.Debug.demo { return Self.demoDocs }
         #endif
         return DocsSource(station: job.stationDocs, library: docsLibrary, ctx: job.stationContext)
     }
@@ -24,8 +49,8 @@ extension InstallTrackingPage {
     /// A contractor views what `stationdocs.drafts` lets them; nothing changes, so no upload or export.
     var docsReadOnly: Bool { !permissions.can(.stationDocsDrafts, on: job.access) }
 
-    @ViewBuilder func docsTab() -> some View {
-        if canOpen(.docs), permissions.canView(.stationDocsDrafts, on: job.access) {
+    var body: some View {
+        if InstallTrackingPage.canOpen(.docs, role: permissions.role), permissions.canView(.stationDocsDrafts, on: job.access) {
             let src = docsSource
             let steps = StationDocs.path(station: src.station, library: src.library, src.ctx)
             let selected = docsStage ?? StationDocs.defaultStep(steps)
@@ -44,6 +69,10 @@ extension InstallTrackingPage {
             .onAppear { docsLibrary = StationDocsStore.loadLibrary() }
             .sheet(item: $docsSheet, onDismiss: { docsLibrary = StationDocsStore.loadLibrary() }) { kind in
                 StationDocSheet(job: job, kind: kind, library: $docsLibrary)
+            }
+            .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
+            .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {
+                Button("ตกลง", role: .cancel) {}
             }
         } else {
             TCEmptyState("เอกสารสำหรับทีมภายใน", systemImage: "lock.doc", description: Text("เอกสารสถานี กปภ. ร่างและยื่นโดยทีมภายใน"))
@@ -186,7 +215,7 @@ extension InstallTrackingPage {
                     Text("ขั้น \(s.number) | \(s.agency)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
                     Text(s.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
                     HStack(spacing: 8) {
-                        chip(s.chip, tone).fixedSize()
+                        InstallTrackingPage.chip(s.chip, tone).fixedSize()
                         Text(s.note).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     }
                 }
@@ -261,7 +290,7 @@ extension InstallTrackingPage {
                 }
                 Spacer(minLength: 6)
                 flowDots(level)
-                chip(s.title, Self.legendTone(legend)).fixedSize()
+                InstallTrackingPage.chip(s.title, Self.legendTone(legend)).fixedSize()
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
@@ -301,7 +330,7 @@ extension InstallTrackingPage {
                 VStack(alignment: .leading, spacing: 12) {
                     docsPreview(k, state: state)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text([code, state.status.title].compactMap { $0 }.joined(separator: " | ")).font(.sarabunFixed(13, .bold)).foregroundStyle(Self.ink(Self.legendTone(StationDocs.legend(state.status))))
+                        Text([code, state.status.title].compactMap { $0 }.joined(separator: " | ")).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(Self.legendTone(StationDocs.legend(state.status))))
                         Text(k.name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("docsDetailTitle")
                         Text(StationDocs.source(k)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
@@ -424,7 +453,7 @@ extension InstallTrackingPage {
         if zip.paths.isEmpty { docsNote = "ยังไม่มีไฟล์แนบในชุดเอกสาร"; return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(Self.safeName("เอกสารขออนุญาต \(job.code)") + ".zip")
         guard let data = try? zip.write(), (try? data.write(to: url)) != nil else { docsNote = "ส่งออกไม่สำเร็จ"; return }
-        shared = Shared(url: url)
+        shared = InstallTrackingPage.Shared(url: url)
     }
 
     static func safeName(_ s: String) -> String {

@@ -68,13 +68,6 @@ struct InstallTrackingPage: View {
     @State var reportWeek = Debug.reportWeek
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
-    /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first
-    /// page, and a note after an export with nothing to put in.
-    @State var docsPaper: String? = Debug.docsPaper
-    @State var docsSheet: StationDocs.Kind?
-    @State var docsLibrary = StationDocsStore.loadLibrary()
-    @State var docsThumbnail: UIImage?
-    @State var docsNote: String?
     @Environment(PadDock.self) var dock: PadDock?
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?
@@ -93,9 +86,6 @@ struct InstallTrackingPage: View {
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
         .sheet(isPresented: $showWBSDependencies) { WBSDependenciesSheet(job: job) }
-        .alert(docsNote ?? "", isPresented: Binding(get: { docsNote != nil }, set: { if !$0 { docsNote = nil } })) {
-            Button("ตกลง", role: .cancel) {}
-        }
         .mpWorkbook(workbook, job: job)
         .onAppear(perform: enforceRoleTabAccess)
         .onChange(of: permissions.role) { _, _ in enforceRoleTabAccess() }

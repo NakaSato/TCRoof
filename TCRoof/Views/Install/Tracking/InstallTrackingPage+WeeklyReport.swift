@@ -3,9 +3,7 @@ import TCRoofUI
 import TCRoofCore
 import ExcelExport
 
-/// iPad `Weekly Report` in the page (docs/ui/install-tracking-ipad-weekly-report): the week header with the step line
-/// and the download menu, the 8-slide rail, the slide viewer, the readiness checks, the recipients and the send button,
-/// and the .pptx sheet. The slides are `WeeklySlides`' content, the same the .pptx is written from.
+/// Shared Weekly Report types and helpers on `InstallTrackingPage`.
 extension InstallTrackingPage {
     /// The files to share and, when they are a send, its record (kept once the share sheet completes).
     struct WeeklyShare: Identifiable {
@@ -25,7 +23,7 @@ extension InstallTrackingPage {
 
     /// The week's four checks, from the job: the daily reports signed, the MP plan, the photos, the problems. With
     /// `weekNumber` the plan's row reads `แผน MP สัปดาห์ที่ n` (iPad).
-    func weeklyChecks(week w: ClosedRange<Date>, weekNumber: Int? = nil) -> [WeeklyCheck] {
+    static func weeklyChecks(job: Job, week w: ClosedRange<Date>, weekNumber: Int? = nil) -> [WeeklyCheck] {
         let cal = RoutineReport.calendar, today = cal.startOfDay(for: .now), settings = job.routineSettings
         let logs = job.dailyLogs.filter { w.contains(cal.startOfDay(for: $0.date)) }
         let reports = logs.compactMap(\.report)
@@ -36,8 +34,8 @@ extension InstallTrackingPage {
         let photos = logs.reduce(0) { $0 + $1.sortedPhotos.count }
         let problems = reports.reduce(0) { $0 + $1.problems.filter { !$0.description.isEmpty }.count }
         let planned = job.scheduleInput.map { MasterSchedule.status(plan: MasterSchedule.plan($0), actual: job.scheduleActual, through: w.upperBound).planned }
-        let unsigned = logs.filter { $0.engineerSignedAt == nil }.map { Self.dayLabel($0.date) }
-        let unacked = logs.filter { $0.engineerSignedAt != nil && $0.inspectorAckAt == nil }.map { Self.dayLabel($0.date) }
+        let unsigned = logs.filter { $0.engineerSignedAt == nil }.map { InstallTrackingPage.dayLabel($0.date) }
+        let unacked = logs.filter { $0.engineerSignedAt != nil && $0.inspectorAckAt == nil }.map { InstallTrackingPage.dayLabel($0.date) }
         let pendingNotes = [
             unsigned.isEmpty ? nil : unsigned.joined(separator: ", ") + " รอเซ็น",
             unacked.isEmpty ? nil : unacked.joined(separator: ", ") + " รอรับทราบ"
@@ -53,7 +51,49 @@ extension InstallTrackingPage {
         ]
     }
 
+    func weeklyChecks(week w: ClosedRange<Date>, weekNumber: Int? = nil) -> [WeeklyCheck] {
+        Self.weeklyChecks(job: job, week: w, weekNumber: weekNumber)
+    }
+
+    @ViewBuilder func weeklyTab() -> some View {
+        InstallWeeklyReportTabView(
+            job: job,
+            reportWeek: $reportWeek,
+            onGoDaily: { tab = .daily }
+        )
+    }
+}
+
+/// iPad `Weekly Report` in the page (docs/ui/install-tracking-ipad-weekly-report): the week header with the step line
+/// and the download menu, the 8-slide rail, the slide viewer, the readiness checks, the recipients and the send button,
+/// and the .pptx sheet. The slides are `WeeklySlides`' content, the same the .pptx is written from.
+struct InstallWeeklyReportTabView: View {
+    let job: Job
+    @Binding var reportWeek: Int
+    var onGoDaily: (() -> Void)? = nil
+
+    @State var reportSlide = InstallTrackingPage.Debug.reportSlide
+    @State var reportTo: [String]?
+    @State var reportDownload = false
+    @State var reportPptx = false
+    @State var reportShare: InstallTrackingPage.WeeklyShare?
+    @State var reportDeckShare: InstallTrackingPage.WeeklyShare?
+    @State var reportContent: WeeklySlides.Content?
+    @State var reportPhotos: [UUID: UIImage] = [:]
+    @State var reportNote: String?
+    @State var reportDemoSent: [String: RoutineReport.WeeklySent] = [:]
+    @State var weeklyWidth: CGFloat = 0
+
+    @Environment(\.permissions) var permissions
+    @Environment(\.modelContext) var context
+
     // MARK: state
+
+    var reportWeekRange: ClosedRange<Date> {
+        let cal = RoutineReport.calendar
+        let anchor = cal.date(byAdding: .day, value: 7 * reportWeek, to: .now) ?? .now
+        return WeeklySlides.week(of: anchor)
+    }
 
     var reportWeekStart: Date { MasterSchedule.weekStart(reportWeekRange.lowerBound) }
     var reportKey: String { RoutineReport.dayKey(reportWeekStart) }
@@ -61,7 +101,7 @@ extension InstallTrackingPage {
     /// The page's send of the week, or `-installDemo YES`'s.
     var reportRecord: RoutineReport.WeeklySent? {
         #if DEBUG
-        if Debug.demo { return reportDemoSent[reportKey] }
+        if InstallTrackingPage.Debug.demo { return reportDemoSent[reportKey] }
         #endif
         return job.weeklySent(for: reportWeekStart)
     }
@@ -69,16 +109,16 @@ extension InstallTrackingPage {
     /// Sent from the page, or (older data) its PDF filed without a record.
     var reportSent: Bool {
         #if DEBUG
-        if Debug.demo { return reportRecord != nil }
+        if InstallTrackingPage.Debug.demo { return reportRecord != nil }
         #endif
         return reportRecord != nil || job.weeklyFiled(reportWeekStart)
     }
 
-    var reportChecks: [WeeklyCheck] {
+    var reportChecks: [InstallTrackingPage.WeeklyCheck] {
         #if DEBUG
-        if Debug.demo, let c = reportContent { return Self.demoChecks(c) }
+        if InstallTrackingPage.Debug.demo, let c = reportContent { return InstallTrackingPage.demoChecks(c) }
         #endif
-        return weeklyChecks(week: reportWeekRange, weekNumber: reportContent?.weekNumber)
+        return InstallTrackingPage.weeklyChecks(job: job, week: reportWeekRange, weekNumber: reportContent?.weekNumber)
     }
 
     var reportRecipients: [String] {
@@ -89,9 +129,9 @@ extension InstallTrackingPage {
     func loadReport() {
         reportTo = nil; reportDownload = false
         #if DEBUG
-        if Debug.demo {
-            let (input, images) = Self.demoReport(week: reportWeekRange.lowerBound, allSigned: Debug.reportState == "ready" || reportWeek < 0)
-            reportContent = Self.demoContent(WeeklySlides.content(input, images: images))
+        if InstallTrackingPage.Debug.demo {
+            let (input, images) = InstallTrackingPage.demoReport(week: reportWeekRange.lowerBound, allSigned: InstallTrackingPage.Debug.reportState == "ready" || reportWeek < 0)
+            reportContent = InstallTrackingPage.demoContent(WeeklySlides.content(input, images: images))
             reportPhotos = images.compactMapValues(UIImage.init(data:))
             // the weeks before were sent; the current one only with `-installReportState sent`
             if reportWeek < 0, reportDemoSent[reportKey] == nil {
@@ -99,8 +139,8 @@ extension InstallTrackingPage {
                 reportDemoSent[reportKey] = .init(weekStart: reportWeekStart, sentAt: at, sentBy: permissions.email,
                                                   recipients: RoutineReport.WeeklySent.defaultRecipients)
             }
-            if reportWeek == Debug.reportWeek {
-                switch Debug.reportState {
+            if reportWeek == InstallTrackingPage.Debug.reportWeek {
+                switch InstallTrackingPage.Debug.reportState {
                 case "menu": reportDownload = true
                 case "pptx": reportPptx = true
                 case "sent":
@@ -119,16 +159,16 @@ extension InstallTrackingPage {
         for p in content.photos { photos[p.id] = images[p.id].flatMap(UIImage.init(data:)) }
         reportPhotos = photos
         #if DEBUG
-        if reportWeek == Debug.reportWeek {
-            if Debug.reportState == "menu" { reportDownload = true }
-            if Debug.reportState == "pptx" { reportPptx = true }
+        if reportWeek == InstallTrackingPage.Debug.reportWeek {
+            if InstallTrackingPage.Debug.reportState == "menu" { reportDownload = true }
+            if InstallTrackingPage.Debug.reportState == "pptx" { reportPptx = true }
         }
         #endif
     }
 
     // MARK: the tab
 
-    @ViewBuilder func weeklyTab() -> some View {
+    var body: some View {
         VStack(spacing: 12) {
             weeklyHeader.zIndex(1)
             weeklyContent
@@ -148,6 +188,7 @@ extension InstallTrackingPage {
                 showWeeklyNote("ส่ง Weekly Report สัปดาห์ที่ \(reportContent?.weekNumber ?? 0) แล้ว")
             }
         }
+        .task(id: reportWeek) { loadReport() }
     }
 
     /// The viewer, rail, and readiness panel each contain sizable SwiftUI trees. Type erase this branch boundary so
@@ -363,7 +404,7 @@ extension InstallTrackingPage {
             menuRow("ดาวน์โหลด PDF", "doc") {
                 reportDownload = false
                 if let url = try? RoutineReportFiles.temporaryURL(RoutineReportFiles.weekly(job, week: reportWeekRange.lowerBound)) {
-                    reportShare = WeeklyShare(urls: [url], record: nil)
+                    reportShare = InstallTrackingPage.WeeklyShare(urls: [url], record: nil)
                 }
             }
         }
@@ -450,7 +491,7 @@ extension InstallTrackingPage {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
                     Text("สไลด์ \(o.number)/\(outline.count) · \(o.label)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    toneChip(o.ready ? "ข้อมูลครบ" : "รอข้อมูล", o.ready ? .ok : .warn)
+                    InstallTrackingPage.toneChip(o.ready ? "ข้อมูลครบ" : "รอข้อมูล", o.ready ? .ok : .warn)
                         .accessibilityIdentifier("slideChip")
                     Spacer(minLength: 0)
                     arrowButton("chevron.left", "สไลด์ก่อน", enabled: i > 0) { reportSlide = i - 1 }

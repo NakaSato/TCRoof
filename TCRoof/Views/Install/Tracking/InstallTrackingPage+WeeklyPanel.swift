@@ -3,7 +3,7 @@ import TCRoofUI
 import TCRoofCore
 import ExcelExport
 
-extension InstallTrackingPage {
+extension InstallWeeklyReportTabView {
     // MARK: panel
 
     /// `ความพร้อมก่อนส่ง`, `ส่งถึง` and the send button or the sent line.
@@ -66,7 +66,7 @@ extension InstallTrackingPage {
     }
 
     /// A check as on the iPhone (`checkRow`'s icon and words), tighter to fit the 300 pt panel.
-    private func panelCheck(_ c: WeeklyCheck) -> some View {
+    private func panelCheck(_ c: InstallTrackingPage.WeeklyCheck) -> some View {
         HStack(alignment: .center, spacing: 8) {
             Image(systemName: c.ok ? "checkmark" : "exclamationmark").font(.system(size: 10, weight: .heavy))
                 .foregroundStyle(c.ok ? Theme.successInk : Theme.onPrimary)
@@ -77,7 +77,7 @@ extension InstallTrackingPage {
             }
             Spacer(minLength: 0)
             if !c.ok && c.fixable {
-                Button { tab = .daily } label: {
+                Button { onGoDaily?() } label: {
                     Text("ไปแก้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningInk)
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -161,7 +161,7 @@ extension InstallTrackingPage {
     private func sendReport() {
         let record = RoutineReport.WeeklySent(weekStart: reportWeekStart, sentAt: .now, sentBy: permissions.email, recipients: reportRecipients)
         #if DEBUG
-        if Debug.demo {
+        if InstallTrackingPage.Debug.demo {
             reportDemoSent[reportKey] = record
             showWeeklyNote("ส่ง Weekly Report สัปดาห์ที่ \(reportContent?.weekNumber ?? 0) แล้ว")
             return
@@ -181,7 +181,7 @@ extension InstallTrackingPage {
             if (try? deck.write(to: url, options: .atomic)) != nil { urls.append(url) }
         }
         try? context.save()
-        reportShare = WeeklyShare(urls: urls, record: record)
+        reportShare = InstallTrackingPage.WeeklyShare(urls: urls, record: record)
     }
 
     // MARK: .pptx sheet
@@ -245,17 +245,17 @@ extension InstallTrackingPage {
     /// The week's .pptx through the share sheet (`-installDemo YES`: the board's example deck).
     private func shareDeck() {
         #if DEBUG
-        if Debug.demo {
-            let (input, images) = Self.demoReport(week: reportWeekRange.lowerBound, allSigned: reportWeek < 0)
+        if InstallTrackingPage.Debug.demo {
+            let (input, images) = InstallTrackingPage.demoReport(week: reportWeekRange.lowerBound, allSigned: reportWeek < 0)
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(WeeklySlides.fileName(week: input.week, station: input.stationName))
             if let deck = try? WeeklySlides.export(input, images: images), (try? deck.write(to: url, options: .atomic)) != nil {
-                reportDeckShare = WeeklyShare(urls: [url], record: nil)
+                reportDeckShare = InstallTrackingPage.WeeklyShare(urls: [url], record: nil)
             }
             return
         }
         #endif
         if let url = try? RoutineReportFiles.weeklySlides(job, week: reportWeekRange.lowerBound) {
-            reportDeckShare = WeeklyShare(urls: [url], record: nil)
+            reportDeckShare = InstallTrackingPage.WeeklyShare(urls: [url], record: nil)
         }
     }
 }

@@ -66,21 +66,6 @@ struct InstallTrackingPage: View {
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
     @State var reportWeek = Debug.reportWeek
-    /// iPad `Weekly Report` (docs/ui/install-tracking-ipad-weekly-report): the selected slide (0…7), the recipients picked
-    /// for a week not sent yet (nil: the default two), the download menu, the .pptx sheet, the share sheet's files, the
-    /// week's content and photos (worked out when the week changes), a short note, and `-installDemo YES`'s sends.
-    @State var reportSlide = Debug.reportSlide
-    @State var reportTo: [String]?
-    @State var reportDownload = false
-    @State var reportPptx = false
-    @State var reportShare: WeeklyShare?
-    @State var reportDeckShare: WeeklyShare?
-    @State var reportContent: WeeklySlides.Content?
-    @State var reportPhotos: [UUID: UIImage] = [:]
-    @State var reportNote: String?
-    @State var reportDemoSent: [String: RoutineReport.WeeklySent] = [:]
-    /// The Weekly Report tab's width: under `weeklyNarrow` (a portrait iPad) it takes its portrait layout.
-    @State var weeklyWidth: CGFloat = 0
     /// `เอกสาร`'s selected permit stage.
     @State var docsStage: StationDocs.Package? = Debug.docsPackage
     /// iPad `เอกสาร`: the selected paper, the paper whose sheet is open, the shared library, the selected file's first
@@ -157,7 +142,6 @@ struct InstallTrackingPage: View {
             // Weekly Report doesn't scroll: its rail and panel scroll inside themselves
             if tab == .weekly {
                 weeklyTab()
-                    .task(id: reportWeek) { loadReport() }
             // คำขอรายสัปดาห์: the one-page request through its own screen (saving, signing, the PDF and sending stay there)
             } else if requestOnePage {
                 WeeklyRequestScreen(job: job, week: requestWeekStart, embedded: true) { w in

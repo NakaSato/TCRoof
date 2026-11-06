@@ -50,8 +50,6 @@ struct InstallTrackingPage: View {
     @State var phoneTab = Debug.phoneTab
     @State var phoneSettings = Debug.settings
     @State var settingsCategory: SettingsCategory? = Debug.settingsCategory
-    /// `คำขอรายสัปดาห์`: weeks from its default one.
-    @State var requestWeek = Debug.requestWeek
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
     @Environment(PadDock.self) var dock: PadDock?
@@ -116,15 +114,7 @@ struct InstallTrackingPage: View {
             // Weekly Report doesn't scroll: its rail and panel scroll inside themselves
             if tab == .weekly {
                 weeklyTab()
-            // คำขอรายสัปดาห์: the one-page request through its own screen (saving, signing, the PDF and sending stay there)
-            } else if requestOnePage {
-                WeeklyRequestScreen(job: job, week: requestWeekStart, embedded: true) { w in
-                    requestWeek = Int((MasterSchedule.weekStart(w).timeIntervalSince(nextRequestWeek) / (7 * 86_400)).rounded())
-                }
-            // the width isn't known for the first frame: neither layout yet
-            } else if tab == .request && pageWidth == 0 {
-                Spacer(minLength: 0)
-            // narrower, the R1 form scrolls and keeps its panel still
+            // คำขอรายสัปดาห์: WeeklyRequestScreen when >= 1000 pt wide, or the R1 form
             } else if tab == .request {
                 requestTab()
             } else if tab == .settings {
@@ -195,9 +185,6 @@ struct InstallTrackingPage: View {
         case nil: break
         }
     }
-
-    /// Next week's start, which `requestWeek` counts from.
-    private var nextRequestWeek: Date { MasterSchedule.weekStart(RoutineReport.add(.now, 7)) }
 
     var data: InstallPageData {
         #if DEBUG

@@ -8,8 +8,28 @@ import TCRoofCore
 /// (`InstallTrackingPage+RequestPanel.swift`). It keeps the request as `WeeklyRequestScreen` does (`WeeklyRequestStore`).
 struct InstallWeeklyRequestTabView: View {
     let job: Job
-    @Binding var requestWeek: Int
-    let requestWeekStart: Date
+    var pageWidth: CGFloat = 0
+
+    @State private var requestWeek: Int = InstallTrackingPage.Debug.requestWeek
+
+    private var nextRequestWeek: Date { MasterSchedule.weekStart(RoutineReport.add(.now, 7)) }
+
+    var requestWeekStart: Date {
+        let cal = RoutineReport.calendar
+        return cal.date(byAdding: .day, value: 7 * requestWeek, to: nextRequestWeek) ?? nextRequestWeek
+    }
+
+    init(job: Job, pageWidth: CGFloat = 0) {
+        self.job = job
+        self.pageWidth = pageWidth
+        self._requestWeek = State(initialValue: InstallTrackingPage.Debug.requestWeek)
+    }
+
+    init(job: Job, requestWeek: Binding<Int>, requestWeekStart: Date, pageWidth: CGFloat = 0) {
+        self.job = job
+        self.pageWidth = pageWidth
+        self._requestWeek = State(initialValue: requestWeek.wrappedValue)
+    }
 
     @State var request: RoutineReport.WeeklyRequest?
     @State var reqSignature: Data?
@@ -63,13 +83,21 @@ struct InstallWeeklyRequestTabView: View {
     }
 
     var body: some View {
-        requestContent
-            .task(id: requestWeek) {
-                loadRequest()
-                #if DEBUG
-                applyRequestState()
-                #endif
+        if pageWidth == 0 {
+            Spacer(minLength: 0)
+        } else if pageWidth >= 1000 && !InstallTrackingPage.Debug.requestForm {
+            WeeklyRequestScreen(job: job, week: requestWeekStart, embedded: true) { w in
+                requestWeek = Int((MasterSchedule.weekStart(w).timeIntervalSince(nextRequestWeek) / (7 * 86_400)).rounded())
             }
+        } else {
+            requestContent
+                .task(id: requestWeek) {
+                    loadRequest()
+                    #if DEBUG
+                    applyRequestState()
+                    #endif
+                }
+        }
     }
 
     /// The tab: the header card, then the form scrolling on the left and the panel on the right.
@@ -431,8 +459,7 @@ extension InstallTrackingPage {
     @ViewBuilder func requestTab() -> some View {
         InstallWeeklyRequestTabView(
             job: job,
-            requestWeek: $requestWeek,
-            requestWeekStart: requestWeekStart
+            pageWidth: pageWidth
         )
     }
 

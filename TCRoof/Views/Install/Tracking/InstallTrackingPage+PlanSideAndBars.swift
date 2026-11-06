@@ -88,7 +88,8 @@ extension InstallPlanTabView {
                     HStack(spacing: 12) {
                         MilestoneDiamond(passed: left < 0)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                            Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                                .lineLimit(2).minimumScaleFactor(0.85)
                             Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
@@ -163,14 +164,20 @@ struct PlanStageBar: View {
             Theme.ganttTrack
             (row.status == .done ? Theme.success : Theme.navy).frame(width: w * share)
             // the label needs room: none on a 1-day bar or a narrow week-axis bar
-            if row.days > 1, row.percent > 0, w >= 44 {
-                Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(12, .bold))
-                    .foregroundStyle(share >= 0.5 ? Theme.onPrimary : Theme.navy).padding(.leading, 6).fixedSize()
+            if row.days > 1, row.percent > 0, w >= 40 {
+                Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(11, .bold))
+                    .foregroundStyle(share >= 0.5 ? Theme.onPrimary : Theme.navy).padding(.leading, 5).fixedSize()
             }
         }
         .frame(width: w, height: 20)
         .clipShape(shape)
         .overlay { if row.critical { shape.strokeBorder(Theme.installCritical, lineWidth: 2) } }
+        .overlay(alignment: .trailing) {
+            if row.percent > 0, w < 40 {
+                Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(11, .bold))
+                    .foregroundStyle(Theme.navy).offset(x: 28).fixedSize()
+            }
+        }
         .offset(x: x0)
         .frame(width: width, height: 44, alignment: .leading)
         .overlay(alignment: .topLeading) {

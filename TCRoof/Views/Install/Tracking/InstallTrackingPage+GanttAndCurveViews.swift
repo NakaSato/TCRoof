@@ -31,9 +31,15 @@ struct InstallColumns: View {
 
 // MARK: - axis
 
-/// The Gantt's time axis: one column a day, or a week (from Sunday, as the MP plan) when the span passes two months.
+/// The Gantt's time axis: one column a day, a week, or a month (from Sunday, as the MP plan).
 struct InstallAxis {
-    enum Unit { case day, week }
+    enum Unit: String, CaseIterable, Identifiable {
+        case day = "วัน"
+        case week = "สัปดาห์"
+        case month = "เดือน"
+
+        var id: String { rawValue }
+    }
 
     static let headerHeight: CGFloat = 46
 
@@ -45,23 +51,37 @@ struct InstallAxis {
     let columns: [Date]
 
     /// `dayLimit`: the longest span still drawn a day a column (the iPhone keeps a month, its columns scroll).
-    init(_ g: InstallGantt, dayLimit: Int = 62, forecast: InstallPlan? = nil) {
+    init(_ g: InstallGantt, dayLimit: Int = 62, forecast: InstallPlan? = nil, explicitUnit: Unit? = nil) {
         let cal = MasterSchedule.calendar
         let original = g.span(calendar: cal) ?? g.today...g.today
         let span = min(original.lowerBound, forecast?.start ?? original.lowerBound)...max(original.upperBound, forecast?.end ?? original.upperBound)
         let days = (cal.dateComponents([.day], from: span.lowerBound, to: span.upperBound).day ?? 0) + 1
         // a day a column up to two months (the board's weekends and today's column read), a week past that
-        unit = days > dayLimit ? .week : .day
+        unit = explicitUnit ?? (days > dayLimit ? .week : .day)
         today = cal.startOfDay(for: g.today)
-        if unit == .day {
+        switch unit {
+        case .day:
             start = span.lowerBound
             end = span.upperBound
             columns = (0..<days).compactMap { cal.date(byAdding: .day, value: $0, to: span.lowerBound) }
-        } else {
+        case .week:
             let first = MasterSchedule.weekStart(span.lowerBound, calendar: cal), last = MasterSchedule.weekStart(span.upperBound, calendar: cal)
             start = first
             end = cal.date(byAdding: .day, value: 6, to: last) ?? last
             columns = MasterSchedule.weeks(from: first, to: last, calendar: cal)
+        case .month:
+            let firstMonth = cal.date(from: cal.dateComponents([.year, .month], from: span.lowerBound)) ?? span.lowerBound
+            let endMonth = cal.date(from: cal.dateComponents([.year, .month], from: span.upperBound)) ?? span.upperBound
+            let lastDay = cal.date(byAdding: DateComponents(month: 1, day: -1), to: endMonth) ?? span.upperBound
+            start = firstMonth
+            end = lastDay
+            var cols: [Date] = [firstMonth]
+            var curr = firstMonth
+            while let next = cal.date(byAdding: .month, value: 1, to: curr), next <= endMonth {
+                cols.append(next)
+                curr = next
+            }
+            columns = cols
         }
     }
 
@@ -95,14 +115,31 @@ struct InstallAxis {
 
     /// The columns that get a label: all of them up to 16, else every second, third … so about 16 show.
     var labelled: [Date] {
+        if unit == .month { return columns }
         let step = max(1, Int((Double(columns.count) / 16).rounded(.up)))
         return columns.enumerated().filter { $0.offset % step == 0 }.map(\.element)
     }
 
-    /// `24 พฤ` a day, `4/10` a week.
+    /// `24 พฤ` a day, `4/10` a week, `ก.ค. 69` a month.
     func label(_ d: Date) -> String {
-        unit == .day ? "\(MasterSchedule.calendar.component(.day, from: d)) " + Self.weekday.string(from: d) : ThaiFormat.dayMonth.string(from: d)
+        switch unit {
+        case .day:
+            return "\(MasterSchedule.calendar.component(.day, from: d)) " + Self.weekday.string(from: d)
+        case .week:
+            return ThaiFormat.dayMonth.string(from: d)
+        case .month:
+            return Self.monthYear.string(from: d)
+        }
     }
+
+    /// `ก.ค. 69`: month and two-digit Buddhist era year.
+    static let monthYear: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = ThaiFormat.locale
+        f.calendar = Calendar(identifier: .buddhist)
+        f.dateFormat = "MMM yy"
+        return f
+    }()
 
     /// `พฤ`, `อา`: a day's short Thai name.
     static let weekday: DateFormatter = {

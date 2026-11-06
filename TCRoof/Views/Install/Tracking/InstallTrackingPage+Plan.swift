@@ -45,28 +45,44 @@ struct InstallPlanTabView: View {
     @State var planToggled: Set<String> = []
     @State var planAllClosed = InstallTrackingPage.Debug.planCollapsed
     @State private var shared: InstallTrackingPage.Shared?
+    @State private var zoomLevel: InstallAxis.Unit = .week
+    @State private var showMilestones: Bool = true
+    @State private var compactTaskCol: Bool = false
+    @State private var scrollPos = ScrollPosition()
 
     @Environment(\.permissions) var permissions
 
-    static let planHeaderHeight: CGFloat = 84
-    static let planSideWidth: CGFloat = 340
+    static let planHeaderHeight: CGFloat = 114
+    static let planSideWidth: CGFloat = 280
     /// The grid's columns before the days.
     enum PlanCol {
-        static let wbs: CGFloat = 44, days: CGFloat = 40, crew: CGFloat = 44, after: CGFloat = 60, left: CGFloat = 470
+        static let wbs: CGFloat = 44, days: CGFloat = 40, crew: CGFloat = 44, after: CGFloat = 60, left: CGFloat = 340
         static let stageRow: CGFloat = 40, subRow: CGFloat = 32
+    }
+
+    private func currentTaskColWidth(_ p: InstallPlan) -> CGFloat {
+        let base: CGFloat = compactTaskCol ? 260 : 330
+        let extraCrew: CGFloat = showsCrew(p) ? PlanCol.crew : 0
+        let extraAfter: CGFloat = showsLinks(p) ? PlanCol.after : 0
+        return base + extraCrew + extraAfter
     }
 
     var body: some View {
         if let p = data.plan, let g = data.gantt {
             let body = max(viewport - 14 - Self.planHeaderHeight - 14 - InstallTrackingPage.dockClearance, 440)
+            let axis = InstallAxis(g, forecast: p, explicitUnit: zoomLevel)
             VStack(alignment: .leading, spacing: 14) {
-                planHeader(p)
+                planHeader(p, axis: axis)
                 if !p.dependencyIssues.isEmpty {
                     Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
                 }
                 HStack(alignment: .top, spacing: 14) {
                     Group {
-                        if planView == .gantt { planGantt(p, axis: InstallAxis(g, forecast: p), waitLabel: data.waitLabel) } else { planTable(p) }
+                        if planView == .gantt {
+                            planGantt(p, axis: axis, waitLabel: data.waitLabel)
+                        } else {
+                            planTable(p)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: body)
@@ -74,7 +90,12 @@ struct InstallPlanTabView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .cardShadow()
-                    planSide(p).frame(width: Self.planSideWidth, height: body)
+
+                    if showMilestones {
+                        planSide(p)
+                            .frame(width: Self.planSideWidth, height: body)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
                 }
             }
             .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
@@ -101,67 +122,107 @@ struct InstallPlanTabView: View {
 
     // MARK: header
 
-    private func planHeader(_ p: InstallPlan) -> some View {
+    private func planHeader(_ p: InstallPlan, axis: InstallAxis) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
         let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) | \($0.by) | " + range } ?? range
-        return HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 10) {
-                    Text("แผนก่อสร้าง").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    if let b = p.baseline {
-                        Text(b.revision).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                            .padding(.horizontal, 10).frame(height: 24).background(Theme.primarySoft, in: Capsule())
+        return VStack(alignment: .leading, spacing: 10) {
+            // Row 1: Title + Info Chips
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text("แผนก่อสร้าง").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        if let b = p.baseline {
+                            Text(b.revision).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                                .padding(.horizontal, 8).frame(height: 22).background(Theme.primarySoft, in: Capsule())
+                        }
+                    }
+                    Text(sub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                }
+                .fixedSize()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        planChip("ระยะเวลา", "\(p.days.count) วัน", Theme.navy)
+                        planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
+                        if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
+                        if let on = p.onPlan { planChip("สถานะแผน", on ? "ตามแผน" : "ช้ากว่าแผน", on ? Theme.successInk : Theme.dangerText) }
+                        if let slip = p.slip { planChip("เทียบ Baseline", InstallPlan.slipText(slip), slip > 0 ? Theme.dangerText : Theme.successInk) }
                     }
                 }
-                Text(sub).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
-            .fixedSize()
-            HStack(spacing: 8) {
-                planChip("ระยะเวลา", "\(p.days.count) วัน", Theme.navy)
-                planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
-                if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
-                if let on = p.onPlan { planChip("สถานะแผน", on ? "ตามแผน" : "ช้ากว่าแผน", on ? Theme.successInk : Theme.dangerText) }
-                if let slip = p.slip { planChip("เทียบ Baseline", InstallPlan.slipText(slip), slip > 0 ? Theme.dangerText : Theme.successInk) }
-            }
-            Spacer(minLength: 8)
-            TCCountSegments([.init("Gantt"), .init("ตาราง")],
-                            selection: Binding(get: { planView == .gantt ? 0 : 1 }, set: { planView = $0 == 0 ? .gantt : .table }), equalWidths: false, fontSize: 16)
-                .accessibilityLabel("มุมมองแผน")
-                .accessibilityIdentifier("plan.view")
-            Button(planAllClosed ? "เปิดทั้งหมด" : "ปิดทั้งหมด") {
-                withAnimation(.snappy) {
-                    planAllClosed.toggle()
-                    planToggled = []
+
+            // Row 2: View Switcher, Zoom, Controls & Actions
+            HStack(spacing: 10) {
+                TCCountSegments([.init("Gantt"), .init("ตาราง")],
+                                selection: Binding(get: { planView == .gantt ? 0 : 1 }, set: { planView = $0 == 0 ? .gantt : .table }),
+                                equalWidths: false, fontSize: 14)
+                    .accessibilityLabel("มุมมองแผน")
+                    .accessibilityIdentifier("plan.view")
+
+                if planView == .gantt {
+                    Picker("การซูม", selection: $zoomLevel) {
+                        ForEach(InstallAxis.Unit.allCases) { u in
+                            Text(u.rawValue).tag(u)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 170)
+                    .accessibilityLabel("ระดับการซูมแผนภูมิ")
+
+                    Button {
+                        withAnimation(.snappy) { compactTaskCol.toggle() }
+                    } label: {
+                        Label(compactTaskCol ? "ขยายชื่องาน" : "ย่อชื่องาน", systemImage: compactTaskCol ? "arrow.left.and.right" : "arrow.right.and.left")
+                    }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    .accessibilityLabel(compactTaskCol ? "ขยายคอลัมน์ชื่องาน" : "ย่อคอลัมน์ชื่องาน")
+                }
+
+                Button(planAllClosed ? "เปิดทั้งหมด" : "ปิดทั้งหมด") {
+                    withAnimation(.snappy) {
+                        planAllClosed.toggle()
+                        planToggled = []
+                    }
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityLabel(planAllClosed ? "เปิดงานย่อยทั้งหมด" : "ปิดงานย่อยทั้งหมด")
+
+                Spacer(minLength: 4)
+
+                Button {
+                    withAnimation(.snappy) { showMilestones.toggle() }
+                } label: {
+                    Label("Milestone", systemImage: showMilestones ? "sidebar.right" : "sidebar.right")
+                }
+                .buttonStyle(TCButtonStyle(showMilestones ? .primary : .secondary, size: .card)).fixedSize()
+                .accessibilityLabel(showMilestones ? "ซ่อน Milestone" : "แสดง Milestone")
+
+                if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
+                    Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                        .accessibilityLabel("งานก่อนหน้า WBS")
+                }
+                Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
+                    Label("Excel", systemImage: "tablecells").font(.sarabunFixed(15, .semibold)).frame(minHeight: touchMin)
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityLabel("ไฟล์แผน Excel")
+                Button { exportPDF(p) } label: {
+                    Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
+                        .font(.sarabunFixed(15, .semibold))
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .disabled(job.scheduleInput == nil)
+                .accessibilityLabel("ส่งออก PDF แผนก่อสร้าง")
+                .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
+                if permissions.can(.mpSetup, on: job.access) || InstallTrackingPage.Debug.demo {
+                    Button("แก้ไขแผน") { route = .plan }
+                        .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+                        .accessibilityIdentifier("plan.edit")
                 }
             }
-            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-            .accessibilityLabel(planAllClosed ? "เปิดงานย่อยทั้งหมด" : "ปิดงานย่อยทั้งหมด")
-            if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
-                Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                    .accessibilityLabel("งานก่อนหน้า WBS")
-            }
-            Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
-                Label("Excel", systemImage: "tablecells").font(.sarabunFixed(17, .semibold)).frame(minHeight: touchMin)
-            }
-            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-            .accessibilityLabel("ไฟล์แผน Excel")
-            Button { exportPDF(p) } label: {
-                Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
-                    .font(.sarabunFixed(17, .semibold))
-            }
-            .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-            .disabled(job.scheduleInput == nil)
-            .accessibilityLabel("ส่งออก PDF แผนก่อสร้าง")
-            .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
-            if permissions.can(.mpSetup, on: job.access) || InstallTrackingPage.Debug.demo {
-                Button("แก้ไขแผน") { route = .plan }
-                    .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
-                    .accessibilityIdentifier("plan.edit")
-            }
         }
-        .padding(14)
+        .padding(12)
         .frame(maxWidth: .infinity, minHeight: Self.planHeaderHeight)
         .background(Theme.surface, in: frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
@@ -195,134 +256,230 @@ struct InstallPlanTabView: View {
     private func showsBaseline(_ p: InstallPlan) -> Bool { p.stages.contains { $0.row.baselineEnd != nil } }
 
     private func planGantt(_ p: InstallPlan, axis: InstallAxis, waitLabel: String?) -> some View {
-        VStack(spacing: 0) {
-            planGanttHeader(p, axis: axis)
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(p.stages) { s in
-                        let open = planOpen(s, p)
-                        planStageRow(s, p, axis: axis)
-                        if open {
-                            ForEach(s.subs) { r in
-                                planSubRow(r, stage: s.row, p, axis: axis)
+        GeometryReader { geo in
+            let taskW = currentTaskColWidth(p)
+            let availableTimelineW = max(geo.size.width - taskW - 1, 200)
+            let minTimelineW: CGFloat = switch axis.unit {
+            case .day:
+                CGFloat(axis.columns.count) * 32
+            case .week:
+                max(availableTimelineW, CGFloat(axis.columns.count) * 54)
+            case .month:
+                availableTimelineW
+            }
+            let timelineW = max(availableTimelineW, minTimelineW)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    // Pinned Left Task Column
+                    VStack(spacing: 0) {
+                        planLeftHeader(p, width: taskW)
+                        ScrollView(.vertical, showsIndicators: false) {
+                            LazyVStack(spacing: 0) {
+                                ForEach(p.stages) { s in
+                                    let open = planOpen(s, p)
+                                    planStageLeftRow(s, p, width: taskW)
+                                    if open {
+                                        ForEach(s.subs) { r in
+                                            planSubLeftRow(r, p, width: taskW)
+                                        }
+                                    }
+                                }
+                                if !p.milestones.isEmpty {
+                                    milestoneLeftRow(p, width: taskW)
+                                }
                             }
                         }
+                        .scrollPosition($scrollPos)
                     }
-                    if !p.milestones.isEmpty { milestoneRow(p, axis: axis) }
+                    .frame(width: taskW)
+
+                    // Vertical divider
+                    Rectangle().fill(Theme.borderSubtle).frame(width: 1)
+
+                    // Horizontally and Vertically scrollable Timeline
+                    ScrollView(.horizontal, showsIndicators: true) {
+                        VStack(spacing: 0) {
+                            planTimelineHeader(p, axis: axis, width: timelineW)
+                            ScrollView(.vertical, showsIndicators: true) {
+                                LazyVStack(spacing: 0) {
+                                    ForEach(p.stages) { s in
+                                        let open = planOpen(s, p)
+                                        planStageBarRow(s, p, axis: axis, width: timelineW)
+                                        if open {
+                                            ForEach(s.subs) { r in
+                                                planSubBarRow(r, stage: s.row, p, axis: axis, width: timelineW)
+                                            }
+                                        }
+                                    }
+                                    if !p.milestones.isEmpty {
+                                        milestoneBarRow(p, axis: axis, width: timelineW)
+                                    }
+                                }
+                                .background(alignment: .topLeading) {
+                                    planColumns(axis, p, width: timelineW)
+                                }
+                            }
+                            .scrollPosition($scrollPos)
+                        }
+                        .frame(width: timelineW)
+                    }
                 }
+                Rectangle().fill(Theme.hairline).frame(height: 1)
+                planLegend(p, waitLabel: waitLabel)
             }
-            .background(alignment: .topLeading) { planColumns(axis, p) }
-            Rectangle().fill(Theme.hairline).frame(height: 1)
-            planLegend(p, waitLabel: waitLabel)
         }
     }
 
-    /// The days' column layer under the rows: Sundays, days off and waiting, today tinted with a red edge.
-    private func planColumns(_ axis: InstallAxis, _ p: InstallPlan) -> some View {
+    private func planColumns(_ axis: InstallAxis, _ p: InstallPlan, width: CGFloat) -> some View {
         GeometryReader { geo in
-            let w = geo.size.width - PlanCol.left - 16
             ZStack(alignment: .topLeading) {
-                InstallColumns(axis: axis, nonWorking: p.nonWorking, x: PlanCol.left, width: w, height: geo.size.height)
-                Theme.danger.opacity(0.5).frame(width: 1, height: geo.size.height).offset(x: PlanCol.left + axis.x(axis.today, w))
+                InstallColumns(axis: axis, nonWorking: p.nonWorking, x: 0, width: width, height: geo.size.height)
+                ForEach(axis.columns, id: \.self) { d in
+                    let gx = axis.x(d, width)
+                    Rectangle().fill(Theme.hairline.opacity(0.35)).frame(width: 1, height: geo.size.height).offset(x: gx)
+                }
+                Theme.danger.opacity(0.6).frame(width: 1.5, height: geo.size.height).offset(x: axis.x(axis.today, width))
             }
         }
         .allowsHitTesting(false)
     }
 
-    /// The left block of a grid row: `WBS`, the name, `วัน`, then `คน` and `ต่อจาก` when they have a source.
-    private func planLeft<Name: View>(_ r: InstallPlan.Row, _ p: InstallPlan, bold: Bool, @ViewBuilder name: () -> Name) -> some View {
+    private func planLeftHeader(_ p: InstallPlan, width: CGFloat) -> some View {
         HStack(spacing: 0) {
-            Text(r.code).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
-            name().frame(maxWidth: .infinity, alignment: .leading)
-            Text("\(r.days)").frame(width: PlanCol.days)
-            if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").frame(width: PlanCol.crew) }
-            if showsLinks(p) { Text(r.after ?? "–").frame(width: PlanCol.after) }
+            Text("WBS").frame(width: PlanCol.wbs, alignment: .leading)
+            Text("งาน").frame(maxWidth: .infinity, alignment: .leading)
+            Text("วัน").frame(width: PlanCol.days)
+            if showsCrew(p) { Text("คน").frame(width: PlanCol.crew) }
+            if showsLinks(p) { Text("ต่อจาก").frame(width: PlanCol.after) }
         }
-        .font(.sarabunFixed(14, bold ? .bold : .regular)).foregroundStyle(Theme.navy).monospacedDigit()
+        .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
         .padding(.leading, 16)
-        .frame(width: PlanCol.left)
-    }
-
-    private func planGanttHeader(_ p: InstallPlan, axis: InstallAxis) -> some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text("WBS").frame(width: PlanCol.wbs, alignment: .leading)
-                Text("งาน").frame(maxWidth: .infinity, alignment: .leading)
-                Text("วัน").frame(width: PlanCol.days)
-                if showsCrew(p) { Text("คน").frame(width: PlanCol.crew) }
-                if showsLinks(p) { Text("ต่อจาก").frame(width: PlanCol.after) }
-            }
-            .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
-            .padding(.leading, 16).frame(width: PlanCol.left)
-            GeometryReader { geo in
-                let w = geo.size.width
-                // a week column shows its first day, every other one past 16 weeks
-                ForEach(axis.unit == .day ? axis.columns : axis.labelled, id: \.self) { d in
-                    planDayLabel(d, axis: axis, dense: axis.columns.count > 20).frame(width: axis.columnWidth(w)).offset(x: axis.x(d, w), y: axis.unit == .day ? 10 : 20)
-                }
-            }
-            .padding(.trailing, 16)
-        }
-        .frame(height: 58)
+        .frame(width: width, height: 58)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
         .accessibilityHidden(true)
     }
 
-    /// The weekday over the date, Sundays rose and today in a red pill; a week column shows only its first day.
+    private func planTimelineHeader(_ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(axis.unit == .day ? axis.columns : axis.labelled, id: \.self) { d in
+                planDayLabel(d, axis: axis, dense: axis.columns.count > 20)
+                    .frame(width: axis.columnWidth(width))
+                    .offset(x: axis.x(d, width), y: axis.unit == .day ? 10 : 20)
+            }
+        }
+        .frame(width: width, height: 58, alignment: .topLeading)
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+        .accessibilityHidden(true)
+    }
+
     private func planDayLabel(_ d: Date, axis: InstallAxis, dense: Bool) -> some View {
         let week = axis.unit == .week
+        let month = axis.unit == .month
         let today = week ? axis.contains(axis.today, week: d) : MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today)
-        let sunday = !week && InstallPlan.isSunday(d)
+        let sunday = !week && !month && InstallPlan.isSunday(d)
         let ink = today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted
         return VStack(spacing: 2) {
-            if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink) }
-            Text(week ? ThaiFormat.dayMonth.string(from: d) : "\(MasterSchedule.calendar.component(.day, from: d))")
-                .font(.sarabunFixed(week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
-                .padding(.horizontal, today ? 4 : 0).frame(height: 20)
+            if axis.unit == .day {
+                Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink)
+            }
+            Text(axis.label(d))
+                .font(.sarabunFixed(month ? 13 : week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
+                .padding(.horizontal, today ? 6 : 0).frame(height: 20)
                 .background { if today { Capsule().fill(Theme.danger) } }
         }
         .fixedSize()
     }
 
-    private func planStageRow(_ s: InstallPlan.Stage, _ p: InstallPlan, axis: InstallAxis) -> some View {
+    private func planStageLeftRow(_ s: InstallPlan.Stage, _ p: InstallPlan, width: CGFloat) -> some View {
         let open = planOpen(s, p), r = s.row
         return Button { if !s.subs.isEmpty { togglePlan(s.id) } } label: {
             HStack(spacing: 0) {
-                planLeft(r, p, bold: true) {
-                    HStack(spacing: 8) {
-                        Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Theme.navy).frame(width: 14).opacity(s.subs.isEmpty ? 0 : 1)
-                        // the MP plan's long task names take two lines
-                        Text(r.title).font(.sarabunFixed(r.title.count > 34 ? 14 : 16, .bold)).lineLimit(2).lineSpacing(-2)
-                    }
+                Text(r.code).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
+                HStack(spacing: 8) {
+                    Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Theme.navy).frame(width: 14).opacity(s.subs.isEmpty ? 0 : 1)
+                    Text(r.title).font(.sarabunFixed(r.title.count > 34 ? 14 : 16, .bold))
+                        .lineLimit(2).lineSpacing(-2).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                GeometryReader { geo in PlanStageBar(row: r, axis: axis, width: geo.size.width) }
-                    .padding(.trailing, 16)
+                Text("\(r.days)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+                if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
+                if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
             }
-            .frame(height: max(PlanCol.stageRow, 44))
+            .padding(.leading, 16)
+            .frame(width: width, height: max(PlanCol.stageRow, 44))
             .background(r.status == .current ? Theme.primary.opacity(0.04) : .clear)
             .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .help(r.title)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(planAccessibility(r))
         .accessibilityHint(s.subs.isEmpty ? "" : open ? "แตะเพื่อซ่อนงานย่อย" : "แตะเพื่อแสดงงานย่อย")
         .accessibilityIdentifier("plan-stage-\(r.code)")
     }
 
-    private func planSubRow(_ r: InstallPlan.Row, stage: InstallPlan.Row, _ p: InstallPlan, axis: InstallAxis) -> some View {
-        HStack(spacing: 0) {
-            planLeft(r, p, bold: false) {
-                Text(r.title).font(.sarabunFixed(15)).lineLimit(1).padding(.leading, 12)
-            }
-            GeometryReader { geo in PlanSubBar(row: r, stage: stage, axis: axis, width: geo.size.width) }
-                .padding(.trailing, 16)
+    private func planStageBarRow(_ s: InstallPlan.Stage, _ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
+        let r = s.row
+        return Button { if !s.subs.isEmpty { togglePlan(s.id) } } label: {
+            PlanStageBar(row: r, axis: axis, width: width)
+                .frame(width: width, height: max(PlanCol.stageRow, 44), alignment: .leading)
+                .background(r.status == .current ? Theme.primary.opacity(0.04) : .clear)
+                .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+                .contentShape(Rectangle())
         }
-        .frame(height: PlanCol.subRow)
+        .buttonStyle(.plain)
+        .help(r.title)
+        .accessibilityHidden(true)
+    }
+
+    private func planSubLeftRow(_ r: InstallPlan.Row, _ p: InstallPlan, width: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            Text(r.code).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
+            Text(r.title).font(.sarabunFixed(14)).lineLimit(1).truncationMode(.tail)
+                .padding(.leading, 12).frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(r.days)").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+            if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
+            if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
+        }
+        .padding(.leading, 16)
+        .frame(width: width, height: PlanCol.subRow)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1) }
+        .help(r.title)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(planAccessibility(r))
+    }
+
+    private func planSubBarRow(_ r: InstallPlan.Row, stage: InstallPlan.Row, _ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
+        PlanSubBar(row: r, stage: stage, axis: axis, width: width)
+            .frame(width: width, height: PlanCol.subRow, alignment: .leading)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1) }
+            .help(r.title)
+            .accessibilityHidden(true)
+    }
+
+    private func milestoneLeftRow(_ p: InstallPlan, width: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            Text("Milestone").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                .padding(.leading, 16 + PlanCol.wbs).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(width: width, height: 44)
+        .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Milestone " + p.milestones.map { "\($0.title) \(ThaiFormat.dayMonth.string(from: $0.date))" }.joined(separator: " | "))
+    }
+
+    private func milestoneBarRow(_ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
+        ZStack(alignment: .leading) {
+            ForEach(p.milestones) { m in
+                let x = (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2
+                MilestoneDiamond(passed: m.date < p.today).position(x: x, y: 22)
+            }
+        }
+        .frame(width: width, height: 44, alignment: .leading)
+        .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
+        .accessibilityHidden(true)
     }
 
     private func planAccessibility(_ r: InstallPlan.Row) -> String {
@@ -330,25 +487,6 @@ struct InstallPlanTabView: View {
         return "\(r.code) \(r.title) | \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) | \(status) \(Int(r.percent.rounded()))%"
             + (r.critical ? " | เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " | เผื่อ \(r.float ?? 0) วัน" : "")
             + (r.slip.map { " | เทียบ Baseline " + InstallPlan.slipText($0) } ?? "")
-    }
-
-    /// Diamonds on their days: green filled when passed, navy outlined when ahead.
-    private func milestoneRow(_ p: InstallPlan, axis: InstallAxis) -> some View {
-        HStack(spacing: 0) {
-            Text("Milestone").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                .padding(.leading, 16 + PlanCol.wbs).frame(width: PlanCol.left, alignment: .leading)
-            GeometryReader { geo in
-                ForEach(p.milestones) { m in
-                    let x = (axis.x(m.date, geo.size.width) + axis.xEnd(m.date, geo.size.width)) / 2
-                    MilestoneDiamond(passed: m.date < p.today).position(x: x, y: geo.size.height / 2)
-                }
-            }
-            .padding(.trailing, 16)
-        }
-        .frame(height: 44)
-        .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Milestone " + p.milestones.map { "\($0.title) \(ThaiFormat.dayMonth.string(from: $0.date))" }.joined(separator: " | "))
     }
 
     private func planLegend(_ p: InstallPlan, waitLabel: String?) -> some View {

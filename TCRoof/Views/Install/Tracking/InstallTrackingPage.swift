@@ -144,6 +144,7 @@ struct InstallTrackingPage: View {
                     .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, Self.dockClearance)
                     Color.clear.frame(height: 1).id("end")
                 }
+                .scrollDisabled(tab == .daily && viewport >= 500)
                 .scrollIndicators(.hidden)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewport = $0 }
                 #if DEBUG

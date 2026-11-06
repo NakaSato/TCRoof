@@ -59,13 +59,14 @@ struct InstallDailyTabView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(c.label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                            .minimumScaleFactor(0.85)
                         Spacer(minLength: 4)
                         Text(c.value).font(.sarabunFixed(20, .bold)).foregroundStyle(c.ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
                             .layoutPriority(1)
                     }
                     Text(c.note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).truncationMode(.tail)
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
                 .accessibilityElement(children: .combine)
@@ -91,17 +92,24 @@ struct InstallDailyTabView: View {
         }
     }
 
-    /// The columns' widths; `งานที่ทำ` takes the rest. `compact` is the portrait iPad's: no `งานที่ทำ`, the two sign chips
-    /// stacked, narrower columns (the table picks it when the full one doesn't fit, `ViewThatFits`).
+    /// The columns' widths. All columns are preserved across iPad portrait and landscape;
+    /// on narrower screens, the table scrolls horizontally without dropping columns or misaligning.
     private struct Col {
-        let compact: Bool
-        let date: CGFloat = 80, status: CGFloat = 88, weather: CGFloat = 56, crew: CGFloat = 32, photos: CGFloat = 36
-        let progress: CGFloat = 170
-        var sign: CGFloat { compact ? 110 : 190 }
-        var problem: CGFloat { compact ? 130 : 170 }
-        var action: CGFloat { compact ? 120 : 140 }
-        /// `งานที่ทำ`'s ideal width, so every row asks the same width of `ViewThatFits`.
-        static let work: CGFloat = 120
+        let date: CGFloat = 76
+        let status: CGFloat = 80
+        let weather: CGFloat = 50
+        let crew: CGFloat = 30
+        let work: CGFloat = 140
+        let progress: CGFloat = 155
+        let photos: CGFloat = 30
+        let sign: CGFloat = 170
+        let problem: CGFloat = 130
+        let action: CGFloat = 120
+        let spacing: CGFloat = 8
+
+        var totalWidth: CGFloat {
+            date + status + weather + crew + work + progress + photos + sign + problem + action + (spacing * 9) + 24
+        }
     }
 
     private func reportsCard(_ d: InstallDailyData) -> some View {
@@ -110,29 +118,29 @@ struct InstallDailyTabView: View {
                 ViewThatFits(in: .horizontal) {
                     reportsBar(d, short: false)
                     reportsBar(d, short: true)
+                    reportsBar(d, short: true, compact: true)
                 }
-                VStack(spacing: 0) {
-                    ViewThatFits(in: .horizontal) {
-                        tableHeader(Col(compact: false))
-                        tableHeader(Col(compact: true))
-                    }
-                    let rows = filtered(d)
-                    // the rows scroll under the header inside the card's fixed height
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            if rows.isEmpty {
-                                Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
-                                    .frame(maxWidth: .infinity, minHeight: 64)
-                            }
-                            ForEach(rows) { r in
-                                ViewThatFits(in: .horizontal) {
-                                    reportRow(r, today: d.today, col: Col(compact: false))
-                                    reportRow(r, today: d.today, col: Col(compact: true))
+                let col = Col()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        tableHeader(col)
+                        let rows = filtered(d)
+                        ScrollView(.vertical) {
+                            LazyVStack(spacing: 0) {
+                                if rows.isEmpty {
+                                    Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้")
+                                        .font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                                        .frame(maxWidth: .infinity, minHeight: 64)
+                                }
+                                ForEach(rows) { r in
+                                    reportRow(r, today: d.today, col: col)
                                 }
                             }
+                            .padding(.bottom, 8)
                         }
+                        .scrollIndicators(.automatic)
                     }
-                    .scrollIndicators(.automatic)
+                    .frame(minWidth: col.totalWidth, maxWidth: .infinity)
                 }
                 .frame(maxHeight: .infinity, alignment: .top)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -142,25 +150,28 @@ struct InstallDailyTabView: View {
         }
     }
 
-    /// `ทุกรายงาน`, its filter and buttons; `short` names the Weekly Report button without its count of reports.
-    private func reportsBar(_ d: InstallDailyData, short: Bool) -> some View {
-        HStack(spacing: 14) {
+    /// `ทุกรายงาน`, its filter and buttons; `short` names the Weekly Report button without its count of reports;
+    /// `compact` adapts for narrower screen widths like iPad portrait.
+    private func reportsBar(_ d: InstallDailyData, short: Bool, compact: Bool = false) -> some View {
+        HStack(spacing: compact ? 8 : 14) {
             Text("ทุกรายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(rowNeedsWork).count),
                              .init("มีปัญหา", count: d.rows.filter(\.hasProblem).count)],
-                            selection: $dailyFilter, equalWidths: false, fontSize: 15)
+                            selection: $dailyFilter, equalWidths: false, fontSize: compact ? 13.5 : 15)
                 .fixedSize()
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
             if !d.unacknowledged.isEmpty, permissions.can(.dailySign, on: job.access) {
                 Button { ackingAllDailies = true } label: {
-                    Label("รับทราบทั้งหมด (\(d.unacknowledged.count))", systemImage: "checkmark.seal.fill")
+                    Label(compact ? "รับทราบ (\(d.unacknowledged.count))" : "รับทราบทั้งหมด (\(d.unacknowledged.count))",
+                          systemImage: "checkmark.seal.fill")
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                 .accessibilityIdentifier("dailyAckAll")
             }
             if let w = d.week {
                 Button { onGoWeekly?() } label: {
-                    Label(short ? "Weekly Report W\(w.number)" : "สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน", systemImage: "doc.text")
+                    Label(compact ? "Weekly W\(w.number)" : short ? "Weekly Report W\(w.number)" : "สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน",
+                          systemImage: "doc.text")
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 .accessibilityLabel("สร้าง Weekly Report W\(w.number) จาก \(w.reports) รายงาน")
@@ -173,48 +184,45 @@ struct InstallDailyTabView: View {
     }
 
     private func tableHeader(_ col: Col) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: col.spacing) {
             Text("วันที่").frame(width: col.date, alignment: .leading)
             Text("สถานะ").frame(width: col.status, alignment: .leading)
             Text("อากาศ").frame(width: col.weather, alignment: .leading)
             Text("คน").frame(width: col.crew, alignment: .leading)
-            if !col.compact { Text("งานที่ทำ").frame(minWidth: 0, idealWidth: Col.work, maxWidth: .infinity, alignment: .leading) }
+            Text("งานที่ทำ").frame(width: col.work, alignment: .leading)
             Text("สะสม | เทียบแผน MP").frame(width: col.progress, alignment: .leading)
             Text("รูป").frame(width: col.photos, alignment: .leading)
             Text("ลงนาม | รับทราบ").frame(width: col.sign, alignment: .leading)
             Text("ปัญหา").frame(width: col.problem, alignment: .leading)
-            if col.compact { Spacer(minLength: 0) }
             Color.clear.frame(width: col.action, height: 1)
         }
         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-        .padding(.horizontal, 14).frame(height: 40)
+        .padding(.horizontal, 12).frame(height: 40)
         .background(Theme.phonePage)
         .accessibilityHidden(true)
     }
 
     private func reportRow(_ r: InstallDailyData.Row, today: Date, col: Col) -> some View {
         let urgent = r.state == .today
-        return HStack(spacing: 10) {
+        return HStack(spacing: col.spacing) {
             Text(InstallTrackingPage.dayLabel(r.date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: col.date, alignment: .leading)
             stateChip(r.state).frame(width: col.status, alignment: .leading)
             weatherCell(r).frame(width: col.weather, alignment: .leading)
             Text(r.crew.map(String.init) ?? "—").font(.sarabunFixed(15)).foregroundStyle(Theme.navy).monospacedDigit()
                 .frame(width: col.crew, alignment: .leading)
-            if !col.compact {
-                Text(r.work).font(.sarabunFixed(15)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy).lineLimit(1)
-                    .frame(minWidth: 0, idealWidth: Col.work, maxWidth: .infinity, alignment: .leading)
-            }
+            Text(r.work.isEmpty ? "—" : r.work).font(.sarabunFixed(14.5)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy)
+                .lineLimit(2)
+                .frame(width: col.work, alignment: .leading)
             progressCell(r).frame(width: col.progress, alignment: .leading)
             Text("\(r.photos)").font(.sarabunFixed(15)).foregroundStyle(r.photos > 0 ? Theme.navy : Theme.inkMuted).monospacedDigit()
                 .frame(width: col.photos, alignment: .leading)
-            signCell(r, today: today, stacked: col.compact).frame(width: col.sign, alignment: .leading)
+            signCell(r, today: today).frame(width: col.sign, alignment: .leading)
             Text(r.problem.isEmpty ? "—" : r.problem).font(.sarabunFixed(14)).foregroundStyle(r.problem.isEmpty ? Theme.inkMuted : Theme.warningInk)
-                .lineLimit(col.compact ? 2 : 1).frame(width: col.problem, alignment: .leading)
-            if col.compact { Spacer(minLength: 0) }
+                .lineLimit(2).frame(width: col.problem, alignment: .leading)
             actionButton(r).frame(width: col.action)
         }
-        .padding(.horizontal, 14).frame(minHeight: 56)
+        .padding(.horizontal, 12).frame(minHeight: 56)
         .background(urgent ? Theme.dangerSoft.opacity(0.45) : Theme.surface)
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .accessibilityElement(children: .contain)
@@ -255,8 +263,10 @@ struct InstallDailyTabView: View {
                         .foregroundStyle(r.actual == nil ? Theme.inkMuted : Theme.navy).monospacedDigit().lineLimit(1)
                     if let d = r.delta {
                         chip(d > 0 ? "+\(d) เร็วกว่า" : d == 0 ? "ตามแผน" : "\(d) ช้ากว่า", d >= 0 ? .ok : .danger)
+                            .lineLimit(1).minimumScaleFactor(0.85)
                     } else {
                         chip("แผน \(Int(p.rounded()))%", .idle)
+                            .lineLimit(1).minimumScaleFactor(0.85)
                     }
                 }
                 progressBar(actual: r.actual, planned: p, behind: (r.delta ?? 0) < 0)
@@ -274,10 +284,11 @@ struct InstallDailyTabView: View {
         GeometryReader { g in
             ZStack(alignment: .leading) {
                 Capsule().fill(Theme.track)
-                if let a = actual {
+                    .overlay(Capsule().strokeBorder(Theme.borderSubtle, lineWidth: 0.5))
+                if let a = actual, a > 0 {
                     Capsule().fill(behind ? Theme.warning : Theme.success).frame(width: g.size.width * min(max(a / 100, 0), 1))
                 }
-                Rectangle().fill(Theme.navy).frame(width: 2, height: 10)
+                RoundedRectangle(cornerRadius: 1).fill(Theme.navy).frame(width: 2, height: 6)
                     .offset(x: min(max(g.size.width * planned / 100 - 1, 0), g.size.width - 2))
             }
         }
@@ -285,7 +296,7 @@ struct InstallDailyTabView: View {
         .padding(.trailing, 8)
     }
 
-    private func signCell(_ r: InstallDailyData.Row, today: Date, stacked: Bool) -> some View {
+    private func signCell(_ r: InstallDailyData.Row, today: Date) -> some View {
         let ack: (String, InstallPageData.Tone) = if let a = r.ackAt {
             ("ผู้ตรวจ ✓ " + ThaiFormat.dayMonth.string(from: a), .ok)
         } else if let s = r.signedAt {
@@ -293,10 +304,11 @@ struct InstallDailyTabView: View {
         } else {
             ("ผู้ตรวจ —", .idle)
         }
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 6))
-        return layout {
+        return HStack(spacing: 4) {
             chip(r.signedAt != nil ? "วิศวกร ✓" : "วิศวกร —", r.signedAt != nil ? .ok : .idle)
+                .lineLimit(1).minimumScaleFactor(0.8)
             chip(ack.0, ack.1)
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
     }
 

@@ -104,37 +104,56 @@ extension InstallTrackingPage {
     }
 
     func tabBar(_ data: InstallPageData) -> some View {
-        HStack(spacing: 4) {
-            ForEach(items(data)) { item in
-                let on = item.tab != nil && item.tab == tab
-                Button {
-                    if let t = item.tab { leave(to: .tab(t)) } else if let r = item.route { leave(to: .route(r)) }
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: item.symbol).font(.system(size: 16, weight: .semibold))
-                        Text(item.title).font(.sarabunFixed(15, .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                        if item.dot {
-                            Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("วันนี้ยังไม่ส่ง")
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(items(data)) { item in
+                        let on = item.tab != nil && item.tab == tab
+                        Button {
+                            if let t = item.tab { leave(to: .tab(t)) } else if let r = item.route { leave(to: .route(r)) }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: item.symbol).font(.system(size: 15, weight: .semibold))
+                                Text(item.title).font(.sarabunFixed(14.5, .bold))
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                if item.dot {
+                                    Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("วันนี้ยังไม่ส่ง")
+                                }
+                            }
+                            .foregroundStyle(on ? Theme.navy : Theme.projectTabInk)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 44)
+                            .background {
+                                if on {
+                                    RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Theme.surface)
+                                        .shadow(color: Theme.navySolid.opacity(0.15), radius: 1.5, y: 1)
+                                }
+                            }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .id(item.id)
+                        .accessibilityAddTraits(on ? .isSelected : [])
                     }
-                    .foregroundStyle(on ? Theme.navy : Theme.projectTabInk)
-                    .padding(.horizontal, 14)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background {
-                        if on {
-                            RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Theme.surface)
-                                .shadow(color: Theme.navySolid.opacity(0.15), radius: 1.5, y: 1)
-                        }
-                    }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? .isSelected : [])
+                .padding(4)
+            }
+            .background(Theme.projectTabTrack, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 24).padding(.top, 12)
+            .onAppear {
+                if let activeId = items(data).first(where: { $0.tab == tab })?.id {
+                    proxy.scrollTo(activeId, anchor: .center)
+                }
+            }
+            .onChange(of: tab) { _, newTab in
+                if let activeId = items(data).first(where: { $0.tab == newTab })?.id {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo(activeId, anchor: .center)
+                    }
+                }
             }
         }
-        .padding(4)
-        .background(Theme.projectTabTrack, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.horizontal, 24).padding(.top, 12)
     }
 
     // MARK: KPI strip

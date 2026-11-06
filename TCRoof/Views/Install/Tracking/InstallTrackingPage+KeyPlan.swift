@@ -400,12 +400,15 @@ struct KeyPlanList: View {
 
     /// `2.1 ติดตั้งโครงสร้าง…` with `5 จุด · เฉลี่ย 62%`.
     private func header(_ g: InstallKeyPlan.Group) -> some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             Text(g.code).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 6).frame(height: 20).background(Theme.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 5))
-            Text(g.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-            Spacer(minLength: 6)
-            Text("\(g.points.count) จุด · เฉลี่ย \(Int(g.average.rounded()))%").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).fixedSize()
+            Text(g.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                .lineLimit(2)
+                .minimumScaleFactor(0.9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(g.points.count) จุด · เฉลี่ย \(Int(g.average.rounded()))%").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                .fixedSize()
         }
         .padding(.top, 6)
         .accessibilityElement(children: .combine)
@@ -469,14 +472,23 @@ struct KeyPlanRow: View {
     private func bar(_ c: Color) -> some View {
         GeometryReader { g in
             ZStack(alignment: .leading) {
-                Capsule().fill(Theme.ganttTrack)
-                Capsule().fill(c).frame(width: g.size.width * point.actual / 100)
+                Capsule()
+                    .fill(Theme.ganttTrack)
+                    .overlay(Capsule().strokeBorder(Theme.borderSubtle, lineWidth: 0.5))
+                if point.actual > 0 {
+                    Capsule()
+                        .fill(c)
+                        .frame(width: max(6, min(g.size.width * point.actual / 100, g.size.width)))
+                }
                 if point.planned > 0 {
-                    Rectangle().fill(Theme.navy).frame(width: 2, height: 10).offset(x: min(g.size.width * point.planned / 100, g.size.width - 2))
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Theme.navy)
+                        .frame(width: 2, height: 6)
+                        .offset(x: min(max(0, g.size.width * point.planned / 100 - 1), g.size.width - 2))
                 }
             }
         }
-        .frame(height: 5)
+        .frame(height: 6)
         .padding(.vertical, 2)
         .accessibilityHidden(true)
     }

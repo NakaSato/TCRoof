@@ -34,6 +34,7 @@ extension InstallTrackingPage {
         .frame(height: fittedHeight, alignment: .top)
         .background(Theme.surface, in: frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
+        .clipShape(frame)
         .cardShadow()
     }
 
@@ -143,11 +144,18 @@ extension InstallTrackingPage {
                         }
                     }
                 }
+                .padding(.bottom, 8)
             }
             .scrollIndicators(.automatic)
-            // Sundays, days off and today's column behind the rows, today's line over them; they don't scroll
-            .background(alignment: .topLeading) { axisLayer(axis) { x, w, h in InstallColumns(axis: axis, nonWorking: nonWorking, x: x, width: w, height: h) } }
-            .overlay(alignment: .topLeading) { axisLayer(axis) { x, w, h in todayLine(axis, x: x, w: w, h: h) } }
+            // Sundays, days off and today's column behind the rows, today's line behind the bars; they don't scroll
+            .background(alignment: .topLeading) {
+                axisLayer(axis) { x, w, h in
+                    ZStack(alignment: .topLeading) {
+                        InstallColumns(axis: axis, nonWorking: nonWorking, x: x, width: w, height: h)
+                        todayLine(axis, x: x, w: w, h: h)
+                    }
+                }
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
     }
@@ -178,9 +186,20 @@ extension InstallTrackingPage {
                 .frame(width: Self.nameWidth, alignment: .leading).padding(.bottom, 6)
             GeometryReader { geo in
                 let w = geo.size.width
-                ForEach(axis.months, id: \.self) { m in
-                    Text(ThaiFormat.monthYear.string(from: m)).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-                        .fixedSize().offset(x: axis.x(max(m, axis.start), w) + 4, y: 2)
+                let months = axis.months
+                ForEach(Array(months.enumerated()), id: \.offset) { i, m in
+                    let x0 = axis.x(max(m, axis.start), w) + 4
+                    let xNext = (i + 1 < months.count) ? axis.x(months[i + 1], w) : w
+                    let avail = xNext - x0
+                    if avail >= 60 {
+                        Text(avail >= 95 ? ThaiFormat.monthYear.string(from: m) : ThaiFormat.month.string(from: m))
+                            .font(.sarabunFixed(13, .bold))
+                            .foregroundStyle(Theme.navy)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(maxWidth: max(avail - 8, 40), alignment: .leading)
+                            .offset(x: x0, y: 2)
+                    }
                 }
                 ForEach(axis.labelled, id: \.self) { d in
                     let today = axis.unit == .day ? Calendar.current.isDate(d, inSameDayAs: axis.today) : axis.contains(axis.today, week: d)

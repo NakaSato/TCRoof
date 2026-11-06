@@ -151,7 +151,9 @@ struct InstallBars: View {
                 // after the bar, or over its end when that would run past the axis into the % column
                 Text("+\(row.overrunDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText).fixedSize()
                     .padding(.horizontal, 8).frame(height: 22).background(Theme.dangerSoft, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.danger.opacity(0.4), lineWidth: 1))
                     .offset(x: min(max(oend - ox, 10) + ox + 8, width - Self.overrunTag))
+                    .zIndex(2)
             } else if let f = row.forecastEnd, row.status == .current, f > row.end {
                 let fx = axis.xEnd(f, width) - 3
                 Capsule().strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))

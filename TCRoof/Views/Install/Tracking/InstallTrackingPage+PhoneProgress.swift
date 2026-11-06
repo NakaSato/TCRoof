@@ -117,15 +117,12 @@ extension InstallTrackingPage {
                     .frame(width: width)
                     .background(alignment: .topLeading) {
                         GeometryReader { geo in
-                            InstallColumns(axis: axis, nonWorking: data.nonWorking, x: 0, width: width, height: geo.size.height)
-                        }
-                        .allowsHitTesting(false)
-                    }
-                    .overlay(alignment: .topLeading) {
-                        GeometryReader { geo in
-                            let tx = (axis.x(axis.today, width) + axis.xEnd(axis.today, width)) / 2
-                            Path { p in p.move(to: CGPoint(x: tx, y: 0)); p.addLine(to: CGPoint(x: tx, y: geo.size.height)) }
-                                .stroke(Theme.danger, lineWidth: 1.5)
+                            ZStack(alignment: .topLeading) {
+                                InstallColumns(axis: axis, nonWorking: data.nonWorking, x: 0, width: width, height: geo.size.height)
+                                let tx = (axis.x(axis.today, width) + axis.xEnd(axis.today, width)) / 2
+                                Path { p in p.move(to: CGPoint(x: tx, y: 0)); p.addLine(to: CGPoint(x: tx, y: geo.size.height)) }
+                                    .stroke(Theme.danger, lineWidth: 1.5)
+                            }
                         }
                         .allowsHitTesting(false)
                     }
@@ -231,11 +228,18 @@ extension InstallTrackingPage {
         ZStack(alignment: .topLeading) {
             ForEach(ms) { m in
                 let x = (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2
-                VStack(spacing: 2) {
+                let labelX = min(max(x, 38), width - 38)
+                ZStack {
                     MilestoneDiamond(passed: MasterSchedule.calendar.startOfDay(for: m.date) < MasterSchedule.calendar.startOfDay(for: today))
-                    Text(m.title).font(.sarabunFixed(10)).foregroundStyle(Theme.inkMuted).lineLimit(1).frame(width: 64)
+                        .position(x: x, y: 16)
+                    Text(m.title)
+                        .font(.sarabunFixed(10, .semibold))
+                        .foregroundStyle(Theme.inkMuted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(width: 76)
+                        .position(x: labelX, y: 36)
                 }
-                .position(x: x, y: Self.phoneMilestoneHeight / 2)
             }
         }
         .frame(width: width, height: Self.phoneMilestoneHeight, alignment: .topLeading)

@@ -353,18 +353,54 @@ struct InstallCurveChart: View {
                 let dot = CGRect(x: end.x - 6, y: end.y - 6, width: 12, height: 12)
                 ctx.fill(Path(ellipseIn: dot), with: .color(Theme.surface))
                 ctx.stroke(Path(ellipseIn: dot), with: .color(Theme.primary), lineWidth: 2.5)
-                ctx.draw(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) | 100%", Theme.primary, size: 14, bold: true),
-                         at: compact ? CGPoint(x: right, y: bottom + 40) : CGPoint(x: end.x - 12, y: end.y), anchor: .trailing)
+
+                let fText = ctx.resolve(label("คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f)) | 100%", Theme.primary, size: 13, bold: true))
+                if compact {
+                    ctx.draw(fText, at: CGPoint(x: right, y: bottom + 40), anchor: .trailing)
+                } else {
+                    let fs = fText.measure(in: size)
+                    let pillPaddingH: CGFloat = 8
+                    let pillPaddingV: CGFloat = 3
+                    let pillW = fs.width + pillPaddingH * 2
+                    let pillH = fs.height + pillPaddingV * 2
+                    // 12 pt clear gap to the left of the circular dot marker edge
+                    let pillRight = end.x - 6 - 12
+                    let pillX = max(pillRight - pillW, left + 4)
+                    let pillY = end.y - pillH / 2
+                    let pillRect = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
+                    ctx.fill(Path(roundedRect: pillRect, cornerRadius: 6), with: .color(Theme.surface))
+                    ctx.stroke(Path(roundedRect: pillRect, cornerRadius: 6), with: .color(Theme.primary.opacity(0.35)), lineWidth: 1)
+                    ctx.draw(fText, at: CGPoint(x: pillRect.midX, y: pillRect.midY), anchor: .center)
+                }
             }
         }
 
-        // X labels: every day, or every other past 20; Sundays rose, today bold red
-        let step = axis.count > 40 ? 7 : axis.count > 20 ? 2 : 1
-        for (i, d) in axis.enumerated() where i % step == 0 || i == ti {
-            let isToday = i == ti
+        // X labels: pick step dynamically so labels are spaced at least 36 pt apart
+        let step: Int = {
+            if cw >= 36 { return 1 }
+            if cw * 2 >= 36 { return 2 }
+            if cw * 7 >= 36 { return 7 }
+            if cw * 14 >= 36 { return 14 }
+            if cw * 28 >= 36 { return 28 }
+            return max(7, Int(ceil(36 / max(cw, 0.1))))
+        }()
+
+        let minSpacing: CGFloat = 36
+        let todayX: CGFloat? = ti.map { xs($0) + cw / 2 }
+
+        for (i, d) in axis.enumerated() {
+            let isToday = (i == ti)
+            guard isToday || (i % step == 0) else { continue }
+            let x = xs(i) + cw / 2
+
+            // Prevent collision with Today's marker
+            if !isToday, let tx = todayX, abs(x - tx) < minSpacing {
+                continue
+            }
+
             let text = "\(cal.component(.day, from: d)) " + Self.weekday.string(from: d)
             ctx.draw(label(text, isToday ? Theme.dangerText : InstallPlan.isSunday(d) ? Theme.survey : Theme.inkMuted, size: 13, bold: isToday),
-                     at: CGPoint(x: xs(i) + cw / 2, y: bottom + 16), anchor: .center)
+                     at: CGPoint(x: x, y: bottom + 16), anchor: .center)
         }
     }
 }

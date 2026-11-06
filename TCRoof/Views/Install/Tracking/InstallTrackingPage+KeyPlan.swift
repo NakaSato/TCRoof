@@ -179,14 +179,15 @@ struct InstallKeyPlanPanel: View {
 
     /// Writes the armed point's location where the plan was tapped, then arms the next unplaced point.
     private func place(_ x: Double, _ y: Double) {
-        guard let p = placingPoint, let l = p.location else { return }
+        guard let p = placingPoint else { return }
+        let l = p.locationKey
         var s = settings
         s.keyPoints[l] = [x, y]
         save(s)
         let moved = model.sharing(p).count + 1
-        toast = moved > 1 ? "\(p.placed ? "ย้าย" : "วาง") \(moved) จุดของ \(l)" : "\(p.placed ? "ย้าย" : "วาง") \(p.label) ที่ \(l)"
+        toast = moved > 1 ? "\(p.placed ? "ย้าย" : "วาง") \(moved) จุดของ \(p.displayLocation)" : "\(p.placed ? "ย้าย" : "วาง") \(p.label) (\(p.displayLocation))"
         // the model is this tap's: the points at this location are placed now
-        let next = model.points.filter { !$0.placed && $0.location != nil && $0.location != l }
+        let next = model.points.filter { !$0.placed && $0.locationKey != l }
         let after = model.points.firstIndex { $0.id == p.id }.flatMap { i in next.first { n in (model.points.firstIndex { $0.id == n.id } ?? 0) > i } }
         let n = after ?? next.first
         placing = n?.id
@@ -194,9 +195,11 @@ struct InstallKeyPlanPanel: View {
     }
 
     private func remove(_ p: InstallKeyPlan.Point) {
-        guard let l = p.location else { return }
         var s = settings
-        s.keyPoints[l] = nil
+        s.keyPoints[p.locationKey] = nil
+        if let l = p.location { s.keyPoints[l] = nil }
+        s.keyPoints[p.label] = nil
+        s.keyPoints[p.code] = nil
         save(s)
     }
 
@@ -280,11 +283,11 @@ struct KeyPlanBoard: View {
         }
     }
 
-    /// `แตะบนผังเพื่อวาง 2.5-1 · ห้องอินเวอร์เตอร์` with `ยกเลิก`.
+    /// `แตะบนผังเพื่อวาง 2.5-1 · จุด 2.5` with `ยกเลิก`.
     private func banner(_ p: InstallKeyPlan.Point) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.primary)
-            Text("แตะบนผังเพื่อวาง \(p.label) · \(p.location ?? "")").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("แตะบนผังเพื่อวาง \(p.label) · \(p.displayLocation)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                 .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
             Button("ยกเลิก", action: cancel).buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
         }
@@ -298,15 +301,13 @@ struct KeyPlanBoard: View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.slash").foregroundStyle(Theme.warning)
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(p.label) · \(p.location ?? "ไม่ระบุตำแหน่ง")").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                Text(p.location != nil ? "ยังไม่ได้กำหนดตำแหน่งบนผัง" : "ยังไม่ได้ระบุตำแหน่งในรายงาน").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(p.label) · \(p.displayLocation)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text("ยังไม่ได้กำหนดตำแหน่งบนผัง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if p.location != nil {
-                Button("วางบนผัง") { arm?(p.id) }
-                    .buttonStyle(TCButtonStyle(.primary, size: .card))
-                    .fixedSize()
-            }
+            Button("วางบนผัง") { arm?(p.id) }
+                .buttonStyle(TCButtonStyle(.primary, size: .card))
+                .fixedSize()
         }
         .padding(.leading, 12).padding(.trailing, 6).padding(.vertical, 4)
         .background(Theme.warningSoft.opacity(0.85), in: RoundedRectangle(cornerRadius: 10))
@@ -325,30 +326,40 @@ struct KeyPlanPin: View {
         let c = KeyPlanStyle.color(point.state)
         Button(action: tap) {
             VStack(spacing: 3) {
-                if selected, let loc = point.location {
-                    Text(loc)
-                        .font(.sarabunFixed(11, .bold))
-                        .foregroundStyle(Theme.navy)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Theme.surface, in: Capsule())
-                        .shadow(color: Theme.navySolid.opacity(0.2), radius: 3, y: 1)
-                        .fixedSize()
+                if selected {
+                    VStack(spacing: 1) {
+                        Text(point.displayLocation)
+                            .font(.sarabunFixed(11, .bold))
+                            .foregroundStyle(Theme.navy)
+                        Text("\(Int(point.actual.rounded()))% · \(KeyPlanStyle.title(point.state))")
+                            .font(.sarabunFixed(10))
+                            .foregroundStyle(c)
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .shadow(color: Theme.navySolid.opacity(0.25), radius: 4, y: 2)
+                    .fixedSize()
                 }
-                Text(point.label).font(.sarabunFixed(selected ? 14 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
-                    .padding(.horizontal, selected ? 10 : 7).frame(height: selected ? 28 : 22)
+                Text(point.label).font(.sarabunFixed(selected ? 13.5 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
+                    .padding(.horizontal, selected ? 9 : 7).frame(height: selected ? 26 : 22)
                     .background(c, in: Capsule())
                     .overlay(Capsule().strokeBorder(Theme.paper, lineWidth: 1.5))
                     .padding(selected ? 3 : 0)
-                    .overlay { if selected { Capsule().strokeBorder(c.opacity(0.55), lineWidth: 3) } }
-                    .shadow(color: Theme.navySolid.opacity(0.25), radius: 2, y: 1)
+                    .overlay {
+                        if selected {
+                            Capsule().strokeBorder(c, lineWidth: 2)
+                            Capsule().strokeBorder(c.opacity(0.4), lineWidth: 5)
+                        }
+                    }
+                    .shadow(color: Theme.navySolid.opacity(selected ? 0.4 : 0.2), radius: selected ? 4 : 2, y: 1)
             }
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .fixedSize()
-        .zIndex(selected ? 10 : 1)
-        .accessibilityLabel("จุด \(point.label) \(point.location ?? "") \(Int(point.actual.rounded()))% \(KeyPlanStyle.title(point.state))")
+        .zIndex(selected ? 20 : 1)
+        .accessibilityLabel("จุด \(point.label) \(point.displayLocation) \(Int(point.actual.rounded()))% \(KeyPlanStyle.title(point.state))")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -435,11 +446,11 @@ struct KeyPlanRow: View {
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(selected ? .isSelected : [])
-            if selected, canEdit, point.location != nil { actions }
+            if selected, canEdit { actions }
         }
         .padding(12)
         .background(Theme.surface, in: frame)
-        .overlay(frame.strokeBorder(selected ? (point.placed ? c : Theme.navy) : Theme.borderSubtle, lineWidth: selected ? 2 : 1))
+        .overlay(frame.strokeBorder(selected ? (point.placed ? c : Theme.primary) : Theme.borderSubtle, lineWidth: selected ? 2 : 1))
     }
 
     private func summary(_ c: Color) -> some View {
@@ -447,12 +458,15 @@ struct KeyPlanRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     if point.placed { Circle().fill(c) } else { Circle().strokeBorder(Theme.chevron, lineWidth: 1.5) }
-                    Text("\(point.number)").font(.sarabunFixed(13, .bold)).foregroundStyle(point.placed ? Theme.onPrimary : Theme.inkMuted)
+                    Text(point.label).font(.sarabunFixed(10.5, .bold))
+                        .foregroundStyle(point.placed ? Theme.onPrimary : Theme.inkMuted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(point.location ?? "ไม่ระบุตำแหน่ง").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
-                    Text(point.placed ? "อยู่บนผัง · \(point.label)" : point.location == nil ? "ยังไม่กำหนดตำแหน่งในงาน" : "ยังไม่วางบนผัง")
+                    Text(point.displayLocation).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                    Text(point.placed ? "อยู่บนผัง · \(point.label)" : "ยังไม่วางบนผัง")
                         .font(.sarabunFixed(13, point.placed ? .regular : .bold))
                         .foregroundStyle(point.placed ? Theme.inkMuted : Theme.dangerText).lineLimit(1)
                 }

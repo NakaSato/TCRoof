@@ -56,4 +56,17 @@ final class InstallKeyPlanTests: XCTestCase {
             XCTAssertEqual(hypot(p0.dx - p1.dx, p0.dy - p1.dy), 26, accuracy: 0.001)
         }
     }
+
+    func testPointsWithoutSubLocationsCanBePlacedByLabelOrCode() {
+        var s = RoutineReport.Settings()
+        s.keyPoints = ["2.5-1": [0.8, 0.4]]
+        let rows = [row(.inverter, percent: 100)]
+        let p = InstallKeyPlan(rows: rows, planned: [MasterSchedule.Task.inverter.rawValue: 100], settings: s)
+        XCTAssertEqual(p.points.count, 1)
+        XCTAssertEqual(p.placedCount, 1)
+        XCTAssertEqual(p.points[0].at?.x, 0.8)
+        XCTAssertEqual(p.points[0].at?.y, 0.4)
+        XCTAssertEqual(p.points[0].locationKey, "2.5-1")
+        XCTAssertEqual(p.points[0].displayLocation, "จุด 2.5")
+    }
 }

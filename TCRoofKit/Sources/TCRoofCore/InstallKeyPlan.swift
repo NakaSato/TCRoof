@@ -28,6 +28,16 @@ public struct InstallKeyPlan: Equatable, Sendable {
         public var placed: Bool { at != nil }
         public var state: State { InstallKeyPlan.state(actual: actual, planned: planned) }
 
+        /// The key used to store and look up the point's coordinates in `Settings.keyPoints`.
+        public var locationKey: String {
+            location ?? label
+        }
+
+        /// A user-facing display label for the location (e.g. "หลังคา 1", or "จุด 2.5").
+        public var displayLocation: String {
+            location ?? "จุด \(code)"
+        }
+
         public init(task: String, code: String, number: Int, location: String?, actual: Double, planned: Double,
                     at: (x: Double, y: Double)? = nil) {
             self.task = task; self.code = code; self.number = number; self.location = location
@@ -63,8 +73,14 @@ public struct InstallKeyPlan: Equatable, Sendable {
                 ? [(nil, row.percent)]
                 : row.subs.map { ($0.title.isEmpty || $0.title == Self.noLocation ? nil : $0.title, $0.percent) }
             let points = subs.enumerated().map { i, s in
-                Point(task: row.id, code: row.code, number: i + 1, location: s.0, actual: min(max(s.1, 0), 100), planned: plan,
-                      at: s.0.flatMap { settings.keyPoint($0) })
+                let number = i + 1
+                let label = "\(row.code)-\(number)"
+                let at = s.0.flatMap { settings.keyPoint($0) }
+                    ?? settings.keyPoint(label)
+                    ?? settings.keyPoint(row.code)
+                    ?? settings.keyPoint(row.id)
+                return Point(task: row.id, code: row.code, number: number, location: s.0, actual: min(max(s.1, 0), 100), planned: plan,
+                             at: at)
             }
             return Group(task: row.id, code: row.code, title: row.title, points: points)
         }
@@ -86,18 +102,19 @@ public struct InstallKeyPlan: Equatable, Sendable {
     }
 
     /// The next point to place after `current`: the first unplaced one with a location after it, else from the top;
-    /// nil when every placeable point is placed.
+    /// falls back to points without predefined locations when all located points are placed.
     public func nextUnplaced(after current: String?) -> Point? {
-        let all = points.filter { !$0.placed && $0.location != nil }
+        let withLoc = points.filter { !$0.placed && $0.location != nil }
+        let all = withLoc.isEmpty ? points.filter { !$0.placed } : withLoc
         guard let current, let i = points.firstIndex(where: { $0.id == current }) else { return all.first }
-        let after = points[(i + 1)...].first { !$0.placed && $0.location != nil }
+        let after = points[(i + 1)...].first { !$0.placed && (withLoc.isEmpty || $0.location != nil) }
         return after ?? all.first { $0.id != current }
     }
 
     /// The other points at the same location as `point`.
     public func sharing(_ point: Point) -> [Point] {
-        guard let l = point.location else { return [] }
-        return points.filter { $0.location == l && $0.id != point.id }
+        let l = point.locationKey
+        return points.filter { $0.locationKey == l && $0.id != point.id }
     }
 
     /// Where each placed point's pin sits relative to its location, in points: those sharing a location stack in a
@@ -106,7 +123,7 @@ public struct InstallKeyPlan: Equatable, Sendable {
         var out: [String: (dx: Double, dy: Double)] = [:]
         var byLocation: [String: [Point]] = [:], order: [String] = []
         for p in points where p.placed {
-            guard let l = p.location else { continue }
+            let l = p.locationKey
             if byLocation[l] == nil { order.append(l) }
             byLocation[l, default: []].append(p)
         }

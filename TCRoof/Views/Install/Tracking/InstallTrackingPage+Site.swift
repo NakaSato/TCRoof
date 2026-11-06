@@ -303,13 +303,14 @@ struct InstallSitePanel: View {
     }
 
     private func kpiRow(_ f: SiteFigure) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(f.label).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text(f.note).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(f.label).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.85)
+                Text(f.note).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.85)
             }
-            Spacer(minLength: 6)
-            Text(f.value).font(.sarabunFixed(19, .bold)).foregroundStyle(f.ink).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+            .layoutPriority(1)
+            Spacer(minLength: 4)
+            Text(f.value).font(.sarabunFixed(18, .bold)).foregroundStyle(f.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

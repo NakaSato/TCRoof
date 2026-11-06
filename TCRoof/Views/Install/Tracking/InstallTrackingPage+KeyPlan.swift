@@ -62,15 +62,18 @@ extension InstallTrackingPage {
 
     /// `เสร็จ · ตามแผน · ช้ากว่าแผน · ยังไม่เริ่ม`.
     var keyPlanLegend: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             ForEach([InstallKeyPlan.State.done, .onPlan, .late, .notStarted], id: \.self) { s in
                 HStack(spacing: 5) {
                     Circle().fill(KeyPlanStyle.color(s)).frame(width: 10, height: 10)
                     Text(KeyPlanStyle.title(s))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
         }
         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .fixedSize(horizontal: true, vertical: false)
         .accessibilityHidden(true)
     }
 
@@ -135,7 +138,7 @@ struct InstallKeyPlanPanel: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 KeyPlanBoard(model: model, picture: picture?.image, loaded: loaded, selected: selected, placing: placingPoint,
-                             select: select, place: place, cancel: { placing = nil })
+                             select: select, place: place, cancel: { placing = nil }, arm: { placing = $0; selected = $0 })
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 if picture != nil {
                     Text([picture?.uploaded == true ? "ผังที่อัปโหลด" : "ภาพ A2 จากรายงานสำรวจ", "จุดติดตั้งดึงจากแผน MP"].joined(separator: " · "))
@@ -229,11 +232,20 @@ struct KeyPlanBoard: View {
     let select: (String?) -> Void
     let place: (Double, Double) -> Void
     let cancel: () -> Void
+    var arm: ((String) -> Void)? = nil
+
+    private var selectedPoint: InstallKeyPlan.Point? {
+        selected.flatMap { id in model.points.first { $0.id == id } }
+    }
 
     var body: some View {
         if let picture {
             VStack(spacing: 8) {
-                if let p = placing { banner(p) }
+                if let p = placing {
+                    banner(p)
+                } else if let p = selectedPoint, !p.placed {
+                    unplacedBanner(p)
+                }
                 KeyPlanImage(image: picture, points: []) { x, y in
                     if placing != nil { place(x, y) } else { select(nil) }
                 }
@@ -280,9 +292,30 @@ struct KeyPlanBoard: View {
         .background(Theme.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityIdentifier("keyPlanPlacing")
     }
+
+    /// Banner shown when an unplaced point (e.g. 2.5 Inverter) is selected in the list.
+    private func unplacedBanner(_ p: InstallKeyPlan.Point) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "mappin.slash").foregroundStyle(Theme.warning)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("\(p.label) · \(p.location ?? "ไม่ระบุตำแหน่ง")").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text(p.location != nil ? "ยังไม่ได้กำหนดตำแหน่งบนผัง" : "ยังไม่ได้ระบุตำแหน่งในรายงาน").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if p.location != nil {
+                Button("วางบนผัง") { arm?(p.id) }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card))
+                    .fixedSize()
+            }
+        }
+        .padding(.leading, 12).padding(.trailing, 6).padding(.vertical, 4)
+        .background(Theme.warningSoft.opacity(0.85), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.warning.opacity(0.3), lineWidth: 1))
+        .accessibilityIdentifier("keyPlanUnplacedBanner")
+    }
 }
 
-/// A pill with the point's label, filled by its colour; ringed and larger when selected. Its hit area is 44 pt.
+/// A pill with the point's label, filled by its colour; ringed and with callout when selected. Its hit area is 44 pt.
 struct KeyPlanPin: View {
     let point: InstallKeyPlan.Point
     let selected: Bool
@@ -291,19 +324,30 @@ struct KeyPlanPin: View {
     var body: some View {
         let c = KeyPlanStyle.color(point.state)
         Button(action: tap) {
-            Text(point.label).font(.sarabunFixed(selected ? 15 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
-                .padding(.horizontal, selected ? 10 : 7).frame(height: selected ? 30 : 22)
-                .background(c, in: Capsule())
-                .overlay(Capsule().strokeBorder(Theme.paper, lineWidth: 1.5))
-                .padding(selected ? 3 : 0)
-                .overlay { if selected { Capsule().strokeBorder(c.opacity(0.45), lineWidth: 3) } }
-                .shadow(color: Theme.navySolid.opacity(0.25), radius: 2, y: 1)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
+            VStack(spacing: 3) {
+                if selected, let loc = point.location {
+                    Text(loc)
+                        .font(.sarabunFixed(11, .bold))
+                        .foregroundStyle(Theme.navy)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Theme.surface, in: Capsule())
+                        .shadow(color: Theme.navySolid.opacity(0.2), radius: 3, y: 1)
+                        .fixedSize()
+                }
+                Text(point.label).font(.sarabunFixed(selected ? 14 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
+                    .padding(.horizontal, selected ? 10 : 7).frame(height: selected ? 28 : 22)
+                    .background(c, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.paper, lineWidth: 1.5))
+                    .padding(selected ? 3 : 0)
+                    .overlay { if selected { Capsule().strokeBorder(c.opacity(0.55), lineWidth: 3) } }
+                    .shadow(color: Theme.navySolid.opacity(0.25), radius: 2, y: 1)
+            }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .fixedSize()
-        .zIndex(selected ? 1 : 0)
+        .zIndex(selected ? 10 : 1)
         .accessibilityLabel("จุด \(point.label) \(point.location ?? "") \(Int(point.actual.rounded()))% \(KeyPlanStyle.title(point.state))")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

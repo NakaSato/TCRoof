@@ -47,9 +47,11 @@ extension InstallTrackingPage {
                 HStack(spacing: 10) {
                     Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " | "))
                         .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     if let t = data.tracking { forecastPill(t) }
                 }
             }
+            .layoutPriority(1)
             Spacer(minLength: 8)
             switch view {
             case .gantt: ganttLegend.padding(.top, 10)

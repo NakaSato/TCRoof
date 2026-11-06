@@ -216,7 +216,9 @@ struct InstallStationDocsTabView: View {
                     Text(s.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
                     HStack(spacing: 8) {
                         InstallTrackingPage.chip(s.chip, tone).fixedSize()
-                        Text(s.note).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Text(s.note).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
                     }
                 }
                 Spacer(minLength: 4)
@@ -285,7 +287,7 @@ struct InstallStationDocsTabView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     if let code { Text(code).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.primary).monospacedDigit() }
-                    Text(k.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(k.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                     Text(StationDocs.source(k)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 6)
@@ -340,6 +342,7 @@ struct InstallStationDocsTabView: View {
                             flowStep(f.0, f.1, done: i < level, last: i == Self.paperFlow.count - 1)
                         }
                     }
+                    .padding(.bottom, 6)
                     HStack(spacing: 10) {
                         Button { docsSheet = k } label: {
                             Label("เปิดเอกสาร", systemImage: "doc.text.magnifyingglass").frame(maxWidth: .infinity)
@@ -376,9 +379,10 @@ struct InstallStationDocsTabView: View {
                 }
                 if !last { Rectangle().fill(done ? Theme.success : Theme.track).frame(width: 2, height: 22) }
             }
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(done ? Theme.navy : Theme.inkMuted)
                 Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    .padding(.bottom, last ? 6 : 0)
             }
         }
         .accessibilityElement(children: .combine)

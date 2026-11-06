@@ -12,8 +12,8 @@ extension InstallTrackingPage {
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
     static let percentWidth: CGFloat = 64
-    /// The page's bottom padding: the last cards end above the dock.
-    static let dockClearance: CGFloat = 24
+    /// The page's bottom padding: the last cards end above the dock (PadDockBar height ~52 + padding 18 + safe area 21 = 91 pt).
+    static let dockClearance: CGFloat = 96
     static let stageHeight: CGFloat = 46
     static let subHeight: CGFloat = 31
 

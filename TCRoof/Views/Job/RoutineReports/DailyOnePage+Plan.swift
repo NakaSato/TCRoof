@@ -57,15 +57,19 @@ extension DailyOnePage {
 
     @ViewBuilder private func planCanvas(large: Bool) -> some View {
         if let image = keyPlanImage {
-            ZStack {
-                Theme.paper
-                Image(uiImage: image).resizable().scaledToFit().saturation(0.75)
-                    .overlay { GeometryReader { g in AnyView(markers(in: g.size, large: large)) } }
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    Theme.paper
+                    Image(uiImage: image).resizable().scaledToFit().saturation(0.75)
+                        .overlay { GeometryReader { g in AnyView(markers(in: g.size, large: large)) } }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(alignment: .topLeading) { if !large { planBadge.padding(8) } }
+                .overlay(alignment: .topTrailing) { if !large { planButtons.padding(4) } }
+
+                legend
+                    .padding(.horizontal, 4)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(alignment: .topLeading) { if !large { planBadge.padding(8) } }
-            .overlay(alignment: .topTrailing) { if !large { planButtons.padding(4) } }
-            .overlay(alignment: .bottomLeading) { legend.padding(8) }
         } else {
             AnyView(placeList)
         }
@@ -104,7 +108,8 @@ extension DailyOnePage {
             Text("+ = งานตามแผน MP").font(.sarabunFixed(11)).foregroundStyle(Theme.navy)
         }
         .padding(.horizontal, 10).padding(.vertical, 5)
-        .background(Theme.surface.opacity(0.92), in: Capsule())
+        .background(Theme.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.borderSubtle, lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
 
@@ -150,7 +155,12 @@ extension DailyOnePage {
         case .done: (Theme.success, Theme.success, false)
         case .notStarted: (Theme.inkFaint, Theme.surface, true)
         }
-        return Text(place).font(.sarabunFixed(11, .bold)).lineLimit(1).fixedSize()
+        return Text(place)
+            .font(.sarabunFixed(11, .bold))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .minimumScaleFactor(0.8)
+            .frame(maxWidth: 130)
             .foregroundStyle(dashed ? Theme.navy : Theme.onPrimary)
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(dashed ? fill.opacity(0.92) : fill, in: RoundedRectangle(cornerRadius: 4))
@@ -169,7 +179,11 @@ extension DailyOnePage {
                     .overlay(Circle().strokeBorder(Theme.paper, lineWidth: 2.5))
                     .shadow(color: Theme.navySolid.opacity(0.3), radius: 3, y: 1)
                 Text(on ? "\(line.location) | \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
-                    .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1).fixedSize()
+                    .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: on ? 140 : 70)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(on ? c : Theme.paper, in: RoundedRectangle(cornerRadius: 4))
             }

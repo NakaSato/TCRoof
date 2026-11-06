@@ -214,16 +214,15 @@ struct DailyAckBar: View {
     private var confirmButton: some View {
         Button(action: page.confirmAck) {
             HStack(spacing: 8) {
-                VStack(spacing: 0) {
-                    Text(acked ? "เซ็นแล้ว" : "ยังไม่ได้เซ็นรับทราบ").font(.sarabunFixed(12)).opacity(0.85).lineLimit(1)
-                    Text("อนุมัติรายงาน").font(.sarabunFixed(16, .bold))
-                }
+                Text("อนุมัติรายงาน").font(.sarabunFixed(16, .bold))
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
             }
-            .frame(width: 190, height: 44)
+            .frame(width: 170, height: 44)
         }
         .buttonStyle(TCButtonStyle(.primary, size: .card, tint: Theme.planInspect))
         .disabled(!acked)
+        .accessibilityLabel("อนุมัติรายงาน")
+        .accessibilityValue(acked ? "เซ็นแล้ว" : "ยังไม่ได้เซ็นรับทราบ")
         .accessibilityIdentifier("dailyAckConfirm")
     }
 }

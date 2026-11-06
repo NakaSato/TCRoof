@@ -261,16 +261,16 @@ struct DailyOnePage: View {
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button(action: actions.send) {
                 HStack(spacing: 8) {
-                    VStack(spacing: 0) {
-                        Text(why ?? "ครบแล้ว").font(.sarabunFixed(12)).opacity(0.85).lineLimit(1)
-                        Text("ส่งรายงาน").font(.sarabunFixed(16, .bold))
-                    }
+                    Text("ส่งรายงาน").font(.sarabunFixed(16, .bold))
                     Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
                 }
-                .frame(width: 210, height: 44)
+                .frame(width: 170, height: 44)
             }
             .buttonStyle(TCButtonStyle(.primary, size: .card))
             .disabled(why != nil)
+            .accessibilityLabel("ส่งรายงาน")
+            .accessibilityValue(why ?? "พร้อมส่ง")
+            .accessibilityIdentifier("dailySend")
         }
         .padding(.horizontal, 63).padding(.vertical, 10)
         .background(Theme.surface.ignoresSafeArea(edges: .bottom))

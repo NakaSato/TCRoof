@@ -25,7 +25,8 @@ public struct PWAMaintenanceStationView: View {
                 detail: MaintenanceStationDetail? = nil) {
         self.station = station
         self._selectedTab = State(initialValue: initialTab)
-        self._detail = State(initialValue: detail ?? .mock(for: station))
+        // a Growatt example plant shows its row until its own figures load (`GrowattDemoFeed.detail`)
+        self._detail = State(initialValue: detail ?? (GrowattDemoFeed.isGrowatt(station) ? .growatt(summary: station) : .mock(for: station)))
     }
 
     private var statusColor: Color {
@@ -64,6 +65,9 @@ public struct PWAMaintenanceStationView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .task {
+            if let d = await GrowattDemoFeed.detail(for: station) { detail = d }
+        }
     }
 
     // MARK: - Header
@@ -302,10 +306,11 @@ public struct PWAMaintenanceStationView: View {
 
     private var kpiGrid: some View {
         HStack(spacing: 6) {
+            // no PR (a Growatt plant has no expected energy): a dash, not a red 0
             kpiCard(title: "PR วันนี้",
-                    value: "\(Int(detail.prToday))%",
+                    value: detail.prToday > 0 ? "\(Int(detail.prToday))%" : "—",
                     sub: "เป้า \(Int(detail.prTarget))%",
-                    valueColor: detail.prToday < detail.prTarget ? Color(hex: 0xB42318) : Theme.navy)
+                    valueColor: detail.prToday > 0 && detail.prToday < detail.prTarget ? Color(hex: 0xB42318) : Theme.navy)
             kpiCard(title: "ผลิตเดือนนี้",
                     value: detail.energyThisMonth,
                     sub: detail.energyExpectedThisMonth,
@@ -548,25 +553,8 @@ public struct PWAMaintenanceStationView: View {
     // MARK: - Bottom Floating Action Bar
     private var bottomBar: some View {
         HStack(spacing: 8) {
-            Button {
-                if let url = URL(string: "tel://\(detail.contractorPhone)") {
-                    openURL(url)
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 15))
-                    Text(detail.contractorShort)
-                        .font(.sarabunFixed(15, .bold))
-                }
-                .foregroundStyle(Theme.navy)
-                .padding(.horizontal, 18)
-                .frame(minHeight: 52)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: 0xC9D3E0)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("stationDetail.call")
+            // no number to call (a Growatt example plant): no call button
+            if !detail.contractorPhone.isEmpty { callButton }
 
             Button {
                 withAnimation { selectedTab = .repairs }
@@ -592,6 +580,28 @@ public struct PWAMaintenanceStationView: View {
             .frame(height: 120)
             .allowsHitTesting(false)
         }
+    }
+
+    private var callButton: some View {
+        Button {
+            if let url = URL(string: "tel://\(detail.contractorPhone)") {
+                openURL(url)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 15))
+                Text(detail.contractorShort)
+                    .font(.sarabunFixed(15, .bold))
+            }
+            .foregroundStyle(Theme.navy)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 52)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: 0xC9D3E0)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("stationDetail.call")
     }
 }
 #endif

@@ -93,6 +93,8 @@ struct SurveyHomeView: View {
     @State var maintenanceFilter: MaintenanceOverview.RowFilter?
     /// Handed-over station opened in standalone mode
     @State var selectedMaintenanceStation: MaintenanceStationSummary?
+    /// `-growattDemo YES`: Growatt's test plants in the `บำรุงรักษา` overview.
+    @State var growatt = GrowattDemoFeed()
 
     /// A job to open, optionally at the step "continue" points to.
     struct Opening: Hashable { let id: UUID; var start: MissingGroup.Target? = nil }

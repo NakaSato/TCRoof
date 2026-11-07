@@ -38,7 +38,7 @@ extension SurveyHomeView {
                                       kWp: Double(j.values.text("capacity").trimmingCharacters(in: .whitespaces)) ?? 0,
                                       status: .normal, note: "ยังไม่มีข้อมูลการผลิต")
         }
-        return given + local
+        return given + local + (GrowattDemoFeed.enabled ? growatt.stations : [])
     }
 
     /// Hands a station of the install overview over: its jobs here, and the host's station.
@@ -392,7 +392,28 @@ extension SurveyHomeView {
             }
             if rows.isEmpty { noRows("ไม่มีสถานีในตัวกรองนี้") }
         }
+        growattDemoLine
         addMaintenanceButton
+    }
+
+    /// `-growattDemo YES` / `-growattToken`: where the Growatt rows come from, the call's state and `ดึงใหม่`. Opening the
+    /// overview loads them.
+    @ViewBuilder private var growattDemoLine: some View {
+        if GrowattDemoFeed.enabled {
+            HStack(spacing: 8) {
+                if growatt.loading { ProgressView().controlSize(.small) }
+                Text(growatt.failure ?? (growatt.loading && growatt.stations.isEmpty ? "กำลังดึงสถานีตัวอย่างจาก Growatt…"
+                                         : "\(growatt.sourceName) \(growatt.stations.count) สถานี"))
+                    .font(.sarabunFixed(12)).foregroundStyle(growatt.failure == nil ? Theme.inkMuted : Theme.dangerText)
+                    .lineLimit(2)
+                Spacer(minLength: 6)
+                Button("ดึงใหม่") { Task { await growatt.load(force: true) } }
+                    .buttonStyle(TCButtonStyle(.text, size: .card))
+                    .disabled(growatt.loading)
+            }
+            .frame(minHeight: 44)
+            .task { await growatt.load() }
+        }
     }
 
     /// As `addInstallButton`: a row under the stations.

@@ -67,9 +67,19 @@ public struct GrowattWebDemo: Sendable {
         _ = try await send("login/toViewExamlePlant", post: false)
     }
 
-    /// The demo account's plants: id and (hidden) name.
+    /// The demo account's plants: id and (hidden) name. The portal keeps two lists: the home dashboard's
+    /// (`index/getPlantListTitle`, residential plants) and the business dashboard's (`indexbC/getPlantListTitle`,
+    /// commercial ones); the ids of both work with `plant(id:name:)`. A failed business list leaves the home plants.
     public func plantList() async throws -> [(id: String, name: String)] {
-        try Self.parseList(try await send("index/getPlantListTitle"))
+        let home = try Self.parseList(try await send("index/getPlantListTitle"))
+        let business = (try? Self.parseList(try await send("indexbC/getPlantListTitle"))) ?? []
+        return Self.merged(home, business)
+    }
+
+    /// Both lists, each plant once, home plants first.
+    static func merged(_ home: [(id: String, name: String)], _ business: [(id: String, name: String)]) -> [(id: String, name: String)] {
+        var seen = Set<String>()
+        return (home + business).filter { seen.insert($0.id).inserted }
     }
 
     /// One plant's totals and its devices.

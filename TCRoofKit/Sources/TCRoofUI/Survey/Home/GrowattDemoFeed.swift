@@ -7,6 +7,8 @@ import TCRoofCore
 /// - `-growattDemo test`: the OpenAPI test server's sample plants (`GrowattAPI.demo`), which never report.
 /// - `-growattToken <token>`: the company's own plants from `openapi.growatt.com`. The token is only ever a launch
 ///   argument, never in the repo.
+/// - The PWA settings' `นักพัฒนา` switch (`GrowattDemoSwitch`) keeps `growattDemo` on in the device's defaults, so the web
+///   example plants show without launching from a Mac. A launch argument wins over it for that launch.
 /// The plant list comes first, then each plant's figures: 1 s apart on the portal, 6 s on the OpenAPI, which refuses
 /// calls closer together.
 @MainActor @Observable
@@ -33,6 +35,8 @@ final class GrowattDemoFeed {
         (UserDefaults.standard.string(forKey: "growattToken") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// `enabled` as last seen, so the overview redraws when the settings switch changes (`refresh`).
+    private(set) var on = GrowattDemoFeed.enabled
     private(set) var stations: [MaintenanceStationSummary] = []
     private(set) var loading = false
     private(set) var failure: String?
@@ -50,6 +54,12 @@ final class GrowattDemoFeed {
     }
 
     func isPending(_ id: String) -> Bool { pending.contains(id) }
+
+    /// Picks up the settings switch: called when the device's defaults change.
+    func refresh() {
+        let e = Self.enabled
+        if e != on { on = e }
+    }
 
     func load(force: Bool = false) async {
         guard Self.enabled, !loading, force || !loaded else { return }
@@ -126,6 +136,17 @@ final class GrowattDemoFeed {
 
     private func replace(_ s: MaintenanceStationSummary) {
         if let i = stations.firstIndex(where: { $0.id == s.id }) { stations[i] = s }
+    }
+}
+
+/// DEBUG: the PWA settings' switch for the Growatt example plants in `บำรุงรักษา` (`growattDemo` in the device's defaults).
+struct GrowattDemoSwitch: View {
+    @AppStorage("growattDemo") private var on = false
+
+    var body: some View {
+        TCSettingsRow("สถานีตัวอย่าง Growatt", detail: "แสดงสถานีตัวอย่างจากเว็บ Growatt ในหน้าบำรุงรักษา") {
+            Toggle("สถานีตัวอย่าง Growatt", isOn: $on).labelsHidden().tint(Theme.success)
+        }
     }
 }
 #endif

@@ -25,6 +25,15 @@ final class GrowattWebDemoTests: XCTestCase {
         XCTAssertEqual(plants[0].name, "Res*************t")
     }
 
+    func testBusinessListMerged() throws {
+        let business = Data(#"[{"unit":"¥","logoImgName":"","timezone":"-4","id":"11089901","plantImgName":"null","plantName":"Com************t","plantType":"1"}]"#.utf8)
+        let all = GrowattWebDemo.merged(try GrowattWebDemo.parseList(list), try GrowattWebDemo.parseList(business))
+        XCTAssertEqual(all.map(\.id), ["10719705", "10839635", "11089901"])
+        XCTAssertEqual(all[2].name, "Com************t")
+        // a plant on both lists is listed once
+        XCTAssertEqual(GrowattWebDemo.merged(try GrowattWebDemo.parseList(list), try GrowattWebDemo.parseList(list)).count, 2)
+    }
+
     func testPlant() throws {
         let p = try GrowattWebDemo.parsePlant(info, devices: devices, id: "10719705", name: "Res*************t")
         XCTAssertEqual(p.name, "Res*************t")
@@ -116,8 +125,9 @@ final class GrowattWebDemoLiveTests: XCTestCase {
         let web = GrowattWebDemo()
         try await web.openGuest()
         let list = try await web.plantList()
-        XCTAssertFalse(list.isEmpty)
-        let plant = try await web.plant(id: list[0].id, name: list[0].name)
+        // the home dashboard's 2 plants and the business dashboard's commercial one
+        XCTAssertGreaterThanOrEqual(list.count, 3)
+        let plant = try await web.plant(id: list[list.count - 1].id, name: list[list.count - 1].name)
         XCTAssertFalse(plant.devices.isEmpty)
         let date = String(plant.devices.map(\.lastUpdate).max()?.prefix(10) ?? "")
         let day = try await web.dayPower(plantID: plant.id, date: date)

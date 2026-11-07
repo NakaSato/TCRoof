@@ -276,6 +276,8 @@ struct SurveyHomeView: View {
         .errorAlert($error)
         .onAppear { model.reload(); model.linkInstallJobs() }
         .onChange(of: model.isLoading) { _, loading in if !loading { model.linkInstallJobs() } }
+        // the settings' Growatt switch (`GrowattDemoSwitch`) turns the example plants on or off here
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in growatt.refresh() }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {

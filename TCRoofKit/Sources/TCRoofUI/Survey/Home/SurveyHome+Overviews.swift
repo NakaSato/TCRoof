@@ -38,7 +38,7 @@ extension SurveyHomeView {
                                       kWp: Double(j.values.text("capacity").trimmingCharacters(in: .whitespaces)) ?? 0,
                                       status: .normal, note: "ยังไม่มีข้อมูลการผลิต")
         }
-        return given + local + (GrowattDemoFeed.enabled ? growatt.stations : [])
+        return given + local + (growatt.on ? growatt.stations : [])
     }
 
     /// Hands a station of the install overview over: its jobs here, and the host's station.
@@ -398,7 +398,7 @@ extension SurveyHomeView {
 
     @ViewBuilder var maintenanceOverview: some View {
         let stations = maintenanceStations
-        if stations.isEmpty, GrowattDemoFeed.enabled, growatt.loading {
+        if stations.isEmpty, growatt.on, growatt.loading {
             overviewSkeleton()
         } else if stations.isEmpty {
             stageEmpty
@@ -431,7 +431,7 @@ extension SurveyHomeView {
     /// `-growattDemo YES` / `-growattToken`: where the Growatt rows come from, the call's state and `ดึงใหม่`. Opening the
     /// overview loads them.
     @ViewBuilder private var growattDemoLine: some View {
-        if GrowattDemoFeed.enabled {
+        if growatt.on {
             // the rows show the loading as skeletons; this line only names the source
             HStack(spacing: 8) {
                 Text(growatt.failure ?? (growatt.loading && growatt.stations.isEmpty ? "กำลังดึงสถานีตัวอย่างจาก Growatt…"

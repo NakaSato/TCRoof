@@ -23,6 +23,9 @@ extension SurveyHomeView {
         projectGroups
         reportGroups
         dataGroups
+        #if DEBUG
+        TCSettingsGroup("นักพัฒนา") { GrowattDemoSwitch() }
+        #endif
         Text("TCRoof \(appVersion) | ใช้กับงานของ กปภ. เท่านั้น งานอื่นไม่เปลี่ยน")
             .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
             .frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 2)

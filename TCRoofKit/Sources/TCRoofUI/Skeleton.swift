@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import SwiftUI
 
 /// Loading skeletons: grey blocks in the shape of what is being fetched, with a light sweep across them, in place of a
@@ -108,3 +109,4 @@ struct TCShimmer: ViewModifier {
         }
     }
 }
+#endif

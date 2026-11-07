@@ -278,6 +278,8 @@ struct SurveyHomeView: View {
         .onChange(of: model.isLoading) { _, loading in if !loading { model.linkInstallJobs() } }
         // the settings' Growatt switch (`GrowattDemoSwitch`) turns the example plants on or off here
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in growatt.refresh() }
+        // the Growatt demo plants load with the home, which stays alive while their rows scroll in and out
+        .task(id: growatt.on) { if growatt.on { await growatt.load() } }
     }
 
     func go(_ j: Job, at start: MissingGroup.Target? = nil) {

@@ -412,8 +412,8 @@ extension SurveyHomeView {
                 ForEach(rows) { s in
                     Button { openMaintenanceStation(s) } label: {
                         // a Growatt plant listed before its figures are in
-                        if growatt.isPending(s.id) { stationRowSkeleton(name: s.name).padding(rowPadding) }
-                        else if compact { maintenanceRow(s).padding(rowPadding) } else { padMaintenanceRow(s).padding(rowPadding) }
+                        if growatt.isPending(s.id) { maintenanceCardSkeleton(name: s.name).padding(maintenanceCardPadding) }
+                        else { maintenanceCard(s).padding(maintenanceCardPadding) }
                     }
                         .buttonStyle(TCStationRowStyle())
                         .accessibilityLabel(maintenanceLabel(s))
@@ -428,8 +428,8 @@ extension SurveyHomeView {
         addMaintenanceButton
     }
 
-    /// `-growattDemo YES` / `-growattToken`: where the Growatt rows come from, the call's state and `ดึงใหม่`. Opening the
-    /// overview loads them.
+    /// `-growattDemo YES` / `-growattToken`: where the Growatt rows come from, the call's state and `ดึงใหม่`. The home
+    /// loads them (`SurveyHomeView.body`), not this line: in the lazy list it leaves the screen, which would cancel the load.
     @ViewBuilder private var growattDemoLine: some View {
         if growatt.on {
             // the rows show the loading as skeletons; this line only names the source
@@ -444,7 +444,6 @@ extension SurveyHomeView {
                     .disabled(growatt.loading)
             }
             .frame(minHeight: 44)
-            .task { await growatt.load() }
         }
     }
 
@@ -470,7 +469,11 @@ extension SurveyHomeView {
 
     private func maintenanceLabel(_ s: MaintenanceStationSummary) -> String {
         let status = [.normal: "ปกติ", .alarm: "แจ้งเตือน", .offline: "ออฟไลน์"][s.status] ?? ""
-        return [s.mpNumber.map { "MP \($0)" } ?? "", s.name, status, "เปิดหน้าสถานี"].filter { !$0.isEmpty }.joined(separator: " ")
+        let live = s.powerNow.map { "กำลังผลิต \(number($0, digits: 1)) kW" } ?? ""
+        let today = "วันนี้ \(number(s.energy, digits: 0)) kWh" + (s.expected > 0 ? " \(Int((s.yield * 100).rounded()))% ของที่คาด" : "")
+        let repairs = s.openRepairs > 0 ? "แจ้งซ่อม \(s.openRepairs) งาน" : ""
+        return [s.mpNumber.map { "MP \($0)" } ?? "", s.name, status, live, today, repairs, "เปิดหน้าสถานี"]
+            .filter { !$0.isEmpty }.joined(separator: " ")
     }
 
     private func maintenanceSummary(_ t: MaintenanceOverview.Totals) -> some View {
@@ -538,44 +541,142 @@ extension SurveyHomeView {
         }
     }
 
-    private func maintenanceRow(_ s: MaintenanceStationSummary) -> some View {
-        let status: (String, TCFeedTone?, Color) = switch s.status {
-        case .normal: ("ปกติ", .green, Theme.success)
-        case .alarm: ("แจ้งเตือน", .red, Theme.danger)
-        case .offline: ("ออฟไลน์", nil, Theme.chevron)
+    // MARK: บำรุงรักษา card ("Live power")
+
+    /// A handed-over station's card, on both sizes: status, MP and the last reading's time; the name; the size and the
+    /// inverters reporting; the power now beside today's curve (when a monitoring feed gives them); today's energy
+    /// against expected with its bar; and PR, the next PM and repairs.
+    func maintenanceCard(_ s: MaintenanceStationSummary) -> some View {
+        let tint = maintenanceTint(s.status)
+        return VStack(alignment: .leading, spacing: 8) {
+            maintenanceCardHead(s)
+            if let power = s.powerNow {
+                maintenanceCardLive(power, hourly: s.hourly, tint: tint)
+            } else if !s.note.isEmpty {
+                Text(s.note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            }
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+            maintenanceCardEnergy(s, tint: tint)
+            maintenanceCardFooter(s)
         }
-        return VStack(alignment: .leading, spacing: 6) {
+    }
+
+    /// The card's shape while a monitored station's figures load: the name when known, the live line and the bar.
+    private func maintenanceCardSkeleton(name: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TCSkeletonBlock(width: 56, height: 18, radius: 9)
+            Text(name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            TCSkeletonBlock(width: 170)
+            HStack(alignment: .bottom) {
+                TCSkeletonBlock(width: 110, height: 26, radius: 6)
+                Spacer()
+                TCSkeletonBlock(width: 120, height: 34, radius: 6)
+            }
+            TCSkeletonBlock(height: 6, radius: 3)
+            TCSkeletonBlock(width: 200)
+        }
+        .tcShimmer()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(name) กำลังโหลดข้อมูล")
+    }
+
+    /// The card's padding: the rows' on iPhone, a little more on iPad, where the card is wider.
+    private var maintenanceCardPadding: EdgeInsets {
+        compact ? rowPadding : EdgeInsets(top: 14, leading: 16, bottom: 12, trailing: 16)
+    }
+
+    private func maintenanceTint(_ status: MaintenanceStationSummary.Status) -> Color {
+        switch status {
+        case .normal: Theme.success
+        case .alarm: Theme.danger
+        case .offline: Theme.chevron
+        }
+    }
+
+    private func maintenanceCardHead(_ s: MaintenanceStationSummary) -> some View {
+        let status: (String, TCFeedTone?) = switch s.status {
+        case .normal: ("ปกติ", .green)
+        case .alarm: ("แจ้งเตือน", .red)
+        case .offline: ("ออฟไลน์", nil)
+        }
+        let inverters = s.invertersTotal.map { total in "อินเวอร์เตอร์ \(s.invertersOnline ?? 0)/\(total) ออนไลน์" }
+        return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
-                if let mp = s.mpNumber { Text("MP \(mp)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted) }
                 TCToneChip(status.0, tone: status.1)
+                if let mp = s.mpNumber { Text("MP \(mp)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted) }
                 Spacer(minLength: 6)
-                if s.openRepairs > 0 {
-                    TCToneChip("แจ้งซ่อม \(s.openRepairs) งาน", tone: .orange)
-                } else {
-                    // fainter than the grey `ออฟไลน์` chip
-                    Text("ไม่มีงานซ่อม").font(.sarabunFixed(11, .bold)).lineLimit(1).fixedSize()
-                        .foregroundStyle(Theme.inkFaint)
-                        .padding(.horizontal, 8).frame(height: 18)
-                        .background(Theme.hairline, in: Capsule())
+                if !s.updated.isEmpty {
+                    Text("อัปเดต \(s.updated)").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 }
             }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(s.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            .padding(.bottom, 4)
+            Text(s.name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            Text([s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", inverters ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+        }
+    }
+
+    private func maintenanceCardLive(_ power: Double, hourly: [Double], tint: Color) -> some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                (Text(number(power, digits: 1)).font(.sarabunFixed(26, .bold)) + Text(" kW").font(.sarabunFixed(14, .bold)))
+                    .foregroundStyle(Theme.navy).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                Text("กำลังผลิตตอนนี้").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+            }
+            Spacer(minLength: 8)
+            if hourly.contains(where: { $0 > 0 }) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    TCSparkline(hourly, tint: tint).frame(width: 120, height: 34)
+                    Text("กราฟวันนี้").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                }
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private func maintenanceCardEnergy(_ s: MaintenanceStationSummary, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                (Text("วันนี้ ") + Text(number(s.energy, digits: 0)).bold().foregroundStyle(Theme.navy)
+                 + Text(s.expected > 0 ? " / คาด \(number(s.expected, digits: 0)) kWh" : " kWh"))
+                    .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).monospacedDigit().lineLimit(1)
                 Spacer(minLength: 6)
-                if s.kWp > 0 { Text("\(number(s.kWp)) kWp").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize() }
+                if s.expected > 0 {
+                    Text("\(Int((s.yield * 100).rounded()))%").font(.sarabunFixed(13, .bold)).foregroundStyle(tint).monospacedDigit()
+                }
             }
             // no plan tick here: the bar gives back the 3 pt it keeps for one on each side
-            TCPlanBar(actual: s.yield, tint: status.2).padding(.vertical, -3)
-            HStack(spacing: 6) {
-                Text(number(s.energy, digits: 0)).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).fixedSize()
-                Text("/ คาด \(number(s.expected, digits: 0)) kWh").fixedSize()
-                Text("| PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%").foregroundStyle(Theme.navy).fixedSize()
-                Spacer(minLength: 6)
-                Text(s.note).lineLimit(1)
-                Text("›").font(.sarabunFixed(17)).foregroundStyle(Theme.inkFaint).frame(height: 12).accessibilityHidden(true)
-            }
-            .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            TCPlanBar(actual: s.yield, tint: tint).padding(.vertical, -3)
         }
+    }
+
+    private func maintenanceCardFooter(_ s: MaintenanceStationSummary) -> some View {
+        HStack(spacing: 6) {
+            Text("PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%").foregroundStyle(Theme.navy)
+            if let pm = s.nextPM {
+                Text("·").foregroundStyle(Theme.inkFaint)
+                Text("PM \(thaiDayMonth(pm))")
+            }
+            Spacer(minLength: 6)
+            if s.openRepairs > 0 {
+                TCToneChip("แจ้งซ่อม \(s.openRepairs) งาน", tone: .orange)
+            } else {
+                // fainter than the grey `ออฟไลน์` chip
+                Text("ไม่มีงานซ่อม").font(.sarabunFixed(11, .bold)).lineLimit(1).fixedSize()
+                    .foregroundStyle(Theme.inkFaint)
+                    .padding(.horizontal, 8).frame(height: 18)
+                    .background(Theme.hairline, in: Capsule())
+            }
+            Text("›").font(.sarabunFixed(17)).foregroundStyle(Theme.inkFaint).frame(height: 12).accessibilityHidden(true)
+        }
+        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+    }
+
+    /// `18 พ.ย.`
+    private func thaiDayMonth(_ d: Date) -> String {
+        let months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+        let c = Calendar.current.dateComponents([.day, .month], from: d)
+        return "\(c.day ?? 0) \(months[max(0, min(11, (c.month ?? 1) - 1))])"
     }
 }
 

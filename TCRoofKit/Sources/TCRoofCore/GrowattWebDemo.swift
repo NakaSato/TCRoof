@@ -51,6 +51,8 @@ public struct GrowattWebDemo: Sendable {
         /// kWh.
         public var eTotal: Double
         public var devices: [Device]
+        /// The day the plant was added on Growatt, `yyyy-MM-dd`; empty when not given.
+        public var created: String = ""
     }
 
     public var baseURL = URL(string: "https://server.growatt.com/")!
@@ -82,12 +84,22 @@ public struct GrowattWebDemo: Sendable {
         return (home + business).filter { seen.insert($0.id).inserted }
     }
 
-    /// One plant's totals and its devices.
+    /// One plant's totals and all its devices. The portal gives the devices 4 to a page, so every page is read, up to
+    /// `maxDevicePages`.
     public func plant(id: String, name: String) async throws -> Plant {
         let info = try await send("panel/getPlantData", query: ["plantId": id])
-        let devices = try await send("panel/getDevicesByPlantList", form: ["plantId": id, "currPage": "1"])
-        return try Self.parsePlant(info, devices: devices, id: id, name: name)
+        var pages: [Data] = [], page = 1, last = 1
+        repeat {
+            let data = try await send("panel/getDevicesByPlantList", form: ["plantId": id, "currPage": "\(page)"])
+            pages.append(data)
+            last = min(try Self.devicePage(data).pages, Self.maxDevicePages)
+            page += 1
+        } while page <= last
+        return try Self.parsePlant(info, devicePages: pages, id: id, name: name)
     }
+
+    /// Pages of devices read at most: 200 devices at the portal's 4 a page.
+    static let maxDevicePages = 50
 
     /// The plant's power through a day (`yyyy-MM-dd`, the plant's own date): 288 samples 5 min apart, W; nil for times
     /// not reached yet.
@@ -130,20 +142,34 @@ public struct GrowattWebDemo: Sendable {
         return obj
     }
 
+    /// One page of `panel/getDevicesByPlantList`: its devices and how many pages there are (at least 1).
+    static func devicePage(_ data: Data) throws -> (devices: [Device], pages: Int) {
+        let o = try object(data)
+        let rows = (o["datas"] as? [[String: Any]]) ?? []
+        return (rows.map(device), max(GrowattAPI.number(o["pages"]).map { Int($0) } ?? 1, 1))
+    }
+
     static func parsePlant(_ info: Data, devices: Data, id: String, name: String) throws -> Plant {
+        try parsePlant(info, devicePages: [devices], id: id, name: name)
+    }
+
+    /// A plant from its totals and every page of its devices, each device once (by serial number).
+    static func parsePlant(_ info: Data, devicePages: [Data], id: String, name: String) throws -> Plant {
         let p = try object(info)
-        let rows = (try object(devices)["datas"] as? [[String: Any]]) ?? []
-        let list = rows.map { d in
-            Device(sn: text(d["sn"]) ?? "", model: text(d["deviceModel"]) ?? text(d["showDeviceModel"]) ?? "",
-                   typeName: text(d["deviceTypeName"]) ?? "", status: GrowattAPI.number(d["status"]).map { Int($0) },
-                   eToday: GrowattAPI.number(d["eToday"]) ?? 0, eMonth: GrowattAPI.number(d["eMonth"]) ?? 0,
-                   eTotal: GrowattAPI.number(d["eTotal"]) ?? 0, pac: GrowattAPI.number(d["pac"]) ?? 0,
-                   nominalPower: GrowattAPI.number(d["nominalPower"]) ?? 0, lastUpdate: text(d["lastUpdateTime"]) ?? "",
-                   datalogger: text(d["datalogSn"]) ?? "", dataloggerType: text(d["datalogTypeTest"]) ?? "")
-        }
+        var seen = Set<String>()
+        let list = try devicePages.flatMap { try devicePage($0).devices }.filter { $0.sn.isEmpty || seen.insert($0.sn).inserted }
         // the device list names the plant as the list does; getPlantData's name is hidden differently
         return Plant(id: id, name: name, nominalPower: GrowattAPI.number(p["nominalPower"]) ?? 0,
-                     eTotal: GrowattAPI.number(p["eTotal"]) ?? 0, devices: list)
+                     eTotal: GrowattAPI.number(p["eTotal"]) ?? 0, devices: list, created: text(p["creatDate"]) ?? "")
+    }
+
+    static func device(_ d: [String: Any]) -> Device {
+        Device(sn: text(d["sn"]) ?? "", model: text(d["deviceModel"]) ?? text(d["showDeviceModel"]) ?? "",
+               typeName: text(d["deviceTypeName"]) ?? "", status: GrowattAPI.number(d["status"]).map { Int($0) },
+               eToday: GrowattAPI.number(d["eToday"]) ?? 0, eMonth: GrowattAPI.number(d["eMonth"]) ?? 0,
+               eTotal: GrowattAPI.number(d["eTotal"]) ?? 0, pac: GrowattAPI.number(d["pac"]) ?? 0,
+               nominalPower: GrowattAPI.number(d["nominalPower"]) ?? 0, lastUpdate: text(d["lastUpdateTime"]) ?? "",
+               datalogger: text(d["datalogSn"]) ?? "", dataloggerType: text(d["datalogTypeTest"]) ?? "")
     }
 
     static func parseDay(_ data: Data) throws -> [Double?] {
@@ -189,7 +215,10 @@ public struct GrowattWebDemo: Sendable {
             .filter { !$0.isEmpty }.joined(separator: " | ")
         return MaintenanceStationSummary(id: "growatt-web-\(p.id)", name: p.name, kWp: kWp,
                                          energy: p.devices.reduce(0) { $0 + $1.eToday }, status: status,
-                                         openRepairs: 0, note: note)
+                                         openRepairs: 0, note: note,
+                                         powerNow: status == .offline ? nil : power,
+                                         invertersOnline: p.devices.filter { $0.status != -1 }.count,
+                                         invertersTotal: p.devices.count, updated: updated)
     }
 }
 
@@ -206,7 +235,8 @@ extension MaintenanceStationDetail {
         let inverters = devices.enumerated().map { i, d in
             InverterItem(id: d.sn.isEmpty ? "inv\(i)" : d.sn, name: "INV \(i + 1)",
                          model: [d.model, d.sn.isEmpty ? "" : "SN …" + d.sn.suffix(4)].filter { !$0.isEmpty }.joined(separator: " | "),
-                         power: d.isError ? "—" : kW(d.pac / 1000), statusText: d.statusText, isError: d.isError)
+                         power: d.isError ? "—" : kW(d.pac / 1000), statusText: d.statusText, isError: d.isError,
+                         share: d.nominalPower > 0 ? d.pac / d.nominalPower : nil)
         }
         var groups: [EquipmentGroup] = []
         if !devices.isEmpty {
@@ -227,14 +257,22 @@ extension MaintenanceStationDetail {
         case .normal: nil
         }
         return MaintenanceStationDetail(
-            summary: s, handoverDate: "—", contractor: "Growatt (ตัวอย่าง)", contractorShort: "Growatt", contractorPhone: "",
+            summary: s, handoverDate: thaiDate(plant?.created ?? ""), contractor: "Growatt (ตัวอย่าง)", contractorShort: "Growatt", contractorPhone: "",
             issueTitle: issue?.0, issueSubtitle: issue?.1, ctaText: "แจ้งซ่อม / ออกใบงาน",
             expectedHourly: Array(repeating: 0, count: 13), actualHourly: hourly,
             hourlyMax: max(hourly.max() ?? 0, s.kWp * 0.8, 0.1), lastUpdated: updated.isEmpty ? "—" : updated,
             prToday: 0, prTarget: 80,
-            energyThisMonth: kWh(month), energyExpectedThisMonth: "ทั้งหมด " + kWh(total),
+            energyThisMonth: kWh(month), energyExpectedThisMonth: "",
             co2SavedThisMonth: month * 0.5 >= 1000 ? String(format: "%.1f t", month * 0.5 / 1000) : String(format: "%.0f kg", month * 0.5),
-            inverters: inverters, tickets: [], nextPM: nil, pmHistory: [], equipmentGroups: groups)
+            inverters: inverters, tickets: [], nextPM: nil, pmHistory: [], equipmentGroups: groups,
+            energyTotal: total > 0 ? kWh(total) : "")
+    }
+
+    /// `2026-02-11` as `11/2/2569`; a dash when empty or unreadable.
+    static func thaiDate(_ iso: String) -> String {
+        let parts = iso.prefix(10).split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return "—" }
+        return "\(parts[2])/\(parts[1])/\(parts[0] + 543)"
     }
 
     private static func kW(_ v: Double) -> String { String(format: "%.2f kW", v) }

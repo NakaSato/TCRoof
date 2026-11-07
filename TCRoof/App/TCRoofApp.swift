@@ -342,16 +342,13 @@ struct DebugScreen: View {
             }
         case "pwa": SolarSurveyEntryView()
         case "station":
-            let tabStr = UserDefaults.standard.string(forKey: "stationTab") ?? "overview"
-            let tab: PWAMaintenanceStationView.Tab = tabStr == "repairs" ? .repairs : tabStr == "pm" ? .pm : tabStr == "equipment" ? .equipment : .overview
             PWAMaintenanceStationView(
                 station: MaintenanceStationSummary(
                     id: "demo-25", mpNumber: 25, name: "สถานีผลิตน้ำนครชัยศรี", kWp: 220,
                     energy: 410, expected: 790, pr: 63, status: .alarm, openRepairs: 1,
                     nextPM: Calendar.current.date(byAdding: .day, value: 21, to: .now),
                     note: "INV 2 fault | 2 วัน"
-                ),
-                initialTab: tab
+                )
             )
         case "permits": if let job { PermitFormsView(job: job) }
         case "poa": if let job { PowerOfAttorneyView(job: job) }

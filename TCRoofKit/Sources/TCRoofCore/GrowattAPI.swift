@@ -173,6 +173,8 @@ public struct GrowattAPI: Sendable {
         let note = offline ? "Growatt | ไม่มีข้อมูล" + (updated.isEmpty ? "" : " ตั้งแต่ " + updated)
                            : "Growatt | " + String(format: power.rounded() == power ? "%.0f" : "%.1f", power) + " kW"
         return MaintenanceStationSummary(id: "growatt-\(plant.id)", name: plant.name, kWp: plant.peakPower,
-                                         energy: data?.todayEnergy ?? 0, status: offline ? .offline : .normal, note: note)
+                                         energy: data?.todayEnergy ?? 0, status: offline ? .offline : .normal, note: note,
+                                         powerNow: offline ? nil : power,
+                                         updated: data.map { String($0.lastUpdate.dropFirst(11).prefix(5)) } ?? "")
     }
 }

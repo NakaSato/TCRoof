@@ -9,6 +9,7 @@ import TCRoofCore
 ///   argument, never in the repo.
 /// - The PWA settings' `นักพัฒนา` switch (`GrowattDemoSwitch`) keeps `growattDemo` on in the device's defaults, so the web
 ///   example plants show without launching from a Mac. A launch argument wins over it for that launch.
+/// What Growatt doesn't give (expected energy, PR, PM, repairs, modules) is sample data (`MaintenanceMock`).
 /// The plant list comes first, then each plant's figures: 1 s apart on the portal, 6 s on the OpenAPI, which refuses
 /// calls closer together.
 @MainActor @Observable
@@ -90,8 +91,16 @@ final class GrowattDemoFeed {
         for p in plants {
             let id = GrowattWebDemo.summary(id: p.id, name: p.name).id
             if let plant = try? await web.plant(id: p.id, name: p.name) {
-                replace(GrowattWebDemo.summary(plant))
+                var row = GrowattWebDemo.summary(plant)
+                // today's curve for the card's sparkline, on the plant's own date; the row shows without it
+                if let date = plant.devices.map(\.lastUpdate).max().map({ String($0.prefix(10)) }), !date.isEmpty,
+                   let day = try? await web.dayPower(plantID: p.id, date: date) {
+                    row.hourly = GrowattWebDemo.hourly(day)
+                }
+                replace(Self.mocked(row))
             } else {
+                // a request cancelled with the load is no failure of the plant
+                try Task.checkCancellation()
                 failed(id)
             }
             pending.remove(id)
@@ -101,13 +110,13 @@ final class GrowattDemoFeed {
 
     private func loadAPI(_ api: GrowattAPI) async throws {
         let plants = try await api.plants()
-        stations = plants.map { GrowattAPI.summary($0) }
+        stations = plants.map { Self.mocked(GrowattAPI.summary($0)) }
         loaded = true
         for p in plants {
             try await Task.sleep(nanoseconds: 6_000_000_000)
             // a plant whose data fails keeps its list row
             guard let d = try? await api.data(plantID: p.id) else { continue }
-            replace(GrowattAPI.summary(p, data: d))
+            replace(Self.mocked(GrowattAPI.summary(p, data: d)))
         }
     }
 
@@ -127,8 +136,12 @@ final class GrowattDemoFeed {
         guard (try? await web.openGuest()) != nil, let plant = try? await web.plant(id: id, name: s.name) else { return nil }
         let date = plant.devices.map(\.lastUpdate).max().map { String($0.prefix(10)) } ?? ""
         let day = date.isEmpty ? [] : (try? await web.dayPower(plantID: id, date: date)) ?? []
-        return .growatt(summary: s, plant: plant, day: day)
+        return MaintenanceMock.fill(.growatt(summary: s, plant: plant, day: day), seed: s.id)
     }
+
+    /// Growatt gives no expected energy, PR, PM or repairs: the demo fills them (`MaintenanceMock`), the same for a plant
+    /// every time, and keeps every figure Growatt gave.
+    static func mocked(_ s: MaintenanceStationSummary) -> MaintenanceStationSummary { MaintenanceMock.fill(s, seed: s.id) }
 
     private func failed(_ id: String) {
         if let i = stations.firstIndex(where: { $0.id == id }) { stations[i].note = "Growatt | โหลดข้อมูลไม่ได้" }

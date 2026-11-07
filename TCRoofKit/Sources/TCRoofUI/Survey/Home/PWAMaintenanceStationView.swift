@@ -2,69 +2,39 @@
 import SwiftUI
 import TCRoofCore
 
-/// Station Detail page for handed-over maintenance stations (reference/PhonePwaStation.dc.html).
-/// Shows hourly generation chart, KPIs, inverters, repair tickets, PM schedule & history, and equipment catalog.
+/// Station page for a handed-over maintenance station (reference/PhonePwaStation.dc.html): its overview only, with no
+/// tabs: the issue banner, today's hourly generation, the KPIs and the inverters. Repairs, PM and the equipment list
+/// are not on this page.
 public struct PWAMaintenanceStationView: View {
-    public enum Tab: String, CaseIterable, Identifiable {
-        case overview = "ภาพรวม"
-        case repairs = "งานซ่อม"
-        case pm = "PM"
-        case equipment = "อุปกรณ์"
-
-        public var id: String { rawValue }
-    }
-
     public let station: MaintenanceStationSummary
     @State public var detail: MaintenanceStationDetail
-    @State public var selectedTab: Tab
-    /// A Growatt example plant's figures are still being fetched: the overview and equipment tabs show skeletons.
+    /// A Growatt example plant's figures are still being fetched: the overview shows skeletons.
     @State private var loadingDetail: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
-    public init(station: MaintenanceStationSummary,
-                initialTab: Tab = .overview,
-                detail: MaintenanceStationDetail? = nil) {
+    public init(station: MaintenanceStationSummary, detail: MaintenanceStationDetail? = nil) {
         self.station = station
-        self._selectedTab = State(initialValue: initialTab)
         // a Growatt example plant shows its row until its own figures load (`GrowattDemoFeed.detail`)
         self._detail = State(initialValue: detail ?? (GrowattDemoFeed.isGrowatt(station) ? .growatt(summary: station) : .mock(for: station)))
         self._loadingDetail = State(initialValue: detail == nil && GrowattDemoFeed.enabled && GrowattDemoFeed.isGrowatt(station))
     }
 
-    private var statusColor: Color {
-        switch station.status {
-        case .normal: return Color(hex: 0x2E9E5B)
-        case .alarm: return Color(hex: 0xD9453B)
-        case .offline: return Color(hex: 0x9FB3CC)
-        }
-    }
 
     public var body: some View {
         VStack(spacing: 0) {
             header
-            tabRow
             ScrollView {
-                VStack(spacing: 10) {
-                    switch selectedTab {
-                    case .overview:
-                        overviewView
-                    case .repairs:
-                        repairsView
-                    case .pm:
-                        pmView
-                    case .equipment:
-                        equipmentView
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 104) // Space for floating bottom action bar
+                overviewView
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    // room for the floating call button when there is one
+                    .padding(.bottom, detail.contractorPhone.isEmpty ? 24 : 104)
             }
         }
         .background(Color(hex: 0xF5F8FB).ignoresSafeArea())
         .overlay(alignment: .bottom) {
-            bottomBar
+            if !detail.contractorPhone.isEmpty { bottomBar }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -135,79 +105,51 @@ public struct PWAMaintenanceStationView: View {
         }
     }
 
-    // MARK: - Tab Row
-    private var tabRow: some View {
-        HStack(spacing: 0) {
-            ForEach(Tab.allCases) { tab in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    HStack(spacing: 2) {
-                        Text(tab.rawValue)
-                        if tab == .repairs, detail.tickets.count > 0 {
-                            Text(" \(detail.tickets.count)")
-                                .foregroundStyle(Color(hex: 0xB45309))
-                        }
-                    }
-                    .font(.sarabunFixed(14, selectedTab == tab ? .bold : .semibold))
-                    .foregroundStyle(selectedTab == tab ? Theme.navy : Theme.inkMuted)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 38)
-                    .background {
-                        if selectedTab == tab {
-                            RoundedRectangle(cornerRadius: 19, style: .continuous)
-                                .fill(Color.white)
-                                .shadow(color: Theme.navy.opacity(0.16), radius: 3, y: 1)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("stationDetail.tab.\(tab == .overview ? "overview" : tab == .repairs ? "repairs" : tab == .pm ? "pm" : "equipment")")
-            }
-        }
-        .padding(3)
-        .background(Color(hex: 0xE6ECF3), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-    }
+    // MARK: - Overview ("Live dashboard")
 
-    // MARK: - Tab 1: Overview
+    /// The issue banner, the live card (power now, a gauge of the plant's size in use, today's curve against
+    /// expected), the 2 × 2 figures (today, month, total, PR) and the inverters with their own power bars.
     private var overviewView: some View {
         VStack(spacing: 10) {
             if loadingDetail {
                 overviewSkeleton
             } else {
-                if detail.hasIssue {
-                    issueAlertBanner
-                }
-                dailyGenerationCard
-                kpiGrid
+                if detail.hasIssue { issueAlertBanner }
+                liveCard
+                statsGrid
                 invertersCard
             }
         }
     }
 
-    /// The overview's cards in outline while the plant's figures load: the day chart, the three KPIs, the inverters.
+    /// The overview's cards in outline while the plant's figures load.
     private var overviewSkeleton: some View {
         VStack(spacing: 10) {
-            TCSkeletonCard(lines: 1, block: 84)
-            HStack(spacing: 6) {
-                ForEach(0..<3, id: \.self) { _ in
+            TCSkeletonCard(lines: 1, block: 110)
+            LazyVGrid(columns: gridColumns, spacing: 8) {
+                ForEach(0..<4, id: \.self) { _ in
                     VStack(alignment: .leading, spacing: 8) {
                         TCSkeletonBlock(width: 52)
-                        TCSkeletonBlock(height: 20, radius: 5)
-                        TCSkeletonBlock(width: 40)
+                        TCSkeletonBlock(width: 96, height: 20, radius: 5)
+                        TCSkeletonBlock(width: 70)
                     }
                     .tcShimmer()
                     .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
                 }
             }
             .tcLoadingLabel()
-            TCSkeletonCard(lines: 2)
+            TCSkeletonCard(lines: 3)
+        }
+    }
+
+    private var tint: Color {
+        switch station.status {
+        case .normal: Theme.success
+        case .alarm: Theme.danger
+        case .offline: Theme.chevron
         }
     }
 
@@ -217,393 +159,184 @@ public struct PWAMaintenanceStationView: View {
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0xB42318))
-
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(issue)
-                        .font(.sarabunFixed(14, .bold))
-                        .foregroundStyle(Color(hex: 0xB42318))
-                    Text(issueSub)
-                        .font(.sarabunFixed(12))
-                        .foregroundStyle(Color(hex: 0xB42318).opacity(0.85))
+                    Text(issue).font(.sarabunFixed(14, .bold))
+                    Text(issueSub).font(.sarabunFixed(12)).opacity(0.85)
                 }
-
-                Spacer(minLength: 4)
-
-                Button("ดูงานซ่อม") {
-                    withAnimation { selectedTab = .repairs }
-                }
-                .font(.sarabunFixed(13, .bold))
-                .foregroundStyle(Color(hex: 0xB42318))
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .background(Color.white.opacity(0.85), in: Capsule())
-                .accessibilityIdentifier("stationDetail.viewRepairs")
+                Spacer(minLength: 0)
             }
+            .foregroundStyle(Theme.dangerText)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color(hex: 0xFDECEA), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
     }
 
-    private var dailyGenerationCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("วันนี้ผลิต")
-                    .font(.sarabunFixed(13))
-                    .foregroundStyle(Theme.inkMuted)
-                Text(detail.energyTodayFormatted)
-                    .font(.sarabunFixed(26, .bold))
-                    .foregroundStyle(Theme.navy)
-                Text("/ คาด \(detail.energyExpectedFormatted) kWh")
-                    .font(.sarabunFixed(13))
-                    .foregroundStyle(Theme.inkMuted)
-                Spacer()
-                Text("\(detail.generationPct)%")
-                    .font(.sarabunFixed(16, .bold))
-                    .foregroundStyle(statusColor)
-            }
+    // MARK: live card
 
-            hourlyBarChart
+    /// Power now: the feed's, else the last hour with a reading; nil when there is none (offline).
+    private var livePower: Double? {
+        guard station.status != .offline else { return nil }
+        return detail.summary.powerNow ?? detail.actualHourly.last(where: { $0 > 0 })
+    }
 
+    private var liveCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            liveHead
+            TCDayCurve(actual: detail.actualHourly, expected: detail.expectedHourly, tint: tint)
+                .frame(height: 104)
             HStack {
-                Text("06")
-                Spacer()
-                Text("09")
-                Spacer()
-                Text("12")
-                Spacer()
-                Text("15")
-                Spacer()
-                Text("18")
-            }
-            .font(.sarabunFixed(11))
-            .foregroundStyle(Color(hex: 0x9FB3CC))
-            .padding(.top, -2)
-
-            HStack(spacing: 14) {
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(statusColor)
-                        .frame(width: 10, height: 10)
-                    Text("ผลิตจริง")
+                ForEach(["06", "09", "12", "15", "18"], id: \.self) { h in
+                    Text(h)
+                    if h != "18" { Spacer() }
                 }
+            }
+            .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            curveLegend
+        }
+        .padding(14)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+    }
+
+    private var liveHead: some View {
+        let kWp = max(detail.summary.kWp, station.kWp)
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Group {
+                    if let p = livePower {
+                        Text(p.formatted(.number.precision(.fractionLength(1)))).font(.sarabunFixed(32, .bold))
+                            + Text(" kW").font(.sarabunFixed(16, .bold))
+                    } else {
+                        Text("—").font(.sarabunFixed(32, .bold))
+                    }
+                }
+                .foregroundStyle(Theme.navy).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                Text(station.status == .offline ? "ออฟไลน์ ไม่มีข้อมูลการผลิต" : "กำลังผลิตตอนนี้")
+                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("อัปเดต \(detail.lastUpdated)").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+            }
+            Spacer(minLength: 8)
+            if let p = livePower, kWp > 0 {
+                VStack(spacing: 4) {
+                    TCPlanRing(actual: p / kWp, tint: tint)
+                    Text("ของกำลังติดตั้ง").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(livePower.map { p in
+            "กำลังผลิตตอนนี้ \(p.formatted(.number.precision(.fractionLength(1)))) กิโลวัตต์" + (kWp > 0 ? " \(Int((p / kWp * 100).rounded()))% ของกำลังติดตั้ง" : "")
+        } ?? "ออฟไลน์ ไม่มีข้อมูลการผลิต")
+    }
+
+    private var curveLegend: some View {
+        HStack(spacing: 14) {
+            HStack(spacing: 5) {
+                RoundedRectangle(cornerRadius: 2).fill(tint).frame(width: 14, height: 4)
+                Text("ผลิตจริง")
+            }
+            if detail.expectedHourly.contains(where: { $0 > 0 }) {
                 HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(hex: 0xE6ECF3))
-                        .frame(width: 10, height: 10)
+                    Path { p in p.move(to: CGPoint(x: 0, y: 2)); p.addLine(to: CGPoint(x: 14, y: 2)) }
+                        .stroke(Theme.inkFaint, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).frame(width: 14, height: 4)
                     Text("คาดการณ์")
                 }
-                Spacer()
-                Text("อัปเดต \(detail.lastUpdated)")
             }
-            .font(.sarabunFixed(11))
-            .foregroundStyle(Theme.inkMuted)
+            Spacer()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+        .accessibilityHidden(true)
     }
 
-    private var hourlyBarChart: some View {
-        HStack(alignment: .bottom, spacing: 4) {
-            ForEach(0..<13, id: \.self) { idx in
-                let expected = idx < detail.expectedHourly.count ? detail.expectedHourly[idx] : 0
-                let actual = idx < detail.actualHourly.count ? detail.actualHourly[idx] : 0
-                let maxVal = max(detail.hourlyMax, 1)
-                let expRatio = min(max(expected / maxVal, 0), 1)
-                let actRatio = min(max(actual / maxVal, 0), 1)
+    // MARK: figures
 
-                GeometryReader { geo in
-                    let h = geo.size.height
-                    ZStack(alignment: .bottom) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(hex: 0xE6ECF3))
-                            .frame(height: max(h * expRatio, 2))
+    private var gridColumns: [GridItem] { [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)] }
 
-                        if actual > 0 {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(statusColor)
-                                .frame(height: max(h * actRatio, 2))
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                }
-            }
-        }
-        .frame(height: 84)
-        .padding(.top, 4)
-    }
-
-    private var kpiGrid: some View {
-        HStack(spacing: 6) {
-            // no PR (a Growatt plant has no expected energy): a dash, not a red 0
-            kpiCard(title: "PR วันนี้",
-                    value: detail.prToday > 0 ? "\(Int(detail.prToday))%" : "—",
-                    sub: "เป้า \(Int(detail.prTarget))%",
-                    valueColor: detail.prToday > 0 && detail.prToday < detail.prTarget ? Color(hex: 0xB42318) : Theme.navy)
-            kpiCard(title: "ผลิตเดือนนี้",
-                    value: detail.energyThisMonth,
-                    sub: detail.energyExpectedThisMonth,
-                    valueColor: Theme.navy)
-            kpiCard(title: "ลด CO₂",
-                    value: detail.co2SavedThisMonth,
-                    sub: "เดือนนี้",
-                    valueColor: Theme.navy)
+    private var statsGrid: some View {
+        let s = detail.summary
+        let pct = s.expected > 0 ? "\(Int((s.yield * 100).rounded()))% ของที่คาด" : "ไม่มีค่าคาดการณ์"
+        return LazyVGrid(columns: gridColumns, spacing: 8) {
+            statTile("วันนี้", value: "\(detail.energyTodayFormatted) kWh", sub: pct,
+                     subTint: s.expected > 0 && s.yield < 0.8 ? Theme.warning : Theme.inkMuted)
+            statTile("เดือนนี้", value: detail.energyThisMonth, sub: "ลด CO₂ \(detail.co2SavedThisMonth)")
+            statTile("ทั้งหมด", value: detail.energyTotal.isEmpty ? "—" : detail.energyTotal,
+                     sub: detail.handoverDate == "—" ? "ตั้งแต่เริ่มระบบ" : "ตั้งแต่ \(detail.handoverDate)")
+            statTile("PR วันนี้", value: detail.prToday > 0 ? "\(Int(detail.prToday))%" : "—",
+                     sub: "เป้า \(Int(detail.prTarget))%",
+                     valueTint: detail.prToday > 0 && detail.prToday < detail.prTarget ? Theme.dangerText : Theme.navy)
         }
     }
 
-    private func kpiCard(title: String, value: String, sub: String, valueColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(16, .bold)).foregroundStyle(valueColor)
-            Text(sub).font(.sarabunFixed(11)).foregroundStyle(Color(hex: 0x9FB3CC))
+    private func statTile(_ title: String, value: String, sub: String, valueTint: Color = Theme.navy,
+                          subTint: Color = Theme.inkMuted) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabunFixed(20, .bold)).foregroundStyle(valueTint).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(sub).font(.sarabunFixed(11)).foregroundStyle(subTint).lineLimit(1)
         }
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .accessibilityElement(children: .combine)
     }
+
+    // MARK: inverters
 
     private var invertersCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("อินเวอร์เตอร์")
-                    .font(.sarabunFixed(14, .bold))
-                    .foregroundStyle(Theme.navy)
-                Spacer()
-                Button {
-                    withAnimation { selectedTab = .equipment }
-                } label: {
-                    Text("ทั้งหมด ›")
-                        .font(.sarabunFixed(13, .bold))
-                        .foregroundStyle(Theme.primary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("stationDetail.allInverters")
-            }
-            .frame(height: 28)
-
+        let online = detail.inverters.filter { !$0.isError }.count
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("อินเวอร์เตอร์ \(online)/\(detail.inverters.count) ออนไลน์")
+                .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                .frame(height: 30)
             ForEach(Array(detail.inverters.enumerated()), id: \.element.id) { index, inv in
-                if index > 0 {
-                    Divider().overlay(Color(hex: 0xEEF1F5))
-                }
-                HStack(spacing: 10) {
-                    Circle()
-                        .fill(inv.isError ? Color(hex: 0xD9453B) : Color(hex: 0x2E9E5B))
-                        .frame(width: 10, height: 10)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(inv.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                        Text(inv.model).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(inv.power).font(.sarabunFixed(14, .bold))
-                            .foregroundStyle(inv.isError ? Color(hex: 0xB42318) : Theme.navy)
-                        Text(inv.statusText).font(.sarabunFixed(11))
-                            .foregroundStyle(inv.isError ? Color(hex: 0xB42318) : Theme.inkMuted)
-                    }
-                }
-                .frame(minHeight: 46)
+                if index > 0 { Rectangle().fill(Theme.hairline).frame(height: 1) }
+                inverterRow(inv)
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.vertical, 8)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    // MARK: - Tab 2: Repairs
-    private var repairsView: some View {
-        VStack(spacing: 10) {
-            ForEach(detail.tickets) { tk in
-                ticketCard(tk)
+    private func inverterRow(_ inv: InverterItem) -> some View {
+        let ink = inv.isError ? Theme.dangerText : Theme.navy
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Circle().fill(inv.isError ? Theme.danger : Theme.success).frame(width: 9, height: 9)
+                Text(inv.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text(inv.model).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Spacer(minLength: 6)
+                Text(inv.power).font(.sarabunFixed(14, .bold)).foregroundStyle(ink).monospacedDigit()
             }
-        }
-    }
-
-    private func ticketCard(_ tk: MaintenanceTicket) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text(tk.id)
-                    .font(.sarabunFixed(12, .bold))
-                    .foregroundStyle(Theme.inkMuted)
-
-                Text(tk.status)
-                    .font(.sarabunFixed(11, .bold))
-                    .padding(.horizontal, 8)
-                    .frame(height: 20)
-                    .background(tk.isClosed ? Color(hex: 0xE8F5EE) : Color(hex: 0xFFF3E6), in: Capsule())
-                    .foregroundStyle(tk.isClosed ? Color(hex: 0x1F6B43) : Color(hex: 0x9A4A06))
-
-                Spacer()
-
-                Text(tk.dateText)
-                    .font(.sarabunFixed(12))
-                    .foregroundStyle(Theme.inkMuted)
-            }
-
-            Text(tk.title)
-                .font(.sarabunFixed(15, .bold))
-                .foregroundStyle(Theme.navy)
-
-            Text(tk.subtitle)
-                .font(.sarabunFixed(13))
-                .foregroundStyle(Theme.inkMuted)
-
-            HStack(spacing: 4) {
-                ForEach(1...4, id: \.self) { step in
-                    let isDone = step <= tk.currentStep
-                    let label = ["แจ้ง", "รับงาน", "เข้าหน้างาน", "ปิดงาน"][step - 1]
-                    VStack(alignment: .leading, spacing: 4) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(isDone ? Theme.primary : Color(hex: 0xE3E9F1))
-                            .frame(height: 4)
-                        Text(label)
-                            .font(.sarabunFixed(11, isDone ? .bold : .regular))
-                            .foregroundStyle(isDone ? Theme.navy : Color(hex: 0x9FB3CC))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, 2)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
-        .accessibilityIdentifier("stationDetail.ticket.\(tk.id)")
-    }
-
-    // MARK: - Tab 3: PM
-    private var pmView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let next = detail.nextPM {
-                HStack(spacing: 12) {
-                    VStack(spacing: 0) {
-                        Text(next.dayText)
-                            .font(.sarabunFixed(20, .bold))
-                        Text(next.monthText)
-                            .font(.sarabunFixed(11))
-                    }
-                    .foregroundStyle(Theme.primary)
-                    .frame(width: 56, height: 56)
-                    .background(Color(hex: 0xE8F1FB), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(next.countdownText)
-                            .font(.sarabunFixed(12))
-                            .foregroundStyle(Theme.inkMuted)
-                        Text(next.title)
-                            .font(.sarabunFixed(15, .bold))
-                            .foregroundStyle(Theme.navy)
-                        Text(next.subtitle)
-                            .font(.sarabunFixed(13))
-                            .foregroundStyle(Theme.inkMuted)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
-            }
-
-            Text("ประวัติ")
-                .font(.sarabunFixed(13, .bold))
-                .foregroundStyle(Theme.navy)
-                .padding(.top, 4)
-
-            ForEach(detail.pmHistory) { item in
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color(hex: 0x2E9E5B))
-                        .frame(width: 20, height: 20)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(item.title)
-                            .font(.sarabunFixed(14, .bold))
-                            .foregroundStyle(Theme.navy)
-                        Text(item.detail)
-                            .font(.sarabunFixed(12))
-                            .foregroundStyle(Theme.inkMuted)
-                    }
-
+            HStack(spacing: 8) {
+                if let share = inv.share {
+                    // the inverter's own state, not the station's: a healthy inverter is green beside a faulty one
+                    TCPlanBar(actual: share, tint: inv.isError ? Theme.danger : Theme.success).padding(.vertical, -3)
+                    Text("\(Int((share * 100).rounded()))%").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                        .monospacedDigit().frame(width: 34, alignment: .trailing)
+                } else {
                     Spacer()
-
-                    Text(item.dateText)
-                        .font(.sarabunFixed(12))
-                        .foregroundStyle(Theme.inkMuted)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
+                Text(inv.statusText).font(.sarabunFixed(11, .bold)).foregroundStyle(inv.isError ? Theme.dangerText : Theme.inkMuted)
             }
+            .padding(.leading, 17)
         }
-    }
-
-    // MARK: - Tab 4: Equipment
-    private var equipmentView: some View {
-        VStack(spacing: 10) {
-            if loadingDetail {
-                TCSkeletonCard(lines: 3)
-                TCSkeletonCard(lines: 1)
-            }
-            ForEach(detail.equipmentGroups) { group in
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(group.title)
-                        .font(.sarabunFixed(13, .bold))
-                        .foregroundStyle(Theme.inkMuted)
-                        .padding(.vertical, 6)
-
-                    ForEach(Array(group.rows.enumerated()), id: \.element.id) { index, row in
-                        Divider().overlay(Color(hex: 0xEEF1F5))
-                        HStack {
-                            Text(row.key)
-                                .font(.sarabunFixed(14))
-                                .foregroundStyle(Theme.navy)
-                                .lineLimit(1)
-                            Spacer()
-                            Text(row.value)
-                                .font(.sarabunFixed(14, .bold))
-                                .foregroundStyle(Theme.navy)
-                        }
-                        .frame(minHeight: 44)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
-            }
-        }
+        .padding(.vertical, 9)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Bottom Floating Action Bar
+    /// The contractor's call button, only when there is a number (`body` leaves the bar out otherwise). The repair
+    /// button went with the repairs tab.
     private var bottomBar: some View {
         HStack(spacing: 8) {
-            // no number to call (a Growatt example plant): no call button
-            if !detail.contractorPhone.isEmpty { callButton }
-
-            Button {
-                withAnimation { selectedTab = .repairs }
-            } label: {
-                Text(detail.ctaText)
-                    .font(.sarabunFixed(16, .bold))
-                    .foregroundStyle(Color.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 52)
-                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("stationDetail.cta")
+            callButton
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 24)

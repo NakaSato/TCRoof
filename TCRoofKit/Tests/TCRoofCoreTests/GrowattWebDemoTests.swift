@@ -45,6 +45,31 @@ final class GrowattWebDemoTests: XCTestCase {
         XCTAssertEqual(p.devices[0].status, 1)
     }
 
+    /// One page of the portal's device list: `n` inverters from serial `start`, page `page` of `pages`.
+    private func devicesPage(_ page: Int, of pages: Int, start: Int, n: Int) throws -> Data {
+        let rows = (start..<(start + n)).map { i -> [String: Any] in
+            ["sn": "SN\(i)", "deviceModel": "MAX 125KTL3-X2 LV", "deviceTypeName": "max", "status": "1", "pac": "1000.0",
+             "eToday": "10", "eMonth": "100", "eTotal": "1000", "nominalPower": "125000.0", "lastUpdateTime": "2026-11-07 11:49:2\(i % 10)"]
+        }
+        return try JSONSerialization.data(withJSONObject: ["result": 1, "obj": ["currPage": page, "pages": pages, "pageSize": 4,
+                                                                                 "count": 10, "datas": rows]])
+    }
+
+    func testDevicesOnEveryPage() throws {
+        // 10 inverters, 4 to a page: pages 1–3
+        let pages = [try devicesPage(1, of: 3, start: 0, n: 4), try devicesPage(2, of: 3, start: 4, n: 4), try devicesPage(3, of: 3, start: 8, n: 2)]
+        XCTAssertEqual(try GrowattWebDemo.devicePage(pages[0]).pages, 3)
+        XCTAssertEqual(try GrowattWebDemo.devicePage(devices).pages, 1)
+        let p = try GrowattWebDemo.parsePlant(info, devicePages: pages, id: "1", name: "C")
+        XCTAssertEqual(p.devices.count, 10)
+        XCTAssertEqual(p.devices.map(\.sn).last, "SN9")
+        // a device repeated on two pages counts once
+        let again = try GrowattWebDemo.parsePlant(info, devicePages: pages + [pages[2]], id: "1", name: "C")
+        XCTAssertEqual(again.devices.count, 10)
+        XCTAssertEqual(GrowattWebDemo.summary(p).kWp, 1250)
+        XCTAssertEqual(GrowattWebDemo.summary(p).energy, 100)
+    }
+
     func testSignedOutPageIsAnError() {
         XCTAssertThrowsError(try GrowattWebDemo.parsePlant(notSignedIn, devices: devices, id: "1", name: "x")) {
             XCTAssertEqual($0 as? GrowattAPI.Failure, .badResponse)
@@ -61,11 +86,19 @@ final class GrowattWebDemoTests: XCTestCase {
         XCTAssertEqual(s.energy, 27.8)
         XCTAssertEqual(s.status, .normal)
         XCTAssertEqual(s.note, "Growatt | 2.27 kW | อัปเดต 16:02")
+        // the card's live line
+        XCTAssertEqual(s.powerNow ?? 0, 2.2747, accuracy: 0.0001)
+        XCTAssertEqual(s.invertersOnline, 1)
+        XCTAssertEqual(s.invertersTotal, 1)
+        XCTAssertEqual(s.updated, "16:02")
 
         p.devices[0].status = 3
         XCTAssertEqual(GrowattWebDemo.summary(p).status, .alarm)
         p.devices[0].status = -1
         XCTAssertEqual(GrowattWebDemo.summary(p).status, .offline)
+        // offline: no live power, no inverter reporting
+        XCTAssertNil(GrowattWebDemo.summary(p).powerNow)
+        XCTAssertEqual(GrowattWebDemo.summary(p).invertersOnline, 0)
         p.devices = []
         XCTAssertEqual(GrowattWebDemo.summary(p).status, .offline)
         p.nominalPower = 10880
@@ -106,7 +139,9 @@ final class GrowattWebDemoTests: XCTestCase {
         XCTAssertFalse(d.inverters[0].isError)
         XCTAssertEqual(d.actualHourly, Array(repeating: 3, count: 13))
         XCTAssertEqual(d.energyThisMonth, "211.6 kWh")
-        XCTAssertEqual(d.energyExpectedThisMonth, "ทั้งหมด 9.3 MWh")
+        XCTAssertEqual(d.energyTotal, "9.3 MWh")
+        // 2274.7 W of a 6000 W inverter
+        XCTAssertEqual(d.inverters[0].share ?? 0, 0.3791, accuracy: 0.0001)
         XCTAssertEqual(d.co2SavedThisMonth, "106 kg")
         XCTAssertEqual(d.lastUpdated, "16:02")
         XCTAssertEqual(d.prToday, 0)
@@ -133,5 +168,21 @@ final class GrowattWebDemoLiveTests: XCTestCase {
         let day = try await web.dayPower(plantID: plant.id, date: date)
         XCTAssertEqual(day.count, 288)
         print("live:", GrowattWebDemo.summary(plant), GrowattWebDemo.hourly(day).map { String(format: "%.2f", $0) })
+    }
+
+    /// Every plant, one after another as `GrowattDemoFeed` loads them: each must load.
+    func testEveryPlantLoads() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["GROWATT_LIVE"] == "1", "set GROWATT_LIVE=1 to call server.growatt.com")
+        let web = GrowattWebDemo()
+        try await web.openGuest()
+        for p in try await web.plantList() {
+            do {
+                let plant = try await web.plant(id: p.id, name: p.name)
+                print("live plant:", p.id, p.name, plant.devices.count, "devices")
+            } catch {
+                XCTFail("plant \(p.id) \(p.name): \(error)")
+            }
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+        }
     }
 }

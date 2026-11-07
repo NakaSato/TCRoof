@@ -24,6 +24,8 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
     public var energyThisMonth: String
     public var energyExpectedThisMonth: String
     public var co2SavedThisMonth: String
+    /// Energy since the plant started, e.g. `100.8 MWh`; empty when the source gives none.
+    public var energyTotal: String
 
     // Inverters
     public var inverters: [InverterItem]
@@ -59,7 +61,8 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
                 tickets: [MaintenanceTicket] = [],
                 nextPM: NextPMSummary? = nil,
                 pmHistory: [PMHistoryItem] = [],
-                equipmentGroups: [EquipmentGroup] = []) {
+                equipmentGroups: [EquipmentGroup] = [],
+                energyTotal: String = "") {
         self.summary = summary
         self.handoverDate = handoverDate
         self.contractor = contractor
@@ -82,6 +85,7 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
         self.nextPM = nextPM
         self.pmHistory = pmHistory
         self.equipmentGroups = equipmentGroups
+        self.energyTotal = energyTotal
     }
 
     public var hasIssue: Bool { summary.status != .normal || issueTitle != nil }
@@ -113,8 +117,8 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
         let invs: [InverterItem]
         if isAlarm {
             invs = [
-                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
-                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "0 kW", statusText: "Error 31", isError: true),
+                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false, share: 58.2 / 110),
+                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "0 kW", statusText: "Error 31", isError: true, share: 0),
             ]
         } else if isOffline {
             invs = [
@@ -123,8 +127,8 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
             ]
         } else {
             invs = [
-                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false),
-                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "57.8 kW", statusText: "ปกติ", isError: false),
+                InverterItem(id: "inv1", name: "INV 1", model: "Huawei SUN2000-110KTL | SN …4417", power: "58.2 kW", statusText: "ปกติ", isError: false, share: 58.2 / 110),
+                InverterItem(id: "inv2", name: "INV 2", model: "Huawei SUN2000-110KTL | SN …4452", power: "57.8 kW", statusText: "ปกติ", isError: false, share: 57.8 / 110),
             ]
         }
 
@@ -212,7 +216,8 @@ public struct MaintenanceStationDetail: Identifiable, Hashable, Sendable {
             tickets: tickets,
             nextPM: nextPM,
             pmHistory: pmHist,
-            equipmentGroups: eq
+            equipmentGroups: eq,
+            energyTotal: "412.6 MWh"
         )
     }
 }
@@ -224,14 +229,18 @@ public struct InverterItem: Identifiable, Hashable, Sendable {
     public var power: String
     public var statusText: String
     public var isError: Bool
+    /// Power now over the inverter's rating, 0…1, for its bar; nil when unknown.
+    public var share: Double?
 
-    public init(id: String, name: String, model: String, power: String, statusText: String, isError: Bool = false) {
+    public init(id: String, name: String, model: String, power: String, statusText: String, isError: Bool = false,
+                share: Double? = nil) {
         self.id = id
         self.name = name
         self.model = model
         self.power = power
         self.statusText = statusText
         self.isError = isError
+        self.share = share.map { min(max($0, 0), 1) }
     }
 }
 

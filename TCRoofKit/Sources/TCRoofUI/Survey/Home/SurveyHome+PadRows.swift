@@ -2,9 +2,10 @@
 import SwiftUI
 import TCRoofCore
 
-/// The iPad's station rows of the `งานติดตั้ง` and `บำรุงรักษา` overviews (docs/ui/pwa-solar-survey-ipad-v3 FIX-01): a full
-/// card with a 44 pt ring, the bar, the figures, a 34 pt row for what is going on, and a footer. An install row also
-/// has the `งานขออนุญาต` block when the station's MP plan has permit tasks. The iPhone keeps its compact rows.
+/// The iPad's station rows of the `งานติดตั้ง` overview (docs/ui/pwa-solar-survey-ipad-v3 FIX-01): a full card with a
+/// 44 pt ring, the bar, the figures, a 34 pt row for what is going on, and a footer, and the `งานขออนุญาต` block when the
+/// station's MP plan has permit tasks. The iPhone keeps its compact rows. `บำรุงรักษา` uses one card on both sizes
+/// (`maintenanceCard`, the "Live power" layout).
 extension SurveyHomeView {
     // MARK: งานติดตั้ง
 
@@ -86,44 +87,6 @@ extension SurveyHomeView {
         .background(fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(p.authority.title) \(state)")
-    }
-
-    // MARK: บำรุงรักษา
-
-    func padMaintenanceRow(_ s: MaintenanceStationSummary) -> some View {
-        let status: (String, TCFeedTone?, Color) = switch s.status {
-        case .normal: ("ปกติ", .green, Theme.success)
-        case .alarm: ("แจ้งเตือน", .red, Theme.danger)
-        case .offline: ("ออฟไลน์", nil, Theme.chevron)
-        }
-        let note: (Color, Color) = switch s.status {
-        case .alarm: (Theme.dangerSoft, Theme.dangerText)
-        case .offline: (Theme.hairline, Theme.inkMuted)
-        case .normal: (Theme.progressBox, Theme.navy)
-        }
-        let pr = "PR \(s.reportsPR ? number(s.pr, digits: 0) : "—")%"
-        return VStack(alignment: .leading, spacing: 8) {
-            padRowTop(mp: s.mpNumber, chip: TCToneChip(status.0, tone: status.1), name: s.name,
-                      detail: [s.kWp > 0 ? "\(number(s.kWp)) kWp" : "", pr].filter { !$0.isEmpty }.joined(separator: " | "),
-                      ring: TCPlanRing(actual: s.yield, tint: status.2, small: true))
-            // no plan tick here: the bar gives back the 3 pt it keeps for one on each side
-            TCPlanBar(actual: s.yield, tint: status.2).padding(.vertical, -3)
-            (Text("วันนี้ ") + Text(number(s.energy, digits: 0)).bold().foregroundStyle(Theme.navy)
-             + Text(" / คาด \(number(s.expected, digits: 0)) kWh"))
-                .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).monospacedDigit().lineLimit(1)
-            if !s.note.isEmpty { padNoteRow(label: nil, text: s.note, fill: note.0, ink: note.1, arrow: note.1) }
-            padRowFooter(s.nextPM.map { "PM ถัดไป " + dayMonth($0) }) {
-                if s.openRepairs > 0 {
-                    TCToneChip("แจ้งซ่อม \(s.openRepairs) งาน", tone: .orange)
-                } else {
-                    // fainter than the grey `ออฟไลน์` chip
-                    Text("ไม่มีงานซ่อม").font(.sarabunFixed(11, .bold)).lineLimit(1).fixedSize()
-                        .foregroundStyle(Theme.inkFaint)
-                        .padding(.horizontal, 8).frame(height: 18)
-                        .background(Theme.hairline, in: Capsule())
-                }
-            }
-        }
     }
 
     // MARK: parts

@@ -225,11 +225,23 @@ public struct MaintenanceStationSummary: Identifiable, Hashable, Sendable {
     public var openRepairs: Int
     public var nextPM: Date?
     public var note: String
+    /// From a monitoring feed (Growatt), when there is one: power now (kW), inverters reporting and in all, the last
+    /// reading's time (`HH:mm`, the plant's own clock) and today's power 06:00 … 18:00 hour by hour (kW), for the card's
+    /// live line and sparkline. Nil or empty without monitoring.
+    public var powerNow: Double?
+    public var invertersOnline: Int?
+    public var invertersTotal: Int?
+    public var updated: String
+    public var hourly: [Double]
 
     public init(id: String, mpNumber: Int? = nil, name: String, kWp: Double = 0, energy: Double = 0, expected: Double = 0, pr: Double = 0,
-                status: Status = .normal, openRepairs: Int = 0, nextPM: Date? = nil, note: String = "") {
+                status: Status = .normal, openRepairs: Int = 0, nextPM: Date? = nil, note: String = "",
+                powerNow: Double? = nil, invertersOnline: Int? = nil, invertersTotal: Int? = nil, updated: String = "",
+                hourly: [Double] = []) {
         self.id = id; self.mpNumber = mpNumber; self.name = name; self.kWp = kWp; self.energy = energy; self.expected = expected
         self.pr = pr; self.status = status; self.openRepairs = openRepairs; self.nextPM = nextPM; self.note = note
+        self.powerNow = powerNow; self.invertersOnline = invertersOnline; self.invertersTotal = invertersTotal
+        self.updated = updated; self.hourly = hourly
     }
 
     /// False for an offline station and for one with no monitoring yet: its PR is shown as a dash and left out of the average.

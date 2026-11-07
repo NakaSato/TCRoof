@@ -36,6 +36,8 @@ final class GrowattDemoFeed {
     private(set) var stations: [MaintenanceStationSummary] = []
     private(set) var loading = false
     private(set) var failure: String?
+    /// Plants listed whose figures are still being fetched: the overview draws them as skeleton rows.
+    private(set) var pending: Set<String> = []
     private var loaded = false
     let source: Source = !token.isEmpty ? .api(.live(token: token)) : demoFlag == "test" ? .api(.demo) : .web(GrowattWebDemo())
 
@@ -47,6 +49,8 @@ final class GrowattDemoFeed {
         }
     }
 
+    func isPending(_ id: String) -> Bool { pending.contains(id) }
+
     func load(force: Bool = false) async {
         guard Self.enabled, !loading, force || !loaded else { return }
         loading = true; failure = nil
@@ -57,22 +61,31 @@ final class GrowattDemoFeed {
             case .api(let api): try await loadAPI(api)
             }
         } catch is CancellationError {
+            // left before the figures were in: the next visit fetches again
+            loaded = false
         } catch let f as GrowattAPI.Failure {
             failure = f.message
         } catch {
             failure = GrowattAPI.Failure.badResponse.message
         }
+        pending = []
     }
 
     private func loadWeb(_ web: GrowattWebDemo) async throws {
         try await web.openGuest()
         let plants = try await web.plantList()
         stations = plants.map { GrowattWebDemo.summary(id: $0.id, name: $0.name) }
+        pending = Set(stations.map(\.id))
         loaded = true
         for p in plants {
+            let id = GrowattWebDemo.summary(id: p.id, name: p.name).id
+            if let plant = try? await web.plant(id: p.id, name: p.name) {
+                replace(GrowattWebDemo.summary(plant))
+            } else {
+                failed(id)
+            }
+            pending.remove(id)
             try await Task.sleep(nanoseconds: 1_000_000_000)
-            guard let plant = try? await web.plant(id: p.id, name: p.name) else { continue }
-            replace(GrowattWebDemo.summary(plant))
         }
     }
 
@@ -105,6 +118,10 @@ final class GrowattDemoFeed {
         let date = plant.devices.map(\.lastUpdate).max().map { String($0.prefix(10)) } ?? ""
         let day = date.isEmpty ? [] : (try? await web.dayPower(plantID: id, date: date)) ?? []
         return .growatt(summary: s, plant: plant, day: day)
+    }
+
+    private func failed(_ id: String) {
+        if let i = stations.firstIndex(where: { $0.id == id }) { stations[i].note = "Growatt | โหลดข้อมูลไม่ได้" }
     }
 
     private func replace(_ s: MaintenanceStationSummary) {

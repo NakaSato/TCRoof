@@ -120,12 +120,40 @@ extension SurveyHomeView {
     }
 
     /// The station rows: one under another on iPhone, three columns on iPad (two in portrait).
-    @ViewBuilder private func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
+    @ViewBuilder func stationRows(@ViewBuilder _ rows: () -> some View) -> some View {
         if compact {
             LazyVStack(alignment: .leading, spacing: 10) { rows() }
         } else {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: padColumns), spacing: 16) { rows() }
         }
+    }
+
+    // MARK: loading
+
+    /// An overview while its stations are fetched: the summary card's shape and `rows` station rows, on the rows' grid.
+    @ViewBuilder func overviewSkeleton(rows: Int = 3) -> some View {
+        TCSkeletonCard(lines: 2, block: 56, padding: compact ? 14 : 16)
+        stationRows {
+            ForEach(0..<rows, id: \.self) { _ in card(stationRowSkeleton(), padding: rowPadding) }
+        }
+    }
+
+    /// A station row's shape while its figures load: the status chip, the name (when it is known already), the bar and a
+    /// line of figures.
+    func stationRowSkeleton(name: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TCSkeletonBlock(width: 56, height: 18, radius: 9)
+            if let name {
+                Text(name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+            } else {
+                TCSkeletonBlock(width: 180, height: 15)
+            }
+            TCSkeletonBlock(height: 6, radius: 3)
+            TCSkeletonBlock(width: 200)
+        }
+        .tcShimmer()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([name ?? "", "กำลังโหลดข้อมูล"].filter { !$0.isEmpty }.joined(separator: " "))
     }
 
     private func noRows(_ text: String) -> some View {
@@ -177,7 +205,7 @@ extension SurveyHomeView {
     @ViewBuilder var installOverview: some View {
         let stations = installStations
         if stations.isEmpty, host.installLoading {
-            ProgressView("กำลังโหลดโครงการ…").frame(maxWidth: .infinity, minHeight: 120)
+            overviewSkeleton()
         } else if stations.isEmpty {
             stageEmpty
         } else {
@@ -370,7 +398,9 @@ extension SurveyHomeView {
 
     @ViewBuilder var maintenanceOverview: some View {
         let stations = maintenanceStations
-        if stations.isEmpty {
+        if stations.isEmpty, GrowattDemoFeed.enabled, growatt.loading {
+            overviewSkeleton()
+        } else if stations.isEmpty {
             stageEmpty
         } else {
             // with no station in trouble `มีปัญหา` would be empty, so start on every station
@@ -381,7 +411,9 @@ extension SurveyHomeView {
             stationRows {
                 ForEach(rows) { s in
                     Button { openMaintenanceStation(s) } label: {
-                        if compact { maintenanceRow(s).padding(rowPadding) } else { padMaintenanceRow(s).padding(rowPadding) }
+                        // a Growatt plant listed before its figures are in
+                        if growatt.isPending(s.id) { stationRowSkeleton(name: s.name).padding(rowPadding) }
+                        else if compact { maintenanceRow(s).padding(rowPadding) } else { padMaintenanceRow(s).padding(rowPadding) }
                     }
                         .buttonStyle(TCStationRowStyle())
                         .accessibilityLabel(maintenanceLabel(s))
@@ -400,8 +432,8 @@ extension SurveyHomeView {
     /// overview loads them.
     @ViewBuilder private var growattDemoLine: some View {
         if GrowattDemoFeed.enabled {
+            // the rows show the loading as skeletons; this line only names the source
             HStack(spacing: 8) {
-                if growatt.loading { ProgressView().controlSize(.small) }
                 Text(growatt.failure ?? (growatt.loading && growatt.stations.isEmpty ? "กำลังดึงสถานีตัวอย่างจาก Growatt…"
                                          : "\(growatt.sourceName) \(growatt.stations.count) สถานี"))
                     .font(.sarabunFixed(12)).foregroundStyle(growatt.failure == nil ? Theme.inkMuted : Theme.dangerText)

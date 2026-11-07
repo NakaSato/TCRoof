@@ -217,6 +217,7 @@ Each wide page has a `CLAUDE_CODE_TASK.md` (what to build, constraints, check li
 `docs/specs/` holds feature specs (auto drawing, roof PV layout, tank mounting, calendar and travel, hardware assist, standard designs, IEC 62446 Excel export and more), with images in `img/` and HTML prototypes in `prototype/`. Some are built by now (routine reports, the ERC exemption flow, the master schedule, hardware assist), so check the code before treating a spec as pending.
 
 UI conventions from the specs:
+- Content still being fetched (a list, a station's figures, a page's first data) shows a skeleton in its shape, not a spinner: `TCSkeletonBlock`, `TCSkeletonCard`, `TCSkeletonRow` and `.tcShimmer()` (`TCRoofUI/Skeleton.swift`, still with Reduce Motion), or the app's `DataLoadingSkeleton`. Spinners stay for actions (a button working, locating, uploading, drawing).
 - Hit areas are at least 44 pt.
 - Plans and PDF drawings are vector (`Sketch`), never bitmaps of icons.
 - Icon catalogs go in `TCRoofKit/Sources/TCRoofUI/Resources/<X>Icons.xcassets` and load through `A2Icon(name:fallback:)`. Asset names are global across catalogs, so avoid duplicates (B1's clashing `ui-*` icons are prefixed `b1-`).

@@ -105,8 +105,10 @@ extension UserAdminView {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(filtered) { m in userRow(m).id(m.email) }
-                    if filtered.isEmpty {
-                        Text(store.loaded ? "ไม่มีผู้ใช้ในตัวกรองนี้" : "กำลังโหลดรายชื่อ…")
+                    if filtered.isEmpty && !store.loaded {
+                        ForEach(0..<5, id: \.self) { _ in TCSkeletonRow().padding(.horizontal, 16) }
+                    } else if filtered.isEmpty {
+                        Text("ไม่มีผู้ใช้ในตัวกรองนี้")
                             .font(.sarabun(14)).foregroundStyle(Theme.muted).padding(40)
                     }
                 }

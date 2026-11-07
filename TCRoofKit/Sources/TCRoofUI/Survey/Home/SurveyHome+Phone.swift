@@ -425,7 +425,7 @@ extension SurveyHomeView {
         let stations = filter == .all ? unsurveyedStations : []
         let loading = filter == .all && host.installLoading
         if loading && stations.isEmpty {
-            ProgressView("กำลังโหลดโครงการ…").frame(maxWidth: .infinity, minHeight: 80)
+            stationRows { ForEach(0..<3, id: \.self) { _ in TCSkeletonCard(lines: 2) } }
         }
         if shown.isEmpty && stations.isEmpty && !loading { empty }
         if !shown.isEmpty { grid }

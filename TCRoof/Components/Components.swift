@@ -1,7 +1,8 @@
 import SwiftUI
 import TCRoofUI
 
-/// Placeholder card shown while a screen is preparing or fetching its first rows.
+/// Placeholder card shown while a screen is preparing or fetching its first rows, with the design system's sweep
+/// (`tcShimmer`).
 struct DataLoadingSkeleton: View {
     var lines = 3
 
@@ -14,10 +15,11 @@ struct DataLoadingSkeleton: View {
             }
             RoundedRectangle(cornerRadius: 8).fill(Theme.borderSubtle.opacity(0.65)).frame(height: 88)
         }
+        .tcShimmer()
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .accessibilityLabel("กำลังโหลดข้อมูล")
+        .tcLoadingLabel()
     }
 }
 

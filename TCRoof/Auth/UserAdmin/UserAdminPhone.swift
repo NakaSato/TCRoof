@@ -147,8 +147,10 @@ extension UserAdminView {
                 AdminCard {
                     LazyVStack(spacing: 0) {
                         ForEach(filtered) { m in phoneRow(m) }
-                        if filtered.isEmpty {
-                            Text(store.loaded ? "ไม่มีผู้ใช้ในตัวกรองนี้" : "กำลังโหลดรายชื่อ…")
+                        if filtered.isEmpty && !store.loaded {
+                            ForEach(0..<5, id: \.self) { _ in TCSkeletonRow().padding(.horizontal, 14) }
+                        } else if filtered.isEmpty {
+                            Text("ไม่มีผู้ใช้ในตัวกรองนี้")
                                 .font(.sarabun(14)).foregroundStyle(Theme.muted).padding(32)
                         }
                     }

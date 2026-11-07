@@ -225,7 +225,8 @@ struct MembersView: View {
     @ViewBuilder
     private var memberSections: some View {
         if !directory.loaded {
-            ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
+            VStack(spacing: 0) { ForEach(0..<4, id: \.self) { _ in TCSkeletonRow() } }
+                .padding(.horizontal, 14).padding(.top, 12)
         } else {
             ForEach(UserRole.allCases, id: \.self) { role in
                 let people = directory.members.filter { $0.role == role }.sorted { $0.email < $1.email }

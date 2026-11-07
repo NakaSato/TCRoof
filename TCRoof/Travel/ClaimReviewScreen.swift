@@ -37,7 +37,7 @@ struct ClaimReviewScreen: View {
             }
             PadSection(filter.rawValue) {
                 if model.loading {
-                    ProgressView().frame(maxWidth: .infinity, minHeight: 60)
+                    ForEach(0..<3, id: \.self) { _ in TCSkeletonRow() }
                 } else if shown.isEmpty {
                     Text(filter == .waiting ? "ไม่มีใบเบิกรออนุมัติ" : "ไม่มีรายการ").foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -121,7 +121,7 @@ struct ClaimReviewDetail: View {
                     }
                     actions(e, m)
                 } else {
-                    ProgressView("กำลังโหลด…").frame(maxWidth: .infinity, minHeight: 80)
+                    DataLoadingSkeleton(lines: 3)
                 }
             } else {
                 Text("ใบเบิกนี้ไม่อยู่แล้ว").foregroundStyle(Theme.muted)

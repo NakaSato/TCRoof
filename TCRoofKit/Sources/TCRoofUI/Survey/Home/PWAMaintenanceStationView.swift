@@ -17,6 +17,8 @@ public struct PWAMaintenanceStationView: View {
     public let station: MaintenanceStationSummary
     @State public var detail: MaintenanceStationDetail
     @State public var selectedTab: Tab
+    /// A Growatt example plant's figures are still being fetched: the overview and equipment tabs show skeletons.
+    @State private var loadingDetail: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -27,6 +29,7 @@ public struct PWAMaintenanceStationView: View {
         self._selectedTab = State(initialValue: initialTab)
         // a Growatt example plant shows its row until its own figures load (`GrowattDemoFeed.detail`)
         self._detail = State(initialValue: detail ?? (GrowattDemoFeed.isGrowatt(station) ? .growatt(summary: station) : .mock(for: station)))
+        self._loadingDetail = State(initialValue: detail == nil && GrowattDemoFeed.enabled && GrowattDemoFeed.isGrowatt(station))
     }
 
     private var statusColor: Color {
@@ -66,7 +69,10 @@ public struct PWAMaintenanceStationView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .task {
+            guard loadingDetail else { return }
             if let d = await GrowattDemoFeed.detail(for: station) { detail = d }
+            // a cancelled fetch (the page left) keeps the skeleton for the next appearance
+            if !Task.isCancelled { loadingDetail = false }
         }
     }
 
@@ -170,12 +176,38 @@ public struct PWAMaintenanceStationView: View {
     // MARK: - Tab 1: Overview
     private var overviewView: some View {
         VStack(spacing: 10) {
-            if detail.hasIssue {
-                issueAlertBanner
+            if loadingDetail {
+                overviewSkeleton
+            } else {
+                if detail.hasIssue {
+                    issueAlertBanner
+                }
+                dailyGenerationCard
+                kpiGrid
+                invertersCard
             }
-            dailyGenerationCard
-            kpiGrid
-            invertersCard
+        }
+    }
+
+    /// The overview's cards in outline while the plant's figures load: the day chart, the three KPIs, the inverters.
+    private var overviewSkeleton: some View {
+        VStack(spacing: 10) {
+            TCSkeletonCard(lines: 1, block: 84)
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 8) {
+                        TCSkeletonBlock(width: 52)
+                        TCSkeletonBlock(height: 20, radius: 5)
+                        TCSkeletonBlock(width: 40)
+                    }
+                    .tcShimmer()
+                    .padding(12)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.borderSubtle))
+                }
+            }
+            .tcLoadingLabel()
+            TCSkeletonCard(lines: 2)
         }
     }
 
@@ -520,6 +552,10 @@ public struct PWAMaintenanceStationView: View {
     // MARK: - Tab 4: Equipment
     private var equipmentView: some View {
         VStack(spacing: 10) {
+            if loadingDetail {
+                TCSkeletonCard(lines: 3)
+                TCSkeletonCard(lines: 1)
+            }
             ForEach(detail.equipmentGroups) { group in
                 VStack(alignment: .leading, spacing: 0) {
                     Text(group.title)

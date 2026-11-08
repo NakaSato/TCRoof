@@ -7,7 +7,7 @@ import TCRoofCore
 
 extension MonitoringPage {
     /// The table's columns, in points (the board's 1240 pt card).
-    private enum Col {
+    enum Col {
         static let station: CGFloat = 230, status: CGFloat = 96, power: CGFloat = 130, energy: CGFloat = 200
         static let yield: CGFloat = 110, loss: CGFloat = 100, inverters: CGFloat = 110, data: CGFloat = 90
     }
@@ -60,7 +60,7 @@ extension MonitoringPage {
 
     // MARK: table
 
-    private var tableHeader: some View {
+    var tableHeader: some View {
         HStack(spacing: 0) {
             head("สถานี", Col.station)
             head("สถานะ", Col.status)

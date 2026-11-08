@@ -4,15 +4,20 @@ import TCRoofCore
 
 /// `ตั้งค่า Monitoring` (issue #259 §7): a dialog over the page in two columns. Left: the data servers (name, URL, a
 /// token kept in this iPad's Keychain with only its last four characters shown, a connection test), the poll interval,
-/// the nightly archive and the pairings. Right: the alert thresholds, who is told, and the electricity rate. Only a
-/// manager edits; others see the values. Changes wait for `บันทึก`.
+/// the nightly archive and the pairings' count with `ดูรายการ ›`, which turns the dialog to `จับคู่สถานีกับ Plant`
+/// (`MonitoringPairingPane`, `‹` brings the settings back). Right: the alert thresholds, who is told, and the
+/// electricity rate. Only a manager edits; others see the values. Changes wait for `บันทึก`, the pairings too.
+/// `-monitoringPairing YES` opens it on the pairing page with example plants in place of the server's.
 struct MonitoringSettingsDialog: View {
+    enum Page { case settings, pairing }
+
     let store: MonitoringStore
     let stations: [Monitoring.Station]
     let canEdit: Bool
     let close: () -> Void
 
     @State private var draft: Monitoring.Settings
+    @State private var page: Page
     @State private var adding = false
     @State private var newName = ""
     @State private var newURL = GrowattAPI.openAPIURL.absoluteString
@@ -22,9 +27,19 @@ struct MonitoringSettingsDialog: View {
     @State private var testing: Set<UUID> = []
     @State private var testNote: [UUID: String] = [:]
 
-    init(store: MonitoringStore, stations: [Monitoring.Station], canEdit: Bool, close: @escaping () -> Void) {
+    init(store: MonitoringStore, stations: [Monitoring.Station], canEdit: Bool, startOnPairing: Bool = false, close: @escaping () -> Void) {
         self.store = store; self.stations = stations; self.canEdit = canEdit; self.close = close
         _draft = State(initialValue: store.settings)
+        _page = State(initialValue: startOnPairing ? .pairing : .settings)
+    }
+
+    /// `-monitoringPairing YES`: the picker lists example plants, with no network.
+    static var stubPlants: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "monitoringPairing")
+        #else
+        false
+        #endif
     }
 
     var body: some View {
@@ -33,14 +48,17 @@ struct MonitoringSettingsDialog: View {
             VStack(spacing: 0) {
                 titleBar
                 Divider()
-                ScrollView {
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(spacing: 16) { serversCard; pollingCard }.frame(maxWidth: .infinity)
-                        VStack(spacing: 16) { thresholdsCard; recipientsCard; rateCard }.frame(maxWidth: .infinity)
+                if page == .pairing {
+                    MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants)
+                } else {
+                    ScrollView {
+                        HStack(alignment: .top, spacing: 16) {
+                            VStack(spacing: 16) { serversCard.disabled(!canEdit); pollingCard }.frame(maxWidth: .infinity)
+                            VStack(spacing: 16) { thresholdsCard; recipientsCard; rateCard }.frame(maxWidth: .infinity).disabled(!canEdit)
+                        }
+                        .padding(24)
                     }
-                    .padding(24)
                 }
-                .disabled(!canEdit)
                 Divider()
                 footer
             }
@@ -54,10 +72,18 @@ struct MonitoringSettingsDialog: View {
     }
 
     private var titleBar: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 12) {
+            if page == .pairing {
+                Button { withAnimation(.easeInOut(duration: 0.2)) { page = .settings } } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
+                        .frame(width: 44, height: 44).background(Theme.track, in: Circle())
+                }
+                .buttonStyle(.plain).accessibilityLabel("กลับไปตั้งค่า").accessibilityIdentifier("monitoring.pairing.back")
+            }
             VStack(alignment: .leading, spacing: 2) {
-                Text("ตั้งค่า Monitoring").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text(canEdit ? "ใช้กับ Monitoring เท่านั้น · แก้ได้เฉพาะผู้จัดการ" : "ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ")
+                Text(page == .pairing ? "จับคู่สถานีกับ Plant" : "ตั้งค่า Monitoring")
+                    .font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text(page == .pairing ? pairedLine : canEdit ? "ใช้กับ Monitoring เท่านั้น · แก้ได้เฉพาะผู้จัดการ" : "ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ")
                     .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
@@ -213,16 +239,23 @@ struct MonitoringSettingsDialog: View {
             settingRow("รอบดึงข้อมูล", "Growatt ให้ถี่สุดทุก 5 นาที") {
                 MonSwitch(options: Monitoring.Settings.pollChoices.map { ($0, "\($0) นาที") }, selection: $draft.pollMinutes)
             }
+            .disabled(!canEdit)
             Divider()
             settingRow("เก็บข้อมูลถาวรทุกคืน", "Growatt เก็บค่า 5 นาทีไว้ราว 95 วัน · TCRoof เก็บต่อเวลา 00:30") {
                 Toggle("เก็บข้อมูลถาวรทุกคืน", isOn: $draft.archiveNightly).labelsHidden().tint(Theme.success)
             }
+            .disabled(!canEdit)
             Divider()
-            settingRow("จับคู่สถานี", "\(draft.paired(of: stations.map(\.id)))/\(stations.count) สถานีจับคู่กับ Plant ใน Growatt แล้ว") {
-                Text("เร็ว ๆ นี้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            settingRow("จับคู่สถานี", pairedLine) {
+                Button { withAnimation(.easeInOut(duration: 0.2)) { page = .pairing } } label: { Text(verbatim: "ดูรายการ ›") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                    .accessibilityIdentifier("monitoring.pairing.open")
             }
         }
     }
+
+    /// `6/6 สถานีจับคู่กับ Plant ใน Growatt แล้ว`, from the draft.
+    private var pairedLine: String { "\(draft.paired(of: stations.map(\.id)))/\(stations.count) สถานีจับคู่กับ Plant ใน Growatt แล้ว" }
 
     // MARK: right column
 

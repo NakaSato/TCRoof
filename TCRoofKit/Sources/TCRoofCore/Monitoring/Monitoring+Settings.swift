@@ -59,22 +59,25 @@ extension Monitoring {
         public var rate: Double?
         /// Station id → Growatt plant id.
         public var pairings: [String: String]
+        /// Station id → the server (`Server.id`) its plant is read from; a pairing without one is read from the first
+        /// server.
+        public var pairingServers: [String: UUID]
 
         public init(servers: [Server] = [], pollMinutes: Int = 5, archiveNightly: Bool = true, loggerOfflineMinutes: Int = 30,
                     stringLowPercent: Int = 20, belowExpectedPercent: Int = 85, prLowPercent: Int = 70,
                     notifyMaintenance: Bool = true, notifySupervisor: Bool = true, notifyContractor: Bool = false,
-                    rate: Double? = nil, pairings: [String: String] = [:]) {
+                    rate: Double? = nil, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
             self.servers = servers; self.pollMinutes = max(pollMinutes, Monitoring.minimumPollMinutes)
             self.archiveNightly = archiveNightly; self.loggerOfflineMinutes = loggerOfflineMinutes
             self.stringLowPercent = stringLowPercent; self.belowExpectedPercent = belowExpectedPercent
             self.prLowPercent = prLowPercent; self.notifyMaintenance = notifyMaintenance
             self.notifySupervisor = notifySupervisor; self.notifyContractor = notifyContractor
-            self.rate = rate; self.pairings = pairings
+            self.rate = rate; self.pairings = pairings; self.pairingServers = pairingServers
         }
 
         private enum CodingKeys: String, CodingKey {
             case servers, pollMinutes, archiveNightly, loggerOfflineMinutes, stringLowPercent, belowExpectedPercent
-            case prLowPercent, notifyMaintenance, notifySupervisor, notifyContractor, rate, pairings
+            case prLowPercent, notifyMaintenance, notifySupervisor, notifyContractor, rate, pairings, pairingServers
         }
 
         /// Every field optional, so a settings file from an older build still reads.
@@ -92,7 +95,8 @@ extension Monitoring {
                       notifySupervisor: try c.decodeIfPresent(Bool.self, forKey: .notifySupervisor) ?? d.notifySupervisor,
                       notifyContractor: try c.decodeIfPresent(Bool.self, forKey: .notifyContractor) ?? d.notifyContractor,
                       rate: try c.decodeIfPresent(Double.self, forKey: .rate),
-                      pairings: try c.decodeIfPresent([String: String].self, forKey: .pairings) ?? d.pairings)
+                      pairings: try c.decodeIfPresent([String: String].self, forKey: .pairings) ?? d.pairings,
+                      pairingServers: try c.decodeIfPresent([String: UUID].self, forKey: .pairingServers) ?? d.pairingServers)
         }
 
         /// The poll interval as used: one of the choices, never under Growatt's limit.
@@ -100,5 +104,31 @@ extension Monitoring {
 
         /// `6/6 สถานีจับคู่กับ Plant ใน Growatt แล้ว`: how many of these stations are paired.
         public func paired(of stationIDs: [String]) -> Int { stationIDs.filter { pairings[$0] != nil }.count }
+
+        /// The server a station's plant is read from: the one recorded for it, else the first; nil without servers.
+        public func server(for stationID: String) -> Server? {
+            if let id = pairingServers[stationID], let s = servers.first(where: { $0.id == id }) { return s }
+            return servers.first
+        }
+
+        /// Pairs the station with a plant on a server (nil: the first server).
+        public mutating func pair(_ stationID: String, plant plantID: String, server: UUID?) {
+            pairings[stationID] = plantID
+            pairingServers[stationID] = server
+        }
+
+        /// `เลิกจับคู่`.
+        public mutating func unpair(_ stationID: String) {
+            pairings[stationID] = nil
+            pairingServers[stationID] = nil
+        }
+
+        /// A station's pairing: its plant and the server it is read from (`server(for:)`); nil when the station isn't
+        /// paired, its plant id isn't a number, or there is no server to read it from.
+        public func pairing(of stationID: String) -> (server: Server, plantID: Int)? {
+            guard let raw = pairings[stationID], let plant = Int(raw.trimmingCharacters(in: .whitespaces)),
+                  let server = server(for: stationID) else { return nil }
+            return (server, plant)
+        }
     }
 }

@@ -187,4 +187,68 @@ final class MonitoringTests: XCTestCase {
         XCTAssertNil(old.rate)
         XCTAssertEqual(old.belowExpectedPercent, 85)
     }
+
+    func testPairingSuggestsByNameOrBySize() {
+        typealias P = Monitoring.Pairing.Plant
+        let plants = Monitoring.Pairing.demoPlants()
+        // MP 44 สถานีผลิตน้ำสามพราน 120 kWp: the plant named after it, and nothing else near 120 kWp
+        let mp44 = Monitoring.Pairing.suggest(station: "สถานีผลิตน้ำสามพราน", kWp: 120, in: plants)
+        XCTAssertEqual(mp44.map(\.id), ["9001"])
+        // MP 52 กำแพงแสน 200 kWp: its plant says 199.5, within 10 %, and nothing else is named like it
+        XCTAssertEqual(Monitoring.Pairing.suggest(station: "สถานีผลิตน้ำกำแพงแสน", kWp: 200, in: plants).map(\.id), ["9004"])
+        // name matches come before size matches; the station words don't count
+        let near = [P(id: "a", name: "Solar 118 kWp site", kWp: 118), P(id: "b", name: "กปภ. สามพราน เฟส 2", kWp: 60)]
+        XCTAssertEqual(Monitoring.Pairing.suggest(station: "สถานีผลิตน้ำสามพราน", kWp: 120, in: near).map(\.id), ["b", "a"])
+        XCTAssertTrue(Monitoring.Pairing.matchesName(P(id: "c", name: "สามพราน", kWp: 0), station: "สถานี สามพราน"))
+        // under 10 %: 108.5 and 131.5 are in, 108 and 132 (the edge) and 107 are out; a plant or a station without a
+        // size never matches by size
+        XCTAssertTrue(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 108.5), kWp: 120))
+        XCTAssertTrue(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 131.5), kWp: 120))
+        XCTAssertFalse(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 108), kWp: 120))
+        XCTAssertFalse(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 132), kWp: 120))
+        XCTAssertFalse(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 107), kWp: 120))
+        XCTAssertFalse(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 0), kWp: 120))
+        XCTAssertFalse(Monitoring.Pairing.matchesSize(P(id: "d", name: "x", kWp: 120), kWp: 0))
+        // a one-letter core (`PV`, `A`) is never a name match
+        XCTAssertFalse(Monitoring.Pairing.matchesName(P(id: "e", name: "A", kWp: 0), station: "สถานี A"))
+        // the picker's order: suggestions first, the rest as listed; the search looks at name, city and id
+        let ordered = Monitoring.Pairing.ordered(plants, station: "สถานีผลิตน้ำดอนตูม", kWp: 95)
+        XCTAssertEqual(ordered.first?.id, "9005")
+        XCTAssertEqual(ordered.count, plants.count)
+        XCTAssertEqual(Monitoring.Pairing.search(plants, "bangkok").map(\.id), ["9007"])
+        XCTAssertEqual(Monitoring.Pairing.search(plants, "9002").map(\.id), ["9002"])
+        XCTAssertEqual(Monitoring.Pairing.search(plants, "  ").count, plants.count)
+        // a Growatt row becomes a picker row
+        let g = GrowattAPI.Plant(id: 77, name: "P", peakPower: 12.5, currentPower: 1, totalEnergy: 2, status: nil, city: "เมือง", country: "TH",
+                                 latitude: nil, longitude: nil)
+        XCTAssertEqual(P(g), P(id: "77", name: "P", kWp: 12.5, city: "เมือง"))
+        XCTAssertEqual(P(g).detail, "12.5 kWp · เมือง")
+    }
+
+    func testSettingsKeepThePairingsAndTheirServers() throws {
+        let a = Monitoring.Settings.Server(name: "เฟส 3", url: "https://openapi.growatt.com/v1/")
+        let b = Monitoring.Settings.Server(name: "เฟส 4", url: "https://openapi.growatt.com/v1/")
+        var s = Monitoring.Settings(servers: [a, b])
+        s.pair("demo-mp44", plant: "9001", server: b.id)
+        s.pair("demo-mp25", plant: "9002", server: nil)
+        XCTAssertEqual(s.paired(of: ["demo-mp44", "demo-mp25", "demo-mp12"]), 2)
+        XCTAssertEqual(s.server(for: "demo-mp44")?.id, b.id)
+        // not recorded: the first server
+        XCTAssertEqual(s.server(for: "demo-mp25")?.id, a.id)
+        XCTAssertEqual(s.server(for: "demo-mp12")?.id, a.id)
+        // a server taken out: back to the first
+        s.servers.removeAll { $0.id == b.id }
+        XCTAssertEqual(s.server(for: "demo-mp44")?.id, a.id)
+        // the round trip keeps both, and an older file without `pairingServers` reads
+        let data = try JSONEncoder().encode(s)
+        XCTAssertEqual(try JSONDecoder().decode(Monitoring.Settings.self, from: data), s)
+        let old = try JSONDecoder().decode(Monitoring.Settings.self, from: Data(#"{"pairings":{"j1":"5"}}"#.utf8))
+        XCTAssertEqual(old.pairings, ["j1": "5"])
+        XCTAssertTrue(old.pairingServers.isEmpty)
+        XCTAssertNil(old.server(for: "j1"))
+        s.unpair("demo-mp44")
+        XCTAssertNil(s.pairings["demo-mp44"])
+        XCTAssertNil(s.pairingServers["demo-mp44"])
+        XCTAssertEqual(s.paired(of: ["demo-mp44", "demo-mp25"]), 1)
+    }
 }

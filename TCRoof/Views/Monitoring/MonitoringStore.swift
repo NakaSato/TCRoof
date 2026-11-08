@@ -6,9 +6,9 @@ import TCRoofCore
 /// `Monitoring ทุกสถานี`'s data (issue #259): the settings, the stations and when they were last read. One store for
 /// the page and the dock's badge.
 ///
-/// For now the stations are the handed-over PWA stations, unpaired (their rows read `ไม่มีข้อมูล`), or with
-/// `-monitoringDemo YES` the board's example fleet. Reading the paired plants from Growatt's OpenAPI every
-/// `pollMinutes` is the next step; the settings, the token and the connection test are here already.
+/// The stations are the handed-over PWA stations, or with `-monitoringDemo YES` the board's example fleet. A station
+/// paired with a Growatt plant (`Settings.pairings`) is read from Growatt's OpenAPI every `pollMinutes` while the page
+/// shows (`poll`, `MonitoringFeed`); an unpaired one reads `ไม่มีข้อมูล`.
 @MainActor @Observable
 final class MonitoringStore {
     static let shared = MonitoringStore()
@@ -18,6 +18,9 @@ final class MonitoringStore {
     /// The clock the figures are worked out at: now, or the board's 14:55 in the demo.
     private(set) var now = Date()
     private(set) var refreshedAt: Date?
+    /// Why the last poll couldn't read a station's plant (`ต่อ Growatt ไม่ได้`), nil when every paired station read.
+    private(set) var feedFailure: String?
+    @ObservationIgnored private let feed = MonitoringFeed()
 
     private static let settingsKey = "monitoring.settings"
 
@@ -45,7 +48,8 @@ final class MonitoringStore {
         if n != attentionCount { attentionCount = n }
     }
 
-    /// Reads the stations again: the demo's, or the handed-over PWA stations (`jobs` from the page's query).
+    /// Reads the stations again: the demo's, or the handed-over PWA stations (`jobs` from the page's query). A paired
+    /// station keeps what Growatt last gave until the next `poll`.
     func refresh(jobs: [Job]) {
         if Self.demo {
             now = Monitoring.demoNow()
@@ -53,12 +57,52 @@ final class MonitoringStore {
         } else {
             now = Date()
             stations = Self.handedOver(jobs).map { job in
-                Monitoring.Station.unpaired(id: job.syncID ?? job.code, mpNumber: job.mpNumber, name: job.stationName,
-                                            kWp: job.capacityKW, inverters: Self.inverters(job))
+                let base = Self.base(job)
+                guard settings.pairing(of: base.id) != nil, let last = stations.first(where: { $0.id == base.id }), last.paired else { return base }
+                return last
             }
         }
         refreshedAt = Date()
         recount()
+    }
+
+    /// Reads every paired station's plant from Growatt (read only, one call after another, off the main actor) and fills
+    /// its row. A station whose server has no token on this device, or whose read failed, keeps its last figures.
+    func poll(jobs: [Job]) async {
+        guard !Self.demo else { return refresh(jobs: jobs) }
+        let handed = Self.handedOver(jobs)
+        var targets: [MonitoringFeed.Target] = []
+        for job in handed {
+            let id = Self.stationID(job)
+            guard let p = settings.pairing(of: id), let url = URL(string: p.server.url),
+                  let token = MonitoringToken.token(p.server.id) else { continue }
+            targets.append(.init(stationID: id, api: GrowattAPI(baseURL: url, token: token), plantID: p.plantID,
+                                 latitude: job.latitude, longitude: job.longitude))
+        }
+        guard !targets.isEmpty else { return refresh(jobs: jobs) }
+        let readAt = Date()
+        let readings = await feed.read(targets, now: readAt, calendar: .current)
+        guard !Task.isCancelled else { return }
+        let byID = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
+        let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        now = readAt
+        stations = handed.map { job in
+            let base = Self.base(job)
+            guard let r = byID[base.id] else { return previous[base.id].flatMap { $0.paired ? $0 : nil } ?? base }
+            return Monitoring.GrowattMap.station(base, reading: r.reading, previous: previous[base.id], now: readAt,
+                                                 offlineAfter: settings.loggerOfflineMinutes,
+                                                 forecastDailyKWhPerKWp: r.forecastDailyKWhPerKWp)
+        }
+        feedFailure = readings.compactMap(\.failure).first?.message
+        refreshedAt = Date()
+        recount()
+    }
+
+    private static func stationID(_ job: Job) -> String { job.syncID ?? job.code }
+
+    private static func base(_ job: Job) -> Monitoring.Station {
+        Monitoring.Station.unpaired(id: stationID(job), mpNumber: job.mpNumber, name: job.stationName,
+                                    kWp: job.capacityKW, inverters: inverters(job))
     }
 
     /// PWA stations handed over (`ส่งมอบแล้ว`): the ones maintenance looks after.

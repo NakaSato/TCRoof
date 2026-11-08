@@ -40,6 +40,84 @@ final class GrowattAPITests: XCTestCase {
         XCTAssertEqual(d.lastUpdate, "2026-09-09 15:41:34")
     }
 
+    /// `plant/power`: the day's readings in the guide's shape (W, the plant's clock); an empty power is unknown.
+    private let power = Data("""
+    {"error_msg":"","data":{"count":4,"powers":[{"time":"2026-11-08 06:00","power":0},{"time":"2026-11-08 06:05","power":"12.5"},
+    {"time":"2026-11-08 06:10","power":null},{"time":"2026-11-08 06:15","power":"38200"},{"power":"1"}]},"error_code":0}
+    """.utf8)
+
+    private let devices = Data("""
+    {"error_msg":"","data":{"count":3,"devices":[
+    {"device_sn":"MAX0001","type":4,"manufacturer":"Growatt","model":"MAX 125KTL3-X LV","datalogger_sn":"XGD001","lost":false,"status":1,"last_update_time":"2026-11-08 14:55:10"},
+    {"device_sn":"MAX0002","type":"4","model":"MAX 80KTL3 LV","datalogger_sn":"XGD001","lost":"true","status":"-1","last_update_time":"2026-11-08 09:50:00"},
+    {"device_sn":"MTR0001","type":3,"model":"Smart meter","datalogger_sn":"XGD001","lost":false,"status":1},
+    {"model":"no serial"}]},"error_code":0}
+    """.utf8)
+
+    private let energy = Data("""
+    {"error_msg":"","data":{"count":3,"energys":[{"date":"2026-11-06","energy":"612.4"},{"date":"2026-11-07","energy":""},
+    {"date":"2026-11-08","energy":330}]},"error_code":0}
+    """.utf8)
+
+    func testPlantDataCarriesTheZone() throws {
+        XCTAssertEqual(try GrowattAPI.parseData(overview).timezone, "GMT+8")
+    }
+
+    func testPlantPower() throws {
+        let p = try GrowattAPI.parsePower(power)
+        // a row without a time is dropped; a null power is unknown, not 0
+        XCTAssertEqual(p.count, 4)
+        XCTAssertEqual(p[0].power, 0)
+        XCTAssertEqual(p[1].power, 12.5)
+        XCTAssertNil(p[2].power)
+        XCTAssertEqual(p[3].power, 38200)
+        XCTAssertEqual(p[3].time, "2026-11-08 06:15")
+    }
+
+    func testDeviceList() throws {
+        let d = try GrowattAPI.parseDevices(devices)
+        XCTAssertEqual(d.map(\.sn), ["MAX0001", "MAX0002", "MTR0001"])
+        XCTAssertTrue(d[0].isInverter)
+        XCTAssertTrue(d[0].isOnline)
+        XCTAssertEqual(d[0].datalogger, "XGD001")
+        // numbers and booleans as text
+        XCTAssertEqual(d[1].type, 4)
+        XCTAssertEqual(d[1].status, -1)
+        XCTAssertEqual(d[1].lost, true)
+        XCTAssertTrue(d[1].isLost)
+        XCTAssertFalse(d[1].isOnline)
+        // a meter isn't an inverter
+        XCTAssertFalse(d[2].isInverter)
+        XCTAssertFalse(GrowattAPI.Device(sn: "x", status: 3).isOnline)
+        XCTAssertTrue(GrowattAPI.Device(sn: "x", status: 0).isOnline, "waiting at night is not a fault")
+        XCTAssertTrue(GrowattAPI.Device(sn: "x").isInverter, "a type not given counts")
+    }
+
+    func testPlantEnergy() throws {
+        let e = try GrowattAPI.parseEnergy(energy)
+        XCTAssertEqual(e.count, 3)
+        XCTAssertEqual(e[0].energy, 612.4)
+        XCTAssertNil(e[1].energy)
+        XCTAssertEqual(e[2].energy, 330)
+    }
+
+    func testNewCallsCarryTheirQueries() async throws {
+        GrowattStub.replies = [power, devices, energy]
+        let a = api()
+        _ = try await a.power(plantID: 7, date: "2026-11-08")
+        _ = try await a.devices(plantID: 7, perPage: 10)
+        _ = try await a.energy(plantID: 7, start: "2026-11-01", end: "2026-11-07", unit: .day)
+        let r = GrowattStub.requests
+        XCTAssertEqual(r.count, 3)
+        XCTAssertEqual(r[0].url?.path, "/v1/plant/power")
+        XCTAssertEqual(r[0].url?.query, "date=2026-11-08&plant_id=7")
+        XCTAssertEqual(r[1].url?.path, "/v1/device/list")
+        XCTAssertEqual(r[1].url?.query, "page=1&perpage=10&plant_id=7")
+        XCTAssertEqual(r[2].url?.path, "/v1/plant/energy")
+        XCTAssertEqual(r[2].url?.query, "end_date=2026-11-07&plant_id=7&start_date=2026-11-01&time_unit=day")
+        XCTAssertEqual(r.map { $0.httpMethod ?? "GET" }, ["GET", "GET", "GET"], "every call reads")
+    }
+
     func testErrorCodes() {
         let denied = Data(#"{"error_msg":"error_permission_denied","data":"","error_code":10011}"#.utf8)
         XCTAssertThrowsError(try GrowattAPI.parsePlants(denied)) { XCTAssertEqual($0 as? GrowattAPI.Failure, .api(10011, "error_permission_denied")) }

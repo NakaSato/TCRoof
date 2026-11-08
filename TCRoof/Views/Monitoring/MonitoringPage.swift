@@ -52,19 +52,28 @@ struct MonitoringPage: View {
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task(id: jobs.map(\.persistentModelID)) { store.refresh(jobs: jobs) }
-        // poll while the page shows: never closer than Growatt's 5 minutes
-        .task(id: [store.settings.pollMinutes, isShown ? 1 : 0]) {
+        // read Growatt while the page shows, at once and then every `pollMinutes` (never closer than its 5 minutes);
+        // a new pairing or server reads again at once
+        .task(id: PollKey(minutes: store.settings.pollMinutes, shown: isShown, pairings: store.settings.pairings,
+                          servers: store.settings.servers.map(\.id))) {
             guard isShown else { return }
             while !Task.isCancelled {
+                await store.poll(jobs: jobs)
                 try? await Task.sleep(for: .seconds(store.settings.pollInterval))
-                guard !Task.isCancelled else { return }
-                store.refresh(jobs: jobs)
             }
         }
-        .overlay { if showSettings { MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit) { showSettings = false } } }
+        .overlay {
+            if showSettings {
+                MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
+            }
+        }
         .navigationDestination(item: $opened) { s in
             PWAMaintenanceStationView(station: Self.summary(s, health: s.health(now: store.now, offlineAfter: store.settings.loggerOfflineMinutes)))
         }
+    }
+
+    private struct PollKey: Equatable {
+        var minutes: Int, shown: Bool, pairings: [String: String], servers: [UUID]
     }
 
     /// Managers edit the settings (issue #259 §7); everyone else sees them.
@@ -84,6 +93,11 @@ struct MonitoringPage: View {
             Text("Monitoring ทุกสถานี").font(.sarabunFixed(24, .bold)).foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 12)
+            if let failure = store.feedFailure {
+                Label(failure, systemImage: "exclamationmark.triangle.fill")
+                    .font(.sarabunFixed(13, .semibold)).foregroundStyle(.white).lineLimit(1)
+                    .accessibilityIdentifier("monitoring.feedFailure")
+            }
             Button { showSettings = true } label: {
                 Label("ตั้งค่า Monitoring", systemImage: "gearshape").font(.sarabunFixed(15, .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 18).frame(minHeight: 44)
@@ -194,8 +208,11 @@ struct MonitoringPage: View {
     }
 
     #if DEBUG
-    static var debugSettings: Bool { UserDefaults.standard.bool(forKey: "monitoringSettings") }
+    static var debugSettings: Bool { UserDefaults.standard.bool(forKey: "monitoringSettings") || debugPairing }
+    /// `-monitoringPairing YES`: the dialog open on `จับคู่สถานีกับ Plant`, with example plants.
+    static var debugPairing: Bool { UserDefaults.standard.bool(forKey: "monitoringPairing") }
     #else
     static var debugSettings: Bool { false }
+    static var debugPairing: Bool { false }
     #endif
 }

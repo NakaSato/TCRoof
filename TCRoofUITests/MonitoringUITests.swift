@@ -58,6 +58,38 @@ final class MonitoringUITests: XCTestCase {
         XCTAssertTrue(waitGone(save))
     }
 
+    /// `จับคู่สถานีกับ Plant` on the stub list (`-monitoringPairing YES`): MP 44 takes the plant named after it, which the
+    /// row and the count show and which turns save on; `เลิกจับคู่` takes it back and save goes off again.
+    func testPairingAStationWithAPlant() {
+        let app = launch(["-role", "manager", "-monitoringPairing", "YES"])
+        let mp44 = app.buttons["monitoring.pairing.station.demo-mp44"]
+        XCTAssertTrue(mp44.waitForExistence(timeout: slow), "the dialog opens on the pairing page")
+        XCTAssertTrue(mp44.label.contains("ยังไม่จับคู่"))
+        let count = app.staticTexts["monitoring.pairing.count"]
+        XCTAssertTrue(count.label.hasPrefix("0/6"))
+        let save = app.buttons["monitoring.settings.save"]
+        XCTAssertFalse(save.isEnabled)
+
+        mp44.tap()
+        let plant = app.buttons["monitoring.pairing.plant.9001"]
+        XCTAssertTrue(plant.waitForExistence(timeout: 10), "the stub plants come in after the skeleton")
+        XCTAssertTrue(plant.label.contains("แนะนำ"), "the plant named after the station is suggested")
+        XCTAssertFalse(app.buttons["monitoring.pairing.plant.9007"].label.contains("แนะนำ"))
+        plant.tap()
+        XCTAssertTrue(save.isEnabled, "a pairing is a change")
+        XCTAssertTrue(mp44.label.contains("PWA สามพราน"), "the row names its plant")
+        XCTAssertTrue(count.label.hasPrefix("1/6"))
+
+        app.buttons["monitoring.pairing.unpair"].tap()
+        XCTAssertTrue(mp44.label.contains("ยังไม่จับคู่"))
+        XCTAssertFalse(save.isEnabled, "back to what was saved")
+
+        app.buttons["monitoring.pairing.back"].tap()
+        XCTAssertTrue(app.buttons["monitoring.pairing.open"].waitForExistence(timeout: 8), "`‹` brings the settings back")
+        app.buttons["ยกเลิก"].firstMatch.tap()
+        XCTAssertTrue(waitGone(save))
+    }
+
     func testSettingsAreReadOnlyForTheTeam() {
         let app = launch(["-role", "internal"])
         let open = app.buttons["monitoring.settings"]

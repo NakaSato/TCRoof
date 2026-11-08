@@ -138,10 +138,17 @@ struct InstallPageData {
         docs = Self.docTiles(job: job, today: today)
         self.site = Self.site(job: job, gantt: gantt, today: today)
         if let g = gantt, let input = job.scheduleInput {
-            let tasks = Dictionary(MasterSchedule.plan(input).map { ($0.task, $0) }) { a, _ in a }
-            var milestones = [InstallPlan.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart)]
-            if let pre = tasks[.preCommissioning]?.start { milestones.append(.init(title: "ทดสอบระบบ (Pre-Commissioning)", date: pre)) }
-            milestones.append(.init(title: "ส่งมอบ", date: job.installEnd))
+            let planned = MasterSchedule.plan(input), actual = job.scheduleActual
+            let tasks = Dictionary(planned.map { ($0.task, $0) }) { a, _ in a }
+            // a milestone is passed when its work is booked complete, not when its day has gone (CHA-64)
+            func complete(_ t: MasterSchedule.PlannedTask) -> Bool { actual.done(t.task, through: today) >= t.weight - 1e-6 }
+            let started = g.rows.contains { $0.status != .waiting }
+            var milestones = [InstallPlan.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart, done: started)]
+            if let pre = tasks[.preCommissioning], let date = pre.start {
+                // a non-breaking hyphen, so the card doesn't wrap "Pre-" from "Commissioning"
+                milestones.append(.init(title: "ทดสอบระบบ (Pre\u{2011}Commissioning)", date: date, done: complete(pre)))
+            }
+            milestones.append(.init(title: "ส่งมอบ", date: job.installEnd, done: planned.allSatisfy(complete)))
             // the weekly requests' planned crew; the plan itself keeps no crew
             let crew = Dictionary((site?.labour ?? []).compactMap { l in l.plan.map { (cal.startOfDay(for: l.date), $0) } }) { a, _ in a }
             var p = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)

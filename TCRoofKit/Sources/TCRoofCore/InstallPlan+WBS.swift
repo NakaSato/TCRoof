@@ -8,6 +8,7 @@ public extension InstallPlan {
     /// keeps its places.
     mutating func useWBS(_ items: [MasterSchedule.WorkItem], ticked: Set<String>, settings: RoutineReport.Settings? = nil,
                          calendar cal: Calendar = MasterSchedule.calendar) {
+        defer { settle() }
         let day = today, nonWorking = nonWorking
         for i in stages.indices {
             let stage = stages[i].row
@@ -17,6 +18,7 @@ public extension InstallPlan {
             let line = items.first { $0.code == task.code }?.baselineStart.map { cal.startOfDay(for: $0) }
             let shift = line.flatMap { cal.dateComponents([.day], from: $0, to: stage.start).day } ?? 0
             func move(_ d: Date) -> Date { cal.date(byAdding: .day, value: shift, to: cal.startOfDay(for: d)) ?? d }
+            stages[i].fromWBS = true
             stages[i].subs = subs.map { item in
                 let a = move(item.baselineStart!), b = max(move(item.baselineEnd!), a)
                 let done = ticked.contains(item.code) || stage.status == .done

@@ -58,6 +58,8 @@ struct ToolsView: View {
     var request: String? = nil
     /// The iPhone tab root: module rows on top.
     var modules: [AppModule] = []
+    /// Only the register (`ทะเบียน ›` of the iPad ledger's `เครื่องมือวัด` card).
+    var registerOnly = false
 
     @State private var store = InstrumentStore.shared
     @Environment(\.permissions) private var permissions
@@ -74,18 +76,18 @@ struct ToolsView: View {
 
     var body: some View {
         ScrollView {
-            if sizeClass == .regular && showsLog {
-                // iPad (the board's iPadToolsHub): the log on the left, the register and the vehicles on the right
+            if registerOnly {
+                VStack(alignment: .leading, spacing: 8) { header; register }
+                    .cardStyle()
+                    .padding(.horizontal, sizeClass == .regular ? 24 : 16).padding(.top, 12).padding(.bottom, sizeClass == .regular ? 110 : 16)
+                    .frame(maxWidth: 820).frame(maxWidth: .infinity)
+            } else if sizeClass == .regular && showsLog {
+                // iPad: the log and the vehicles are a screen of their own (`ToolLogPadScreen`, docs/ui/tools-log-ipad),
+                // pushed from one row over the register
                 VStack(alignment: .leading, spacing: 12) {
                     moduleRows
-                    HStack(alignment: .top, spacing: 16) {
-                        ToolLogCard().frame(maxWidth: .infinity)
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) { header; register }.cardStyle()
-                            VehicleCard()
-                        }
-                        .frame(width: 420)
-                    }
+                    ToolLogRow()
+                    VStack(alignment: .leading, spacing: 8) { header; register }.cardStyle().padding(.top, 4)
                 }
                 .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 110)
                 .frame(maxWidth: 1320).frame(maxWidth: .infinity)
@@ -104,10 +106,11 @@ struct ToolsView: View {
             }
         }
         .background(Theme.phonePage.ignoresSafeArea())
-        .navigationTitle("เครื่องมือวัด")
+        .navigationTitle(registerOnly ? "ทะเบียนเครื่องมือวัด" : "เครื่องมือวัด")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .tcPadNavBar("เครื่องมือวัด", trail: ["หน้าหลัก"])
+        .tcPadNavBar(registerOnly ? "ทะเบียนเครื่องมือวัด" : "เครื่องมือวัด",
+                     trail: registerOnly ? ["เครื่องมือวัด", "บันทึกเครื่องมือและรถ"] : ["หน้าหลัก"])
         .task { CloudSync.shared.loadToolRecords() }
         .sheet(item: $editing) { tool in
             InstrumentForm(tool: tool, isNew: !store.all.contains { $0.id == tool.id }, save: store.save, delete: store.delete)
@@ -164,8 +167,8 @@ struct ToolsView: View {
     }
 }
 
-/// Add or edit one tool of the register.
-private struct InstrumentForm: View {
+/// Add or edit one tool of the register (also from the iPad ledger's chase list, `ToolLogPadScreen`).
+struct InstrumentForm: View {
     @State var tool: Instrument
     let isNew: Bool
     let save: (Instrument) -> Void

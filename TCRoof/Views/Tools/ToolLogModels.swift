@@ -130,7 +130,13 @@ enum ToolLogDemo {
             ToolLog.Event(id: item + "-\(Int(t.timeIntervalSince1970))", action: a, item: item, itemName: name, person: who, personEmail: "", job: job, at: t, due: due,
                           odometer: odo, fuelLevel: fuel, litres: litres, baht: baht, note: note)
         }
+        // the iPad ledger's board (docs/ui/tools-log-ipad): 13 entries, 7 of tools and 6 of vehicles, 12 of them within 7 days
         return [
+            e(.giveBack, "ti401", "Fluke Ti401 PRO กล้องถ่ายภาพความร้อน", "สมชาย", "NO.205", at(-20, 16, 40), note: "ชำรุด / ต้องซ่อม · เลนส์มีรอย"),
+            e(.borrow, "hioki", "Hioki CM4375 แคลมป์มิเตอร์", "วิชัย", "NO.215", at(-5, 8, 30), due: at(-1, 17, 0)),
+            e(.carOut, "v3", "Toyota Revo · 3กง 9012", "ธนพล", "NO.226", at(-4, 7, 30), odo: 42_640),
+            e(.borrow, "f1587", "Fluke 1587 FC เครื่องวัดฉนวน", "ธนพล", "NO.212", at(-4, 13, 10), due: at(0, 17, 0)),
+            e(.carIn, "v3", "Toyota Revo · 3กง 9012", "ธนพล", "NO.226", at(-4, 17, 45), odo: 42_980, fuel: 0.9),
             e(.borrow, "t376", "Fluke 376 FC แคลมป์มิเตอร์", "วิชัย", "NO.098", at(-4, 8, 15), due: at(-1, 17, 0)),
             e(.carOut, "v2", "Toyota Commuter · 2กค 5678", "ธนพล", "NO.212", at(-1, 7, 15), odo: 120_243),
             e(.giveBack, "hioki", "Hioki CM4375 แคลมป์มิเตอร์", "วิชัย", "NO.215", at(-1, 16, 5), note: "สภาพปกติ"),

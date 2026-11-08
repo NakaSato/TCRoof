@@ -137,7 +137,10 @@ struct ToolLogCard: View {
     }
 
     /// `ทวงคืน`: a `remind` entry in the log, so the team sees who was chased and when.
-    private func remind(_ e: ToolLog.Event) {
+    private func remind(_ e: ToolLog.Event) { Self.remind(e, in: context) }
+
+    /// The same `ทวงคืน`, for the iPad ledger's chase list (`ToolLogPadScreen`).
+    static func remind(_ e: ToolLog.Event, in context: ModelContext) {
         guard !ToolLogDemo.on else { return }
         context.insert(ToolEvent(ToolLog.Event(action: .remind, item: e.item, itemName: e.itemName, person: TravelStore.person,
                                                personEmail: TravelStore.owner, job: e.job, note: "ทวงคืนจาก " + e.person)))

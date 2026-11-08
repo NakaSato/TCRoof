@@ -277,7 +277,7 @@ struct RootView: View {
 struct DebugScreen: View {
     static var requested: String? { UserDefaults.standard.string(forKey: "screen") }
     static let screens: Set = ["survey", "plan", "planlist", "surveyhistory", "scanhistory", "loghistory", "scan", "install", "job", "surveyForm", "devices", "logs", "log", "icl", "pwa", "station", "components", "mp", "mpall", "permits", "poa", "selfcert", "homework",
-                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "siteicl", "members", "useradmin", "assistant", "travel", "claimreview"]
+                              "daily", "dailies", "request", "weekly", "monthly", "routine", "stationdocs", "siteicl", "members", "useradmin", "assistant", "travel", "claimreview", "toollog"]
     static var isKnown: Bool { requested.map(screens.contains) ?? false }
 
     @Query(sort: \Job.installStart) private var jobs: [Job]
@@ -360,6 +360,9 @@ struct DebugScreen: View {
         case "members": MembersView()
         // `-travelDemo YES` seeds a month (for good), `-travelMonth 2026-09` opens that month, `-travelSubmit YES` the sign sheet
         case "travel": ClaimScreen()
+        // the iPad tool and vehicle ledger (docs/ui/tools-log-ipad); `-toolLogDemo YES` shows the board's example and
+        // `-toolLogFilter`, `-toolLogRange`, `-toolLogAction`, `-toolLogVehicle`, `-toolLogMore` open its states
+        case "toollog": ToolLogPadScreen().debugBoard()
         // `-claimReviewDemo YES` lists three team members' months and the manager's own (decisions in memory),
         // `-claimReviewFilter ส่งกลับ|อนุมัติแล้ว` picks the tab; run with `-role manager`
         case "claimreview": ClaimReviewScreen()

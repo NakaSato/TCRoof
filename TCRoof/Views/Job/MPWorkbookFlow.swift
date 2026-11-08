@@ -373,23 +373,61 @@ private struct MPWorkbookModifier: ViewModifier {
     }
 }
 
-/// `นำเข้าไฟล์แผน…` and `ส่งออกไฟล์แผน (Excel)` as one menu's items.
+/// `นำเข้าไฟล์แผน…` and `ส่งออกไฟล์แผน (Excel)` as one menu's items. With `boardRevision` (the iPad plan tab's header,
+/// CHA-70) the import and export come first with a second line each, as on the board, and the other items follow.
 struct MPWorkbookMenuItems: View {
     let flow: MPWorkbookFlow
     let job: Job
     let canImport: Bool
+    var boardRevision: String? = nil
 
     var body: some View {
+        if let rev = boardRevision {
+            boardItems(rev)
+        } else {
+            if canImport { importButton }
+            setupButton
+            exportButton
+        }
+    }
+
+    @ViewBuilder private func boardItems(_ rev: String) -> some View {
         if canImport {
             Button { flow.startImport() } label: {
-                Label(flow.working ? "นำเข้าไฟล์แผน (กำลังอ่านไฟล์…)" : "นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down")
+                Label {
+                    Text(flow.working ? "นำเข้าไฟล์แผน (กำลังอ่านไฟล์…)" : "นำเข้าไฟล์แผน (.xlsx)")
+                    Text("Master Plan Weekly ของสถานี · ตรวจก่อนนำเข้า")
+                } icon: { Image(systemName: "square.and.arrow.down") }
             }
             .disabled(flow.working)
         }
+        Button { flow.export(job) } label: {
+            Label {
+                Text(flow.working ? "ส่งออก Excel (กำลังเตรียมไฟล์…)"
+                     : job.scheduleWorkbookDownloading ? "ส่งออก Excel (กำลังดาวน์โหลดจาก Drive…)"
+                     : job.scheduleWorkbook == nil ? "ส่งออก Excel (นำเข้าไฟล์ก่อน)" : "ส่งออก Excel")
+                Text("ดาวน์โหลด .xlsx · แผน \(rev) ทุกงานย่อย")
+            } icon: { Image(systemName: "square.and.arrow.up") }
+        }
+        .disabled(flow.working || job.scheduleWorkbook == nil || job.scheduleInput == nil)
+        setupButton
+    }
+
+    private var importButton: some View {
+        Button { flow.startImport() } label: {
+            Label(flow.working ? "นำเข้าไฟล์แผน (กำลังอ่านไฟล์…)" : "นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down")
+        }
+        .disabled(flow.working)
+    }
+
+    @ViewBuilder private var setupButton: some View {
         if canImport, job.scheduleWorkbook != nil {
             Button { flow.reviewSetup(job) } label: { Label("ตั้งค่าโครงการจากไฟล์…", systemImage: "list.bullet.clipboard") }
                 .accessibilityIdentifier("mpWorkbook.setup")
         }
+    }
+
+    private var exportButton: some View {
         Button { flow.export(job) } label: {
             Label(flow.working ? "ส่งออกไฟล์แผน (กำลังเตรียมไฟล์…)"
                   : job.scheduleWorkbookDownloading ? "ส่งออกไฟล์แผน (กำลังดาวน์โหลดจาก Drive…)"

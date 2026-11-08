@@ -104,7 +104,7 @@ struct PhoneSettingsList: View {
                     Toggle(isOn: $saveToLibrary) {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("บันทึกลงคลังภาพของเครื่อง").foregroundStyle(Theme.navy)
-                            Text("รูปจากกล้องในแอป ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
+                            Text("รูปจากกล้องในแอป ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย (รูปที่ขึ้น Google Drive ไม่มีพิกัด)").font(.sarabun(12, relativeTo: .caption)).foregroundStyle(ink.muted)
                         }
                     }
                     .tint(Theme.primary)

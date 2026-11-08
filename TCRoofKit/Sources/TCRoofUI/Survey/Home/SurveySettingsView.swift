@@ -21,7 +21,7 @@ struct SurveySettingsView: View {
                 PadSection("รูปถ่าย") {
                     Toggle("บันทึกรูปที่ถ่ายลงคลังภาพของเครื่องด้วย", isOn: $saveToLibrary)
                 } footer: {
-                    Text("รูปจากกล้องในแอปจะเก็บไว้ในแอป Photos ด้วย ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย")
+                    Text("รูปจากกล้องในแอปจะเก็บไว้ในแอป Photos ด้วย ขนาดเต็ม พร้อมพิกัดและทิศที่ถ่าย รูปที่ขึ้น Google Drive ไม่มีพิกัด")
                 }
                 DeviceCapsSection()
                 PadSection("แผงโซลาร์") {

@@ -156,6 +156,15 @@ enum RoutineReportFiles {
         var data: Data {
             PDFRenderer.pdf(pages: pages, title: title) { p in images[p.id].flatMap(UIImage.init(data:)) }
         }
+
+        /// `data` drawn off the main thread: the pages and photos are values, read from the job beforehand, and
+        /// decoding a period's photos and drawing its pages takes seconds on a busy station.
+        func rendered() async -> Data {
+            let pages = pages, images = images, title = title
+            return await Task.detached(priority: .userInitiated) {
+                PDFRenderer.pdf(pages: pages, title: title) { p in images[p.id].flatMap(UIImage.init(data:)) }
+            }.value
+        }
     }
 
     /// The daily reports dated within `range` with their photos and signatures. Only their photos are read: the

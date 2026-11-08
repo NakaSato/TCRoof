@@ -7,7 +7,7 @@ import TCRoofCore
 /// one photo), the roof's name above its photos, `n / total` at the foot. A slot without a photo keeps its empty
 /// frame with `ยังไม่มีรูป`, so the page count and the order stay as in the report. Photos are fitted in their frame,
 /// not cropped, so a date / GPS stamp in a corner stays in view.
-public struct InstallPhotoPages {
+public struct InstallPhotoPages: Sendable {
     public struct Slot: Sendable {
         public var caption: String
         public var photo: Photo?

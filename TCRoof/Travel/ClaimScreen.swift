@@ -84,7 +84,7 @@ struct ClaimScreen: View {
         .sheet(item: $newExpense) { ExpenseEditor(expense: nil, receipt: $0.receipt, date: $0.date) }
         .sheet(isPresented: $showSettings) { TravelSettingsSheet() }
         .sheet(isPresented: $showSubmit) {
-            ClaimSubmitSheet(total: summary.total, warnings: summary.warnings.count) { signature in submit(signature) }
+            ClaimSubmitSheet(total: summary.total, warnings: summary.warnings.count) { signature in try submit(signature) }
         }
         .sheet(isPresented: $pickStop) {
             JobPickerSheet(title: "ถึงสถานีไหน") { job in Task { await stamp(.arrive, job) } }
@@ -99,8 +99,12 @@ struct ClaimScreen: View {
         .alert("ถอนการยื่นเบิก", isPresented: $showWithdraw) {
             TextField("เหตุผล", text: $withdrawReason)
             Button("ถอนการยื่น", role: .destructive) {
-                ClaimExport(month: month, context: context).withdraw(reason: withdrawReason)
-                withdrawReason = ""
+                do {
+                    try ClaimExport(month: month, context: context).withdraw(reason: withdrawReason)
+                    withdrawReason = ""
+                } catch {
+                    notice = "ถอนการยื่นไม่สำเร็จ บันทึกในเครื่องไม่ได้ ลองอีกครั้ง"
+                }
             }
             Button("ยกเลิก", role: .cancel) {}
         } message: { Text("เดือนนี้จะแก้ได้อีกครั้ง ไฟล์ที่ส่งขึ้น Drive แล้วยังอยู่") }

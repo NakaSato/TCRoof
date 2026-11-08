@@ -105,6 +105,11 @@ extension CloudSync {
             return .updated(id: id, record: record, fingerprint: Self.recordFingerprint(record))
         }
         guard snapshotIsCurrent(session), let changes = prepared, let context else { return }
+        // A record this device already has in step (an echo, a collection's first snapshot) is what the server has:
+        // the base a local edit is merged against when another device's change follows (`mergeUnpushed`).
+        for case .updated(let id, let record, let fingerprint) in changes where known["\(M.collection)/\(id)"] == fingerprint {
+            syncedRecords["\(M.collection)/\(id)"] = record
+        }
         // A cache/server echo needs no SwiftData fetch or save, but recheck known at the actual apply below too.
         guard changes.contains(where: { change in
             switch change {
@@ -144,6 +149,7 @@ extension CloudSync {
             let lookupFinished = Date()
 #endif
             applyingRemoteSnapshots = true
+            var merged = false
             repeat {
                 let change = changes[index]
                 let id = change.id
@@ -152,10 +158,13 @@ extension CloudSync {
                 case .removed:
                     if let model = local[id] { context.delete(model) }
                     known[key] = nil
+                    syncedRecords[key] = nil
                     pending[key] = nil
                 case .updated(_, let record, let fingerprint):
-                    if known[key] != fingerprint,
-                       !upsert(M.self, id: id, record: record, existing: local[id], jobs: jobs) {
+                    guard known[key] != fingerprint else { break }
+                    if mergeUnpushed(M.self, key: key, existing: local[id], remote: record, fingerprint: fingerprint, jobs: jobs) {
+                        merged = true
+                    } else if !upsert(M.self, id: id, record: record, existing: local[id], jobs: jobs) {
                         pending[key] = { [weak self] in
                             guard let self else { return true }
                             let existing = self.model(M.self, syncID: id)
@@ -170,6 +179,8 @@ extension CloudSync {
             let saveStarted = Date()
 #endif
             saveSnapshotChanges()
+            // a remote save sends nothing up (`remoteSavePushSuppressions`), but a merge holds this device's edit
+            if merged { schedulePush(collections: [M.collection]) }
 #if DEBUG
             let duration = Date().timeIntervalSince(started)
             print("CloudSync: \(M.collection) lookup \(Int(lookupFinished.timeIntervalSince(started) * 1000)) ms, save \(Int(Date().timeIntervalSince(saveStarted) * 1000)) ms")
@@ -247,7 +258,37 @@ extension CloudSync {
             model = made
         }
         let key = "\(M.collection)/\(id)"
-        known[key] = recordFingerprintCache(M.self).fingerprint(id: key, record: model.record) { fingerprint($0) }
+        let applied = model.record
+        known[key] = recordFingerprintCache(M.self).fingerprint(id: key, record: applied) { fingerprint($0) }
+        syncedRecords[key] = applied
+        return true
+    }
+
+    /// Another device's change to a record this device edited and hasn't pushed yet (its record no longer matches
+    /// what the server last had): the fields only the other device changed are taken, this device's edits stay, and
+    /// the next push sends the result. False for a record in step with the server or never synced here, which takes
+    /// the server's copy as before.
+    private func mergeUnpushed<M: CloudSynced>(_ type: M.Type, key: String, existing: M?, remote: M.Record, fingerprint: String,
+                                               jobs: [String: Job]) -> Bool {
+        guard let existing, let last = known[key] else { return false }
+        // an external member's device only reads inspections (`push`'s `.readOnly`): the server's copy stands
+        if external != nil, M.self == Inspection.self { return false }
+        let local = existing.record
+        guard recordFingerprintCache(M.self).fingerprint(id: key, record: local, compute: { self.fingerprint($0) }) != last else { return false }
+        if let base = syncedRecords[key] as? M.Record, let result = RecordMerge.merge(base: base, local: local, remote: remote) {
+            if result.merged != local, !existing.applyMerged(result.merged, jobs: jobs) {
+                print("CloudSync: \(key): the other device's change didn't apply; this device's edit stands")
+            }
+            if !result.conflicts.isEmpty {
+                print("CloudSync: \(key): both devices changed \(result.conflicts.joined(separator: ", ")); this device's edit stands")
+            }
+        } else {
+            // the server's earlier copy isn't known in this launch, so the fields can't be told apart: ours stands whole
+            print("CloudSync: \(key): another device's change met an edit not sent yet; this device's edit stands")
+        }
+        // the server has the other device's record; ours differs from it now, so the next push sends it
+        known[key] = fingerprint
+        syncedRecords[key] = remote
         return true
     }
 

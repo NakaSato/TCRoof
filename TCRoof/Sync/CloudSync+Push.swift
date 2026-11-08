@@ -32,6 +32,26 @@ extension CloudSync {
         let key: String
         let write: (WriteBatch) throws -> Void
         let fingerprint: String?
+        /// The record written, kept as what the server has (`syncedRecords`); nil for a delete or a survey.
+        var record: (any Sendable)? = nil
+    }
+
+    /// What the server had of a document before a write: put back if Firestore refuses the write.
+    typealias Sent = (fingerprint: String?, record: (any Sendable)?)
+
+    /// Takes a write as what the server has, before Firestore confirms it, and returns what to put back on a refusal.
+    func markSent(_ change: Change) -> Sent {
+        let old: Sent = (known[change.key], syncedRecords[change.key])
+        known[change.key] = change.fingerprint
+        syncedRecords[change.key] = change.record
+        return old
+    }
+
+    func restoreSent(_ previous: [String: Sent]) {
+        for (key, old) in previous {
+            known[key] = old.fingerprint
+            syncedRecords[key] = old.record
+        }
     }
 
     /// Scheduled saves inspect affected collections. Startup, manual refresh and config changes recover with a full scan.
@@ -127,15 +147,14 @@ extension CloudSync {
             let slice = changes[start..<min(start + size, changes.count)]
             let sent = Array(slice)
             let batch = db.batch()
-            var previous: [String: String?] = [:]
+            var previous: [String: Sent] = [:]
             for change in slice {
                 do { try change.write(batch) } catch {
                     uploadScans.retry(keys: [change.key])
                     failed(error)
                     continue
                 }
-                previous[change.key] = known[change.key]
-                known[change.key] = change.fingerprint
+                previous[change.key] = markSent(change)
                 unconfirmed[change.key, default: 0] += 1
             }
             let session = snapshotSession
@@ -152,7 +171,7 @@ extension CloudSync {
                     if let error {
                         self.uploadScans.retry(keys: Set(previous.keys))
                         // Put back what the server still has so the next push tries again.
-                        for (key, old) in previous { self.known[key] = old }
+                        self.restoreSent(previous)
                         self.saveKnown()
                         let refused = (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue
                         if self.external != nil, refused {
@@ -202,21 +221,20 @@ extension CloudSync {
         let session = snapshotSession
         for start in stride(from: 0, to: changes.count, by: size) {
             let batch = db.batch()
-            var previous: [String: String?] = [:]
+            var previous: [String: Sent] = [:]
             for change in changes[start..<min(start + size, changes.count)] {
                 guard (try? change.write(batch)) != nil else {
                     uploadScans.retry(keys: [change.key])
                     continue
                 }
-                previous[change.key] = known[change.key]
-                known[change.key] = change.fingerprint
+                previous[change.key] = markSent(change)
             }
             batch.commit { [weak self] error in
                 guard MainActor.assumeIsolated({ self?.snapshotSession == session }) else { return }
                 MainActor.assumeIsolated {
                     guard let self, self.snapshotSession == session, let error else { return }
                     self.uploadScans.retry(keys: Set(previous.keys))
-                    for (key, old) in previous { self.known[key] = old }
+                    self.restoreSent(previous)
                     self.saveKnown()
                     print("CloudSync: \(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
                 }
@@ -269,9 +287,10 @@ extension CloudSync {
                     fields["wbsTicksBy"] = external
                 }
                 changes.append(Change(key: key, write: { [fields] in $0.setData(fields, forDocument: ref, merge: true) },
-                                      fingerprint: print))
+                                      fingerprint: print, record: record))
             } else {
-                changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print))
+                changes.append(Change(key: key, write: { try $0.setData(from: record, forDocument: ref) }, fingerprint: print,
+                                      record: record))
             }
         }
         cache.retainIDs(Set(models.compactMap { $0.syncID.map { "\(M.collection)/\($0)" } }))

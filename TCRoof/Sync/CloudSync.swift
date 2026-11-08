@@ -61,6 +61,9 @@ final class CloudSync {
     @ObservationIgnored var remoteSavePushSuppressions = Set<ObjectIdentifier>()
     @ObservationIgnored var pendingModelIndexes: [ObjectIdentifier: Any] = [:]
     @ObservationIgnored var known: [String: String] = [:]
+    /// The record behind each `known` fingerprint, while the app runs: what the server last had, so a local edit not
+    /// pushed yet can be merged with another device's change instead of being overwritten (`mergeUnpushed`).
+    @ObservationIgnored var syncedRecords: [String: any Sendable] = [:]
     /// Writes per document not yet confirmed by the server (offline, or still uploading).
     @ObservationIgnored var unconfirmed: [String: Int] = [:]
     /// Child records waiting for their job to arrive, keyed like `known`.
@@ -119,6 +122,7 @@ final class CloudSync {
         if let u = Auth.auth().currentUser?.uid {
             Self.carryKnown(to: u)
             known = UserDefaults.standard.dictionary(forKey: "cloudSync.known.\(u)") as? [String: String] ?? [:]
+            syncedRecords = [:]
         }
         survey.cloudPush = { [weak self] in
             guard let self else { return }
@@ -157,6 +161,7 @@ final class CloudSync {
         pendingRetryScheduled = false
         pendingRetryAgain = false
         unconfirmed = [:]
+        syncedRecords = [:]
         snapshotApplyTask?.cancel(); snapshotApplyTask = nil
         pendingSnapshotWork = []
         snapshotJobIndex = nil
@@ -192,6 +197,7 @@ final class CloudSync {
             let me = MemberRole.shared.permissions
             external = me.role == .external && !me.email.isEmpty ? me.email : nil
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
+            syncedRecords = [:]
             // Start each collection sequentially with pacing delays to prevent request bursts.
             guard try await loadProjectsInBatches() else { return }
             try await delaySequenceLoad()
@@ -380,6 +386,7 @@ final class CloudSync {
             if ProjectCacheReconciliation.canRemove(serverContainsID: serverIDs.contains(id), knownFingerprint: known[key],
                                                     localFingerprint: fingerprint(project.record), hasPendingWrite: unconfirmed[key] != nil) {
                 known[key] = nil
+                syncedRecords[key] = nil
                 pending[key] = nil
                 context.delete(project)
             }

@@ -13,6 +13,9 @@ protocol CloudSynced: PersistentModel {
     var record: Record { get }
     /// Copies a record's fields; false when the record's job isn't on this device yet.
     func apply(_ r: Record, jobs: [String: Job]) -> Bool
+    /// `apply` for a record merged from this device's edit not pushed yet and another device's change
+    /// (`RecordMerge`): its fields carry this device's values, which `apply` mustn't take for Firestore's echo of them.
+    func applyMerged(_ r: Record, jobs: [String: Job]) -> Bool
     /// An unlinked model to insert and then `apply` the record to; nil when its job isn't on this device yet.
     static func make(_ r: Record, jobs: [String: Job]) -> Self?
     /// False keeps the model on this device only, for now (a photo not on Drive yet).
@@ -23,6 +26,7 @@ protocol CloudSynced: PersistentModel {
 
 extension CloudSynced {
     var syncs: Bool { true }
+    func applyMerged(_ r: Record, jobs: [String: Job]) -> Bool { apply(r, jobs: jobs) }
 }
 
 extension Job { var ownerJob: Job? { self } }
@@ -212,6 +216,14 @@ extension Job: CloudSynced {
         // a record with no kind is from an app version that took a job with PWA data for a PWA job
         if let v = r.kind { kindRaw = v } else if kindRaw == nil, r.hasPWAData { kind = .pwa }
         return true
+    }
+
+    /// A contractor's weekly requests and WBS ticks wait as unsent until Firestore echoes them back, and `apply` takes a
+    /// record carrying the same values for that echo. A merged record carries them from this device, still unsent.
+    func applyMerged(_ r: Record, jobs: [String: Job]) -> Bool {
+        let weekly = weeklyRequestsUnsent, ticks = wbsTicksUnsent
+        defer { weeklyRequestsUnsent = weekly; wbsTicksUnsent = ticks }
+        return apply(r, jobs: jobs)
     }
 
     static func make(_ r: Record, jobs: [String: Job]) -> Job? {

@@ -157,24 +157,41 @@ extension Data {
     }
 }
 
+/// The Google refresh token. Readable after the first unlock (background Drive uploads) and never part of a backup or a
+/// new device's restore: `ThisDeviceOnly`, as the AI and Growatt keys are (CHA-51).
 enum Keychain {
     static let service = "SolarSurvey"
+    static let accessible = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+    private static func query(_ key: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: key]
+    }
+
     static func write(_ key: String, _ value: String) {
         delete(key)
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: key,
-                                kSecValueData as String: Data(value.utf8), kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock]
+        var q = query(key)
+        q[kSecValueData as String] = Data(value.utf8)
+        q[kSecAttrAccessible as String] = accessible
         SecItemAdd(q as CFDictionary, nil)
     }
+
+    /// An item written before CHA-51 (`AfterFirstUnlock`, so in backups) is moved to `accessible` when read.
     static func read(_ key: String) -> String? {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: key,
-                                kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        var q = query(key)
+        q[kSecReturnData as String] = true
+        q[kSecReturnAttributes as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
         var out: AnyObject?
-        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let d = out as? Data else { return nil }
+        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let item = out as? [String: Any],
+              let d = item[kSecValueData as String] as? Data else { return nil }
+        if item[kSecAttrAccessible as String] as? String != accessible as String {
+            SecItemUpdate(query(key) as CFDictionary, [kSecAttrAccessible as String: accessible] as CFDictionary)
+        }
         return String(data: d, encoding: .utf8)
     }
+
     static func delete(_ key: String) {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: key]
-        SecItemDelete(q as CFDictionary)
+        SecItemDelete(query(key) as CFDictionary)
     }
 }
 #endif

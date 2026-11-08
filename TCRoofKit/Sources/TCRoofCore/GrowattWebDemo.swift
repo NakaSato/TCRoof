@@ -53,6 +53,8 @@ public struct GrowattWebDemo: Sendable {
         public var devices: [Device]
         /// The day the plant was added on Growatt, `yyyy-MM-dd`; empty when not given.
         public var created: String = ""
+        /// The plant's zone, hours from GMT (`timezone`, `-4`, `5.5`); nil when not given.
+        public var timezoneHours: Double? = nil
     }
 
     public var baseURL = URL(string: "https://server.growatt.com/")!
@@ -172,9 +174,14 @@ public struct GrowattWebDemo: Sendable {
         var seen = Set<String>()
         let list = try devicePages.flatMap { try devicePage($0).devices }.filter { $0.sn.isEmpty || seen.insert($0.sn).inserted }
         // the device list names the plant as the list does; getPlantData's name is hidden differently
-        return Plant(id: id, name: name, nominalPower: GrowattAPI.number(p["nominalPower"]) ?? 0,
-                     eTotal: GrowattAPI.number(p["eTotal"]) ?? 0, devices: list, created: text(p["creatDate"]) ?? "")
+        return Plant(id: id, name: name, nominalPower: plantWatts(GrowattAPI.number(p["nominalPower"]) ?? 0),
+                     eTotal: GrowattAPI.number(p["eTotal"]) ?? 0, devices: list, created: text(p["creatDate"]) ?? "",
+                     timezoneHours: GrowattAPI.number(p["timezone"]))
     }
+
+    /// The plant's `nominalPower`, W. Most plants give W, but some give kW (a 3.6 kW system reads `4` beside its
+    /// inverter's `3600.0`): a figure under 100 can't be watts of a PV plant, so it is read as kW.
+    static func plantWatts(_ v: Double) -> Double { v > 0 && v < 100 ? v * 1000 : v }
 
     static func device(_ d: [String: Any]) -> Device {
         Device(sn: text(d["sn"]) ?? "", model: text(d["deviceModel"]) ?? text(d["showDeviceModel"]) ?? "",

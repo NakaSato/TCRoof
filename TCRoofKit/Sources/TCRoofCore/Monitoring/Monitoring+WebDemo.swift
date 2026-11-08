@@ -10,7 +10,7 @@ extension Monitoring {
         /// Row ids, as the `บำรุงรักษา` overview's (`growatt-web-<id>`), so the station page loads the plant's own figures.
         public static func stationID(_ plantID: String) -> String { "growatt-web-" + plantID }
 
-        /// The portal names no zone. A plant still reporting is read in the zone that puts its last reading at `now`
+        /// When the plant's data names no zone (`Plant.timezoneHours`): a plant still reporting is read in the zone that puts its last reading at `now`
         /// (whole half hours, at most 14 h off); one that isn't keeps `GrowattMap.defaultZone`, so its age shows.
         public static func zone(lastUpdate: String, reporting: Bool, now: Date) -> TimeZone {
             let gmt = TimeZone(secondsFromGMT: 0) ?? .current
@@ -31,7 +31,9 @@ extension Monitoring {
         public static func reading(_ plant: GrowattWebDemo.Plant, day: [Double?], now: Date) -> GrowattReading {
             let last = plant.devices.map(\.lastUpdate).filter { !$0.isEmpty }.max() ?? ""
             let reporting = plant.devices.contains { $0.status != -1 }
-            let zone = zone(lastUpdate: last, reporting: reporting, now: now)
+            // the plant's own zone when the portal gives it, else the guess
+            let zone = plant.timezoneHours.flatMap { TimeZone(secondsFromGMT: Int(($0 * 3600).rounded())) }
+                ?? zone(lastUpdate: last, reporting: reporting, now: now)
             let data = GrowattAPI.PlantData(
                 todayEnergy: plant.devices.reduce(0) { $0 + $1.eToday },
                 monthlyEnergy: plant.devices.reduce(0) { $0 + $1.eMonth },

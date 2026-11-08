@@ -196,4 +196,25 @@ final class MonitoringWebDemoTests: XCTestCase {
         XCTAssertEqual(r.devices?.map(\.type), [nil, 2])
         XCTAssertEqual(r.devices?.map(\.lost), [false, false])
     }
+
+    // MARK: the portal's own figures
+
+    /// A plant whose `nominalPower` is in kW (`4` beside its inverter's `3600.0`) is read as 4 kW, not 4 W.
+    func testAPlantSizeUnder100IsKilowatts() {
+        XCTAssertEqual(GrowattWebDemo.plantWatts(4), 4000)
+        XCTAssertEqual(GrowattWebDemo.plantWatts(10_000), 10_000)
+        XCTAssertEqual(GrowattWebDemo.plantWatts(0), 0)
+    }
+
+    /// The plant's own `timezone` wins over the guess, even when its last reading would suggest another zone.
+    func testThePlantsOwnZoneWins() throws {
+        let info = Data(#"{"result":1,"obj":{"nominalPower":"4","eTotal":"17513.1","timezone":"-4"}}"#.utf8)
+        let devices = Data(#"{"result":1,"obj":{"pages":1,"datas":[{"sn":"A","status":"6","nominalPower":"3600.0","eToday":"7.0","pac":"0","lastUpdateTime":"2026-11-08 20:25:07"}]}}"#.utf8)
+        let plant = try GrowattWebDemo.parsePlant(info, devices: devices, id: "2371092", name: "Ene")
+        XCTAssertEqual(plant.nominalPower, 4000)
+        XCTAssertEqual(plant.timezoneHours, -4)
+        let now = Date(timeIntervalSince1970: 1_794_169_507) // 2026-11-08 20:25:07 GMT
+        let r = Monitoring.GrowattWebMap.reading(plant, day: [], now: now)
+        XCTAssertEqual(r.data?.timezone, "GMT-04:00")
+    }
 }

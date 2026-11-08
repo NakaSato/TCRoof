@@ -109,9 +109,11 @@ extension Monitoring {
 
         /// `base` (the job's station: id, MP, name, kWp, inverters) filled from `reading`, with `previous` (the
         /// station as last mapped) standing in for every part the reading lacks. `forecastDailyKWhPerKWp` is the
-        /// site's figure (`Forecast.dailyKWhPerKWp`), `offlineAfter` the settings' logger threshold, minutes.
+        /// site's figure (`Forecast.dailyKWhPerKWp`), `offlineAfter` the settings' logger threshold, minutes, and
+        /// `belowExpectedPercent` the settings' `ผลิตต่ำกว่าที่คาด` (nil: not checked; `belowExpectedAlarm`).
         public static func station(_ base: Station, reading: GrowattReading, previous: Station?, now: Date,
-                                   offlineAfter: Int, forecastDailyKWhPerKWp: Double, calendar: Calendar = .current) -> Station {
+                                   offlineAfter: Int, forecastDailyKWhPerKWp: Double, belowExpectedPercent: Int? = nil,
+                                   calendar: Calendar = .current) -> Station {
             let prev = previous.flatMap { $0.paired ? $0 : nil }
             var s = Station(id: base.id, mpNumber: base.mpNumber, name: base.name, kWp: base.kWp,
                             inverters: max(base.inverters, prev?.inverters ?? 0), paired: true)
@@ -200,6 +202,10 @@ extension Monitoring {
                     }
                 }
             }
+            // the app's own check: today's energy under the settings' share of the forecast so far
+            if let below = belowExpectedAlarm(s, base: base, offline: offline, now: now, percent: belowExpectedPercent) {
+                alarms.append(below)
+            }
             // one still raised keeps when it began, its count and its work order
             let before = Dictionary((prev?.alarms ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
             s.alarms = alarms.map { a in
@@ -242,6 +248,26 @@ extension Monitoring {
             s.hasIrradianceSensor = false
             s.prToday = nil
             return s
+        }
+
+        /// The share of the forecast so far the day must reach before `ผลิตต่ำกว่าที่คาด` is checked: on the
+        /// forecast's clear-day curve 15 % of the day is made by about 09:00, so the early morning (a few kWh against
+        /// a few kWh, where a cloud or a late start swings the ratio) raises nothing.
+        public static let belowExpectedMinShare = 0.15
+
+        /// `ผลิตต่ำกว่าที่คาด` (`Settings.belowExpectedPercent`): a `.tcroof` alarm, so the health stays `ปกติ` and
+        /// nothing is notified, when the station is reporting, today's energy and the forecast so far are known, at
+        /// least `belowExpectedMinShare` of the day's forecast has passed, and the energy is under `percent` % of it.
+        /// `percent` nil checks nothing.
+        static func belowExpectedAlarm(_ s: Station, base: Station, offline: Bool, now: Date, percent: Int?) -> Alarm? {
+            guard let percent, !offline, let made = s.energyToday, let soFar = s.expectedSoFar,
+                  let day = s.expectedToday, day > 0, soFar >= day * belowExpectedMinShare else { return nil }
+            let share = made / soFar
+            guard share < Double(percent) / 100, let shortfall = s.shortfall else { return nil }
+            // floored, so a station just under the threshold never reads as on it
+            let shown = Int((share * 100).rounded(.down))
+            return Alarm(id: base.id + "/below", source: .tcroof, part: "สถานี",
+                         detail: "ผลิต \(shown)% ของที่คาด · เกณฑ์ \(percent)%", since: now, loss: .measured(shortfall))
         }
 
         /// `09:00` today, else `7/11 17:00`.

@@ -315,4 +315,80 @@ final class MonitoringGrowattTests: XCTestCase {
         XCTAssertEqual(old.pairings, ["a": "1"])
         XCTAssertTrue(old.pairingServers.isEmpty)
     }
+
+    // MARK: below the forecast (the app's own check)
+
+    func mapBelow(_ reading: Monitoring.GrowattReading, previous: Monitoring.Station? = nil, at time: Date? = nil,
+                  percent: Int? = 85) -> Monitoring.Station {
+        Map.station(base, reading: reading, previous: previous, now: time ?? now, offlineAfter: 30,
+                    forecastDailyKWhPerKWp: 4.0, belowExpectedPercent: percent, calendar: cal)
+    }
+
+    /// The forecast to `time` for this station: 220 kWp × 4 kWh/kWp on the clear-day curve.
+    func expected(through time: Date) -> Double {
+        Monitoring.Forecast.energy(Monitoring.Forecast.curve(dailyKWh: 880), through: Monitoring.Forecast.slot(of: time, calendar: cal)) ?? 0
+    }
+
+    func testBelowTheForecastMiddayRaisesTheAppsOwnLine() throws {
+        let last = at(14, 52)
+        let soFar = expected(through: now)
+        let made = (soFar * 0.62).rounded()
+        let s = mapBelow(.init(data: data(at: last, today: made), power: powers(until: last),
+                               devices: [.init(sn: "A", type: 4, status: 1, lost: false), .init(sn: "B", type: 4, status: 1, lost: false)]))
+        XCTAssertEqual(s.alarms.count, 1)
+        let a = s.alarms[0]
+        XCTAssertEqual(a.id, "mp25/below")
+        XCTAssertEqual(a.source, .tcroof)
+        XCTAssertEqual(a.part, "สถานี")
+        let shown = Int((made / soFar * 100).rounded(.down))
+        XCTAssertEqual(a.detail, "ผลิต \(shown)% ของที่คาด · เกณฑ์ 85%")
+        XCTAssertEqual(a.loss, .measured(try XCTUnwrap(s.shortfall)))
+        XCTAssertEqual(a.since, now)
+        // it stays ปกติ, so the badge and the notifications leave it alone, but ต้องดำเนินการ lists it
+        XCTAssertEqual(s.health(now: now, offlineAfter: 30), .normal)
+        let fleet = Monitoring.Fleet([s], now: now, settings: .init())
+        XCTAssertEqual(fleet.needingAttention, 0)
+        XCTAssertEqual(fleet.actions.flatMap(\.alarms).map(\.id), ["mp25/below"])
+        // still raised a poll later: it keeps when it began
+        let later = now.addingTimeInterval(5 * 60)
+        let again = mapBelow(.init(data: data(at: later, today: made + 1), power: powers(until: later)), previous: s, at: later)
+        XCTAssertEqual(again.alarms.first?.since, now)
+    }
+
+    func testOnOrAboveTheThresholdRaisesNothing() {
+        let last = at(14, 52)
+        let soFar = expected(through: now)
+        let s = mapBelow(.init(data: data(at: last, today: (soFar * 0.9).rounded(.up)), power: powers(until: last)))
+        XCTAssertTrue(s.alarms.isEmpty)
+        // the same day under a stricter threshold is raised
+        let strict = mapBelow(.init(data: data(at: last, today: (soFar * 0.88).rounded()), power: powers(until: last)), percent: 90)
+        XCTAssertEqual(strict.alarms.map(\.id), ["mp25/below"])
+    }
+
+    func testTheEarlyMorningRaisesNothing() {
+        let early = at(7, 30)
+        // the guard: under 15 % of the day's forecast has passed
+        XCTAssertLessThan(expected(through: early), 880 * Map.belowExpectedMinShare)
+        let s = mapBelow(.init(data: data(at: early.addingTimeInterval(-120), power: 5, today: 0.5), power: powers(until: early)), at: early)
+        XCTAssertEqual(s.health(now: early, offlineAfter: 30), .normal)
+        XCTAssertTrue(s.alarms.isEmpty)
+    }
+
+    func testOfflineRaisesOnlyTheLostLine() {
+        let stopped = at(9, 0)
+        let s = mapBelow(.init(data: data(at: stopped, power: 95, today: 20), power: powers(until: stopped)))
+        XCTAssertEqual(s.health(now: now, offlineAfter: 30), .offline)
+        XCTAssertEqual(s.alarms.map(\.id), ["mp25/lost"])
+    }
+
+    func testNoThresholdChecksNothing() {
+        let last = at(14, 52)
+        let reading = Monitoring.GrowattReading(data: data(at: last, today: 50), power: powers(until: last))
+        XCTAssertTrue(mapBelow(reading, percent: nil).alarms.isEmpty)
+        XCTAssertTrue(map(reading).alarms.isEmpty, "existing callers pass none")
+        // no energy known today: nothing to compare
+        let never = GrowattAPI.PlantData(todayEnergy: 0, monthlyEnergy: 0, yearlyEnergy: 0, totalEnergy: 0, currentPower: -1,
+                                         lastUpdate: stamp(last), timezone: "GMT+8")
+        XCTAssertFalse(mapBelow(.init(data: never)).alarms.contains { $0.id == "mp25/below" })
+    }
 }

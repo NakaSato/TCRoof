@@ -30,6 +30,45 @@ actor MonitoringFeed {
     /// The site's daily yield per station, worked out once (it runs the hourly engine).
     private var forecastDaily: [String: Double] = [:]
 
+    /// One of Growatt's web portal example plants (DEBUG `MonitoringStore.growattWebDemo`): its figures and its day's
+    /// 5-minute power (W, on the plant's own date); `plant` nil when they failed.
+    struct WebDemoPlant: Sendable {
+        var id: String
+        var plant: GrowattWebDemo.Plant?
+        var day: [Double?]
+    }
+
+    /// Lists the portal's example plants on a guest session and reads each at once, as the `บำรุงรักษา` overview does
+    /// (`GrowattDemoFeed`): the portal can take about 70 s on a plant it hasn't served lately, which mustn't hold up the
+    /// rest. Read only, like every call here.
+    func readWebDemo() async -> (plants: [WebDemoPlant], failure: GrowattAPI.Failure?) {
+        let web = GrowattWebDemo()
+        let list: [(id: String, name: String)]
+        do {
+            try await web.openGuest()
+            list = try await web.plantList()
+        } catch let f as GrowattAPI.Failure {
+            return ([], f)
+        } catch {
+            return ([], .badResponse)
+        }
+        let plants = await withTaskGroup(of: WebDemoPlant.self) { group in
+            for p in list {
+                group.addTask {
+                    guard let plant = try? await web.plant(id: p.id, name: p.name) else { return WebDemoPlant(id: p.id, plant: nil, day: []) }
+                    let date = plant.devices.map(\.lastUpdate).max().map { String($0.prefix(10)) } ?? ""
+                    let day = date.isEmpty ? [] : (try? await web.dayPower(plantID: p.id, date: date)) ?? []
+                    return WebDemoPlant(id: p.id, plant: plant, day: day)
+                }
+            }
+            var out: [String: WebDemoPlant] = [:]
+            for await p in group { out[p.id] = p }
+            return list.compactMap { out[$0.id] }
+        }
+        let failed = !plants.isEmpty && plants.allSatisfy { $0.plant == nil }
+        return (plants, failed ? .badResponse : nil)
+    }
+
     func read(_ targets: [Target], now: Date, calendar: Calendar) async -> [Reading] {
         var out: [Reading] = []
         for t in targets {

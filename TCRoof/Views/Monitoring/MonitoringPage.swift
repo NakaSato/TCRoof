@@ -78,6 +78,10 @@ struct MonitoringPage: View {
             }
             Text("Monitoring ทุกสถานี").font(.sarabun(24, .bold)).foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
+            if let note = store.sourceNote {
+                Text(note).font(.sarabunFixed(13, .semibold)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                    .accessibilityIdentifier("monitoring.source")
+            }
             Spacer(minLength: 12)
             if let failure = store.feedFailure {
                 Label(failure, systemImage: "exclamationmark.triangle.fill")

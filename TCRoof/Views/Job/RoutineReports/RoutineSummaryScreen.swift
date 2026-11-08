@@ -31,9 +31,18 @@ struct RoutineSummaryScreen: View {
         period == .week ? RoutineReportFiles.weekly(job, week: anchor) : RoutineReportFiles.monthly(job, month: anchor)
     }
 
-    private func make() -> RoutineReportFiles.Ready {
+    /// The job's records are read here, on the main thread; the PDF is drawn off it (`Built.rendered`).
+    private func make() async -> RoutineReportFiles.Ready {
         let b = built
-        return RoutineReportFiles.Ready(name: b.name, folder: b.folder, data: b.data)
+        return RoutineReportFiles.Ready(name: b.name, folder: b.folder, data: await b.rendered())
+    }
+
+    /// Builds the period's PDF again; one finishing after the period changed (or the screen left) is dropped.
+    private func remake() async {
+        let ready = await make()
+        guard !Task.isCancelled else { return }
+        made = ready
+        filed = false
     }
 
     private var pendingInPeriod: [InstallLog] {
@@ -92,7 +101,7 @@ struct RoutineSummaryScreen: View {
             if let pdf {
                 PDFPreview(data: pdf)
             } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                pageSkeleton
             }
         }
         .background(Theme.pageGradient.ignoresSafeArea())
@@ -131,11 +140,35 @@ struct RoutineSummaryScreen: View {
             let pending = pendingInPeriod
             InspectorAckSheet(title: "รับทราบทั้งหมด (\(pending.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
                 job.recordInspectorAckAll(pending, name: name, at: when, signature: drawn, context: context)
-                made = make()
-                filed = false
+                // the acknowledgements change the pages: drawn again, the old one gone meanwhile
+                made = nil
+                Task { await remake() }
             }
         }
-        .task(id: anchor) { made = make(); filed = false }
+        // another period clears the page at once, so the previous one's PDF is never filed or shared as this one
+        .task(id: anchor) { made = nil; await remake() }
+    }
+
+    /// The page being drawn, in its shape: an A4 sheet with a heading, lines and a picture.
+    private var pageSkeleton: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TCSkeletonBlock(width: 180, height: 16)
+            TCSkeletonBlock()
+            TCSkeletonBlock()
+            TCSkeletonBlock(height: 140, radius: 6)
+            TCSkeletonBlock()
+            TCSkeletonBlock(width: 220)
+            Spacer(minLength: 0)
+        }
+        .padding(24)
+        .aspectRatio(210.0 / 297.0, contentMode: .fit)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .frame(maxWidth: 640)
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .tcShimmer()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("กำลังสร้างรายงาน")
     }
 
     private func shift(_ n: Int) {

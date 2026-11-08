@@ -28,28 +28,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct TCRoofApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    /// One container for the process: the scene's, and `DriveBackgroundWork`'s when iOS launches the app for it.
-    let container: ModelContainer
-    static let sharedContainer: ModelContainer = {
-        let schema = Schema([
-            Job.self, SurveyForm.self, ScannedDevice.self, InstallLog.self,
-            Inspection.self, ICLSheet.self, PhotoAsset.self, DocumentAsset.self,
-            Trip.self, Expense.self, ClaimMonth.self,
-            ToolEvent.self, CompanyVehicle.self,
-        ])
-        do {
-            return try ModelContainer(for: schema)
-        } catch {
-            fatalError("Unable to create model container: \(error)")
-        }
-    }()
+    /// The SwiftData store (`AppStore`); while it won't open, `StoreRecoveryView` stands in for the app.
+    @State private var store: AppStore
 
     @State private var session: GoogleSession
 
     init() {
         FirebaseApp.configure()
         CrashReporting.configure()
-        container = TCRoofApp.sharedContainer
+        _store = State(initialValue: AppStore.shared)
         // before any Firestore call (sign-in's membership check is one): settings can't change once it has started
         CloudSync.configureCache()
         AppFont.register()
@@ -59,33 +46,43 @@ struct TCRoofApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if session.isSignedIn {
-                    AccountActivationView()
-                        .id(session.email)
-                        .overlay {
-                            // `config/app.minSyncVersion` is above this build: nothing more until the update
-                            if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }
-                        }
-                        .transition(.opacity)
+                if let container = store.container {
+                    app.modelContainer(container)
                 } else {
-                    LoginView()
-                        .transition(.opacity)
+                    StoreRecoveryView(store: store)
                 }
             }
-            .animation(.easeInOut, value: session.isSignedIn)
             // `tcroof://job/<syncID>` (a survey appointment in Calendar) opens the job as a notification tap does; before
             // sign-in it waits for the home
             .onOpenURL { url in
                 if let link = DeepLink(url: url) { NotificationService.shared.link = link }
             }
-            .environment(session)
-            .environment(session.survey)
-            .environment(MemberRole.shared)
             // light everywhere, the login page included (it's on the design system's light page)
             .preferredColorScheme(.light)
             .tint(Theme.primary)
         }
-        .modelContainer(container)
+    }
+
+    private var app: some View {
+        Group {
+            if session.isSignedIn {
+                AccountActivationView()
+                    // a new account, or this one's records to prepare again, starts the activation over
+                    .id("\(session.email ?? "")#\(session.activation)")
+                    .overlay {
+                        // `config/app.minSyncVersion` is above this build: nothing more until the update
+                        if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }
+                    }
+                    .transition(.opacity)
+            } else {
+                LoginView()
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut, value: session.isSignedIn)
+        .environment(session)
+        .environment(session.survey)
+        .environment(MemberRole.shared)
     }
 }
 

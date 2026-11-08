@@ -33,27 +33,32 @@ struct MPBulkImportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
 
-    /// Reads the files and picks their stations.
-    static func items(_ urls: [URL], stations: [Job]) -> [Item] {
+    /// Reads the files and picks their stations. Each file is opened here (its security scope), and unzipped and its
+    /// formulas worked out off the main thread: seconds a file.
+    static func items(_ urls: [URL], stations: [Job]) async -> [Item] {
         let candidates = stations.enumerated().map {
             MPWorkbook.Candidate(id: String($0.offset), name: $0.element.stationName, mpNumber: $0.element.mpNumber, kWp: $0.element.capacityKW)
         }
         let byKey = Dictionary(uniqueKeysWithValues: stations.enumerated().map { (String($0.offset), $0.element.persistentModelID) })
-        return urls.map { url in
+        let files = urls.map { url -> (name: String, data: Result<Data, Error>) in
             let access = url.startAccessingSecurityScopedResource()
             defer { if access { url.stopAccessingSecurityScopedResource() } }
-            let name = url.lastPathComponent
-            do {
-                let data = try Data(contentsOf: url)
-                let imported = try MPWorkbook.read(data)
-                let station = MPWorkbook.station(project: imported.project, fileName: name)
+            return (url.lastPathComponent, Result { try Data(contentsOf: url) })
+        }
+        let read = await Task.detached(priority: .userInitiated) {
+            files.map { f in (name: f.name, read: f.data.flatMap { data in Result { (data, try MPWorkbook.read(data)) } }) }
+        }.value
+        return read.map { f in
+            switch f.read {
+            case .success(let (data, imported)):
+                let station = MPWorkbook.station(project: imported.project, fileName: f.name)
                 let m = MPWorkbook.match(station, among: candidates)
                 let pick = m.pick.flatMap { byKey[$0] }
-                return Item(name: name, data: data, imported: imported, error: nil, station: station,
+                return Item(name: f.name, data: data, imported: imported, error: nil, station: station,
                             ranked: m.ranked.compactMap { byKey[$0] }, job: pick, matched: pick)
-            } catch {
-                return Item(name: name, data: nil, imported: nil, error: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription,
-                            station: MPWorkbook.station(project: nil, fileName: name), ranked: [], job: nil)
+            case .failure(let error):
+                return Item(name: f.name, data: nil, imported: nil, error: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription,
+                            station: MPWorkbook.station(project: nil, fileName: f.name), ranked: [], job: nil)
             }
         }
     }

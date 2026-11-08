@@ -29,6 +29,8 @@ final class MPWorkbookFlow {
     struct SetupReview: Identifiable { let id = UUID(); let setup: ProjectSetup }
 
     var importing = false
+    /// A plan file being read or written, off the main thread: its menu items wait meanwhile.
+    private(set) var working = false
     var pending: Pending?
     var message: Message?
     var shared: SharedFile?
@@ -49,13 +51,25 @@ final class MPWorkbookFlow {
 
     func read(_ result: Result<URL, Error>) {
         guard case .success(let url) = result else { return }
-        let access = url.startAccessingSecurityScopedResource()
-        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        let data: Data
         do {
-            let data = try Data(contentsOf: url)
-            pending = Pending(data: data, name: url.lastPathComponent, imported: try MPWorkbook.read(data))
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            data = try Data(contentsOf: url)
         } catch {
-            message = Message(title: "นำเข้าไม่ได้", text: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription)
+            message = Message(title: "นำเข้าไม่ได้", text: error.localizedDescription)
+            return
+        }
+        working = true
+        Task {
+            defer { working = false }
+            do {
+                // unzipping the file and working out its formulas takes seconds: off the main thread
+                let imported = try await Task.detached(priority: .userInitiated) { try MPWorkbook.read(data) }.value
+                pending = Pending(data: data, name: url.lastPathComponent, imported: imported)
+            } catch {
+                message = Message(title: "นำเข้าไม่ได้", text: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription)
+            }
         }
     }
 
@@ -226,28 +240,41 @@ final class MPWorkbookFlow {
 
     /// The kept file with the job's plan and progress written in, under its own name.
     func export(_ job: Job) {
-        guard let original = job.scheduleWorkbook, let input = job.scheduleInput else { return }
-        do {
-            // the station's facts go into the file's station lines too, so a plan begun from another station's file names this one
-            let out = try MPWorkbook.export(original, input: input, actual: job.scheduleActual, ticks: job.wbsTicks,
-                                            setup: ProjectSetup(job.setupTarget), wbs: job.scheduleWBS)
-            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            let url = dir.appendingPathComponent(MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName))
-            try out.data.write(to: url, options: .atomic)
-            #if DEBUG
-            // `-mpExportFile <path>` also writes the export there, for UI tests to read
-            if let path = UserDefaults.standard.string(forKey: "mpExportFile") { try? out.data.write(to: URL(fileURLWithPath: path)) }
-            #endif
-            if out.weeksOutside.isEmpty {
-                shared = SharedFile(url: url)
-            } else {
-                let weeks = out.weeksOutside.compactMap(ISODate.date).map(\.thaiShort).joined(separator: ", ")
-                message = Message(title: "บางสัปดาห์อยู่นอกตารางของไฟล์",
-                                  text: "ความก้าวหน้าสัปดาห์ \(weeks) ไม่มีคอลัมน์ในไฟล์ จึงไม่ได้ลง ส่วนอื่นลงครบ", then: url)
+        guard !working, let original = job.scheduleWorkbook, let input = job.scheduleInput else { return }
+        // the job is read here, on the main thread; the file is written off it
+        let actual = job.scheduleActual, ticks = job.wbsTicks, wbs = job.scheduleWBS
+        // the station's facts go into the file's station lines too, so a plan begun from another station's file names this one
+        let setup = ProjectSetup(job.setupTarget)
+        let name = MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName)
+        working = true
+        Task {
+            defer { working = false }
+            do {
+                let (url, weeksOutside) = try await Task.detached(priority: .userInitiated) { () -> (URL, [String]) in
+                    let out = try MPWorkbook.export(original, input: input, actual: actual, ticks: ticks, setup: setup, wbs: wbs)
+                    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
+                    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                    let url = dir.appendingPathComponent(name)
+                    try out.data.write(to: url, options: .atomic)
+                    return (url, out.weeksOutside)
+                }.value
+                #if DEBUG
+                // `-mpExportFile <path>` also writes the export there, for UI tests to read
+                if let path = UserDefaults.standard.string(forKey: "mpExportFile") {
+                    try? FileManager.default.removeItem(atPath: path)
+                    try? FileManager.default.copyItem(at: url, to: URL(fileURLWithPath: path))
+                }
+                #endif
+                if weeksOutside.isEmpty {
+                    shared = SharedFile(url: url)
+                } else {
+                    let weeks = weeksOutside.compactMap(ISODate.date).map(\.thaiShort).joined(separator: ", ")
+                    message = Message(title: "บางสัปดาห์อยู่นอกตารางของไฟล์",
+                                      text: "ความก้าวหน้าสัปดาห์ \(weeks) ไม่มีคอลัมน์ในไฟล์ จึงไม่ได้ลง ส่วนอื่นลงครบ", then: url)
+                }
+            } catch {
+                message = Message(title: "ส่งออกไม่สำเร็จ", text: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription)
             }
-        } catch {
-            message = Message(title: "ส่งออกไม่สำเร็จ", text: (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription)
         }
     }
 }
@@ -354,17 +381,21 @@ struct MPWorkbookMenuItems: View {
 
     var body: some View {
         if canImport {
-            Button { flow.startImport() } label: { Label("นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down") }
+            Button { flow.startImport() } label: {
+                Label(flow.working ? "นำเข้าไฟล์แผน (กำลังอ่านไฟล์…)" : "นำเข้าไฟล์แผน (Excel)…", systemImage: "square.and.arrow.down")
+            }
+            .disabled(flow.working)
         }
         if canImport, job.scheduleWorkbook != nil {
             Button { flow.reviewSetup(job) } label: { Label("ตั้งค่าโครงการจากไฟล์…", systemImage: "list.bullet.clipboard") }
                 .accessibilityIdentifier("mpWorkbook.setup")
         }
         Button { flow.export(job) } label: {
-            Label(job.scheduleWorkbookDownloading ? "ส่งออกไฟล์แผน (กำลังดาวน์โหลดจาก Drive…)"
+            Label(flow.working ? "ส่งออกไฟล์แผน (กำลังเตรียมไฟล์…)"
+                  : job.scheduleWorkbookDownloading ? "ส่งออกไฟล์แผน (กำลังดาวน์โหลดจาก Drive…)"
                   : job.scheduleWorkbook == nil ? "ส่งออกไฟล์แผน (นำเข้าไฟล์ก่อน)" : "ส่งออกไฟล์แผน (Excel)", systemImage: "square.and.arrow.up")
         }
-        .disabled(job.scheduleWorkbook == nil || job.scheduleInput == nil)
+        .disabled(flow.working || job.scheduleWorkbook == nil || job.scheduleInput == nil)
     }
 }
 

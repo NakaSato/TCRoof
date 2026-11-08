@@ -20,16 +20,8 @@ enum DriveConfig {
         UserDefaults.standard.set(claimShareWith.map(Permissions.normalized).filter { $0.contains("@") }, forKey: claimKey)
     }
 
-    /// A folder id, or the id in a `drive.google.com/drive/folders/<id>` link.
-    static func folderID(from text: String) -> String? {
-        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty else { return nil }
-        if let r = t.range(of: "/folders/") {
-            let id = t[r.upperBound...].prefix { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
-            return id.isEmpty ? nil : String(id)
-        }
-        return t.contains("/") ? nil : t
-    }
+    /// A folder id, or the id in a `drive.google.com/drive/folders/<id>` link (`DriveDestination`).
+    static func folderID(from text: String) -> String? { DriveDestination.folderID(from: text) }
 }
 
 /// Where a job's files go on Drive, by role (user, 2026-10-17):
@@ -44,8 +36,8 @@ struct DriveRoute {
 
     init(survey: SurveyModel) {
         self.survey = survey
-        let me = MemberRole.shared.permissions
-        center = me.role != .external && survey.google.hasFullDrive ? DriveConfig.centerFolderID : nil
+        center = DriveDestination.center(role: MemberRole.shared.permissions.role, hasFullDrive: survey.google.hasFullDrive,
+                                         centerFolder: DriveConfig.centerFolderID)
     }
 
     /// The job's folder, made when missing: on the center Drive with every hand-over folder, on a contractor's
@@ -74,7 +66,7 @@ struct DriveRoute {
 
     /// A construction record's folder below the job's folder.
     func construction(_ path: [String]) -> [String] {
-        center == nil ? path : [HandoverFolders.construction] + path
+        DriveDestination.construction(path, onCenter: center != nil)
     }
 
     /// A document's folders below the job's folder and its name in each: on the center Drive a station paper takes

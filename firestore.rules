@@ -76,6 +76,15 @@ service cloud.firestore {
       return jobID is string
         && (signedInEmail() in team || supervisor == signedInEmail());
     }
+    // A new scan or photo names the signed-in external member as who added it, or nobody (an older app build).
+    function addsAsMe() {
+      return request.resource.data.get('addedBy', null) in [null, signedInEmail()];
+    }
+    // The scan or photo was added by the signed-in external member, and still says so.
+    function addedByMe() {
+      return resource.data.get('addedBy', null) == signedInEmail()
+        && request.resource.data.get('addedBy', null) == signedInEmail();
+    }
     // The fields an update changes.
     function changedKeys() {
       return request.resource.data.diff(resource.data).affectedKeys();
@@ -232,11 +241,15 @@ service cloud.firestore {
     }
 
     // Device scans and survey forms of their jobs; photos of their records.
+    // A scan or photo names who added it (`addedBy`): a contractor changes or deletes only their own, never one the team
+    // added to their job or report. One from before `addedBy` names nobody and is the team's to change. A new one may
+    // leave it out (an app build from before it), or must name the contractor.
     match /devices/{doc} {
       allow read: if isTeam() || readsMine();
       allow write: if isTeam();
-      allow create, update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID);
-      allow delete: if isExternal() && listsMe(resource.data);
+      allow create: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID) && addsAsMe();
+      allow update: if isExternal() && keepsMe() && jobIsMine(request.resource.data.jobID) && addedByMe();
+      allow delete: if isExternal() && listsMe(resource.data) && resource.data.get('addedBy', null) == signedInEmail();
     }
     match /surveyForms/{doc} {
       allow read: if isTeam() || readsMine();
@@ -252,8 +265,9 @@ service cloud.firestore {
         && request.resource.data.get('inspection', null) == null
         && (request.resource.data.get('log', null) == null || logIsMine(request.resource.data.log))
         && (request.resource.data.get('iecJob', null) == null || jobIsMine(request.resource.data.iecJob))
-        && (request.resource.data.get('iclSheet', null) == null || sheetIsMine(request.resource.data.iclSheet));
-      allow delete: if isExternal() && listsMe(resource.data);
+        && (request.resource.data.get('iclSheet', null) == null || sheetIsMine(request.resource.data.iclSheet))
+        && (resource == null ? addsAsMe() : addedByMe());
+      allow delete: if isExternal() && listsMe(resource.data) && resource.data.get('addedBy', null) == signedInEmail();
     }
 
     // The PWA site ICL, one sheet per document (`SiteICL`, `ICLSheet`): the contractor fills their job's sheets and sends

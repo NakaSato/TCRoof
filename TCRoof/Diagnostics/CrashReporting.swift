@@ -11,6 +11,14 @@ enum CrashReporting {
         reporter.log("App startup")
     }
 
+    /// The SwiftData store didn't open (`AppStore`): the error goes to Crashlytics as a non-fatal, since the app no
+    /// longer stops on it.
+    static func storeFailed(_ error: Error) {
+        let reporter = Crashlytics.crashlytics()
+        reporter.log("Store failed to open")
+        reporter.record(error: error)
+    }
+
     static func startupStage(_ stage: String, state: String, elapsedMilliseconds: Int? = nil) {
         let reporter = Crashlytics.crashlytics()
         reporter.setCustomValue(stage, forKey: "startup_stage")

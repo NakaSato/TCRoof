@@ -57,7 +57,8 @@ enum DriveBackgroundWork {
     }
 
     private static func handle(_ task: BGTask) {
-        let context = TCRoofApp.sharedContainer.mainContext
+        // a store that won't open waits for the person (`StoreRecoveryView`); nothing to upload from it
+        guard let context = AppStore.shared.container?.mainContext else { task.setTaskCompleted(success: false); return }
         let done = Completion(task)
         let work = Task { @MainActor in
             let ok = await pass(context)

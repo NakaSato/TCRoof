@@ -29,6 +29,16 @@ extension CloudSynced {
     func applyMerged(_ r: Record, jobs: [String: Job]) -> Bool { apply(r, jobs: jobs) }
 }
 
+/// A record that names who added it (`addedBy`, an email): firestore.rules let a contractor change or delete only the
+/// ones they added, never one the team added to their report. The device that makes one names its account at the
+/// first push (`CloudSync.collect`); records from before this name nobody, and stay the team's to change.
+protocol AddedByRecord: AnyObject {
+    var addedBy: String? { get set }
+}
+
+extension PhotoAsset: AddedByRecord {}
+extension ScannedDevice: AddedByRecord {}
+
 extension Job { var ownerJob: Job? { self } }
 extension SurveyForm { var ownerJob: Job? { job } }
 extension ScannedDevice { var ownerJob: Job? { job } }
@@ -309,18 +319,22 @@ extension ScannedDevice: CloudSynced {
         var scannedAt: Int64
         var jobID: String?
         var externals: [String]?
+        /// Who scanned it (`AddedByRecord`); nil for scans from before it was recorded.
+        var addedBy: String?
     }
 
     static let collection = "devices"
 
     var record: Record {
         Record(kind: kindRaw, serial: serial, scannedBy: scannedBy, scannedAt: scannedAt.millis, jobID: job?.syncID,
-               externals: externals(of: job))
+               externals: externals(of: job), addedBy: addedBy)
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
         guard let owner = parent(r.jobID, in: jobs) else { return false }
         kindRaw = r.kind; serial = r.serial; scannedBy = r.scannedBy; scannedAt = Date(millis: r.scannedAt)
+        // a copy without it (written by an older build) keeps ours, and our next push puts it back
+        if let v = r.addedBy { addedBy = v }
         if job !== owner { job = owner }
         return true
     }
@@ -491,13 +505,15 @@ extension PhotoAsset: CloudSynced {
         var log, inspection, iecJob: String?
         var iclSheet: String?
         var externals: [String]?
+        /// Who added the photo (`AddedByRecord`); nil for photos from before it was recorded.
+        var addedBy: String?
     }
 
     static let collection = "photos"
 
     var record: Record {
         Record(tag: tag, createdAt: createdAt.millis, drive: driveFileID ?? "", log: log?.syncID, inspection: inspection?.syncID,
-               iecJob: iecJob?.syncID, iclSheet: iclSheet?.syncID, externals: externals(of: ownerJob))
+               iecJob: iecJob?.syncID, iclSheet: iclSheet?.syncID, externals: externals(of: ownerJob), addedBy: addedBy)
     }
 
     /// Once on Drive, and only the photos of the records that sync (a home survey's stay on the device).
@@ -531,6 +547,8 @@ extension PhotoAsset: CloudSynced {
         }
         tag = r.tag; createdAt = Date(millis: r.createdAt)
         if driveFileID != r.drive { driveFileID = r.drive; needsDownload = true }
+        // a copy without it (written by an older build) keeps ours, and our next push puts it back
+        if let v = r.addedBy { addedBy = v }
         return true
     }
 

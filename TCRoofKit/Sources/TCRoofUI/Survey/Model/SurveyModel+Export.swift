@@ -20,13 +20,18 @@ extension SurveyModel {
     static func safeName(_ s: String) -> String { s.replacingOccurrences(of: "[/\\\\:*?\"<>|]", with: "-", options: .regularExpression) }
     func baseName(_ j: Job) -> String { Self.safeName("แบบสำรวจ NO.\(j.docNo.isEmpty ? "-" : j.docNo) \(j.projectName)".trimmingCharacters(in: .whitespaces)) }
 
+    /// The workbook, filled off the main thread: the job and its photos are values, and the site picture with its
+    /// symbols is drawn here first (it reads this model's image cache).
     func excelData(_ job: Job) async throws -> ExcelExporter.Result {
         let photos = await writer.photos(job)
-        return try ExcelExporter().export(job, photoData: { photos[$0.id] }, planImage: { m in
-            // the plan with its sections under it: NO.224 has one drawing box per roof / tank sheet
-            guard let sk = Drawings.planWithSections(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
-            return ExcelImage(data: r.0, width: r.1, height: r.2, isPNG: true)
-        }, siteMapImage: markedSiteMap(job))
+        let siteMap = markedSiteMap(job)
+        return try await Task.detached(priority: .userInitiated) {
+            try ExcelExporter().export(job, photoData: { photos[$0.id] }, planImage: { m in
+                // the plan with its sections under it: NO.224 has one drawing box per roof / tank sheet
+                guard let sk = Drawings.planWithSections(m.values, tank: m.type == .tank, width: 1100), let r = PDFRenderer.png(sk, scale: 1.5) else { return nil }
+                return ExcelImage(data: r.0, width: r.1, height: r.2, isPNG: true)
+            }, siteMapImage: siteMap)
+        }.value
     }
 
     /// The site picture with its symbols drawn in, for the Excel frame (the PDF draws them as vectors).
@@ -68,7 +73,11 @@ extension SurveyModel {
         let job = asPrinted(job)
         var header = reportHeader
         header.changes = revisionChanges(job)
-        return PDFRenderer.render(job: job, header: header, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } })
+        // laid out and drawn off the main thread: every page's photos are decoded there
+        let printed = job, head = header
+        return await Task.detached(priority: .userInitiated) {
+            PDFRenderer.render(job: printed, header: head, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } })
+        }.value
     }
 
     /// The job as a report prints it. Nothing locks an issued REV, so answers changed after REV nn was issued would
@@ -89,7 +98,11 @@ extension SurveyModel {
         await prepareRevisionSnapshots(job)
         let job = asPrinted(job)
         let url = tempURL("สรุป " + baseName(job) + ".pdf")
-        try await writer.write(PDFRenderer.renderSummary(job: job, header: reportHeader, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } }), to: url)
+        let header = reportHeader
+        let data = await Task.detached(priority: .userInitiated) {
+            PDFRenderer.renderSummary(job: job, header: header, photo: { p in photos[p.id].flatMap { UIImage(data: $0) } })
+        }.value
+        try await writer.write(data, to: url)
         return ExportFile(url: url, summary: "PDF สรุป 1 หน้า")
     }
 

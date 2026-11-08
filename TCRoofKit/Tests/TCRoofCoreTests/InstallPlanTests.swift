@@ -147,4 +147,83 @@ final class InstallPlanTests: XCTestCase {
         XCTAssertEqual(p.overTeam, [d(6)])
         XCTAssertTrue(plan(crew: [d(6): 20]).overTeam.isEmpty, "no team size, nothing to be over")
     }
+
+    // MARK: CHA-64
+
+    /// A stage still marked waiting by the MP plan whose sub-tasks have started reads as running, with their progress.
+    func testStageRollsUpItsSubTasks() {
+        let row = InstallGantt.Row(id: "s4", code: "2.2", title: "ระบบ DC", status: .waiting, start: d(5), end: d(8), percent: 0,
+                                   subs: [Sub("ราง", percent: 100, start: d(5), end: d(6)), Sub("สาย", percent: 50, start: d(7), end: d(8))])
+        let p = InstallPlan(gantt: InstallGantt(rows: [row], today: d(7)), nonWorking: [], tracking: nil, calendar: cal)
+        XCTAssertEqual(p.stages[0].row.status, .current)
+        XCTAssertEqual(p.stages[0].row.percent, 75, accuracy: 0.01, "2 days at 100 % and 2 at 50 %")
+
+        // every place reported so far done doesn't finish the stage; every WBS row ticked does
+        let all = InstallGantt.Row(id: "panels", code: "2.3", title: "แผง", status: .current, start: d(5), end: d(6), percent: 40,
+                                   subs: [Sub("A", percent: 100, start: d(5), end: d(5)), Sub("B", percent: 100, start: d(6), end: d(6))])
+        var q = InstallPlan(gantt: InstallGantt(rows: [all], today: d(7)), nonWorking: [], tracking: nil, calendar: cal)
+        XCTAssertEqual(q.stages[0].row.status, .current)
+        XCTAssertEqual(q.stages[0].row.percent, 100, "the places' progress")
+        var line = MasterSchedule.WorkItem(code: "2.3.1", title: "ยึดแผง", weight: 1)
+        line.baselineStart = d(5); line.baselineEnd = d(6)
+        q.useWBS([line], ticked: ["2.3.1"], calendar: cal)
+        XCTAssertEqual(q.stages[0].row.status, .done, "every WBS row ticked")
+        XCTAssertFalse(q.stages[0].row.critical)
+    }
+
+    /// Work past its end and not done is on the critical path, its stage too, with no float tail.
+    func testLateWorkIsCritical() {
+        let rows: [InstallGantt.Row] = [
+            .init(id: "s4", code: "2.2", title: "ระบบ DC", status: .current, start: d(0), end: d(4), percent: 50,
+                  subs: [Sub("Bonding", percent: 0, start: d(0), end: d(2)), Sub("ICL", percent: 100, start: d(3), end: d(4))]),
+            .init(id: "s9", code: "3", title: "ส่งมอบ", status: .waiting, start: d(20), end: d(30), percent: 0, subs: [])]
+        let p = InstallPlan(gantt: InstallGantt(rows: rows, today: d(10)), nonWorking: [], tracking: nil, calendar: cal)
+        let dc = p.stages[0]
+        XCTAssertTrue(dc.subs[0].critical, "late and open")
+        XCTAssertEqual(dc.subs[0].float, 0)
+        XCTAssertFalse(dc.subs[1].critical, "done")
+        XCTAssertTrue(dc.row.critical)
+        XCTAssertEqual(dc.row.float, 0)
+    }
+
+    /// One status with its days: earned schedule's days behind, or the forecast's.
+    func testOneScheduleStatusWithDays() {
+        let rows: [InstallGantt.Row] = [.init(id: "s4", code: "2.2", title: "DC", status: .current, start: d(0), end: d(20), percent: 20, subs: [])]
+        let g = InstallGantt(rows: rows, today: d(10))
+        let behind = InstallPlan(gantt: g, nonWorking: [], tracking: InstallTracking(actual: 20, planned: 50, start: d(0), due: d(20),
+                                                                                  today: d(10), earned: d(7)), calendar: cal)
+        XCTAssertEqual(behind.schedule, .behind)
+        XCTAssertEqual(behind.lateDays, 3)
+        XCTAssertEqual(behind.scheduleText, "ช้ากว่าแผน 3 วัน")
+        let on = InstallPlan(gantt: g, nonWorking: [], tracking: InstallTracking(actual: 48, planned: 50, start: d(0), due: d(20),
+                                                                              today: d(10), earned: d(9)), calendar: cal)
+        XCTAssertEqual(on.scheduleText, "ตามแผน")
+        let ahead = InstallPlan(gantt: g, nonWorking: [], tracking: InstallTracking(actual: 70, planned: 50, start: d(0), due: d(20),
+                                                                                 today: d(10), earned: d(14)), calendar: cal)
+        XCTAssertEqual(ahead.scheduleText, "เร็วกว่าแผน 4 วัน")
+        XCTAssertNil(InstallPlan(gantt: g, nonWorking: [], tracking: nil, calendar: cal).scheduleText)
+    }
+
+    /// A milestone is passed when its work is complete; a past day with the work open is overdue.
+    func testMilestoneStateFollowsItsWork() {
+        typealias M = InstallPlan.Milestone
+        let today = d(10)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: false).state(today: today, calendar: cal), .overdue)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: true).state(today: today, calendar: cal), .done)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(12), done: true).state(today: today, calendar: cal), .done, "done early")
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(10), done: false).state(today: today, calendar: cal), .today)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(13), done: false).state(today: today, calendar: cal), .ahead(3))
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9)).state(today: today, calendar: cal), .done, "no linked work: by the date")
+    }
+
+    /// The `วันทำงาน` column leaves out Sundays and the hatched days.
+    func testRowWorkingDays() {
+        let p = plan()
+        // s5: days 8 and 9 (2–3/10), both working
+        XCTAssertEqual(p.workingDays(of: p.stages[2].row), 2)
+        var r = p.stages[2].row
+        r.start = d(3); r.end = d(11)
+        XCTAssertEqual(r.days, 9)
+        XCTAssertEqual(p.workingDays(of: r), 6, "27/9 and 4/10 are Sundays, 5/10 waits")
+    }
 }

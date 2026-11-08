@@ -780,3 +780,58 @@ test('manager assigns an internal reviewer; external submits; only assigned revi
   await assertSucceeds(updateDoc(doc(db(ENG), 'installLogs', 'log1'), { inspectorAckAt: 12 }));
   await assertFails(updateDoc(doc(db(CON), 'installLogs', 'log1'), { report: '{}' }));
 });
+
+// CHA-55: the three synced collections the tests didn't cover.
+test('devices: the team reads all, a contractor only those of their jobs', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const a = ctx.firestore();
+    await setDoc(doc(a, 'devices', 'd1'), { kind: 'inverter', serial: 'S1', jobID: 'mine', externals: [CON], addedBy: TEAM });
+    await setDoc(doc(a, 'devices', 'd2'), { kind: 'inverter', serial: 'S2', jobID: 'theirs', externals: [OTHER], addedBy: OTHER });
+  });
+  await assertSucceeds(getDocs(collection(db(TEAM), 'devices')));
+  await assertSucceeds(getDoc(doc(db(CON), 'devices', 'd1')));
+  await assertSucceeds(getDocs(query(collection(db(CON), 'devices'), where('externals', 'array-contains', CON))));
+  await assertFails(getDoc(doc(db(CON), 'devices', 'd2')));
+  await assertFails(getDocs(collection(db(CON), 'devices')));
+  // never on another contractor's job, nor taking themselves off
+  await assertFails(setDoc(doc(db(CON), 'devices', 'd3'), { kind: 'panel', serial: 'S3', jobID: 'theirs', externals: [CON], addedBy: CON }));
+  await assertFails(setDoc(doc(db(CON), 'devices', 'd4'), { kind: 'panel', serial: 'S4', jobID: 'mine', externals: [], addedBy: CON }));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'devices', 'd1')));
+});
+
+test('surveyForms: the team writes any, a contractor only on their jobs and never deletes', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const a = ctx.firestore();
+    await setDoc(doc(a, 'surveyForms', 'f1'), { surveyor: 'x', jobID: 'mine', externals: [CON] });
+    await setDoc(doc(a, 'surveyForms', 'f2'), { surveyor: 'x', jobID: 'theirs', externals: [OTHER] });
+  });
+  const t = db(TEAM), c = db(CON);
+  await assertSucceeds(setDoc(doc(t, 'surveyForms', 'f3'), { surveyor: 'y', jobID: 'theirs' }));
+  await assertSucceeds(deleteDoc(doc(t, 'surveyForms', 'f3')));
+  await assertSucceeds(getDoc(doc(c, 'surveyForms', 'f1')));
+  await assertFails(getDoc(doc(c, 'surveyForms', 'f2')));
+  await assertSucceeds(updateDoc(doc(c, 'surveyForms', 'f1'), { surveyor: 'z' }));
+  await assertSucceeds(setDoc(doc(c, 'surveyForms', 'f4'), { surveyor: 'z', jobID: 'mine', externals: [CON] }));
+  await assertFails(setDoc(doc(c, 'surveyForms', 'f5'), { surveyor: 'z', jobID: 'theirs', externals: [CON] }));
+  await assertFails(updateDoc(doc(c, 'surveyForms', 'f1'), { externals: [] }));
+  await assertFails(updateDoc(doc(c, 'surveyForms', 'f2'), { surveyor: 'z' }));
+  await assertFails(deleteDoc(doc(c, 'surveyForms', 'f1')));
+});
+
+test('feedAcks: each member adds or removes only their own email', async () => {
+  const ack = (who) => doc(db(who), 'feedAcks', 'post1');
+  await assertSucceeds(setDoc(ack(CON), { post: 'post1', members: [CON] }));
+  await assertSucceeds(setDoc(ack(TEAM), { post: 'post1', members: [CON, TEAM] }));
+  await assertSucceeds(getDoc(ack(OTHER)));
+  // not someone else's, in or out
+  await assertFails(setDoc(ack(TEAM), { post: 'post1', members: [CON, TEAM, BOSS] }));
+  await assertFails(setDoc(ack(TEAM), { post: 'post1', members: [TEAM] }));
+  // taking their own back
+  await assertSucceeds(setDoc(ack(TEAM), { post: 'post1', members: [CON] }));
+  // only the two fields
+  await assertFails(setDoc(ack(TEAM), { post: 'post1', members: [CON, TEAM], extra: 1 }));
+  await assertFails(setDoc(doc(db(TEAM), 'feedAcks', 'post2'), { post: 2, members: [TEAM] }));
+  // never deleted, never by a non-member
+  await assertFails(deleteDoc(ack(CON)));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'feedAcks', 'post1')));
+});

@@ -12,13 +12,14 @@ extension InstallTrackingPage {
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
     static let percentWidth: CGFloat = 64
-    /// The page's bottom padding: the last cards end above the dock (PadDockBar height ~52 + padding 18 + safe area 21 = 91 pt).
-    static let dockClearance: CGFloat = 96
+    /// The gap under the page's last card. The dock is the scroll view's bottom inset (`viewportInset`), which the
+    /// scroll view keeps clear by itself: a fixed 96 pt for the dock counted it twice and left an empty band (CHA-66).
+    static let dockClearance: CGFloat = 14
     static let stageHeight: CGFloat = 46
     static let subHeight: CGFloat = 31
 
     /// The card's height on a tab whose first card sits under a 52 pt strip: what is left above the dock.
-    var fittedHeight: CGFloat { max(viewport - 14 - 52 - 14 - Self.dockClearance, 440) }
+    var fittedHeight: CGFloat { max(viewport - 14 - 52 - 14 - viewportInset - Self.dockClearance, 440) }
 
     func progressCard(_ data: InstallPageData, _ g: InstallGantt) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)

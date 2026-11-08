@@ -107,7 +107,7 @@ extension InstallPlanTabView {
     static func milestoneText(_ s: InstallPlan.Milestone.State) -> String {
         switch s {
         case .done: "ผ่านแล้ว"
-        case .overdue: "เลยกำหนด"
+        case .overdue(let days): "เลยกำหนด \(days) วัน"
         case .today: "วันนี้"
         case .ahead(let n): "อีก \(n) วัน"
         }

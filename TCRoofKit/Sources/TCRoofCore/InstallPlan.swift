@@ -53,8 +53,8 @@ public struct InstallPlan: Equatable, Sendable {
         public enum State: Equatable, Sendable {
             /// `ผ่านแล้ว`
             case done
-            /// `เลยกำหนด`: its day has passed and its work isn't complete.
-            case overdue
+            /// `เลยกำหนด n วัน`: its day was n days ago and its work isn't complete.
+            case overdue(Int)
             /// `วันนี้`
             case today
             /// `อีก n วัน`
@@ -65,7 +65,7 @@ public struct InstallPlan: Equatable, Sendable {
         public func state(today: Date, calendar cal: Calendar = MasterSchedule.calendar) -> State {
             if done == true { return .done }
             let left = cal.dateComponents([.day], from: cal.startOfDay(for: today), to: cal.startOfDay(for: date)).day ?? 0
-            if left < 0 { return done == nil ? .done : .overdue }
+            if left < 0 { return done == nil ? .done : .overdue(-left) }
             return left == 0 ? .today : .ahead(left)
         }
     }

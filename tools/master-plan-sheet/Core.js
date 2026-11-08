@@ -345,9 +345,184 @@ function phaseSummary(stations, previousCOD, risks, changes) {
   };
 }
 
+// MARK: the WBS tab (CHA-71): the plans' sub-tasks, and a `Y` typed there written to the app as a `sheet` tick
+
+/** Bangkok is UTC+7 all year. */
+var BANGKOK_MS = 7 * 3600 * 1000;
+
+/** Bangkok's day `yyyy-MM-dd` → a Swift date (seconds since 2001) at that day's Bangkok midnight, as the app's ticks. */
+function bangkokDayToSwift(day) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day || ''));
+  if (!m) return null;
+  return (Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) - BANGKOK_MS) / 1000 - SWIFT_EPOCH;
+}
+
+/** A Swift date → its Bangkok day `yyyy-MM-dd`; '' for none. */
+function swiftToBangkokDay(v) {
+  var d = swiftDate(v);
+  return d ? new Date(d.getTime() + BANGKOK_MS).toISOString().slice(0, 10) : '';
+}
+
+/**
+ * A date cell as Bangkok's day `yyyy-MM-dd`: a Date (Apps Script gives one at the sheet's midnight; the sheet is in
+ * Bangkok, README), `yyyy-MM-dd`, or `d/m/yyyy` (a Buddhist year, over 2400, taken back 543). '' for an empty cell,
+ * null for text it can't read.
+ */
+function sheetDay(v) {
+  if (v === null || v === undefined || v === '') return '';
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : new Date(v.getTime() + BANGKOK_MS).toISOString().slice(0, 10);
+  var s = String(v).trim();
+  if (!s) return '';
+  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s), dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(s);
+  var y, mo, d;
+  if (iso) { y = +iso[1]; mo = +iso[2]; d = +iso[3]; } else if (dmy) { d = +dmy[1]; mo = +dmy[2]; y = +dmy[3]; } else return null;
+  if (y < 100) y += 2000;
+  if (y > 2400) y -= 543;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  var t = new Date(Date.UTC(y, mo - 1, d));
+  if (t.getUTCDate() !== d) return null;
+  return t.toISOString().slice(0, 10);
+}
+
+/** A `เสร็จ (Y)` cell: Y (any case), ✓, TRUE or a ticked checkbox. */
+function isY(v) {
+  if (v === true) return true;
+  var s = String(v === null || v === undefined ? '' : v).trim().toUpperCase();
+  return s === 'Y' || s === '✓' || s === '✔' || s === 'TRUE';
+}
+
+/** The rows the app ticks (`parentCodes`, `notForThisStation`): no task's own line, no row with steps under it. */
+function wbsTickable(items) {
+  var codes = {};
+  (items || []).forEach(function (i) { codes[i.code] = true; });
+  var parents = {};
+  (items || []).forEach(function (i) {
+    var dot = String(i.code).lastIndexOf('.');
+    if (dot > 0 && codes[i.code.slice(0, dot)]) parents[i.code.slice(0, dot)] = true;
+  });
+  return (items || []).filter(function (i) {
+    var title = String(i.title || '');
+    return i.code && !parents[i.code] && String(i.code).split('.').length !== 2
+      && title.indexOf('(ไม่เกี่ยวกับสถานีนี้)') < 0 && title.indexOf('(ไม่ต้อง') < 0;
+  });
+}
+
+var WBS_SOURCE_LABEL = { team: 'ทีมติ๊ก', daily: 'รายงานประจำวัน', sheet: 'Google Sheet', file: 'ไฟล์แผน' };
+
+/** A tick's `ที่มา`, as the app's `WBSTick.origin`: its source, else (an older tick) a contractor's or the team's. */
+function wbsSourceLabel(tick, externals) {
+  if (!tick) return '';
+  if (tick.source) return WBS_SOURCE_LABEL[tick.source] || tick.source;
+  var by = String(tick.by || '').trim().toLowerCase();
+  var con = (externals || []).some(function (e) { return String(e).trim().toLowerCase() === by; });
+  return con ? 'ผู้รับเหมาติ๊ก' : 'ทีมติ๊ก';
+}
+
+/** The `WBS` tab's columns; `แก้โดย` is filled by the edit trigger (`onWBSEdit`) and read by the next pull. */
+var WBS_TAB_HEADER = ['รหัสสถานี', 'งานในแอป (id)', 'WBS', 'งานย่อย', 'น้ำหนัก %', 'เสร็จ (Y)', 'วันที่เสร็จ', 'ที่มา', 'โดย', 'แก้โดย'];
+
+/**
+ * One row per tickable WBS row of each paired PWA job (`matchRows` of the station `rows`), in the stations' order:
+ * [station code, job id, WBS code, title, weight, 'Y' or '', Bangkok day or '', source, by, '']. A job two rows take is
+ * listed once.
+ */
+function wbsTabRows(rows, matches) {
+  var out = [], seen = {};
+  matches.forEach(function (m, i) {
+    var j = m.job;
+    if (!j || seen[j.id] || j.kind !== 'pwa') return;
+    seen[j.id] = true;
+    var d = j.doc || {};
+    var items = parseJSON(d.scheduleWBS) || [], ticks = parseJSON(d.wbsTicks) || {};
+    var station = String((rows[i] || {}).code || j.codes[0] || '').trim();
+    wbsTickable(items).forEach(function (it) {
+      var t = ticks[it.code];
+      out.push([station, j.id, it.code, String(it.title || '').trim(), Number(it.weight) || 0, t ? 'Y' : '',
+                t ? swiftToBangkokDay(t.at) : '', wbsSourceLabel(t, d.externals), t ? (t.by || '') : '', '']);
+    });
+  });
+  return out;
+}
+
+/**
+ * Tab rows (or `_wbs` rows: [job id, code, Y, day]) as { jobId: { code: { y, day, editor } } }. `tab` says which. The
+ * tab's `แก้โดย` counts only as an email (the pull writes its refusals there too).
+ */
+function wbsCells(list, tab) {
+  var out = {};
+  (list || []).forEach(function (r) {
+    var id = String((tab ? r[1] : r[0]) || '').trim(), code = String((tab ? r[2] : r[1]) || '').trim();
+    if (!id || !code) return;
+    var editor = tab ? String(r[9] || '').trim() : '';
+    if (!/^[^\s@]+@[^\s@]+$/.test(editor)) editor = '';
+    (out[id] = out[id] || {})[code] = { y: isY(tab ? r[5] : r[2]), day: sheetDay(tab ? r[6] : r[3]), editor: editor };
+  });
+  return out;
+}
+
+/** The `_wbs` snapshot of tab rows: [job id, code, 'Y' or '', day]. */
+function wbsSnapshotRows(tabRows) {
+  return tabRows.map(function (r) { return [r[1], r[2], r[5], r[6]]; });
+}
+
+/** Ticks as the app writes them (`sortedKeys`): codes in order. */
+function wbsTicksJSON(ticks) {
+  var o = {};
+  Object.keys(ticks).sort().forEach(function (k) { o[k] = ticks[k]; });
+  return JSON.stringify(o);
+}
+
+/**
+ * What was typed on the `WBS` tab since the last pull, as writes to the jobs' `wbsTicks`. `snapshot` and `current` are
+ * `wbsCells` (of `_wbs` and of the tab); `appTicks` { jobId: ticks } as Firestore has them now; `editor` the email to
+ * write them under (a cell's own `แก้โดย` wins); `isTeam(email)` whether that account is one of the team (members, not
+ * external); `today` Bangkok's day for a `Y` without a date.
+ * - `Y` added: a tick `{ by, at, source: 'sheet' }`, unless the app has one already.
+ * - date changed on a `Y`: the sheet's own tick moves; the app's other ticks are refused (changed in the app only).
+ * - `Y` cleared: only a `sheet` tick goes; any other is refused, and stays.
+ * Returns { writes: [{ jobId, by, ticks, json }], refusals: [{ jobId, code, why }] }.
+ */
+function wbsSheetChanges(snapshot, current, appTicks, editor, isTeam, today) {
+  var writes = [], refusals = [];
+  Object.keys(current || {}).sort().forEach(function (jobId) {
+    var before = (snapshot || {})[jobId];
+    if (!before) return; // a job the tab didn't list at the last pull: nothing typed yet
+    var ticks = JSON.parse(JSON.stringify((appTicks || {})[jobId] || {})), changed = false, by = null;
+    Object.keys(current[jobId]).sort().forEach(function (code) {
+      var s = before[code], c = current[jobId][code];
+      if (!s || (s.y === c.y && s.day === c.day)) return;
+      var who = String(c.editor || editor || '').trim().toLowerCase();
+      var refuse = function (why) { refusals.push({ jobId: jobId, code: code, why: why }); };
+      var t = ticks[code];
+      var stranger = function () { return !who || !isTeam(who) ? (refuse('ผู้แก้ไม่ใช่ทีมงาน (' + (who || 'ไม่ทราบชื่อ') + ')'), true) : false; };
+      if (c.y) {
+        if (c.day === null) return refuse('อ่านวันที่ไม่ได้');
+        var at = bangkokDayToSwift(c.day || today);
+        if (at === null) return refuse('อ่านวันที่ไม่ได้');
+        if (t && t.source !== 'sheet') { if (s.y) refuse('ติ๊กมาจาก' + wbsSourceLabel(t) + ' แก้วันในแอป'); return; }
+        if (t && swiftToBangkokDay(t.at) === (c.day || today)) return;
+        if (t && !s.y) return; // already ticked by the sheet
+        if (stranger()) return;
+        ticks[code] = { by: who, at: at, source: 'sheet' };
+        changed = true; by = by || who;
+      } else if (s.y && t) {
+        if (t.source !== 'sheet') return refuse('ติ๊กมาจาก' + wbsSourceLabel(t) + ' เอาออกได้ในแอปเท่านั้น');
+        if (stranger()) return;
+        delete ticks[code];
+        changed = true; by = by || who;
+      }
+    });
+    if (changed) writes.push({ jobId: jobId, by: by, ticks: ticks, json: wbsTicksJSON(ticks) });
+  });
+  return { writes: writes, refusals: refusals };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = { SWIFT_EPOCH: SWIFT_EPOCH, TASKS: TASKS, swiftDate: swiftDate, millisDate: millisDate, taskWeight: taskWeight,
                      progress: progress, fsDocuments: fsDocuments, fsValue: fsValue, normalizeName: normalizeName,
                      jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, appTabRows: appTabRows, APP_TAB_HEADER: APP_TAB_HEADER, newJobFields: newJobFields, rowsToCreate: rowsToCreate, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
-                     phaseSummary: phaseSummary };
+                     phaseSummary: phaseSummary, bangkokDayToSwift: bangkokDayToSwift, swiftToBangkokDay: swiftToBangkokDay,
+                     sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsSourceLabel: wbsSourceLabel,
+                     WBS_TAB_HEADER: WBS_TAB_HEADER, wbsTabRows: wbsTabRows, wbsCells: wbsCells, wbsSnapshotRows: wbsSnapshotRows,
+                     wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges };
 }

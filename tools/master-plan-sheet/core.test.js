@@ -199,3 +199,92 @@ test('the _app tab lists every job, its plan, reports and the row it pairs with'
   assert.deepEqual(out[1].slice(0, 9), ['H', 'Google', 'งานบ้าน', 'ลูกค้าสนใจติดตั้ง', 'TCR2569-1', '', 15, '', '']);
   assert.equal(out[1][14], '');
 });
+
+// MARK: the WBS tab (CHA-71)
+
+const wbsItems = [
+  { code: '2.1', title: 'ติดตั้งโครงสร้าง', weight: 20, level: 1 },
+  { code: '2.1.1', title: '    ยึดขาจับ', weight: 8, level: 2 },
+  { code: '2.1.2', title: '    ติดตั้ง Rail', weight: 12, level: 2 },
+  { code: '2.1.2.1', title: 'ฐานราก', weight: 4.8, level: 3 },
+  { code: '2.1.2.2', title: 'โครงเหล็ก', weight: 7.2, level: 3 },
+  { code: '2.1.3', title: '    ทางเดิน (ไม่เกี่ยวกับสถานีนี้)', weight: 0, level: 2 },
+  { code: '0.1.1', title: '    แผนบริหารโครงการ', weight: 0, level: 2 }
+];
+const day7 = core.bangkokDayToSwift('2026-12-07');
+
+test('Bangkok days and Swift dates', () => {
+  // Bangkok midnight of 7 Dec 2026 is 6 Dec 17:00 UTC
+  assert.equal(new Date((core.SWIFT_EPOCH + day7) * 1000).toISOString(), '2026-12-06T17:00:00.000Z');
+  assert.equal(core.swiftToBangkokDay(day7), '2026-12-07');
+  assert.equal(core.swiftToBangkokDay(day7 + 23 * 3600), '2026-12-07');
+  assert.equal(core.sheetDay(new Date('2026-12-06T17:00:00Z')), '2026-12-07', 'a sheet Date at Bangkok midnight');
+  assert.equal(core.sheetDay('7/12/2569'), '2026-12-07', 'a Buddhist year');
+  assert.equal(core.sheetDay('2026-12-07'), '2026-12-07');
+  assert.equal(core.sheetDay(''), '');
+  assert.equal(core.sheetDay('พรุ่งนี้'), null);
+  assert.equal(core.sheetDay('31/2/2026'), null);
+  assert.ok(core.isY('y') && core.isY(true) && core.isY(' Y ') && !core.isY('') && !core.isY('N'));
+});
+
+test('the tab lists the rows the app ticks, with each tick and its source', () => {
+  assert.deepEqual(core.wbsTickable(wbsItems).map((i) => i.code), ['2.1.1', '2.1.2.1', '2.1.2.2', '0.1.1']);
+  const ticks = { '2.1.1': { by: 'con@vendor.test', at: day7 }, '2.1.2.1': { by: 'pm@tcroof.test', at: day7, source: 'daily' } };
+  const job = { id: 'J1', name: 'สถานี A', codes: ['P3-001'], kind: 'pwa',
+                doc: { scheduleWBS: JSON.stringify(wbsItems), wbsTicks: JSON.stringify(ticks), externals: ['con@vendor.test'] } };
+  const home = { id: 'H1', name: 'บ้าน', codes: [], kind: 'home', doc: { scheduleWBS: JSON.stringify(wbsItems) } };
+  const rows = core.wbsTabRows([{ code: 'P3-001' }, { code: 'P3-002' }, { code: 'X' }], [{ job }, { job }, { job: home }]);
+  assert.equal(rows.length, 4, 'one job listed once, a home job not at all');
+  assert.deepEqual(rows[0], ['P3-001', 'J1', '2.1.1', 'ยึดขาจับ', 8, 'Y', '2026-12-07', 'ผู้รับเหมาติ๊ก', 'con@vendor.test', '']);
+  assert.equal(rows[1][7], 'รายงานประจำวัน');
+  assert.deepEqual(rows[2].slice(5, 9), ['', '', '', '']);
+  assert.equal(core.WBS_TAB_HEADER.length, rows[0].length);
+  // what the snapshot keeps reads back as the tab does
+  assert.deepEqual(core.wbsCells(core.wbsSnapshotRows(rows), false).J1['2.1.1'], { y: true, day: '2026-12-07', editor: '' });
+  assert.deepEqual(core.wbsCells(rows, true).J1['2.1.1'], { y: true, day: '2026-12-07', editor: '' });
+  // `แก้โดย` is an email from the edit trigger, or the pull's own note of a refusal, which names no one
+  const noted = rows.map((r) => r.slice());
+  noted[0][9] = 'ไม่รับ: ผู้แก้ไม่ใช่ทีมงาน'; noted[1][9] = 'bee@tcroof.test';
+  const cells = core.wbsCells(noted, true);
+  assert.equal(cells.J1['2.1.1'].editor, '');
+  assert.equal(cells.J1['2.1.2.1'].editor, 'bee@tcroof.test');
+});
+
+test('a Y typed on the tab becomes a sheet tick; only a sheet tick is cleared from the sheet', () => {
+  const team = (e) => e.endsWith('@tcroof.test');
+  const app = { J1: { '2.1.1': { by: 'eng@tcroof.test', at: day7, source: 'team' },
+                      '2.1.2.1': { by: 'pm@tcroof.test', at: day7, source: 'sheet' } } };
+  const snap = { J1: { '2.1.1': { y: true, day: '2026-12-07' }, '2.1.2.1': { y: true, day: '2026-12-07' },
+                       '2.1.2.2': { y: false, day: '' }, '0.1.1': { y: false, day: '' } } };
+  const cur = { J1: { '2.1.1': { y: false, day: '' }, '2.1.2.1': { y: false, day: '' },
+                      '2.1.2.2': { y: true, day: '', editor: '' }, '0.1.1': { y: true, day: '2026-12-09', editor: 'Bee@tcroof.test' } } };
+  const r = core.wbsSheetChanges(snap, cur, app, 'owner@tcroof.test', team, '2026-12-10');
+  assert.equal(r.writes.length, 1);
+  const w = r.writes[0];
+  assert.equal(w.jobId, 'J1');
+  assert.deepEqual(Object.keys(JSON.parse(w.json)), ['0.1.1', '2.1.1', '2.1.2.2'], 'sorted, as the app writes them');
+  assert.deepEqual(w.ticks['2.1.1'], app.J1['2.1.1'], "the team's tick stays");
+  assert.equal(w.ticks['2.1.2.1'], undefined, "the sheet's own tick goes");
+  assert.deepEqual(w.ticks['2.1.2.2'], { by: 'owner@tcroof.test', at: core.bangkokDayToSwift('2026-12-10'), source: 'sheet' });
+  assert.deepEqual(w.ticks['0.1.1'], { by: 'bee@tcroof.test', at: core.bangkokDayToSwift('2026-12-09'), source: 'sheet' },
+                   'in the name of who typed it, on its date');
+  assert.deepEqual(r.refusals.map((x) => x.code), ['2.1.1']);
+  assert.equal(app.J1['2.1.2.1'].source, 'sheet', 'the input is left as it was');
+});
+
+test('nothing typed, a Y the app has, a stranger or a bad date writes nothing', () => {
+  const team = (e) => e.endsWith('@tcroof.test');
+  const app = { J1: { '2.1.1': { by: 'eng@tcroof.test', at: day7, source: 'daily' } } };
+  const snap = { J1: { '2.1.1': { y: false, day: '' }, '2.1.2.1': { y: false, day: '' }, '0.1.1': { y: false, day: '' } } };
+  assert.deepEqual(core.wbsSheetChanges(snap, snap, app, 'a@tcroof.test', team, '2026-12-10'), { writes: [], refusals: [] });
+  const cur = { J1: { '2.1.1': { y: true, day: '' }, '2.1.2.1': { y: true, day: '', editor: 'x@gmail.com' }, '0.1.1': { y: true, day: null } },
+                J2: { '2.1.1': { y: true, day: '' } } };
+  const r = core.wbsSheetChanges(snap, cur, app, 'a@tcroof.test', team, '2026-12-10');
+  assert.deepEqual(r.writes, [], 'J2 was not listed at the last pull');
+  assert.deepEqual(r.refusals.map((x) => x.code).sort(), ['0.1.1', '2.1.2.1']);
+  // the sheet's tick moved to another day
+  const sheetApp = { J1: { '2.1.2.1': { by: 'a@tcroof.test', at: day7, source: 'sheet' } } };
+  const moved = core.wbsSheetChanges({ J1: { '2.1.2.1': { y: true, day: '2026-12-07' } } },
+                                     { J1: { '2.1.2.1': { y: true, day: '2026-12-08' } } }, sheetApp, 'a@tcroof.test', team, '2026-12-10');
+  assert.equal(moved.writes[0].ticks['2.1.2.1'].at, core.bangkokDayToSwift('2026-12-08'));
+});

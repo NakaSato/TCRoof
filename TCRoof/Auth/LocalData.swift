@@ -10,8 +10,12 @@ import TCRoofUI
 enum LocalData {
     private static let transition = AccountDataTransition()
 
-    /// Records `email` as the owner. After a different owner, an external account leaves the records to be removed
-    /// at the next start; a team account takes them over with what sync knows of them.
+    /// A removal is waiting: the app shows nothing of the account until `wipeIfNeeded` has run.
+    static var needsCleanup: Bool { transition.needsCleanup }
+
+    /// Records `email` as the owner, and its role. After a different owner, or the same one made external, an external
+    /// account leaves the records to be removed at the next start; a team account takes them over with what sync
+    /// knows of them.
     static func signedIn(_ email: String, role: UserRole) {
         let changed = transition.owner != email
         let carry = transition.signedIn(email, external: role == .external)
@@ -23,6 +27,12 @@ enum LocalData {
     /// Removes the previous account's records, if a different account signed in. Runs before `CloudSync.start`.
     static func wipeIfNeeded(_ context: ModelContext, survey: SurveyModel) throws {
         let d = UserDefaults.standard
+        // an external account's records from before its role was recorded: a job not assigned to it means it kept the
+        // team's records as a member (made external by an app version that left them), so they go too
+        if transition.needsRecordCheck, let owner = transition.owner {
+            let jobs = try context.fetch(FetchDescriptor<Job>())
+            transition.checkedRecords(teamRecordsFound: jobs.contains { !$0.externals.map(Permissions.normalized).contains(owner) })
+        }
         try transition.cleanupIfNeeded {
             Task { await InstallSummaryCache.clearPersistentCache() }
             // Sync deletes in Firestore what it once knew and no longer finds here; forgetting what it knew first keeps

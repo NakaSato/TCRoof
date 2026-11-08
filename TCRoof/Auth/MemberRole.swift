@@ -54,6 +54,10 @@ final class MemberRole {
     /// สมาชิกทีม), or was suspended by a Maintainer (`true`).
     var onRemoved: ((_ suspended: Bool) -> Void)?
 
+    /// Called when `refresh` reads a role for the signed-in account different from the one the app opened with
+    /// (a manager changed it in สมาชิกทีม).
+    var onRoleChanged: ((_ email: String, _ role: UserRole) -> Void)?
+
     private static func confirmedKey(_ email: String) -> String { "member.confirmed.\(email)" }
 
     /// The server once listed this account here, so it may open the app offline.
@@ -95,7 +99,9 @@ final class MemberRole {
             let overrides = await Self.readOverrides()
             guard permissions.email == email else { return }
             let field = UserDefaults.standard.string(forKey: Self.key(email))
+            let before = permissions.role
             permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email, overrides: overrides)
+            if permissions.role != before { onRoleChanged?(email, permissions.role) }
         case .notMember:
             guard permissions.email == email else { return }
             onRemoved?(false)

@@ -12,6 +12,9 @@ final class GoogleSession {
     private(set) var email: String?
     /// Why the app signed out by itself (removed from the member list), for the login page.
     var notice: String?
+    /// Bumped when the signed-in account's local records must be prepared again (its role made external): the app
+    /// tears its screens down and runs the account's activation, the removal included, before showing them.
+    private(set) var activation = 0
 
     /// Sign-in refused: only accounts the developer lists under `members/` in Firebase may use the app.
     enum Denied: Error, LocalizedError {
@@ -56,6 +59,15 @@ final class GoogleSession {
             guard let self, let email = self.email else { return }
             self.signOut()
             self.notice = (suspended ? Denied.suspended : Denied.notMember(email)).localizedDescription
+        }
+        // a manager changed this account's role at the next sync: made external, the team's records synced here go
+        // (`LocalData`) before the app shows anything again, then sync brings back only the account's own jobs
+        MemberRole.shared.onRoleChanged = { [weak self] email, role in
+            guard let self, self.email == email else { return }
+            LocalData.signedIn(email, role: role)
+            guard LocalData.needsCleanup else { return }
+            CloudSync.shared.stop()
+            self.activation += 1
         }
         #if DEBUG
         // `-screen <name>` skips sign-in for simulator checks; `-screen login` shows the login page.

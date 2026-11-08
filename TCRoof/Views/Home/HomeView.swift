@@ -98,6 +98,8 @@ struct HomeView: View {
     @State private var liveFeed = LiveFeed.shared
     @State private var instruments = InstrumentStore.shared
     @State private var cloudSync = CloudSync.shared
+    /// The plan card's last items, reused while sync is still loading (CHA-57).
+    @State private var planCache = PlanAheadCache()
     /// A screen opened from a system notification.
     @State private var linked: LinkedScreen?
     @State private var shareURL: SharedLink?
@@ -201,11 +203,18 @@ struct HomeView: View {
     }
 
     /// `แผนงานถัดไป`: the next plan items ahead as hero pages; worked out only when today has no survey appointment left.
+    /// While sync is still loading, every page it saves redraws the home; working the list out each time took most of the
+    /// main thread at launch (CHA-57's trace), so it is reused for `PlanAheadCache.reuse` then. Once loading ends the
+    /// home redraws and the list is worked out from everything received.
     private func planAhead(now: Date) -> [HeroItem] {
+        let loading = !cloudSync.loadingCollections.isEmpty
+        if loading, let items = planCache.fresh(now: Date()) { return items }
         let survey = session.survey
-        return HomePlanItem.list(jobs: jobs, survey: survey, now: now).map { item in
+        let items = HomePlanItem.list(jobs: jobs, survey: survey, now: now).map { item in
             item.heroItem(now: now, report: report(item.job)) { feedLink = $0 }
         }
+        planCache.keep(items, at: Date())
+        return items
     }
 
     /// The record a feed post opens.
@@ -506,4 +515,18 @@ struct SettingsView: View {
             }
         }
     }
+}
+
+/// Not observed: keeping the items must not redraw the home.
+@MainActor final class PlanAheadCache {
+    static let reuse: TimeInterval = 3
+    private var items: [HeroItem]?
+    private var at = Date.distantPast
+
+    func fresh(now: Date) -> [HeroItem]? {
+        guard let items, now.timeIntervalSince(at) < Self.reuse else { return nil }
+        return items
+    }
+
+    func keep(_ items: [HeroItem], at date: Date) { self.items = items; at = date }
 }

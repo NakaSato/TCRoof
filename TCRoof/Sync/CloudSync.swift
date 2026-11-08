@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Observation
 import SwiftData
 import CryptoKit
@@ -205,6 +206,8 @@ final class CloudSync {
             external = me.role == .external && !me.email.isEmpty ? me.email : nil
             known = UserDefaults.standard.dictionary(forKey: knownKey) as? [String: String] ?? [:]
             syncedRecords = [:]
+            let coldStart = SyncLog.signposts.beginInterval("sync start")
+            defer { SyncLog.signposts.endInterval("sync start", coldStart) }
             // Start each collection sequentially with pacing delays to prevent request bursts.
             guard try await loadProjectsInBatches() else { return }
             try await delaySequenceLoad()
@@ -285,6 +288,8 @@ final class CloudSync {
         let barrier = StartupLoadBarrier()
         startupBarrier = barrier
         let started = Date()
+        let signpost = SyncLog.signposts.beginInterval("sync stage", id: SyncLog.signposts.makeSignpostID(), "\(label, privacy: .public)")
+        defer { SyncLog.signposts.endInterval("sync stage", signpost) }
         CrashReporting.startupStage(label, state: "begin")
 #if DEBUG
         SyncLog.sync.debug("startup begin \(label, privacy: .public)")
@@ -405,6 +410,8 @@ final class CloudSync {
     private func loadProjectsInBatches() async throws -> Bool {
         let session = snapshotSession
         guard snapshotIsCurrent(session) else { return false }
+        let stage = SyncLog.signposts.beginInterval("sync stage", id: SyncLog.signposts.makeSignpostID(), "projects")
+        defer { SyncLog.signposts.endInterval("sync stage", stage) }
         loadingCollections.insert(Job.collection)
         defer {
             if snapshotSession == session {
@@ -421,7 +428,9 @@ final class CloudSync {
         while snapshotIsCurrent(session) {
             let remaining = cursor.map { ordered.start(afterDocument: $0) } ?? ordered
             // A short cached page is not proof that the server has no more projects.
+            let request = SyncLog.signposts.beginInterval("project page", id: SyncLog.signposts.makeSignpostID())
             let page = try await remaining.limit(to: 10).getDocuments(source: .server)
+            SyncLog.signposts.endInterval("project page", request, "\(page.documents.count) documents")
             guard snapshotIsCurrent(session) else { return false }
             serverIDs.formUnion(page.documents.map(\.documentID))
             await receive(Job.self, page.documentChanges, session: session)

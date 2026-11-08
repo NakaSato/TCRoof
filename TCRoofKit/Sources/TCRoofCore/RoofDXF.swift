@@ -258,6 +258,17 @@ public enum RoofDXF {
                 guard let tag, !s.dimensionOps.contains(i) else { continue }
                 if tag == "PURLIN" && blocks.purlin != nil { continue }
                 if tag == "CAP" && capBlock != nil { continue }
+                // a member number's leader as CAD's LEADER, its arrowhead its own (the sketch's drawn arrowhead is left out)
+                if tag == "CALLOUT" {
+                    if case .polygon = op { continue }
+                    if case let .line(a, b, _, _, _) = op {
+                        let d = hypot(b.x - a.x, b.y - a.y), al = RoofSection.calloutArrow
+                        guard d > 1e-9 else { continue }
+                        let tip = Pt(b.x + (b.x - a.x) / d * al, b.y + (b.y - a.y) / d * al)
+                        dxf.leader(layer(tag), [ts(tip), ts(a)], arrow: al / s.scale)
+                        continue
+                    }
+                }
                 // a member or post hides what it covers, as the CAD trims them
                 if case let .polygon(pts, _, fill, _) = op, fill == .white { dxf.wipeout(layer(tag), pts.map(ts)) }
                 // concrete cut by the section takes the team's AR-CONC, as their sections hatch it

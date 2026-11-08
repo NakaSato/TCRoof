@@ -89,7 +89,7 @@ public extension Capability {
         case (.dailyFill, .external): "ต้องส่งทุกวันที่เข้างาน | งานตัวเอง"
         case (.mpWBSTick, .manager): "เอาติ๊กออกได้ทุกรายการ"
         case (.mpWBSTick, .internalTeam): "เอาติ๊กของตัวเองออก | วิศวกรคุมงานเอาออกได้ทุกรายการ"
-        case (.mpWBSTick, .external): "งานตัวเอง | เอาติ๊กของตัวเองออก"
+        case (.mpWBSTick, .external): "ไม่ติ๊กเอง | แจ้งงานย่อยที่เสร็จในรายงานประจำวัน ทีมยืนยัน"
         case (.weeklyRequest, .internalTeam): "อนุมัติ / ส่งกลับ"
         case (.weeklyRequest, .external): "ต้องส่งทุกสัปดาห์ | งานตัวเอง"
         case (.dailySign, .internalTeam): "ทีมงานหรือผู้ควบคุมงานที่ผู้จัดการมอบหมายเท่านั้น"

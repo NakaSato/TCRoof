@@ -84,7 +84,7 @@ final class WBSTicksTests: XCTestCase {
         let r = MasterSchedule.mergingTicks(local, fileDone: ["2.1.2", "2.1.3"], dates: ["2.1.2": day(12)],
                                             base: ["2.1.1", "2.1.3"], by: "pm@tcroof.test", today: day(20))
         XCTAssertEqual(Set(r.ticks.keys), ["2.1.2", "2.1.3"])
-        XCTAssertEqual(r.ticks["2.1.2"], .init(by: "pm@tcroof.test", at: day(12)))
+        XCTAssertEqual(r.ticks["2.1.2"], .init(by: "pm@tcroof.test", at: day(12), source: .file))
         XCTAssertEqual(r.ticks["2.1.3"], local["2.1.3"], "a tick the file didn't change keeps who made it")
         XCTAssertEqual(r.changed, 2)
 
@@ -167,23 +167,18 @@ final class WBSTicksTests: XCTestCase {
                        "a plan without ticks writes as before")
     }
 
-    func testAContractorChangesOnlyContractorTicks() {
+    /// CHA-71: a contractor no longer ticks. A record signed by one of the job's external people changes nothing; the
+    /// team's (and the Master Plan sheet's, signed with a team email) come in as they are.
+    func testAContractorsTicksAreNotTakenIn() {
         let con = "con@vendor.test", team = "team@tcroof.test"
         let local = ["2.1.1": tick(7, team), "2.1.2": tick(8, con)]
-        let contractors: Set = [con]
-        // their own new tick comes in; one in the team's name doesn't
         var incoming = local
         incoming["2.2.1"] = tick(9, con)
-        incoming["2.3.1"] = tick(9, team)
-        var out = MasterSchedule.WBSTick.trusting(incoming, local: local, contractors: contractors)
-        XCTAssertEqual(Set(out.keys), ["2.1.1", "2.1.2", "2.2.1"])
-        // they take back their own tick, not the team's
-        incoming = ["2.2.1": tick(9, con)]
-        out = MasterSchedule.WBSTick.trusting(incoming, local: out, contractors: contractors)
-        XCTAssertEqual(Set(out.keys), ["2.1.1", "2.2.1"])
-        // nor rewrite the team's in their name
-        out = MasterSchedule.WBSTick.trusting(["2.1.1": tick(10, con), "2.2.1": tick(9, con)], local: out, contractors: contractors)
-        XCTAssertEqual(out["2.1.1"], tick(7, team))
+        incoming["2.1.1"] = nil
+        XCTAssertEqual(MasterSchedule.WBSTick.trusting(incoming, local: local, signedBy: con, contractors: [con]), local)
+        XCTAssertEqual(MasterSchedule.WBSTick.trusting(incoming, local: local, signedBy: "CON@vendor.test", contractors: [con]), local)
+        XCTAssertEqual(MasterSchedule.WBSTick.trusting(incoming, local: local, signedBy: team, contractors: [con]), incoming)
+        XCTAssertEqual(MasterSchedule.WBSTick.trusting(incoming, local: local, signedBy: nil, contractors: [con]), incoming)
     }
 
     func testWhoTicksAndWhoTakesBack() {
@@ -191,16 +186,55 @@ final class WBSTicksTests: XCTestCase {
         let job = JobAccess(externals: [con], supervisor: eng)
         let contractor = Permissions(role: .external, email: con), team = Permissions(role: .internalTeam, email: other)
         let supervisor = Permissions(role: .internalTeam, email: eng), manager = Permissions(role: .manager, email: "m@tcroof.test")
-        XCTAssertTrue(contractor.mayTickWBS(on: job))
-        XCTAssertFalse(Permissions(role: .external, email: "else@vendor.test").mayTickWBS(on: job), "not their job")
+        XCTAssertFalse(contractor.mayTickWBS(on: job), "a contractor reports in the daily report instead")
+        XCTAssertFalse(contractor.mayConfirmWBS(on: job))
+        XCTAssertFalse(Permissions(role: .external, email: "else@vendor.test").mayTickWBS(on: job))
         XCTAssertTrue(team.mayTickWBS(on: job))
+        XCTAssertTrue(team.mayConfirmWBS(on: job))
         let byContractor = tick(7, con), byTeam = tick(7, other)
-        XCTAssertTrue(contractor.mayTakeBack(byContractor, on: job))
+        XCTAssertFalse(contractor.mayTakeBack(byContractor, on: job), "not even their own older tick")
         XCTAssertFalse(contractor.mayTakeBack(byTeam, on: job))
         XCTAssertTrue(team.mayTakeBack(byTeam, on: job))
         XCTAssertFalse(team.mayTakeBack(byContractor, on: job), "a team member takes back only their own")
         XCTAssertTrue(supervisor.mayTakeBack(byContractor, on: job))
         XCTAssertTrue(manager.mayTakeBack(byContractor, on: job))
+        // a confirmed daily pick is in the name of who confirmed it
+        let confirmed = MasterSchedule.WBSTick(by: other, at: day(7), source: .daily, reportedBy: "ช่างเอ")
+        XCTAssertTrue(team.mayTakeBack(confirmed, on: job))
+        XCTAssertFalse(contractor.mayTakeBack(confirmed, on: job))
+    }
+
+    /// Every source reads back; an older tick has none (the team's, or a contractor's by its email); a source a later
+    /// build adds doesn't lose the tick.
+    func testSourcesReadAndOlderTicksHaveNone() throws {
+        for source in MasterSchedule.WBSTick.Source.allCases {
+            let t = MasterSchedule.WBSTick(by: "a@tcroof.test", at: day(7), source: source, reportedBy: "x", confirmedAt: day(8))
+            XCTAssertEqual(try JSONDecoder().decode(MasterSchedule.WBSTick.self, from: JSONEncoder().encode(t)), t)
+        }
+        let old = try JSONDecoder().decode(MasterSchedule.WBSTick.self, from: Data(#"{"by":"con@vendor.test","at":0}"#.utf8))
+        XCTAssertNil(old.source)
+        XCTAssertEqual(old.origin(), .team)
+        XCTAssertEqual(old.origin(contractors: ["con@vendor.test"]), .contractor)
+        let later = try JSONDecoder().decode(MasterSchedule.WBSTick.self,
+                                             from: Data(#"{"by":"a@tcroof.test","at":0,"source":"robot"}"#.utf8))
+        XCTAssertNil(later.source)
+        XCTAssertEqual(MasterSchedule.WBSTick(by: "a", at: day(1), source: .sheet).origin(contractors: ["a"]), .sheet)
+        let json = String(decoding: try JSONEncoder().encode(tick(7)), as: UTF8.self)
+        XCTAssertFalse(json.contains("source") || json.contains("reportedBy") || json.contains("confirmedAt"),
+                       "a tick without them writes as before")
+    }
+
+    /// Each source books the row's weight once, in the week of its day, and taking it back takes exactly that away.
+    func testEverySourceBooksOnceAndTakesBackExactly() {
+        for source in MasterSchedule.WBSTick.Source.allCases {
+            var a = MasterSchedule.Actual()
+            let t = MasterSchedule.WBSTick(by: "a@tcroof.test", at: day(15), source: source)
+            MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.1": t], input: input)
+            MasterSchedule.bookWBS(&a, items: items, ticks: ["2.1.1": t], input: input)
+            XCTAssertEqual(a.points["structure"], [MasterSchedule.Actual.key(day(15)): 8], "\(source)")
+            MasterSchedule.bookWBS(&a, items: items, ticks: [:], input: input)
+            XCTAssertNil(a.points["structure"], "\(source)")
+        }
     }
 
     func testARowMovesWithItsPlan() {

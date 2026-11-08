@@ -9,8 +9,10 @@ Follow docs/ui/install-kpi-strip-ipad/CLAUDE_CODE_TASK.md.
 
 Scope: only the iPad install tracking page's KPI strip (kpiStrip / cells in InstallTrackingPage+HeaderAndKPI.swift).
 Make every cell a button, as on the board:
-- ความคืบหน้า, กำหนดการ and SPI switch the progress card to S-Curve;
+- ความคืบหน้า and กำหนดการ switch the progress card to S-Curve;
+- SPI opens a popover explaining SPI with the station's numbers;
 - คาดส่งมอบ switches it to Gantt;
+- the cell(s) whose view is showing are marked;
 - ต้องดำเนินการ keeps opening its sheet.
 
 Work through the change list in §4 in order, and nothing else:
@@ -33,7 +35,7 @@ When done:
 - run InstallTrackingUITests on an iPad simulator;
 - save screenshots like states/02–03 to screenshots/;
 - tick the change list;
-- answer §6's open questions in your report.
+- follow §6's decisions (already answered).
 
 Commit on feat/install-kpi-strip-ipad and push it.
 ```

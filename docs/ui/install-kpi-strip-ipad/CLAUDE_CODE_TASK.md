@@ -24,7 +24,7 @@ The strip is already built: `kpiStrip(_:)` and `cells(_:)` in `TCRoof/Views/Inst
 | `ความคืบหน้า` | progress card → `S-Curve` (`view = .curve`) |
 | `กำหนดการ` | progress card → `S-Curve` |
 | `คาดส่งมอบ` | progress card → `Gantt` (`view = .gantt`) |
-| `SPI` | progress card → `S-Curve` |
+| `SPI` | a popover explaining SPI with this station's numbers (decision 2, §6) |
 | `ต้องดำเนินการ` | `ต้องดำเนินการ` sheet (`sheet = .actions`), as today |
 
 The progress card sits right under the strip, so nothing needs scrolling.
@@ -50,13 +50,14 @@ Do only the change list in §4. Out of scope; do not touch these:
 ## 4. Change list (in order)
 
 1. **Cell target.**
-   - Give `Cell` an optional `opens: ProgressView?`. Set it to `.curve` for `ความคืบหน้า`, `กำหนดการ` and `SPI`, and to `.gantt` for `คาดส่งมอบ`.
+   - Give `Cell` an optional `opens: ProgressView?`. Set it to `.curve` for `ความคืบหน้า` and `กำหนดการ`, and to `.gantt` for `คาดส่งมอบ`.
+   - Give `Cell` a flag `explainsSPI` for the `SPI` cell (item 6).
    - Keep `opensActions` as it is.
    - The iPhone overview ignores `opens`.
 2. **Buttons.**
    - In `kpiStrip`, a cell with `opens` or `opensActions` becomes a `Button` over its whole cell; the cell is 52 pt high.
    - `opens` sets `view`, animated as the card's own switch does. `opensActions` sets `sheet = .actions`.
-   - A cell with neither stays a plain view: `ต้องดำเนินการ` reading `ไม่มี` does nothing, as today.
+   - A cell with neither, and not `SPI`, stays a plain view: `ต้องดำเนินการ` reading `ไม่มี` does nothing, as today.
    - Use a plain button style with a pressed state: `Theme.background` behind the cell while it is pressed. No other visual change.
    - Remove the `onTapGesture`.
 3. **Accessibility.**
@@ -67,7 +68,21 @@ Do only the change list in §4. Out of scope; do not touch these:
    - tapping `ความคืบหน้า` selects the progress card's `S-Curve`;
    - tapping `คาดส่งมอบ` selects `Gantt`;
    - the existing `ต้องดำเนินการ` tap still opens its sheet.
-5. **CLAUDE.md.** Add one sentence to the `InstallTrackingUITests` line: the strip's cells switch the progress card.
+5. **CLAUDE.md.** Add one sentence to the `InstallTrackingUITests` line: the strip's cells switch the progress card, and `SPI` explains itself.
+6. **SPI popover** (decision 2). Tapping `SPI` opens a popover anchored to the cell, about 320 pt wide. It shows:
+   - the title `SPI (Schedule Performance Index)`;
+   - the line `ความคืบหน้าจริง ÷ ตามแผน = <actual>% ÷ <planned>% = <spi>`, from `InstallTracking.actual`, `.planned` and `.spi`;
+   - the rule the cell already uses: `≥ 0.95 ปกติ` (success ink) and `< 0.95 ต่ำกว่าแผน` (danger text), with the current band marked;
+   - one line: `1.00 = ตรงแผน · ต่ำกว่า 1 = ช้ากว่าแผน`.
+   It has no other actions; tapping outside closes it. Its accessibility identifier is `kpi.SPI.popover`.
+7. **Mark the cell that is showing** (decision 1).
+   - A cell whose `opens` equals the progress card's current `view` is marked: a 2 pt `Theme.primary` bar along its bottom edge and the `.isSelected` trait.
+   - When S-Curve is on, both `ความคืบหน้า` and `กำหนดการ` are marked; when Gantt is on, `คาดส่งมอบ` is. With Key Plan on, none are.
+   - The mark follows `view` whichever way it changed: the strip, the card's own switch, or `-installView`.
+   - `SPI` and `ต้องดำเนินการ` are never marked.
+8. **UI test additions.**
+   - After tapping `ความคืบหน้า`, it has the selected trait and `คาดส่งมอบ` doesn't.
+   - Tapping `SPI` shows `kpi.SPI.popover` and leaves the card's view unchanged.
 
 ## 5. Check list
 
@@ -77,7 +92,7 @@ Do only the change list in §4. Out of scope; do not touch these:
 - [ ] The xcodebuild app build passes with your own `-derivedDataPath`, and `InstallTrackingUITests` passes on an iPad simulator.
 - [ ] Screenshots like `states/02` and `03` are saved to `screenshots/`. Use `-screen home -homeTab pwa -homeBoard YES -installOpen YES -installDemo YES`, then the taps.
 
-## 6. Open questions (answer in your report; don't build these)
+## 6. Decisions (answered 8 Nov 2569)
 
-1. Should the cell whose view is showing be marked, for example with an underline on `ความคืบหน้า` while S-Curve is on? The board shows no mark.
-2. Should `SPI` open a short explanation of SPI (EV / PV) instead of the S-Curve?
+1. **Mark the cell that is showing:** yes. See §4 item 7.
+2. **SPI opens an explanation instead of the S-Curve:** yes. See §4 item 6.

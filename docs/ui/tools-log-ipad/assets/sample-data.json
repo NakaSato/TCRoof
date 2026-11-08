@@ -1,0 +1,30 @@
+{
+  "_note": "Example values drawn on the board (iPadToolsHub.dc.html). They are examples only: never hard-code them. Reference day: Wed 30 Sep 2569 (2026). ToolLogDemo already carries most of them.",
+  "today": "2026-09-30",
+  "outNow": [
+    {"kind": "tool", "item": "Fluke 376 FC แคลมป์มิเตอร์", "person": "วิชัย", "job": "NO.098 งานติดตั้ง", "out": "26/9 08:15", "due": "29/9", "late": true, "used": "4 วัน"},
+    {"kind": "tool", "item": "DJI Mavic 3 Thermal", "person": "สมชาย", "job": "NO.224 กปภ. สาขาตัวอย่าง", "out": "วันนี้ 09:02", "due": null, "late": false, "used": "2 ชม. 18 น."},
+    {"kind": "car", "item": "Isuzu D-Max · 1กข 1234", "person": "สมชาย", "job": "NO.224", "out": "วันนี้ 07:40", "due": "วันนี้", "late": false, "used": "3 ชม. 40 น."}
+  ],
+  "log": [
+    {"day": "วันนี้ · พ. 30 ก.ย.", "time": "10:24", "action": "คืน", "item": "Fluke 1587 FC เครื่องวัดฉนวน", "person": "ธนพล", "detail": "NO.212 · สภาพปกติ", "evidence": "3 ภาพ"},
+    {"day": "วันนี้ · พ. 30 ก.ย.", "time": "09:02", "action": "ยืม", "item": "DJI Mavic 3 Thermal", "person": "สมชาย", "detail": "NO.224 กปภ. สาขาตัวอย่าง", "evidence": "2 ภาพ"},
+    {"day": "วันนี้ · พ. 30 ก.ย.", "time": "07:40", "action": "ออกรถ", "item": "Isuzu D-Max · 1กข 1234", "person": "สมชาย", "detail": "NO.224 · ไมล์ 85,034", "evidence": "ภาพหน้าปัด"},
+    {"day": "อ. 29 ก.ย.", "time": "18:10", "action": "คืนรถ", "item": "Toyota Commuter · 2กค 5678", "person": "ธนพล", "detail": "NO.212 · วิ่ง 212 กม. · ไมล์ 120,455", "evidence": "—"},
+    {"day": "อ. 29 ก.ย.", "time": "17:30", "action": "เติมน้ำมัน", "item": "Toyota Commuter · 2กค 5678", "person": "ธนพล", "detail": "45.2 ลิตร · 1,450 บาท", "evidence": "ใบเสร็จ"},
+    {"day": "อ. 29 ก.ย.", "time": "16:05", "action": "คืน", "item": "Hioki CM4375 แคลมป์มิเตอร์", "person": "วิชัย", "detail": "NO.215 · สภาพปกติ", "evidence": "3 ภาพ"},
+    {"day": "อ. 29 ก.ย.", "time": "07:15", "action": "ออกรถ", "item": "Toyota Commuter · 2กค 5678", "person": "ธนพล", "detail": "NO.212 · ไมล์ 120,243", "evidence": "ภาพหน้าปัด"}
+  ],
+  "logFooter": "แสดง 10 จาก 12 รายการ",
+  "instruments": {"count": 10, "kpi": {"ใช้งานอยู่": 2, "เกินกำหนดคืน": 1, "สอบเทียบใกล้ครบ": 3, "งดใช้ / ซ่อม": 2},
+    "chase": [
+      {"title": "Fluke 376 FC แคลมป์มิเตอร์", "sub": "วิชัย · NO.098 · ครบคืน 29/9", "chip": "เกิน 1 วัน"},
+      {"title": "Fluke Ti401 PRO", "sub": "งดใช้ · ใบรับรองหมด 20/9", "chip": "สอบเทียบเกิน 10 วัน"}]},
+  "vehicles": {"summary": "3 คัน · ออกอยู่ 1 · เดือนนี้ 2,140 กม. · น้ำมัน 8,950 บาท",
+    "list": [
+      {"id": "v1", "name": "Isuzu D-Max", "plate": "1กข 1234", "state": "ออกใช้งาน", "line": "สมชาย · NO.224 กปภ. สาขาตัวอย่าง · ออก 07:40", "km": 85210, "fuel": 0.55, "service": "เช็กระยะอีก 2,790 กม."},
+      {"id": "v2", "name": "Toyota Commuter", "plate": "2กค 5678", "state": "ว่าง", "line": "จอดที่สำนักงาน · คืน 29/9 18:10 โดย ธนพล", "km": 120455, "fuel": 0.3, "service": "ถึงรอบเช็กระยะ 500 กม.", "warn": true},
+      {"id": "v3", "name": "Toyota Revo", "plate": "3กง 9012", "state": "จองแล้ว", "line": "พรุ่งนี้ 1/10 · ธนพล · NO.226 · 07:30–17:00", "km": 42980, "fuel": 0.9, "service": "เช็กระยะอีก 7,020 กม."}],
+    "primaryButton": {"out": "คืนรถ · บันทึกไมล์", "free": "ออกรถคันนี้", "booked": "ดูการจอง"},
+    "secondaryButton": "เติมน้ำมัน"}
+}

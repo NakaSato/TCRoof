@@ -188,9 +188,13 @@ struct IECInstallPhotosPage: View {
                 },
                 logos: logos.enumerated().map { i, d in photo(d, i == 0 ? "pwa.jpg" : "pea.png") },
                 measure: PDFRenderer.Measure())
-            let data = PDFRenderer.pdf(pages: report.render(), title: "ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า") { p in
-                images[p.id].flatMap(UIImage.init(data:))
-            }
+            // laid out and drawn off the main thread, every page's photos decoded there
+            let drawn = images
+            let data = await Task.detached(priority: .userInitiated) {
+                PDFRenderer.pdf(pages: report.render(), title: "ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า") { p in
+                    drawn[p.id].flatMap(UIImage.init(data:))
+                }
+            }.value
             let name = "ภาพถ่ายติดตั้งระบบผลิตไฟฟ้า \(station).pdf"
             for old in job.documents where old.name == name { context.delete(old) }
             let doc = DocumentAsset(name: name, data: data)

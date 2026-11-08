@@ -27,6 +27,8 @@ struct IECTestScreen: View {
     @State var exportKind: IECReport.ExportRecord.Kind = .excel
     /// The Word appendix is being made (its photos are shrunk first).
     @State var makingWord = false
+    /// The IEC workbook being filled, off the main thread (`exportExcel`).
+    @State var makingExcel = false
     @State var exportError: String?
     /// The station line names another station: asked before exporting.
     @State var confirmExport = false
@@ -207,8 +209,9 @@ struct IECTestScreen: View {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 Button { startExport(.word) } label: { Label(makingWord ? "กำลังทำ Word…" : "ส่งออก Word ภาพถ่าย", systemImage: "doc.richtext").frame(maxWidth: .infinity) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).disabled(makingWord)
-                Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells").frame(maxWidth: .infinity) }
+                Button { startExport(.excel) } label: { Label(makingExcel ? "กำลังทำ Excel…" : "ส่งออก Excel IEC 62446", systemImage: "tablecells").frame(maxWidth: .infinity) }
                     .buttonStyle(TCButtonStyle(report.isLocked || !report.isDone(.review) ? .primary : .secondary, size: .card))
+                    .disabled(makingExcel)
                 if !report.isLocked, permissions.can(.iecFillSubmit, on: job.access) {
                     Button(action: submit) { Label("ส่งผลให้ทีม", systemImage: "paperplane").frame(maxWidth: .infinity) }
                         .buttonStyle(TCButtonStyle(.primary, size: .card))

@@ -13,6 +13,8 @@ struct MPOverviewView: View {
     /// นำเข้าไฟล์แผนหลายสถานี: the picker, then the files to check.
     @State private var importing = false
     @State private var batch: Batch?
+    /// The picked plan files being read, off the main thread (`MPBulkImportSheet.items`).
+    @State private var readingFiles = false
     @State private var importedCount: Int?
     @State private var assistant = false
     struct Batch: Identifiable { let id = UUID(); let items: [MPBulkImportSheet.Item] }
@@ -101,7 +103,10 @@ struct MPOverviewView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         if permissions.can(.mpSetup) {
-                            Button { pick(list: false) } label: { Label("นำเข้าไฟล์แผน", systemImage: "square.and.arrow.down.on.square") }
+                            Button { pick(list: false) } label: {
+                                Label(readingFiles ? "นำเข้าไฟล์แผน (กำลังอ่านไฟล์…)" : "นำเข้าไฟล์แผน", systemImage: "square.and.arrow.down.on.square")
+                            }
+                            .disabled(readingFiles)
                         }
                         if permissions.can(.jobEdit) {
                             Button { pick(list: true) } label: { Label("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle") }
@@ -121,7 +126,9 @@ struct MPOverviewView: View {
                 TCButton("นำเข้ารายชื่อสถานี", systemImage: "list.bullet.rectangle", kind: .secondary) { pick(list: true) }
             }
             if permissions.can(.mpSetup) {
-                TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary) { pick(list: false) }
+                TCButton("นำเข้าไฟล์แผนหลายสถานี", systemImage: "square.and.arrow.down.on.square", kind: .secondary,
+                         working: readingFiles) { pick(list: false) }
+                    .disabled(readingFiles)
             }
             if mayAddStations {
                 TCButton("เพิ่มสถานีจากไฟล์แผน", systemImage: "plus.rectangle.on.rectangle", kind: .secondary) { addingStations = true }
@@ -178,7 +185,12 @@ struct MPOverviewView: View {
     }
 
     private func open(_ urls: [URL]) {
-        batch = Batch(items: MPBulkImportSheet.items(urls, stations: jobs.pwaStations))
+        guard !readingFiles else { return }
+        readingFiles = true
+        Task {
+            defer { readingFiles = false }
+            batch = Batch(items: await MPBulkImportSheet.items(urls, stations: jobs.pwaStations))
+        }
     }
 
     private func pick(list: Bool) {

@@ -43,8 +43,9 @@ extension IECTestScreen {
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
             .disabled(makingWord)
-            Button { startExport(.excel) } label: { Label("ส่งออก Excel IEC 62446", systemImage: "tablecells") }
+            Button { startExport(.excel) } label: { Label(makingExcel ? "กำลังทำ Excel…" : "ส่งออก Excel IEC 62446", systemImage: "tablecells") }
                 .buttonStyle(TCButtonStyle(r.isLocked || !r.isDone(.review) ? .primary : .secondary, size: .card)).fixedSize()
+                .disabled(makingExcel)
             if !r.isLocked, permissions.can(.iecFillSubmit, on: job.access) {
                 Button(action: submit) { Label("ส่งผลให้ทีม", systemImage: "paperplane") }
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
@@ -204,16 +205,21 @@ extension IECTestScreen {
     /// The PWA's own workbook with this test typed in (`IECExcel`): kept in the job's documents under `IEC 62446`
     /// (so it goes to Drive with them), then offered to the share sheet; both are the same file.
     private func exportExcel() {
-        guard let r = job.iecReport else { return }
-        do {
-            let data = try IECExcel.export(r)
-            // example data is named as such, never as this job
-            let name = IECExcel.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
-            try file(data, name: name, kind: .excel)
-        } catch let f as IECExcel.Failure {
-            exportError = f.message
-        } catch {
-            exportError = error.localizedDescription
+        guard !makingExcel, let r = job.iecReport else { return }
+        // example data is named as such, never as this job
+        let name = IECExcel.fileName(station: r.sampleName.map { "ตัวอย่าง " + $0 } ?? job.stationName, date: r.testDate ?? .now)
+        makingExcel = true
+        Task {
+            defer { makingExcel = false }
+            do {
+                // every inverter's sheets filled cell by cell in the customer's workbook: off the main thread
+                let data = try await Task.detached(priority: .userInitiated) { try IECExcel.export(r) }.value
+                try file(data, name: name, kind: .excel)
+            } catch let f as IECExcel.Failure {
+                exportError = f.message
+            } catch {
+                exportError = error.localizedDescription
+            }
         }
     }
 

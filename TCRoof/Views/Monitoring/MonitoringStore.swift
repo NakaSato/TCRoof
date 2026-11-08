@@ -100,6 +100,7 @@ final class MonitoringStore {
 
 /// A monitoring server's token, kept in this device's Keychain (only the last four characters are in the settings). A
 /// manager saves it on their iPad, as the assistant's key (`AssistantKey`); moving it to the backend is a later step.
+/// Like that key it belongs to the device, shared by every account signed in there and kept through account switches.
 enum MonitoringToken {
     private static let service = "com.tcroof.monitoring"
 

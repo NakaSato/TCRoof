@@ -57,6 +57,9 @@ final class MemberRole {
     /// Called when `refresh` reads a role for the signed-in account different from the one the app opened with
     /// (a manager changed it in สมาชิกทีม).
     var onRoleChanged: ((_ email: String, _ role: UserRole) -> Void)?
+    /// Called when the server has confirmed the signed-in account's role (at each sync start), so the Drive access can
+    /// follow it (`GoogleSession.checkDriveAccess`).
+    var onConfirmed: (() -> Void)?
 
     private static func confirmedKey(_ email: String) -> String { "member.confirmed.\(email)" }
 
@@ -102,6 +105,7 @@ final class MemberRole {
             let before = permissions.role
             permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email, overrides: overrides)
             if permissions.role != before { onRoleChanged?(email, permissions.role) }
+            onConfirmed?()
         case .notMember:
             guard permissions.email == email else { return }
             onRemoved?(false)

@@ -12,6 +12,7 @@ extension InstallTrackingPage {
             job: job,
             data: data,
             viewport: viewport,
+            viewportInset: viewportInset,
             route: $route,
             showWBSDependencies: $showWBSDependencies,
             workbook: $workbook
@@ -37,6 +38,7 @@ struct InstallPlanTabView: View {
     let job: Job
     let data: InstallPageData
     let viewport: CGFloat
+    let viewportInset: CGFloat
     @Binding var route: InstallTrackingPage.Route?
     @Binding var showWBSDependencies: Bool
     @Binding var workbook: MPWorkbookFlow
@@ -49,6 +51,10 @@ struct InstallPlanTabView: View {
     @State private var showMilestones: Bool = true
     @State private var compactTaskCol: Bool = false
     @State private var scrollPos = ScrollPosition()
+    /// The header as laid out (two rows; taller when its chips or buttons wrap).
+    @State private var headerHeight: CGFloat = InstallPlanTabView.planHeaderHeight
+    /// The timeline's sideways position: opened at today (CHA-64).
+    @State private var timelinePos = ScrollPosition()
 
     @Environment(\.permissions) var permissions
 
@@ -56,7 +62,7 @@ struct InstallPlanTabView: View {
     static let planSideWidth: CGFloat = 280
     /// The grid's columns before the days.
     enum PlanCol {
-        static let wbs: CGFloat = 44, days: CGFloat = 40, crew: CGFloat = 44, after: CGFloat = 60, left: CGFloat = 340
+        static let wbs: CGFloat = 44, days: CGFloat = 58, crew: CGFloat = 44, after: CGFloat = 60, left: CGFloat = 340
         static let stageRow: CGFloat = 40, subRow: CGFloat = 32
     }
 
@@ -69,10 +75,13 @@ struct InstallPlanTabView: View {
 
     var body: some View {
         if let p = data.plan, let g = data.gantt {
-            let body = max(viewport - 14 - Self.planHeaderHeight - 14 - InstallTrackingPage.dockClearance, 440)
+            // the card fills the page down to the dock: the scroll view's height less its bottom inset (the dock) and the
+            // gap under the last card, with the header as measured
+            let body = max(viewport - 14 - headerHeight - 14 - viewportInset - InstallTrackingPage.dockClearance, 440)
             let axis = InstallAxis(g, forecast: p, explicitUnit: zoomLevel)
             VStack(alignment: .leading, spacing: 14) {
                 planHeader(p, axis: axis)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
                 if !p.dependencyIssues.isEmpty {
                     Text(p.dependencyIssues.map(\.message).joined(separator: "\n")).foregroundStyle(Theme.dangerText)
                 }
@@ -142,11 +151,18 @@ struct InstallPlanTabView: View {
                 .fixedSize()
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        planChip("ระยะเวลา", "\(p.days.count) วัน", Theme.navy)
+                        // one schedule status, from the progress to date with its days (CHA-64)
+                        if let status = p.scheduleText {
+                            planChip("สถานะแผน", status, p.schedule == .behind ? Theme.dangerText : Theme.successInk)
+                        }
+                        planChip("ระยะเวลา", "\(p.days.count) วันปฏิทิน", Theme.navy)
                         planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
                         if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
-                        if let on = p.onPlan { planChip("สถานะแผน", on ? "ตามแผน" : "ช้ากว่าแผน", on ? Theme.successInk : Theme.dangerText) }
-                        if let slip = p.slip { planChip("เทียบ Baseline", InstallPlan.slipText(slip), slip > 0 ? Theme.dangerText : Theme.successInk) }
+                        // the planned finish against the baseline's: a date, not a status
+                        if let slip = p.slip {
+                            planChip("วันเสร็จเทียบ Baseline", slip == 0 ? "ไม่เลื่อน" : slip > 0 ? "เลื่อน \(slip) วัน" : "เร็วขึ้น \(-slip) วัน",
+                                     slip > 0 ? Theme.dangerText : Theme.navy)
+                        }
                     }
                 }
             }
@@ -192,10 +208,12 @@ struct InstallPlanTabView: View {
                 Button {
                     withAnimation(.snappy) { showMilestones.toggle() }
                 } label: {
-                    Label("Milestone", systemImage: showMilestones ? "sidebar.right" : "sidebar.right")
+                    Label("Milestone", systemImage: showMilestones ? "checkmark" : "sidebar.right")
                 }
-                .buttonStyle(TCButtonStyle(showMilestones ? .primary : .secondary, size: .card)).fixedSize()
-                .accessibilityLabel(showMilestones ? "ซ่อน Milestone" : "แสดง Milestone")
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityLabel("Milestone")
+                .accessibilityValue(showMilestones ? "แสดงอยู่" : "ซ่อนอยู่")
+                .accessibilityAddTraits(showMilestones ? .isSelected : [])
 
                 if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
                     Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
@@ -324,11 +342,20 @@ struct InstallPlanTabView: View {
                         }
                         .frame(width: timelineW)
                     }
+                    .scrollPosition($timelinePos)
+                    // today a third of the way in, or the nearest the chart can scroll to it
+                    .onAppear { scrollToToday(axis, timelineW: timelineW, visible: availableTimelineW) }
+                    .onChange(of: zoomLevel) { scrollToToday(axis, timelineW: timelineW, visible: availableTimelineW) }
                 }
                 Rectangle().fill(Theme.hairline).frame(height: 1)
                 planLegend(p, waitLabel: waitLabel)
             }
         }
+    }
+
+    private func scrollToToday(_ axis: InstallAxis, timelineW: CGFloat, visible: CGFloat) {
+        let x = axis.x(axis.today, timelineW) - visible / 3
+        timelinePos.scrollTo(x: min(max(x, 0), max(timelineW - visible, 0)))
     }
 
     private func planColumns(_ axis: InstallAxis, _ p: InstallPlan, width: CGFloat) -> some View {
@@ -349,7 +376,7 @@ struct InstallPlanTabView: View {
         HStack(spacing: 0) {
             Text("WBS").frame(width: PlanCol.wbs, alignment: .leading)
             Text("งาน").frame(maxWidth: .infinity, alignment: .leading)
-            Text("วัน").frame(width: PlanCol.days)
+            Text("วันทำงาน").lineLimit(1).minimumScaleFactor(0.8).frame(width: PlanCol.days)
             if showsCrew(p) { Text("คน").frame(width: PlanCol.crew) }
             if showsLinks(p) { Text("ต่อจาก").frame(width: PlanCol.after) }
         }
@@ -362,10 +389,22 @@ struct InstallPlanTabView: View {
 
     private func planTimelineHeader(_ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
+            // the month and year over its days (the month axis names them on its columns)
+            if axis.unit != .month {
+                ForEach(axis.months, id: \.self) { m in
+                    let x = axis.x(m, width)
+                    HStack(spacing: 0) {
+                        Rectangle().fill(Theme.borderSubtle).frame(width: 1, height: 14)
+                        Text(Self.monthYear.string(from: m)).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy)
+                            .padding(.leading, 5).fixedSize()
+                    }
+                    .offset(x: x, y: 3)
+                }
+            }
             ForEach(axis.unit == .day ? axis.columns : axis.labelled, id: \.self) { d in
                 planDayLabel(d, axis: axis, dense: axis.columns.count > 20)
                     .frame(width: axis.columnWidth(width))
-                    .offset(x: axis.x(d, width), y: axis.unit == .day ? 10 : 20)
+                    .offset(x: axis.x(d, width), y: axis.unit == .month ? 20 : 21)
             }
         }
         .frame(width: width, height: 58, alignment: .topLeading)
@@ -383,13 +422,23 @@ struct InstallPlanTabView: View {
             if axis.unit == .day {
                 Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink)
             }
-            Text(axis.label(d))
+            // the day's number alone under its weekday, so the first column isn't wider than its 32 pt
+            Text(axis.unit == .day ? "\(MasterSchedule.calendar.component(.day, from: d))" : axis.label(d))
                 .font(.sarabunFixed(month ? 13 : week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
                 .padding(.horizontal, today ? 6 : 0).frame(height: 20)
                 .background { if today { Capsule().fill(Theme.danger) } }
         }
         .fixedSize()
     }
+
+    /// `ส.ค. 2569`: the timeline's month row.
+    static let monthYear: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = ThaiFormat.locale
+        f.calendar = Calendar(identifier: .buddhist)
+        f.dateFormat = "MMM yyyy"
+        return f
+    }()
 
     private func planStageLeftRow(_ s: InstallPlan.Stage, _ p: InstallPlan, width: CGFloat) -> some View {
         let open = planOpen(s, p), r = s.row
@@ -400,9 +449,9 @@ struct InstallPlanTabView: View {
                     Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(Theme.navy).frame(width: 14).opacity(s.subs.isEmpty ? 0 : 1)
                     Text(r.title).font(.sarabunFixed(r.title.count > 34 ? 14 : 16, .bold))
-                        .lineLimit(2).lineSpacing(-2).frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Text("\(r.days)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+                Text("\(p.workingDays(of: r))").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
                 if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
                 if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
             }
@@ -415,7 +464,7 @@ struct InstallPlanTabView: View {
         .buttonStyle(.plain)
         .help(r.title)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(planAccessibility(r))
+        .accessibilityLabel(planAccessibility(r, p))
         .accessibilityHint(s.subs.isEmpty ? "" : open ? "แตะเพื่อซ่อนงานย่อย" : "แตะเพื่อแสดงงานย่อย")
         .accessibilityIdentifier("plan-stage-\(r.code)")
     }
@@ -439,7 +488,7 @@ struct InstallPlanTabView: View {
             Text(r.code).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
             Text(r.title).font(.sarabunFixed(14)).lineLimit(1).truncationMode(.tail)
                 .padding(.leading, 12).frame(maxWidth: .infinity, alignment: .leading)
-            Text("\(r.days)").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+            Text("\(p.workingDays(of: r))").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
             if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
             if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
         }
@@ -448,7 +497,7 @@ struct InstallPlanTabView: View {
         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1) }
         .help(r.title)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(planAccessibility(r))
+        .accessibilityLabel(planAccessibility(r, p))
     }
 
     private func planSubBarRow(_ r: InstallPlan.Row, stage: InstallPlan.Row, _ p: InstallPlan, axis: InstallAxis, width: CGFloat) -> some View {
@@ -474,7 +523,7 @@ struct InstallPlanTabView: View {
         ZStack(alignment: .leading) {
             ForEach(p.milestones) { m in
                 let x = (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2
-                MilestoneDiamond(passed: m.date < p.today).position(x: x, y: 22)
+                MilestoneDiamond(state: m.state(today: p.today)).position(x: x, y: 22)
             }
         }
         .frame(width: width, height: 44, alignment: .leading)
@@ -482,9 +531,10 @@ struct InstallPlanTabView: View {
         .accessibilityHidden(true)
     }
 
-    private func planAccessibility(_ r: InstallPlan.Row) -> String {
+    private func planAccessibility(_ r: InstallPlan.Row, _ p: InstallPlan) -> String {
         let status = switch r.status { case .done: "เสร็จ"; case .current: "กำลังทำ"; case .waiting: "ตามแผน" }
         return "\(r.code) \(r.title) | \(ThaiFormat.dayMonth.string(from: r.start))–\(ThaiFormat.dayMonth.string(from: r.end)) | \(status) \(Int(r.percent.rounded()))%"
+            + (r.overdue(today: p.today) ? " | เลยกำหนด" : "")
             + (r.critical ? " | เส้นทางวิกฤต" : "") + ((r.float ?? 0) > 0 ? " | เผื่อ \(r.float ?? 0) วัน" : "")
             + (r.slip.map { " | เทียบ Baseline " + InstallPlan.slipText($0) } ?? "")
     }
@@ -524,7 +574,7 @@ struct InstallPlanTabView: View {
     // MARK: table
 
     private enum TableCol {
-        static let wbs: CGFloat = 60, date: CGFloat = 80, days: CGFloat = 54, crew: CGFloat = 54, after: CGFloat = 70, status: CGFloat = 100
+        static let wbs: CGFloat = 60, date: CGFloat = 80, days: CGFloat = 72, crew: CGFloat = 54, after: CGFloat = 70, status: CGFloat = 100
         static let slip: CGFloat = 104
     }
 
@@ -559,7 +609,7 @@ struct InstallPlanTabView: View {
             Text(r?.title ?? "งาน").lineLimit(1).padding(.leading, r != nil && !stage ? 24 : 0).frame(maxWidth: .infinity, alignment: .leading)
             Text(r.map { ThaiFormat.dayMonth.string(from: $0.start) } ?? "เริ่ม").frame(width: TableCol.date, alignment: .leading)
             Text(r.map { ThaiFormat.dayMonth.string(from: $0.end) } ?? "เสร็จ").frame(width: TableCol.date, alignment: .leading)
-            Text(r.map { "\($0.days)" } ?? "วัน").frame(width: TableCol.days, alignment: .leading)
+            Text(r.map { "\(p.workingDays(of: $0))" } ?? "วันทำงาน").frame(width: TableCol.days, alignment: .leading)
             if showsCrew(p) { Text(r.map { $0.crew.map(String.init) ?? "–" } ?? "คน").frame(width: TableCol.crew, alignment: .leading) }
             if showsLinks(p) { Text(r.map { $0.after ?? "–" } ?? "ต่อจาก").frame(width: TableCol.after, alignment: .leading) }
             if showsBaseline(p) {

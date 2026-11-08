@@ -9,8 +9,9 @@ extension InstallPlan {
         let stageCrew = [6, 8, 8, 7, 4, 3, 4]
         let subCrew = [[6, 2, 2, 2], [2, 4, 4, 4, 2], [8, 3, 3, 2, 2], [4, 3, 3, 2, 2], [2, 2, 2, 2, 1], [3, 2, 2, 2, 1], [2, 4, 2, 2, 2]]
         var x = InstallPlan(gantt: gantt, nonWorking: nonWorking, tracking: tracking,
-                            milestones: [.init(title: "เริ่มงานหน้างาน", date: d(0)), .init(title: "ติดตั้งแผงครบ 164 แผง", date: d(4)),
-                                         .init(title: "ทดสอบ IEC 62446-1", date: d(9)), .init(title: "ขนานไฟ | ส่งมอบ กปภ.", date: d(12))],
+                            milestones: [.init(title: "เริ่มงานหน้างาน", date: d(0), done: true), .init(title: "ติดตั้งแผงครบ 164 แผง", date: d(4), done: true),
+                                         .init(title: "ทดสอบ IEC 62446\u{2011}1", date: d(9), done: false),
+                                         .init(title: "ขนานไฟ | ส่งมอบ กปภ.", date: d(12), done: false)],
                             crew: [:])
         for i in x.stages.indices {
             x.stages[i].row.crew = stageCrew[i]

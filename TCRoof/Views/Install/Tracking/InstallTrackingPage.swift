@@ -17,6 +17,8 @@ struct InstallTrackingPage: View {
     @State var view = Debug.view
     /// The scroll view's height: the Gantt card ends above the dock.
     @State var viewport: CGFloat = 0
+    /// The scroll view's own bottom inset (the dock, when the scroll view runs under it), for the plan tab's fitted card.
+    @State var viewportInset: CGFloat = 0
     /// Task rows opened or closed against their default (the running task starts open).
     @State var toggled: Set<String> = []
     /// The task whose sheet is open.
@@ -149,6 +151,7 @@ struct InstallTrackingPage: View {
                 .scrollDisabled((tab == .daily || tab == .plan) && viewport >= 500)
                 .scrollIndicators(.hidden)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewport = $0 }
+                .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { viewportInset = $0 }
                 #if DEBUG
                 // `-installScrollEnd YES` opens the overview at its end
                 .task {

@@ -84,22 +84,40 @@ extension InstallPlanTabView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(p.milestones) { m in
-                    let left = MasterSchedule.calendar.dateComponents([.day], from: p.today, to: MasterSchedule.calendar.startOfDay(for: m.date)).day ?? 0
+                    let state = m.state(today: p.today)
                     HStack(spacing: 12) {
-                        MilestoneDiamond(passed: left < 0)
+                        MilestoneDiamond(state: state)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                                 .lineLimit(2).minimumScaleFactor(0.85)
                             Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
-                        InstallTrackingPage.chip(left < 0 ? "ผ่านแล้ว" : left == 0 ? "วันนี้" : "อีก \(left) วัน", left < 0 ? .ok : .info)
+                        InstallTrackingPage.chip(Self.milestoneText(state), Self.milestoneTone(state))
                     }
                     .padding(.vertical, 4)
                     .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
                     .accessibilityElement(children: .combine)
                 }
             }
+        }
+    }
+
+    /// `ผ่านแล้ว` only when the work is complete; a day gone with the work open is `เลยกำหนด` (CHA-64).
+    static func milestoneText(_ s: InstallPlan.Milestone.State) -> String {
+        switch s {
+        case .done: "ผ่านแล้ว"
+        case .overdue(let days): "เลยกำหนด \(days) วัน"
+        case .today: "วันนี้"
+        case .ahead(let n): "อีก \(n) วัน"
+        }
+    }
+
+    static func milestoneTone(_ s: InstallPlan.Milestone.State) -> InstallPageData.Tone {
+        switch s {
+        case .done: .ok
+        case .overdue: .danger
+        case .today, .ahead: .info
         }
     }
 
@@ -130,16 +148,16 @@ extension InstallPlanTabView {
     }
 }
 
-/// A milestone's diamond: green filled when passed, navy outlined when ahead.
+/// A milestone's diamond: green filled when passed, red filled when overdue, navy outlined when ahead.
 struct MilestoneDiamond: View {
-    let passed: Bool
+    let state: InstallPlan.Milestone.State
 
     var body: some View {
         Group {
-            if passed {
-                Rectangle().fill(Theme.success)
-            } else {
-                Rectangle().strokeBorder(Theme.navy, lineWidth: 2).background(Theme.surface)
+            switch state {
+            case .done: Rectangle().fill(Theme.success)
+            case .overdue: Rectangle().fill(Theme.danger)
+            case .today, .ahead: Rectangle().strokeBorder(Theme.navy, lineWidth: 2).background(Theme.surface)
             }
         }
         .frame(width: 12, height: 12)
@@ -162,7 +180,8 @@ struct PlanStageBar: View {
         let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
         ZStack(alignment: .leading) {
             Theme.ganttTrack
-            (row.status == .done ? Theme.success : Theme.navy).frame(width: w * share)
+            // the legend's colours, so a running stage reads blue like its running sub-tasks (CHA-64)
+            (row.status == .done ? Theme.success : row.status == .current ? Theme.primary : Theme.installPlanned).frame(width: w * share)
             // the label needs room: none on a 1-day bar or a narrow week-axis bar
             if row.days > 1, row.percent > 0, w >= 40 {
                 Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(11, .bold))

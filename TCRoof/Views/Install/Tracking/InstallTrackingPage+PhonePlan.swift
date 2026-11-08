@@ -347,7 +347,7 @@ struct InstallPhonePlanTabView: View {
                             if !p.milestones.isEmpty {
                                 ZStack(alignment: .topLeading) {
                                     ForEach(p.milestones) { m in
-                                        MilestoneDiamond(passed: m.date < p.today)
+                                        MilestoneDiamond(state: m.state(today: p.today))
                                             .position(x: (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2, y: 22)
                                     }
                                 }

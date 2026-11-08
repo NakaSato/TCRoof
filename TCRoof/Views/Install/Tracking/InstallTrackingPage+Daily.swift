@@ -8,6 +8,8 @@ struct InstallDailyTabView: View {
     let job: Job
     let data: InstallDailyData
     let viewport: CGFloat
+    /// The scroll view's bottom inset: the dock's height.
+    let viewportInset: CGFloat
     @Binding var route: InstallTrackingPage.Route?
     var onGoWeekly: (() -> Void)?
 
@@ -24,7 +26,7 @@ struct InstallDailyTabView: View {
         VStack(alignment: .leading, spacing: 14) {
             dailyKPIs(data)
             // the reports card takes the rest of the height, down to the dock
-            reportsCard(data).frame(height: max(viewport - 14 - Self.dailyKPIHeight - 14 - InstallTrackingPage.dockClearance, 300))
+            reportsCard(data).frame(height: max(viewport - 14 - Self.dailyKPIHeight - 14 - viewportInset - InstallTrackingPage.dockClearance, 300))
         }
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
         .sheet(isPresented: $ackingAllDailies) {
@@ -365,6 +367,7 @@ extension InstallTrackingPage {
             job: job,
             data: d,
             viewport: viewport,
+            viewportInset: viewportInset,
             route: $route,
             onGoWeekly: { go(.weekly) }
         )

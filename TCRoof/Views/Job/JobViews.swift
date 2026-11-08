@@ -327,7 +327,7 @@ struct JobDetailView: View {
         if permissions.role == .external { return "ไป Drive ของคุณ (TCRoof Projects) | ทีมเปิดดูได้" }
         guard DriveConfig.centerFolderID != nil else { return "ไป Drive ของคุณ (TCRoof Projects) | ยังไม่ได้ตั้ง Drive กลาง" }
         return session.survey.google.hasFullDrive ? "ไป Drive กลาง: 1. เอกสารส่งมอบ | 2. เอกสารระหว่างก่อสร้าง"
-            : "ยังไป Drive ของคุณ | ออกจากระบบแล้วลงชื่อเข้าใช้ใหม่เพื่ออัปโหลดเข้า Drive กลาง"
+            : "ยังไป Drive ของคุณ | อนุญาต Drive กลางเพื่ออัปโหลดเข้า Drive กลาง"
     }
 
     @ViewBuilder private var driveButtons: some View {
@@ -347,6 +347,11 @@ struct JobDetailView: View {
         }
         .padding(.vertical, 4)
         Text(driveDestination).font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+        // a TC engineer still on their own Drive allows full Drive here, without signing in again (CHA-41)
+        if permissions.role != .external, DriveConfig.centerFolderID != nil, !session.survey.google.hasFullDrive {
+            Button("อนุญาต Drive กลาง") { session.askFullDrive() }
+                .buttonStyle(TCButtonStyle(.text, size: .card))
+        }
         if job.inspection?.submittedAt != nil {
             Text("รวมรายงานใบตรวจรับงาน (ICL) ที่ลงนามแล้วเป็น PDF")
                 .font(.sarabun(12, relativeTo: .caption)).foregroundStyle(Theme.muted)

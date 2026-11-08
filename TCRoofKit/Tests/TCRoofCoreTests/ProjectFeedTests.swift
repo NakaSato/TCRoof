@@ -82,7 +82,8 @@ final class ProjectFeedTests: XCTestCase {
         var s = station(reports: [.init(daily(12, [(.panels, "หลังคา 1", 5)]), signedAt: d(12, 16))])
         s.plan = MasterSchedule.plan(input)
         let planned = try XCTUnwrap(MasterSchedule.status(plan: s.plan, actual: .init(), through: d(12)).plannedByTask[.panels])
-        try XCTSkipIf(planned <= 5, "the plan has not reached the panels by 12 ต.ค.")
+        // the dates are fixed, so the plan is always past the 5% booked: a failure here means the plan changed
+        XCTAssertGreaterThan(planned, 5, "the plan should be past the panels' 5% by 12 ต.ค.")
         let chip = try XCTUnwrap(records([s], now: d(12, 17)).first?.chips.last)
         XCTAssertEqual(chip.tone, .red)
         XCTAssertEqual(chip.text, "5% / แผน \(RoutineReport.percent(planned))")

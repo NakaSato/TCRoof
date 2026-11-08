@@ -263,4 +263,41 @@ final class OAuthTokenSessionTests: XCTestCase {
         let count = await endpoint.requests.count
         XCTAssertEqual(count, 0)
     }
+
+    // Asking the signed-in account again (CHA-41): another account picked in the browser leaves the old one in place.
+    func testRefusedCheckKeepsThePreviousRefreshToken() async throws {
+        struct OtherAccount: Error {}
+        let endpoint = TokenEndpoint()
+        let auth = session(endpoint)
+        let ticket = auth.beginSignIn()
+        let call = Task {
+            try await auth.exchangeCode("code", verifier: "verifier", redirectURI: "app:/callback", ticket: ticket,
+                                        check: { _ in throw OtherAccount() })
+        }
+        await endpoint.waitForRequests(1)
+        await endpoint.reply(0, #"{"access_token":"other","refresh_token":"other-refresh","scope":"drive"}"#)
+        do { try await call.value; XCTFail("Another account's tokens were accepted") }
+        catch is OtherAccount {}
+        auth.cancelSignIn(ticket)
+        XCTAssertEqual(refresh, "old-refresh")
+        XCTAssertEqual(clears, 0)
+        XCTAssertTrue(accepted.isEmpty)
+    }
+
+    func testPassedCheckReplacesTheRefreshToken() async throws {
+        let endpoint = TokenEndpoint()
+        let auth = session(endpoint)
+        let ticket = auth.beginSignIn()
+        var seen: String?
+        let call = Task {
+            try await auth.exchangeCode("code", verifier: "verifier", redirectURI: "app:/callback", ticket: ticket,
+                                        check: { seen = $0.scope })
+        }
+        await endpoint.waitForRequests(1)
+        await endpoint.reply(0, #"{"access_token":"narrow","refresh_token":"narrow-refresh","scope":"drive.file"}"#)
+        try await call.value
+        XCTAssertEqual(seen, "drive.file")
+        XCTAssertEqual(refresh, "narrow-refresh")
+        XCTAssertEqual(accepted, ["narrow"])
+    }
 }

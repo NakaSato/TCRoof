@@ -230,7 +230,7 @@ extension InstallTrackingPage {
                 let x = (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2
                 let labelX = min(max(x, 38), width - 38)
                 ZStack {
-                    MilestoneDiamond(passed: MasterSchedule.calendar.startOfDay(for: m.date) < MasterSchedule.calendar.startOfDay(for: today))
+                    MilestoneDiamond(state: m.state(today: today))
                         .position(x: x, y: 16)
                     Text(m.title)
                         .font(.sarabunFixed(10, .semibold))

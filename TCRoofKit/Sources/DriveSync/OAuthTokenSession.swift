@@ -66,7 +66,10 @@ public final class OAuthTokenSession {
         authorizing = false
     }
 
-    public func exchangeCode(_ code: String, verifier: String, redirectURI: String, ticket: UUID) async throws {
+    /// `check` sees the new tokens before anything is replaced: when it throws (another account picked while asking the
+    /// signed-in one again), the previous refresh token stays.
+    public func exchangeCode(_ code: String, verifier: String, redirectURI: String, ticket: UUID,
+                             check: ((Tokens) throws -> Void)? = nil) async throws {
         try validate(ticket)
         let tokens = try await Self.request(clientID: clientID, params: ["code": code, "code_verifier": verifier,
             "grant_type": "authorization_code", "redirect_uri": redirectURI], transport: transport)
@@ -75,6 +78,7 @@ public final class OAuthTokenSession {
         guard let refresh = tokens.refresh_token, !refresh.isEmpty else {
             throw Failure.response("ไม่มี refresh_token")
         }
+        try check?(tokens)
         invalidate()
         // Never leave the previous account's refresh token behind if Google omits one.
         onSignOut()

@@ -56,7 +56,7 @@ extension CloudSync {
 
     /// Scheduled saves inspect affected collections. Startup, manual refresh and config changes recover with a full scan.
     func push(fullScan: Bool = true) {
-        // an outdated build sends nothing (`config/app.minSyncVersion`); its edits wait here for the update
+        // an outdated build sends nothing (`config/public.minSyncVersion`); its edits wait here for the update
         guard let context, let survey, uid != nil, !AppGate.shared.outdated else { return }
         // A partial initial download must never be mistaken for local deletions during an upload scan.
         guard !loadingCollections.contains(Job.collection) else { return }

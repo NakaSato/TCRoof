@@ -90,7 +90,7 @@ struct MonitoringPage: View {
                 }
                 .buttonStyle(.plain).accessibilityLabel("กลับ")
             }
-            Text("Monitoring ทุกสถานี").font(.sarabunFixed(24, .bold)).foregroundStyle(.white)
+            Text("Monitoring ทุกสถานี").font(.sarabun(24, .bold)).foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 12)
             if let failure = store.feedFailure {
@@ -99,7 +99,7 @@ struct MonitoringPage: View {
                     .accessibilityIdentifier("monitoring.feedFailure")
             }
             Button { showSettings = true } label: {
-                Label("ตั้งค่า Monitoring", systemImage: "gearshape").font(.sarabunFixed(15, .semibold)).foregroundStyle(.white)
+                Label("ตั้งค่า Monitoring", systemImage: "gearshape").font(.sarabun(15, .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 18).frame(minHeight: 44)
                     .background(.white.opacity(0.16), in: Capsule())
                     .overlay(Capsule().strokeBorder(.white.opacity(0.35)))
@@ -122,7 +122,7 @@ struct MonitoringPage: View {
         let rate = store.settings.rate.map { MonFormat.number($0, 2) + " ฿/kWh" } ?? "ยังไม่ตั้งอัตราค่าไฟ"
         return MonCard(padding: 0) {
             HStack(spacing: 0) {
-                Text("ตั้งแต่ติดตั้ง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 16)
+                Text("ตั้งแต่ติดตั้ง").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 16)
                 stripItem("พลังงานสะสม", energy.value, energy.unit)
                 stripItem("กำลังติดตั้ง", MonFormat.number(f.kWp, 1), "kWp", note: "\(f.inverters) อินเวอร์เตอร์")
                 stripItem("มูลค่าไฟที่ผลิตได้", value.value, value.unit + " · " + rate)
@@ -135,10 +135,10 @@ struct MonitoringPage: View {
 
     private func stripItem(_ title: String, _ value: String, _ unit: String, note: String? = nil, last: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(21, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-            Text(unit).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            if let note { Text(note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted.opacity(0.8)).lineLimit(1) }
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(21, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text(unit).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            if let note { Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted.opacity(0.8)).lineLimit(1) }
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, alignment: .leading)

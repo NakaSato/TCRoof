@@ -35,7 +35,7 @@ extension IECStringGrid {
     }
 
     private func rowTitle(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
+        Text(text).font(.sarabun(14)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
             .padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
     }
 
@@ -43,17 +43,17 @@ extension IECStringGrid {
     private var headerRows: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                Text("รายการ").font(.sarabunFixed(14, .bold)).padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
+                Text("รายการ").font(.sarabun(14, .bold)).padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
                 ForEach(1...IECReport.slotCount / 2, id: \.self) { m in
-                    Text("MPPT \(m)").font(.sarabunFixed(13, .bold)).lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
+                    Text("MPPT \(m)").font(.sarabun(13, .bold)).lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
                         .overlay(alignment: .leading) { Rectangle().fill(Theme.surface.opacity(0.7)).frame(width: 1) }
                 }
             }
             .frame(height: 38)
             HStack(spacing: 0) {
-                Text("ช่อง String").font(.sarabunFixed(13)).padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
+                Text("ช่อง String").font(.sarabun(13)).padding(.horizontal, 10).frame(width: Self.labelWidth, alignment: .leading)
                 ForEach(1...IECReport.slotCount, id: \.self) { s in
-                    Text("\(s)").font(.sarabunFixed(13)).monospacedDigit().frame(maxWidth: .infinity)
+                    Text("\(s)").font(.sarabun(13)).monospacedDigit().frame(maxWidth: .infinity)
                 }
             }
             .frame(height: 30)
@@ -118,12 +118,12 @@ extension IECStringGrid {
     private func cellContent(_ r: IECReport, _ inv: IECReport.Inverter, row: Row, slot: Int, s: IECReport.Slot?, seq: Int?) -> some View {
         if let s {
             switch row {
-            case .label: Text("ST\(seq ?? 0)").font(.sarabunFixed(13)).foregroundStyle(Theme.navy)
+            case .label: Text("ST\(seq ?? 0)").font(.sarabun(13)).foregroundStyle(Theme.navy)
             case .modules: value(Double(s.modules), digits: 0)
             case .polarity:
                 switch s.polarityOK {
-                case true?: Text("✓").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                case false?: Text("✗").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+                case true?: Text("✓").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                case false?: Text("✗").font(.sarabun(16, .bold)).foregroundStyle(Theme.dangerText)
                 case nil: missingDot
                 }
             case .testV: s.irTestV.map { value(Double($0), digits: 0) } ?? AnyView(missingDot)
@@ -139,18 +139,18 @@ extension IECStringGrid {
                 countChip(n, kinds.count)
             case .insulation:
                 switch s.irPass {
-                case true?: Text(IECFormat.number(min(s.irPosMOhm ?? 0, s.irNegMOhm ?? 0), digits: 0)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk)
-                case false?: Text("✗").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+                case true?: Text(IECFormat.number(min(s.irPosMOhm ?? 0, s.irNegMOhm ?? 0), digits: 0)).font(.sarabun(14, .bold)).foregroundStyle(Theme.successInk)
+                case false?: Text("✗").font(.sarabun(16, .bold)).foregroundStyle(Theme.dangerText)
                 case nil: countChip(0, 1)
                 }
             }
         } else {
-            Text("—").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            Text("—").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
         }
     }
 
     private func value(_ v: Double, digits: Int, ink: Color = Theme.navy) -> AnyView {
-        AnyView(Text(IECFormat.number(v, digits: digits)).font(.sarabunFixed(15, .bold)).foregroundStyle(ink)
+        AnyView(Text(IECFormat.number(v, digits: digits)).font(.sarabun(15, .bold)).foregroundStyle(ink)
             .lineLimit(1).minimumScaleFactor(0.6).monospacedDigit())
     }
 
@@ -160,7 +160,7 @@ extension IECStringGrid {
 
     private func countChip(_ n: Int, _ of: Int) -> some View {
         let done = n >= of
-        return Text("\(n)/\(of)").font(.sarabunFixed(12, .bold)).foregroundStyle(done ? Theme.successInk : Theme.warningInk)
+        return Text("\(n)/\(of)").font(.sarabun(12, .bold)).foregroundStyle(done ? Theme.successInk : Theme.warningInk)
             .padding(.horizontal, 5).frame(height: 22)
             .background(done ? Theme.successSoft : Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .lineLimit(1).minimumScaleFactor(0.7)
@@ -177,11 +177,11 @@ extension IECStringGrid {
             } label: {
                 HStack(spacing: 8) {
                     switch value {
-                    case .normal?: Text("Normal").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    case .abnormal?: Text("Abnormal").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.dangerText)
-                    case nil: Text("● ยังไม่ได้ตรวจ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningInk)
+                    case .normal?: Text("Normal").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    case .abnormal?: Text("Abnormal").font(.sarabun(15, .bold)).foregroundStyle(Theme.dangerText)
+                    case nil: Text("● ยังไม่ได้ตรวจ").font(.sarabun(14, .bold)).foregroundStyle(Theme.warningInk)
                     }
-                    if let note { Text("| " + note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    if let note { Text("| " + note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
                     Spacer()
                 }
                 .padding(.horizontal, 12).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -201,7 +201,7 @@ extension IECStringGrid {
             Text("— ช่องว่าง (ไม่มีสตริง)")
             Text("แตะช่องเพื่อกรอก")
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .accessibilityHidden(true)
     }
 
@@ -250,11 +250,11 @@ extension IECStringGrid {
                 if let selected {
                     Text("ช่องเลือก: String \(selected) (MPPT \(IECReport.mppt(slot: selected)))" +
                          (picked.map { " = ป้ายรูป " + IECReport.label(inverter: index + 1, seq: $0.seq) } ?? " | ไม่มีสตริง"))
-                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                        .font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 } else {
-                    Text("แตะช่องในตารางเพื่อเลือกสตริง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("แตะช่องในตารางเพื่อเลือกสตริง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 }
-                Text("Word นับเฉพาะสตริงที่ใช้งาน Excel ใช้เลขช่อง แอปเก็บไว้ทั้งสองแบบ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("Word นับเฉพาะสตริงที่ใช้งาน Excel ใช้เลขช่อง แอปเก็บไว้ทั้งสองแบบ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             if phase == .before { fillRowMenu }
@@ -274,7 +274,7 @@ extension IECStringGrid {
             Button("Test Voltage 1000 V ทุกสตริง") { save { inv in for i in inv.slots.indices where inv.slots[i] != nil { inv.slots[i]?.irTestV = 1000 } } }
             Button("String Current 0 A ทุกสตริง (วงจรเปิด)") { save { inv in for i in inv.slots.indices where inv.slots[i] != nil { inv.slots[i]?.iBeforeA = 0 } } }
         } label: {
-            Text("กรอกทั้งแถว").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text("กรอกทั้งแถว").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, 22).frame(height: 48)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.borderControl))
         }
@@ -299,15 +299,15 @@ struct IECValueEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
             HStack {
                 TextField("0", text: $text).keyboardType(integer ? .numberPad : .decimalPad).focused($focused)
-                    .font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                Text(unit).font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(24, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text(unit).font(.sarabun(16)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(height: 54)
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.primary, lineWidth: 1.5))
-            if let hint { Text(hint).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+            if let hint { Text(hint).font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
             HStack(spacing: 10) {
                 Button("ล้าง") { done(nil) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
                 Button("เสร็จ") { done(Double(text.replacingOccurrences(of: ",", with: "."))) }.buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -335,10 +335,10 @@ struct IECInsulationEditor: View {
 
     private func field(_ title: String, _ text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             HStack {
-                TextField("เช่น 250", text: text).keyboardType(.decimalPad).font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
-                Text("MΩ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                TextField("เช่น 250", text: text).keyboardType(.decimalPad).font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
+                Text("MΩ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 12).frame(height: 48)
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderControl))
@@ -347,12 +347,12 @@ struct IECInsulationEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Insulation Resistance | \(label)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text("Insulation Resistance | \(label)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
             HStack(spacing: 10) {
                 field("Positive – Earth", $pos).focused($focused)
                 field("Negative – Earth", $neg)
             }
-            Text("ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 10) {
                 Button("ล้าง") { done(nil, nil) }.buttonStyle(TCButtonStyle(.secondary, size: .card))
                 Button("เสร็จ") { done(Double(pos.replacingOccurrences(of: ",", with: ".")), Double(neg.replacingOccurrences(of: ",", with: "."))) }

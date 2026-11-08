@@ -2,7 +2,7 @@ import Foundation
 
 /// Which builds may still sync. The rules and the console switches change what Firestore accepts, and a device on an
 /// older build keeps writing what it always did: refused writes leave its sync stuck, and accepted ones undo the change
-/// (a job sent with its contacts after `contactsSplit`). `config/app.minSyncVersion`, set in the Firebase console,
+/// (a job sent with its contacts after `contactsSplit`). `config/public.minSyncVersion`, set in the Firebase console,
 /// stops such a build: it shows `ต้องอัปเดตแอป` and pushes nothing until it is updated, while its edits stay on the
 /// device for the new build to send.
 ///

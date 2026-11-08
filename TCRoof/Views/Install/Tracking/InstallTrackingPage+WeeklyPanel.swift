@@ -22,7 +22,7 @@ extension InstallWeeklyReportTabView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     Rectangle().fill(Theme.hairline).frame(width: 1)
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("ส่งถึง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("ส่งถึง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         recipientChips
                         Spacer(minLength: 0)
                         sendArea
@@ -40,9 +40,9 @@ extension InstallWeeklyReportTabView {
     private var panelTitle: some View {
         let checks = reportChecks, ready = checks.filter(\.ok).count
         return HStack {
-            Text("ความพร้อมก่อนส่ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text("ความพร้อมก่อนส่ง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             Spacer()
-            Text("\(ready)/\(checks.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
+            Text("\(ready)/\(checks.count)").font(.sarabun(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
         }
     }
 
@@ -53,7 +53,7 @@ extension InstallWeeklyReportTabView {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(checks, id: \.title) { c in panelCheck(c) }
-                        Text("ส่งถึง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).padding(.top, 10)
+                        Text("ส่งถึง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).padding(.top, 10)
                             .accessibilityAddTraits(.isHeader)
                         recipientChips
                     }
@@ -72,13 +72,13 @@ extension InstallWeeklyReportTabView {
                 .foregroundStyle(c.ok ? Theme.successInk : Theme.onPrimary)
                 .frame(width: 22, height: 22).background(c.ok ? Theme.successSoft : Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text(c.title).font(.sarabunFixed(14, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.85)
-                Text(c.note).font(.sarabunFixed(12.5)).foregroundStyle(c.ok ? Theme.inkMuted : Theme.warningInk).fixedSize(horizontal: false, vertical: true)
+                Text(c.title).font(.sarabun(14, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.85)
+                Text(c.note).font(.sarabun(12.5)).foregroundStyle(c.ok ? Theme.inkMuted : Theme.warningInk).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             if !c.ok && c.fixable {
                 Button { onGoDaily?() } label: {
-                    Text("ไปแก้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningInk)
+                    Text("ไปแก้").font(.sarabun(14, .bold)).foregroundStyle(Theme.warningInk)
                         .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.warning.opacity(0.6)))
@@ -107,7 +107,7 @@ extension InstallWeeklyReportTabView {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: on ? "checkmark" : "plus").font(.system(size: 11, weight: .bold))
-                        Text(g).font(.sarabunFixed(14, on ? .bold : .regular))
+                        Text(g).font(.sarabun(14, on ? .bold : .regular))
                     }
                     .foregroundStyle(on ? Theme.primary : Theme.inkMuted)
                     .padding(.horizontal, 14).frame(minHeight: 44)
@@ -127,9 +127,9 @@ extension InstallWeeklyReportTabView {
         let n = reportRecipients.count
         if reportSent {
             VStack(alignment: .leading, spacing: 6) {
-                Label(sentLine, systemImage: "checkmark").font(.sarabunFixed(14)).foregroundStyle(Theme.successInk)
-                Text("ส่งแล้ว · อ่านอย่างเดียว").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-                Label("ส่งแล้ว", systemImage: "checkmark").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.successInk)
+                Label(sentLine, systemImage: "checkmark").font(.sarabun(14)).foregroundStyle(Theme.successInk)
+                Text("ส่งแล้ว · อ่านอย่างเดียว").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                Label("ส่งแล้ว", systemImage: "checkmark").font(.sarabun(16, .bold)).foregroundStyle(Theme.successInk)
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .accessibilityAddTraits(.isButton)
@@ -138,7 +138,7 @@ extension InstallWeeklyReportTabView {
         } else {
             let ready = reportChecks.allSatisfy(\.ok) && n > 0
             VStack(alignment: .leading, spacing: 6) {
-                Text(ready ? "ส่ง .pptx และ .pdf ให้ผู้รับที่เลือก" : "ส่งได้เมื่อเช็กลิสต์ครบ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(ready ? "ส่ง .pptx และ .pdf ให้ผู้รับที่เลือก" : "ส่งได้เมื่อเช็กลิสต์ครบ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Button("ส่งให้ \(n) ผู้รับ") { sendReport() }
                     .buttonStyle(TCButtonStyle(.primary, size: .page, fullWidth: true))
                     .disabled(!ready)
@@ -191,13 +191,13 @@ extension InstallWeeklyReportTabView {
         let c = reportContent, no = c?.weekNumber ?? 0
         return VStack(spacing: 0) {
             HStack(spacing: 14) {
-                Text("P").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.onPrimary)
+                Text("P").font(.sarabun(22, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 46, height: 46).background(Theme.danger, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Weekly Report สัปดาห์ที่ \(no).pptx").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
+                    Text("Weekly Report สัปดาห์ที่ \(no).pptx").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
                     Text("\(c?.outline.count ?? 0) สไลด์ · 16:9 · ใช้แม่แบบ \"Weekly Report Template\" · ข้อมูลจากรายงานประจำวัน แผน MP และรูปที่เลือก")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 8)
                 Button("แชร์") { shareDeck() }.buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
@@ -218,7 +218,7 @@ extension InstallWeeklyReportTabView {
                                 WeeklySlideView(slide: o, data: c, photos: reportPhotos)
                                     .background(Theme.paper)
                                     .shadow(color: Theme.navySolid.opacity(0.12), radius: 4, y: 1)
-                                (Text("\(o.number)").bold() + Text(" · " + o.label)).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                                (Text("\(o.number)").bold() + Text(" · " + o.label)).font(.sarabun(14)).foregroundStyle(Theme.navy)
                             }
                         }
                     }
@@ -228,7 +228,7 @@ extension InstallWeeklyReportTabView {
             .background(Theme.phonePage)
             Rectangle().fill(Theme.hairline).frame(height: 1)
             HStack(spacing: 12) {
-                Text("สร้างอัตโนมัติจากงานที่ส่งในสัปดาห์ · ลงแม่แบบต้นฉบับ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("สร้างอัตโนมัติจากงานที่ส่งในสัปดาห์ · ลงแม่แบบต้นฉบับ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
                 Button("ปิด") { reportPptx = false }.buttonStyle(TCButtonStyle(.secondary, size: .page)).fixedSize()
                 Button("ดาวน์โหลด .pptx") { shareDeck() }.buttonStyle(TCButtonStyle(.primary, size: .page)).fixedSize()

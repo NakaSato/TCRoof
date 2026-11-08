@@ -27,13 +27,13 @@ extension MonitoringPage {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Text("กำลังผลิตรวม (\(range == .today ? "kW" : "kWh")) " + Self.rangeTitle(range))
-                    .font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    .font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 8)
                 MonSwitch(options: Monitoring.ChartRange.allCases.map { ($0, Self.rangeLabel($0)) }, selection: $range)
                 MonSwitch(options: [(false, "รวม"), (true, "แยกสถานี")], selection: $split)
             }
             HStack(spacing: 14) {
-                Text(chartLine(chart, f)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(chartLine(chart, f)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
                 legend(Theme.primary, "ผลิตจริง", dashed: false)
                 legend(Theme.inkMuted, "คาดการณ์", dashed: true)
@@ -53,14 +53,14 @@ extension MonitoringPage {
     private func legend(_ color: Color, _ title: String, dashed: Bool) -> some View {
         HStack(spacing: 5) {
             Capsule().stroke(color, style: StrokeStyle(lineWidth: 2.5, dash: dashed ? [3, 2] : [])).frame(width: 16, height: 2.5)
-            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         }
     }
 
     private func legendSwatch(_ color: Color, _ title: String) -> some View {
         HStack(spacing: 5) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 12, height: 10)
-            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -87,10 +87,10 @@ extension MonitoringPage {
 
     private func summaryItem(_ title: String, _ value: String, detail: String?, tint: Color = Theme.navy) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Text(title).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value).font(.sarabunFixed(16, .bold)).foregroundStyle(tint).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-                if let detail { Text(detail).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+                Text(value).font(.sarabun(16, .bold)).foregroundStyle(tint).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                if let detail { Text(detail).font(.sarabun(11)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             }
         }
     }
@@ -106,7 +106,7 @@ extension MonitoringPage {
                     } label: {
                         HStack(spacing: 6) {
                             Circle().fill(on ? MonitoringChartView.color(i) : Theme.track).frame(width: 10, height: 10)
-                            Text(Monitoring.Chart.name(s)).font(.sarabunFixed(13, on ? .bold : .regular))
+                            Text(Monitoring.Chart.name(s)).font(.sarabun(13, on ? .bold : .regular))
                                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         }
                         .padding(.horizontal, 12).frame(minHeight: 44)
@@ -145,17 +145,17 @@ extension MonitoringPage {
         return MonCard(padding: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 8) {
-                    Text("ต้องดำเนินการ").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                    Text("ต้องดำเนินการ").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     if !actions.isEmpty {
-                        Text("\(actions.count)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText)
+                        Text("\(actions.count)").font(.sarabun(13, .bold)).foregroundStyle(Theme.dangerText)
                             .frame(minWidth: 24, minHeight: 22).background(Theme.dangerSoft, in: Capsule())
                     }
                     Spacer()
-                    Text("เรียงตามพลังงานที่เสีย").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("เรียงตามพลังงานที่เสีย").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(16)
                 if actions.isEmpty {
-                    Text("ไม่มีเรื่องต้องดำเนินการ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("ไม่มีเรื่องต้องดำเนินการ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: 120)
                 } else {
                     ForEach(actions) { a in
@@ -177,15 +177,15 @@ extension MonitoringPage {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text("\(Monitoring.Chart.name(a.station)) \(Self.shortName(a.station)) · \(alarm.part)")
-                            .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
-                        Text(alarm.label).font(.sarabunFixed(13, .bold))
+                            .font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(alarm.label).font(.sarabun(13, .bold))
                             .foregroundStyle(alarm.source == .tcroof ? Theme.warningInk : Theme.dangerText)
                     }
-                    Text(actionDetail(a)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    Text(actionDetail(a)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(Self.lossText(alarm.loss)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk).lineLimit(1)
+                    Text(Self.lossText(alarm.loss)).font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk).lineLimit(1)
                     if let wo = alarm.workOrder {
                         MonChip("ใบงาน " + wo, .info)
                     } else {
@@ -242,7 +242,7 @@ struct MonitoringChartView: View {
         }
         .chartXScale(domain: chart.domain)
         .chartXAxis { xAxis }
-        .chartYAxis { AxisMarks(position: .leading) { _ in AxisGridLine().foregroundStyle(Theme.hairline); AxisValueLabel().font(.sarabunFixed(11)) } }
+        .chartYAxis { AxisMarks(position: .leading) { _ in AxisGridLine().foregroundStyle(Theme.hairline); AxisValueLabel().font(.sarabun(11)) } }
         .chartLegend(.hidden)
     }
 
@@ -250,12 +250,12 @@ struct MonitoringChartView: View {
         AxisMarks(values: chart.range == .today ? .stride(by: .hour, count: 3) : .automatic(desiredCount: 6)) { _ in
             AxisGridLine().foregroundStyle(Theme.hairline)
             if chart.range == .year {
-                AxisValueLabel(format: .dateTime.month(.abbreviated)).font(.sarabunFixed(11))
+                AxisValueLabel(format: .dateTime.month(.abbreviated)).font(.sarabun(11))
             } else if chart.range == .today {
                 AxisValueLabel(format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits), collisionResolution: .disabled)
-                    .font(.sarabunFixed(11))
+                    .font(.sarabun(11))
             } else {
-                AxisValueLabel(format: .dateTime.day().month(.defaultDigits)).font(.sarabunFixed(11))
+                AxisValueLabel(format: .dateTime.day().month(.defaultDigits)).font(.sarabun(11))
             }
         }
     }
@@ -336,13 +336,13 @@ struct MonitoringChartView: View {
     }
 
     private func pin(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onPrimary)
+        Text(text).font(.sarabun(11, .bold)).foregroundStyle(Theme.onPrimary)
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background(Theme.navy, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     private func eventLabel(_ text: String, danger: Bool) -> some View {
-        Text(text).font(.sarabunFixed(10, .bold)).foregroundStyle(danger ? Theme.dangerText : Theme.inkMuted)
+        Text(text).font(.sarabun(10, .bold)).foregroundStyle(danger ? Theme.dangerText : Theme.inkMuted)
             .padding(.horizontal, 5).padding(.vertical, 2)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(danger ? Theme.dangerLine : Theme.borderSubtle))

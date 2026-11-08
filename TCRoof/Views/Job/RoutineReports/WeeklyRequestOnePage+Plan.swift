@@ -43,8 +43,8 @@ extension WeeklyRequestOnePage {
     var fullPlan: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("ผังสถานีและงานสัปดาห์นี้ | สัปดาห์ที่ \(weekNumber) (\(Self.rangeText(request)))").font(.sarabunFixed(18, .bold))
-                Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อแก้วัน").font(.sarabunFixed(14)).opacity(0.85)
+                Text("ผังสถานีและงานสัปดาห์นี้ | สัปดาห์ที่ \(weekNumber) (\(Self.rangeText(request)))").font(.sarabun(18, .bold))
+                Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อแก้วัน").font(.sarabun(14)).opacity(0.85)
                 Spacer()
                 Button { mapFull = false } label: {
                     Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
@@ -79,10 +79,10 @@ extension WeeklyRequestOnePage {
     /// `KEY PLAN | คำขอ หน้า 1`.
     private var planBadge: some View {
         HStack(spacing: 6) {
-            Text("KEY PLAN").font(.sarabunFixed(12, .bold)).tracking(1).foregroundStyle(Theme.onPrimary)
+            Text("KEY PLAN").font(.sarabun(12, .bold)).tracking(1).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            Text("คำขอ หน้า 1").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy)
+            Text("คำขอ หน้า 1").font(.sarabun(12, .bold)).foregroundStyle(Theme.navy)
         }
         .padding(4).padding(.trailing, 4)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -104,7 +104,7 @@ extension WeeklyRequestOnePage {
     /// `อัปโหลดผัง`: a picture from the library (the daily report's menu also takes a PDF or a scan).
     private var uploadButton: some View {
         PhotosPicker(selection: $uploadItem, matching: .images) {
-            planChip(Label("อัปโหลดผัง", systemImage: "square.and.arrow.up").font(.sarabunFixed(12, .bold)))
+            planChip(Label("อัปโหลดผัง", systemImage: "square.and.arrow.up").font(.sarabun(12, .bold)))
         }
         .buttonStyle(.plain)
         .disabled(demo)
@@ -123,7 +123,7 @@ extension WeeklyRequestOnePage {
             legendItem(Theme.primary, "ทำสัปดาห์นี้")
             legendItem(Theme.success, "เสร็จแล้ว")
             legendItem(Theme.inkFaint, "ยังไม่เริ่ม")
-            Text("+ คืองานในแผน MP ที่ยังไม่ได้ขอ").font(.sarabunFixed(11)).foregroundStyle(Theme.navy)
+            Text("+ คืองานในแผน MP ที่ยังไม่ได้ขอ").font(.sarabun(11)).foregroundStyle(Theme.navy)
         }
         .padding(.horizontal, 10).padding(.vertical, 5)
         .background(Theme.surface.opacity(0.92), in: Capsule())
@@ -133,7 +133,7 @@ extension WeeklyRequestOnePage {
     private func legendItem(_ c: Color, _ t: String) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2).strokeBorder(c, lineWidth: 2).frame(width: 14, height: 10)
-            Text(t).font(.sarabunFixed(11)).foregroundStyle(Theme.navy)
+            Text(t).font(.sarabun(11)).foregroundStyle(Theme.navy)
         }
     }
 
@@ -170,7 +170,7 @@ extension WeeklyRequestOnePage {
         case .done: (Theme.success, Theme.success, false, false)
         case .notStarted: (Theme.inkFaint, Theme.surface, true, false)
         }
-        return Text(place).font(.sarabunFixed(strong ? 12.5 : 11, .bold)).lineLimit(1).fixedSize()
+        return Text(place).font(.sarabun(strong ? 12.5 : 11, .bold)).lineLimit(1).fixedSize()
             .foregroundStyle(dashed ? Theme.navy : Theme.onPrimary)
             .padding(.horizontal, strong ? 8 : 6).padding(.vertical, strong ? 3 : 2)
             .background(dashed ? fill.opacity(0.92) : fill, in: RoundedRectangle(cornerRadius: 4))
@@ -187,14 +187,14 @@ extension WeeklyRequestOnePage {
         let days = line.days.isEmpty ? "0 วัน" : Self.dayNames(line.days)
         return Button { selected = line.id } label: {
             VStack(spacing: 2) {
-                Text("\(number(line))").font(.sarabunFixed(on ? 17 : 14, .heavy)).foregroundStyle(Theme.onPrimary)
+                Text("\(number(line))").font(.sarabun(on ? 17 : 14, .heavy)).foregroundStyle(Theme.onPrimary)
                     .frame(width: size, height: size).background(c, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.paper, lineWidth: 2.5))
                     .padding(on ? 3 : 0)
                     .overlay { if on { Circle().strokeBorder(c.opacity(0.45), lineWidth: 3) } }
                     .shadow(color: Theme.navySolid.opacity(0.3), radius: 3, y: 1)
                 Text(on ? "\(line.location) (\(days))" : "\(line.days.count) วัน")
-                    .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1).fixedSize()
+                    .font(.sarabun(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1).fixedSize()
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(on ? c : Theme.paper, in: RoundedRectangle(cornerRadius: 4))
             }
@@ -227,7 +227,7 @@ extension WeeklyRequestOnePage {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Text("ยังไม่มีผังของสถานีนี้ (อัปโหลดผัง หรือภาพ A2 จากแบบสำรวจ) | แสดงตำแหน่งเป็นรายการ")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
                 uploadButton
             }

@@ -71,7 +71,7 @@ extension InstallTrackingPage {
                 }
             }
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .fixedSize(horizontal: true, vertical: false)
         .accessibilityHidden(true)
     }
@@ -79,7 +79,7 @@ extension InstallTrackingPage {
     /// `วางแล้ว n/N`, amber while some are left.
     func keyPlanChip(_ m: InstallKeyPlan) -> some View {
         let left = m.placedCount < m.points.count
-        return Text("วางแล้ว \(m.placedCount)/\(m.points.count)").font(.sarabunFixed(12, .bold))
+        return Text("วางแล้ว \(m.placedCount)/\(m.points.count)").font(.sarabun(12, .bold))
             .foregroundStyle(left ? Theme.pending : Theme.successInk).monospacedDigit()
             .padding(.horizontal, 10).frame(height: 22)
             .background(left ? Theme.pendingSoft : Theme.successSoft, in: Capsule())
@@ -141,7 +141,7 @@ struct InstallKeyPlanPanel: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 if picture != nil {
                     Text([picture?.uploaded == true ? "ผังที่อัปโหลด" : "ภาพ A2 จากรายงานสำรวจ", "จุดติดตั้งดึงจากแผน MP"].joined(separator: " · "))
-                        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
             Rectangle().fill(Theme.hairline).frame(width: 1)
@@ -303,7 +303,7 @@ struct KeyPlanBoard: View {
     private func banner(_ p: InstallKeyPlan.Point) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.primary)
-            Text("แตะบนผังเพื่อวาง \(p.label) · \(p.displayLocation)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("แตะบนผังเพื่อวาง \(p.label) · \(p.displayLocation)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
             Button("ยกเลิก", action: cancel).buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
         }
@@ -317,8 +317,8 @@ struct KeyPlanBoard: View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.slash").foregroundStyle(Theme.warning)
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(p.label) · \(p.displayLocation)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                Text("ยังไม่ได้กำหนดตำแหน่งบนผัง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(p.label) · \(p.displayLocation)").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                Text("ยังไม่ได้กำหนดตำแหน่งบนผัง").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button("วางบนผัง") { arm?(p.id) }
@@ -345,10 +345,10 @@ struct KeyPlanPin: View {
                 if selected {
                     VStack(spacing: 1) {
                         Text(point.displayLocation)
-                            .font(.sarabunFixed(11, .bold))
+                            .font(.sarabun(11, .bold))
                             .foregroundStyle(Theme.navy)
                         Text("\(Int(point.actual.rounded()))% · \(KeyPlanStyle.title(point.state))")
-                            .font(.sarabunFixed(10))
+                            .font(.sarabun(10))
                             .foregroundStyle(c)
                     }
                     .padding(.horizontal, 8).padding(.vertical, 3)
@@ -356,7 +356,7 @@ struct KeyPlanPin: View {
                     .shadow(color: Theme.navySolid.opacity(0.25), radius: 4, y: 2)
                     .fixedSize()
                 }
-                Text(point.label).font(.sarabunFixed(selected ? 13.5 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
+                Text(point.label).font(.sarabun(selected ? 13.5 : 12, .bold)).foregroundStyle(Theme.onPrimary).monospacedDigit()
                     .padding(.horizontal, selected ? 9 : 7).frame(height: selected ? 26 : 22)
                     .background(c, in: Capsule())
                     .overlay(Capsule().strokeBorder(Theme.paper, lineWidth: 1.5))
@@ -410,7 +410,7 @@ struct KeyPlanList: View {
                             }
                         }
                         if filter == 1, model.unplaced.isEmpty {
-                            Text("วางครบทุกจุดแล้ว").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                            Text("วางครบทุกจุดแล้ว").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                                 .frame(maxWidth: .infinity).padding(.top, 24)
                         }
                     }
@@ -428,13 +428,13 @@ struct KeyPlanList: View {
     /// `2.1 ติดตั้งโครงสร้าง…` with `5 จุด · เฉลี่ย 62%`.
     private func header(_ g: InstallKeyPlan.Group) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Text(g.code).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+            Text(g.code).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                 .padding(.horizontal, 6).frame(height: 20).background(Theme.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 5))
-            Text(g.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text(g.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("\(g.points.count) จุด · เฉลี่ย \(Int(g.average.rounded()))%").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("\(g.points.count) จุด · เฉลี่ย \(Int(g.average.rounded()))%").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 .fixedSize()
         }
         .padding(.top, 6)
@@ -474,22 +474,22 @@ struct KeyPlanRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     if point.placed { Circle().fill(c) } else { Circle().strokeBorder(Theme.chevron, lineWidth: 1.5) }
-                    Text(point.label).font(.sarabunFixed(10.5, .bold))
+                    Text(point.label).font(.sarabun(10.5, .bold))
                         .foregroundStyle(point.placed ? Theme.onPrimary : Theme.inkMuted)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
                 .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(point.displayLocation).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                    Text(point.displayLocation).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                     Text(point.placed ? "อยู่บนผัง · \(point.label)" : "ยังไม่วางบนผัง")
-                        .font(.sarabunFixed(13, point.placed ? .regular : .bold))
+                        .font(.sarabun(13, point.placed ? .regular : .bold))
                         .foregroundStyle(point.placed ? Theme.inkMuted : Theme.dangerText).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(Int(point.actual.rounded()))%").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                    Text(KeyPlanStyle.note(point)).font(.sarabunFixed(12, point.state == .late ? .bold : .regular))
+                    Text("\(Int(point.actual.rounded()))%").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text(KeyPlanStyle.note(point)).font(.sarabun(12, point.state == .late ? .bold : .regular))
                         .foregroundStyle(point.state == .late ? Theme.dangerText : point.state == .done ? Theme.successInk : Theme.inkMuted)
                 }
             }

@@ -152,9 +152,9 @@ struct WeeklyRequestOnePage: View {
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text("คำขอปฏิบัติงานสัปดาห์ที่ \(weekNumber) (\(Self.rangeText(request)))").font(.sarabunFixed(20, .bold)).lineLimit(1)
+                Text("คำขอปฏิบัติงานสัปดาห์ที่ \(weekNumber) (\(Self.rangeText(request)))").font(.sarabun(20, .bold)).lineLimit(1)
                     .accessibilityIdentifier("requestTitle")
-                Text(job.stationName).font(.sarabunFixed(14)).opacity(0.9).lineLimit(1)
+                Text(job.stationName).font(.sarabun(14)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
         }
@@ -244,7 +244,7 @@ struct WeeklyRequestOnePage: View {
             Image(systemName: s.icon).font(.system(size: 13, weight: .heavy))
                 .foregroundStyle(Theme.onPrimary).frame(width: 28, height: 28)
                 .background(s.ok ? (request.status == .sent ? Theme.primary : Theme.success) : Theme.warning, in: Circle())
-            Text(s.text).font(.sarabunFixed(14))
+            Text(s.text).font(.sarabun(14))
                 .foregroundStyle(request.status == .sent ? Theme.navy : s.ok ? Theme.successText : Theme.navy).lineLimit(2)
                 .accessibilityIdentifier("requestStatus")
             Spacer(minLength: 12)
@@ -262,8 +262,8 @@ struct WeeklyRequestOnePage: View {
     private var previewButton: some View {
         Button(action: actions.preview) {
             VStack(spacing: 0) {
-                Text("PDF 1 หน้า").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text("ดูตัวอย่างคำขอ").font(.sarabunFixed(16, .bold))
+                Text("PDF 1 หน้า").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                Text("ดูตัวอย่างคำขอ").font(.sarabun(16, .bold))
             }
             .frame(width: 210, height: 44)
         }
@@ -279,13 +279,13 @@ struct WeeklyRequestOnePage: View {
         case .sent:
             if mayWithdraw {
                 Button(action: actions.withdraw) {
-                    Text("ถอนกลับมาแก้").font(.sarabunFixed(16, .bold)).frame(width: 210, height: 44)
+                    Text("ถอนกลับมาแก้").font(.sarabun(16, .bold)).frame(width: 210, height: 44)
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card))
                 .accessibilityIdentifier("requestWithdraw")
             }
         case .approved:
-            Label("อนุมัติแล้ว", systemImage: "checkmark").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.onPrimary)
+            Label("อนุมัติแล้ว", systemImage: "checkmark").font(.sarabun(16, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 210, height: 53)
                 .background(Theme.success, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 .accessibilityAddTraits(.isButton)
@@ -306,8 +306,8 @@ struct WeeklyRequestOnePage: View {
         } label: {
             HStack(spacing: 8) {
                 VStack(spacing: 0) {
-                    Text(why?.text ?? "ครบแล้ว").font(.sarabunFixed(12)).opacity(0.85).lineLimit(1).minimumScaleFactor(0.8)
-                    Text("ส่งขออนุมัติ").font(.sarabunFixed(16, .bold))
+                    Text(why?.text ?? "ครบแล้ว").font(.sarabun(12)).opacity(0.85).lineLimit(1).minimumScaleFactor(0.8)
+                    Text("ส่งขออนุมัติ").font(.sarabun(16, .bold))
                 }
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
             }

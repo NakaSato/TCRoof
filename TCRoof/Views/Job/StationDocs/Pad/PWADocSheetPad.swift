@@ -66,12 +66,12 @@ struct PWADocSheetPad: View {
     private var head: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(kind.name).font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
-                Text(place).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(kind.name).font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(place).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Text(kind.origin.groupTitle).font(.sarabunFixed(12, .bold)).foregroundStyle(kind.origin.dot)
+            Text(kind.origin.groupTitle).font(.sarabun(12, .bold)).foregroundStyle(kind.origin.dot)
                 .padding(.horizontal, 10).frame(height: 26)
                 .background(kind.origin.dot.opacity(0.12), in: Capsule())
                 .padding(.top, 6)
@@ -124,17 +124,17 @@ struct PWADocSheetPad: View {
                     Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 22, height: 22).background(Theme.success, in: Circle())
                 } else if current {
-                    Text("\(i + 1)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.onPrimary)
+                    Text("\(i + 1)").font(.sarabun(11.5, .heavy)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 24, height: 24).background(Theme.primary, in: Circle())
                         .background(Circle().fill(Theme.primary.opacity(0.18)).padding(-4))
                 } else {
-                    Text("\(i + 1)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.muted)
+                    Text("\(i + 1)").font(.sarabun(11.5, .heavy)).foregroundStyle(Theme.muted)
                         .frame(width: 22, height: 22).background(Theme.surface, in: Circle())
                         .overlay(Circle().strokeBorder(Theme.inkFaint, lineWidth: 1.5))
                 }
             }
             .frame(height: 28)
-            Text(label).font(.sarabunFixed(12, current ? .heavy : .semibold))
+            Text(label).font(.sarabun(12, current ? .heavy : .semibold))
                 .foregroundStyle(current ? Theme.primary : done ? Theme.navy : Theme.muted)
         }
         .frame(maxWidth: .infinity)
@@ -150,14 +150,14 @@ struct PWADocSheetPad: View {
                     .shadow(color: Theme.navy.opacity(0.15), radius: 6, y: 2)
                     .frame(maxHeight: 420)
                     .accessibilityLabel("หน้าแรกของไฟล์")
-                Text(fileLine).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(fileLine).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             } else if let name = state.fileName {
                 Image(systemName: "doc.text").font(.system(size: 40)).foregroundStyle(Theme.inkFaint)
-                Text(name).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2).multilineTextAlignment(.center)
+                Text(name).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(2).multilineTextAlignment(.center)
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.badge.plus").font(.system(size: 30)).foregroundStyle(Theme.inkFaint)
-                    Text("ยังไม่มีไฟล์").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text("ยังไม่มีไฟล์").font(.sarabun(14, .bold)).foregroundStyle(Theme.inkMuted)
                 }
                 .frame(width: 300, height: 400)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -195,7 +195,7 @@ struct PWADocSheetPad: View {
             if !state.note.isEmpty { fact("หมายเหตุ", state.note) }
             if PWADocs.isIDCard(kind) {
                 Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ | แอปไม่เก็บเลขบัตรเป็นข้อความ")
-                    .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.dangerText)
+                    .font(.sarabun(13, .semibold)).foregroundStyle(Theme.dangerText)
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
@@ -213,8 +213,8 @@ struct PWADocSheetPad: View {
 
     private func fact(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Text(label).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
-            Text(value).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .leading)
+            Text(label).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
+            Text(value).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
     }
@@ -225,8 +225,8 @@ struct PWADocSheetPad: View {
         let ready = state.status.isReady || state.status == .notNeeded
         let text = ready || days > 0 ? PWAPlanFormat.numeric.string(from: due) : days == 0 ? "วันนี้" : "เลย \(-days) วัน"
         return HStack(alignment: .top, spacing: 12) {
-            Text("ครบกำหนด").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
-            Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(!ready && days < 0 ? Theme.dangerText : Theme.navy)
+            Text("ครบกำหนด").font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
+            Text(text).font(.sarabun(14, .bold)).foregroundStyle(!ready && days < 0 ? Theme.dangerText : Theme.navy)
         }
         .accessibilityElement(children: .combine)
     }
@@ -235,11 +235,11 @@ struct PWADocSheetPad: View {
     @ViewBuilder private var history: some View {
         let lines = historyLines
         if !lines.isEmpty {
-            Text("ประวัติ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).padding(.top, 8)
+            Text("ประวัติ").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).padding(.top, 8)
             ForEach(Array(lines.enumerated()), id: \.offset) { _, l in
                 HStack(alignment: .top, spacing: 12) {
-                    Text(Self.when(l.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
-                    Text(l.text).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                    Text(Self.when(l.date)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(width: 120, alignment: .leading)
+                    Text(l.text).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                 }
                 .accessibilityElement(children: .combine)
             }

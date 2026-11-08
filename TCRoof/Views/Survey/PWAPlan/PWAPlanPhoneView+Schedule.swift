@@ -115,11 +115,11 @@ extension PWAPlanPhoneView {
         let sunday = PWAPlan.calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         return VStack(alignment: .leading, spacing: 0) {
             Text(week ? "\(PWAPlanFormat.range(weekStart, sunday)) \(PWAPlanFormat.year.string(from: sunday))" : PWAPlanFormat.monthYear.string(from: day))
-                .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).frame(height: 18)
+                .font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 18)
                 .accessibilityAddTraits(.isHeader)
             if week {
                 Text("สัปดาห์ที่ \(PWAPlan.calendar.component(.weekOfYear, from: weekStart))")
-                    .font(.sarabunFixed(11.5, .semibold)).foregroundStyle(Theme.primary).frame(height: 15)
+                    .font(.sarabun(11.5, .semibold)).foregroundStyle(Theme.primary).frame(minHeight: 15)
             }
         }
         .lineLimit(1).minimumScaleFactor(0.75)
@@ -160,7 +160,7 @@ extension PWAPlanPhoneView {
     private var weekdayHeader: some View {
         HStack(spacing: 2) {
             ForEach(Array(PWAPlanFormat.weekdayLetters.enumerated()), id: \.offset) { i, letter in
-                Text(letter).font(.sarabunFixed(11, .semibold)).foregroundStyle(i >= 5 ? Theme.inkFaint : Theme.inkMuted)
+                Text(letter).font(.sarabun(11, .semibold)).foregroundStyle(i >= 5 ? Theme.inkFaint : Theme.inkMuted)
                     .frame(maxWidth: .infinity).frame(height: 16)
             }
         }
@@ -173,7 +173,7 @@ extension PWAPlanPhoneView {
             ForEach(PWAPlan.JobType.allCases, id: \.self) { t in
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: 2).fill(t.ink).frame(width: 12, height: 4)
-                    Text(t.title).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                    Text(t.title).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                 }
             }
         }
@@ -226,10 +226,10 @@ extension PWAPlanPhoneView {
         } label: {
             VStack(spacing: week ? 1 : 3) {
                 if week {
-                    Text(PWAPlanFormat.weekdayLetters[column]).font(.sarabunFixed(11)).frame(height: 14)
-                    number.font(.sarabunFixed(17, .bold)).frame(height: 22)
+                    Text(PWAPlanFormat.weekdayLetters[column]).font(.sarabun(11)).frame(minHeight: 14)
+                    number.font(.sarabun(17, .bold)).frame(minHeight: 22)
                 } else {
-                    number.font(.sarabunFixed(15, .bold)).frame(height: 19)
+                    number.font(.sarabun(15, .bold)).frame(minHeight: 19)
                 }
                 // the bars: `calendarRow` draws them
                 Color.clear.frame(height: 16)
@@ -252,10 +252,10 @@ extension PWAPlanPhoneView {
         let title = calendarMode == .month ? "งานทั้งเดือน"
             : weekStart == Self.monday(of: today) ? "งานสัปดาห์นี้" : "งานสัปดาห์ที่ \(PWAPlan.calendar.component(.weekOfYear, from: weekStart))"
         return HStack(spacing: 8) {
-            Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
             Text(isFiltered || searching ? "\(shown) จาก \(items.count) รายการ" : "\(items.count) รายการ | เลื่อนดูได้")
-                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().minimumScaleFactor(0.8)
+                .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).monospacedDigit().minimumScaleFactor(0.8)
             Spacer(minLength: 0)
             if !pad {
                 Button { showFilter.toggle() } label: { TCFilterCircle(open: showFilter, filtered: isFiltered) }
@@ -324,11 +324,11 @@ extension PWAPlanPhoneView {
             HStack(spacing: 6) {
                 Circle().fill(on ? Theme.primary : .clear).frame(width: 6, height: 6)
                 Text("\(PWAPlanFormat.weekday.string(from: d)) \(PWAPlanFormat.dayMonth.string(from: d))" + (isToday ? " | วันนี้" : ""))
-                    .font(.sarabunFixed(13, .bold)).foregroundStyle(on ? Theme.primary : Theme.navy)
+                    .font(.sarabun(13, .bold)).foregroundStyle(on ? Theme.primary : Theme.navy)
                     .accessibilityAddTraits(.isHeader)
                 if all > 0 {
                     Text(rows.count == all ? "\(all) รายการ" : "\(rows.count) จาก \(all)")
-                        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 }
             }
             .lineLimit(1)
@@ -336,7 +336,7 @@ extension PWAPlanPhoneView {
             ForEach(rows) { agendaRow($0) }
             if rows.isEmpty {
                 Text(all == 0 ? "ไม่มีงาน" : isFiltered ? "ไม่มีงานในตัวกรองนี้" : "ไม่พบงานที่ค้นหา")
-                    .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12).padding(.vertical, 10)
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -357,10 +357,10 @@ extension PWAPlanPhoneView {
     private func filterPopover(_ items: [PWAPlan.AgendaItem], shown: Int, teams: [String]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("กรองตารางงาน").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("กรองตารางงาน").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 Button("ล้าง", action: resetFilter)
-                    .font(.sarabunFixed(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.inkFaint)
+                    .font(.sarabun(13, .bold)).foregroundStyle(isFiltered ? Theme.primary : Theme.inkFaint)
                     .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                     .buttonStyle(.plain)
                     .disabled(!isFiltered)
@@ -370,7 +370,7 @@ extension PWAPlanPhoneView {
             popoverSection("ประเภทงาน") { typeChips(items) }
             if !teams.isEmpty { popoverSection("ทีม") { teamSegments(teams) } }
             Button { showFilter = false } label: {
-                Text("แสดง \(shown) รายการ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
+                Text("แสดง \(shown) รายการ").font(.sarabun(14, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
@@ -382,7 +382,7 @@ extension PWAPlanPhoneView {
 
     private func popoverSection(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(11, .bold)).foregroundStyle(Theme.inkMuted)
             content()
         }
     }
@@ -398,9 +398,9 @@ extension PWAPlanPhoneView {
                 Button { type = t } label: {
                     HStack(spacing: 5) {
                         Circle().fill(on ? Theme.onPrimary : t?.ink ?? Theme.navySolid).frame(width: 8, height: 8)
-                        Text(t?.title ?? "ทั้งหมด").font(.sarabunFixed(12.5, .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(t?.title ?? "ทั้งหมด").font(.sarabun(12.5, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("\(n)").font(.sarabunFixed(14, .bold)).monospacedDigit()
+                        Text("\(n)").font(.sarabun(14, .bold)).monospacedDigit()
                     }
                     .foregroundStyle(on ? Theme.onPrimary : n > 0 ? Theme.navySolid : Theme.inkFaint)
                     .padding(.horizontal, 8)
@@ -425,7 +425,7 @@ extension PWAPlanPhoneView {
             ForEach(options, id: \.self) { k in
                 let on = team == k
                 Button { team = k } label: {
-                    Text(k ?? "ทุกทีม").font(.sarabunFixed(13, .bold)).lineLimit(1).minimumScaleFactor(0.85)
+                    Text(k ?? "ทุกทีม").font(.sarabun(13, .bold)).lineLimit(1).minimumScaleFactor(0.85)
                         .foregroundStyle(on ? Theme.navySolid : Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background { if on { RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.surface) } }
@@ -455,7 +455,7 @@ extension PWAPlanPhoneView {
     private func filterChip(_ title: String, remove: @escaping () -> Void) -> some View {
         Button(action: remove) {
             HStack(spacing: 5) {
-                Text(title).font(.sarabunFixed(12, .bold))
+                Text(title).font(.sarabun(12, .bold))
                 Image(systemName: "xmark").font(.system(size: 10, weight: .heavy))
             }
             .foregroundStyle(Theme.primary)
@@ -483,10 +483,10 @@ extension PWAPlanPhoneView {
         Button { open(item.opens, station: item.station) } label: {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(item.start.map(PWAPlan.clock) ?? "ทั้งวัน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                    Text(item.start.map(PWAPlan.clock) ?? "ทั้งวัน").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                         .minimumScaleFactor(0.8).frame(height: 18)
                     if let end = item.end {
-                        Text("–" + PWAPlan.clock(end)).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).frame(height: 18)
+                        Text("–" + PWAPlan.clock(end)).font(.sarabun(11)).foregroundStyle(Theme.inkMuted).frame(minHeight: 18)
                     }
                 }
                 .monospacedDigit().lineLimit(1)
@@ -494,15 +494,15 @@ extension PWAPlanPhoneView {
                 RoundedRectangle(cornerRadius: 2).fill(item.type.ink).frame(width: 3)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(item.type.title).font(.sarabunFixed(11, .bold)).foregroundStyle(item.type.ink)
+                        Text(item.type.title).font(.sarabun(11, .bold)).foregroundStyle(item.type.ink)
                             .padding(.horizontal, 8).frame(height: 18)
                             .background(item.type.fill, in: Capsule())
-                        Text(item.ref).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
+                        Text(item.ref).font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
                         Spacer(minLength: 4)
-                        Text(item.status.title).font(.sarabunFixed(11, .bold)).foregroundStyle(statusColor(item.status))
+                        Text(item.status.title).font(.sarabun(11, .bold)).foregroundStyle(statusColor(item.status))
                     }
-                    Text(item.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).frame(height: 18)
-                    Text(item.subtitle).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(height: 18)
+                    Text(item.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 18)
+                    Text(item.subtitle).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(minHeight: 18)
                 }
                 .lineLimit(1)
             }

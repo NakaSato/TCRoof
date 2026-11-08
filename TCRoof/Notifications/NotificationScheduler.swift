@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 import TCRoofCore
 import TCRoofUI
 
@@ -49,10 +50,14 @@ private struct NotificationScheduler: ViewModifier {
     @State private var tick = 0
     /// Bumped when the app comes back, so the hourly keys reschedule then too.
     @State private var foregrounds = 0
+    /// Bumped by every SwiftData save (an edit here, a record from sync): the plans are worked out again after one, not
+    /// on each body update, which every keystroke in the survey editor causes (CHA-50).
+    @State private var saves = 0
+    /// What was last handed to the system, so an unchanged list isn't posted again.
+    @State private var scheduled = Scheduled()
 
     func body(content: Content) -> some View {
-        let mp = mpState
-        return content
+        content
             .task {
                 let service = NotificationService.shared
                 #if DEBUG
@@ -71,10 +76,25 @@ private struct NotificationScheduler: ViewModifier {
                 await debugDemo(service)
                 #endif
             }
-            .task(id: surveyPlans(tick)) { await NotificationService.shared.scheduleSurveys(surveyPlans(tick)) }
-            .task(id: reportPlans(tick)) { await NotificationService.shared.schedule(reportPlans(tick), type: .report) }
-            .task(id: calibrationPlans(tick)) { await NotificationService.shared.schedule(calibrationPlans(tick), type: .cal) }
-            .task(id: mp) {
+            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: DispatchQueue.main)) { _ in
+                saves += 1
+            }
+            // only cheap values decide when to look again; the plans are worked out in the task, once a burst settles
+            .task(id: PlanTrigger(tick: tick, saves: saves, on: [surveyOn, reportOn, calibrationOn])) {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                let service = NotificationService.shared
+                let surveys = surveyPlans(tick), reports = reportPlans(tick), tools = calibrationPlans(tick)
+                if surveys != scheduled.surveys { scheduled.surveys = surveys; await service.scheduleSurveys(surveys) }
+                if reports != scheduled.reports { scheduled.reports = reports; await service.schedule(reports, type: .report) }
+                if tools != scheduled.tools { scheduled.tools = tools; await service.schedule(tools, type: .cal) }
+            }
+            .task(id: MPTrigger(hour: hourKey, saves: saves, on: planOn)) {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                // the stations' plans are decoded here, on the main actor, once per trigger; the worker gets values only
+                let mp = mpState
+                guard mp != scheduled.mp else { return }
                 let worker = Task.detached(priority: .utility) { mp.plans(now: .now) }
                 let plans = await withTaskCancellationHandler {
                     await worker.value
@@ -85,6 +105,7 @@ private struct NotificationScheduler: ViewModifier {
                 await NotificationService.shared.schedule(plans.mp, type: .mp)
                 guard !Task.isCancelled else { return }
                 await NotificationService.shared.schedule(plans.install, type: .install)
+                scheduled.mp = mp
             }
             .task(id: FeedState(day: RoutineReport.day(.now), hour: Self.hour(.now), synced: sync.lastSync, foregrounds: foregrounds,
                                    jobs: jobs.count, on: feedOn)) {
@@ -287,6 +308,15 @@ private struct NotificationScheduler: ViewModifier {
 
     static func label(_ j: TCRoofCore.Job) -> String {
         j.docNo.isEmpty ? (j.projectName.isEmpty ? "งานสำรวจ" : j.projectName) : "NO.\(j.docNo)"
+    }
+
+    private struct PlanTrigger: Equatable { let tick: Int; let saves: Int; let on: [Bool] }
+    private struct MPTrigger: Equatable { let hour: String; let saves: Int; let on: Bool }
+    private struct Scheduled {
+        var surveys: [NotificationPlan]?
+        var reports: [NotificationPlan]?
+        var tools: [NotificationPlan]?
+        var mp: MPState?
     }
 
     private struct SyncState: Equatable {

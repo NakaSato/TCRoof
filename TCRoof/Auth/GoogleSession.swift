@@ -227,7 +227,8 @@ final class GoogleSession {
         UserDefaults.standard.removeObject(forKey: Self.userNameAutoKey)
     }
 
-    static let userNameKey = "userName"
+    /// A constant any thread may read: the model's `Job.iecActor` reads it outside the main actor.
+    nonisolated static let userNameKey = "userName"
     private static let userNameAutoKey = "userNameFromAccount"
 
     /// Signs ICLs, install logs, scans and surveys with the Google account's name (or the part of the email before @)

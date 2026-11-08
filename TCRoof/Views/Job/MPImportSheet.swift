@@ -111,13 +111,13 @@ struct MPImportSheet: View {
             flow.startImport()
         } label: {
             HStack(spacing: 12) {
-                Text("X").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
+                Text("X").font(.sarabun(18, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 44, height: 44).background(Theme.success, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(pending.name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                    Text(pending.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                     Text(ByteCountFormatter.string(fromByteCount: Int64(pending.data.count), countStyle: .file) + " | แตะเพื่อเลือกไฟล์อื่น")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -135,8 +135,8 @@ struct MPImportSheet: View {
                 .foregroundStyle(ok ? Theme.successInk : Theme.onPrimary)
                 .frame(width: 28, height: 28).background(ok ? Theme.successSoft : Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 0)
         }
@@ -148,23 +148,23 @@ struct MPImportSheet: View {
     private func changesCard(_ c: [Change]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("สิ่งที่เปลี่ยนจากแผนในแอป").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Text("สิ่งที่เปลี่ยนจากแผนในแอป").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("\(c.count) จุด | \(Set(c.map(\.code)).count) งาน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("\(c.count) จุด | \(Set(c.map(\.code)).count) งาน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.bottom, 6)
-            if c.isEmpty { Text("วันของทุกงานตรงกับแผนในแอป").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).padding(.vertical, 8) }
+            if c.isEmpty { Text("วันของทุกงานตรงกับแผนในแอป").font(.sarabun(14)).foregroundStyle(Theme.inkMuted).padding(.vertical, 8) }
             ForEach(c) { x in
                 HStack(spacing: 10) {
-                    Text(x.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 34, alignment: .leading)
+                    Text(x.code).font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).frame(width: 34, alignment: .leading)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(x.title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1)
-                        Text(x.what).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        Text(x.title).font(.sarabun(14)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(x.what).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     }
                     Spacer(minLength: 4)
-                    Text(x.old).font(.sarabunFixed(14)).strikethrough().foregroundStyle(Theme.inkMuted)
+                    Text(x.old).font(.sarabun(14)).strikethrough().foregroundStyle(Theme.inkMuted)
                     Image(systemName: "arrow.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.inkMuted)
-                    Text(x.new).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
+                    Text(x.new).font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk)
                 }
                 .frame(minHeight: 48)
                 .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
@@ -180,9 +180,9 @@ struct MPImportSheet: View {
     private var setupCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("ตั้งค่าโครงการจากไฟล์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Text("ตั้งค่าโครงการจากไฟล์").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("เลือก \(setupPicked.count) จาก \(setupChanges.count)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("เลือก \(setupPicked.count) จาก \(setupChanges.count)").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.bottom, 6)
             ProjectSetupList(changes: setupChanges, picked: $setupPicked)
@@ -198,8 +198,8 @@ struct MPImportSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: on ? "largecircle.fill.circle" : "circle").font(.system(size: 22)).foregroundStyle(on ? Theme.success : Theme.chevron)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                    Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                    Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }

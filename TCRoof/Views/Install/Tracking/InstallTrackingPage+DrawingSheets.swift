@@ -37,8 +37,8 @@ struct DrawingHistorySheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 0) {
-                        Text(drawing.id).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
-                        Text(drawing.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(drawing.id).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
+                        Text(drawing.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) { Button("เสร็จ") { dismiss() }.bold() }
@@ -54,13 +54,13 @@ struct DrawingHistorySheet: View {
             InstallTrackingPage.revChip(r.rev, latest: latest).frame(width: 72, alignment: .leading)
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(r.reason.isEmpty ? "ออกแบบครั้งแรก" : r.reason).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                    Text(r.reason.isEmpty ? "ออกแบบครั้งแรก" : r.reason).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     Text([ThaiFormat.numericDate.string(from: r.date), TeamDirectory.shared.person(r.by)?.name ?? r.by, r.file]
                         .filter { !$0.isEmpty }.joined(separator: " | "))
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                 }
                 Spacer(minLength: 8)
-                Text(latest ? "ล่าสุด | ใช้งาน" : "แทนที่แล้ว").font(.sarabunFixed(13, .bold))
+                Text(latest ? "ล่าสุด | ใช้งาน" : "แทนที่แล้ว").font(.sarabun(13, .bold))
                     .foregroundStyle(latest ? Theme.successInk : Theme.inkMuted)
                     .padding(.horizontal, 10).frame(height: 26)
                     .background(latest ? Theme.successSoft : Theme.segmentTrack, in: Capsule())
@@ -122,7 +122,7 @@ struct DrawingUploadSheet: View {
                     revInfo
                     fileZone
                     reasonField
-                    if let problem { Text(problem).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).accessibilityIdentifier("padSheet.problem") }
+                    if let problem { Text(problem).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).accessibilityIdentifier("padSheet.problem") }
                 }
                 .padding(24)
             }
@@ -154,15 +154,15 @@ struct DrawingUploadSheet: View {
 
     private func heading(_ text: String, required: Bool = false) -> some View {
         HStack(spacing: 2) {
-            Text(text).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-            if required { Text("*").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.danger) }
+            Text(text).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+            if required { Text("*").font(.sarabun(15, .bold)).foregroundStyle(Theme.danger) }
         }
     }
 
     private func chip(_ title: String, on: Bool, dashed: Bool = false, action: @escaping () -> Void) -> some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         return Button(action: action) {
-            Text(title).font(.sarabunFixed(15, on ? .bold : .regular)).foregroundStyle(on || dashed ? Theme.primary : Theme.navy)
+            Text(title).font(.sarabun(15, on ? .bold : .regular)).foregroundStyle(on || dashed ? Theme.primary : Theme.navy)
                 .lineLimit(1).padding(.horizontal, 14).frame(minHeight: 44)
                 .background(on ? Theme.optionSelected : Theme.surface, in: shape)
                 .overlay(shape.strokeBorder(on ? Theme.primary : Theme.borderControl,
@@ -200,10 +200,10 @@ struct DrawingUploadSheet: View {
     private var revInfo: some View {
         let from = upload.drawing.flatMap { id in drawings.first { $0.id == id } }?.latest
         return HStack(spacing: 10) {
-            Text("จะบันทึกเป็น").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("จะบันทึกเป็น").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
             InstallTrackingPage.revChip(rev)
             Text(from.map { "ต่อจาก REV \($0.rev) (\(ThaiFormat.numericDate.string(from: $0.date))) | REV เดิมย้ายไปประวัติ" } ?? "แบบใหม่เริ่มที่ REV 00")
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16).frame(minHeight: 56)
@@ -214,10 +214,10 @@ struct DrawingUploadSheet: View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
         return VStack(spacing: 12) {
             if let file {
-                Label(file.name, systemImage: "doc").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Label(file.name, systemImage: "doc").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     .accessibilityIdentifier("padSheet.fileName")
             } else {
-                Text("PDF | DWG | JPG / PNG | ถ่ายรูปแบบ").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                Text("PDF | DWG | JPG / PNG | ถ่ายรูปแบบ").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 12) {
                 Button { importing = true } label: { Label(file == nil ? "เลือกไฟล์" : "เปลี่ยนไฟล์", systemImage: "folder") }

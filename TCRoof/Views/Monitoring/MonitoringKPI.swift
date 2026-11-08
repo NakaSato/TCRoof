@@ -25,19 +25,19 @@ struct MonitoringKPI: View {
             HStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(tint)
                     .frame(width: 26, height: 26).background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.75)
+                Text(title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.75)
                     .layoutPriority(1)
                 Spacer(minLength: 2)
                 sparkView.frame(width: 44, height: 22)
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value).font(.sarabunFixed(28, .bold)).foregroundStyle(valueTint ?? Theme.navy).monospacedDigit()
+                Text(value).font(.sarabun(28, .bold)).foregroundStyle(valueTint ?? Theme.navy).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6)
-                Text(unit).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(unit).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 6) {
                 MonChip(chip.0, chip.1)
-                Text(caption).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                Text(caption).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
         .padding(14)

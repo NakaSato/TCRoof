@@ -55,8 +55,8 @@ extension PWADocsPadView {
         let base = contractorRows(data)
         return HStack(spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("ตามสถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text("ชุด " + PWADocs.steps.map(\.title).joined(separator: " | ")).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ตามสถานี").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                Text("ชุด " + PWADocs.steps.map(\.title).joined(separator: " | ")).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     .lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
@@ -82,7 +82,7 @@ extension PWADocsPadView {
             }
             Button { sort = sort == .handover ? .missing : .handover } label: {
                 Label(sort == .handover ? "เรียง: วันส่งมอบ" : "เรียง: ขาดมากสุด", systemImage: "arrow.up.arrow.down")
-                    .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                    .font(.sarabun(14, .bold)).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 14).frame(minHeight: 40)
                     .overlay(Capsule().strokeBorder(Theme.borderSubtle))
                     .frame(minHeight: touchMin).contentShape(Capsule())
@@ -96,7 +96,7 @@ extension PWADocsPadView {
 
     func chip(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.sarabunFixed(14, on ? .bold : .semibold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1)
+            Text(title).font(.sarabun(14, on ? .bold : .semibold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy).lineLimit(1)
                 .padding(.horizontal, 14).frame(height: 36)
                 .background(on ? Theme.navySolid : Theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(on ? Color.clear : Theme.borderSubtle))
@@ -112,7 +112,7 @@ extension PWADocsPadView {
             Text("ถัดไป").frame(maxWidth: .infinity, alignment: .leading)
             Text("ชุดเอกสาร").frame(width: 300)
         }
-        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 16).frame(height: 30)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .accessibilityHidden(true)
@@ -126,7 +126,7 @@ extension PWADocsPadView {
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(r.station.ref + " " + r.station.shortName).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(r.station.ref + " " + r.station.shortName).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     stationFacts(r, missing: missing)
                 }
                 .frame(width: 200, alignment: .leading)
@@ -150,17 +150,17 @@ extension PWADocsPadView {
                      r.station.contractor.isEmpty ? nil : PWAPlan.contractorTitle(r.station.contractor)].compactMap { $0 }
         var text = Text(parts.joined(separator: " | ")).foregroundColor(Theme.inkMuted)
         if missing > 0 { text = text + Text((parts.isEmpty ? "" : " | ") + "ขาด \(missing)").bold().foregroundColor(Theme.warningText) }
-        return text.font(.sarabunFixed(12)).lineLimit(1)
+        return text.font(.sarabun(12)).lineLimit(1)
     }
 
     /// The tag pill, except for `ทีมเรา` (the default, iPad only), then the next paper.
     private func nextCell(_ r: PWADocs.StationRow) -> some View {
         HStack(spacing: 8) {
             if r.state != .ours, r.next != nil || r.state != .ready {
-                Text(r.tag).font(.sarabunFixed(11, .bold)).foregroundStyle(r.state.ink).lineLimit(1).fixedSize()
+                Text(r.tag).font(.sarabun(11, .bold)).foregroundStyle(r.state.ink).lineLimit(1).fixedSize()
                     .padding(.horizontal, 9).frame(height: 20).background(r.state.fill, in: Capsule())
             }
-            Text(nextText(r)).font(.sarabunFixed(14)).foregroundStyle(r.next == nil ? Theme.successText : Theme.navy).lineLimit(1)
+            Text(nextText(r)).font(.sarabun(14)).foregroundStyle(r.next == nil ? Theme.successText : Theme.navy).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -182,9 +182,9 @@ extension PWADocsPadView {
         VStack(spacing: 10) {
             Image(systemName: "checkmark").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.successText)
                 .frame(width: 56, height: 56).background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            Text(emptyTitle).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.center)
+            Text(emptyTitle).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.center)
             Text(search.isEmpty ? "เอกสารของสถานีกลุ่มนี้ไม่มีอะไรค้าง" : "ลองล้างคำค้นหรือดูทุกสถานี")
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             Button("ดูทุกสถานี") {
                 withAnimation(reduceMotion ? nil : .snappy) { contractor = nil; filter = .all }
             }
@@ -234,9 +234,9 @@ struct PWADocsStationPanel: View {
     private var head: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(st.ref + " " + st.shortName).font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text(st.name).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                Text(facts).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(st.ref + " " + st.shortName).font(.sarabun(19, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(st.name).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(facts).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
@@ -266,9 +266,9 @@ struct PWADocsStationPanel: View {
             if let next = row.next { page.paper = .init(stationID: st.id, kindID: next.id) }
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.state == .ours ? "ถัดไป" : "ถัดไป | " + row.tag).font(.sarabunFixed(12, .semibold))
+                Text(row.state == .ours ? "ถัดไป" : "ถัดไป | " + row.tag).font(.sarabun(12, .semibold))
                     .foregroundStyle(late ? Theme.dangerText : Theme.inkMuted)
-                Text(page.nextText(row)).font(.sarabunFixed(15, .bold)).foregroundStyle(late ? Theme.dangerText : Theme.navy)
+                Text(page.nextText(row)).font(.sarabun(15, .bold)).foregroundStyle(late ? Theme.dangerText : Theme.navy)
                     .multilineTextAlignment(.leading)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
@@ -288,10 +288,10 @@ struct PWADocsStationPanel: View {
         return Button { withAnimation(.snappy) { page.package = p } } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text(p.padTitle).font(.sarabunFixed(15, .bold)).foregroundStyle(needed ? Theme.navy : Theme.inkMuted).lineLimit(1)
+                    Text(p.padTitle).font(.sarabun(15, .bold)).foregroundStyle(needed ? Theme.navy : Theme.inkMuted).lineLimit(1)
                     Spacer(minLength: 4)
                     Text(!needed ? "ไม่ต้องยื่น" : complete ? "ครบ \(pr.total)/\(pr.total)" : "\(pr.ready)/\(pr.total) ฉบับ")
-                        .font(.sarabunFixed(12, .bold)).foregroundStyle(!needed ? Theme.inkFaint : complete ? Theme.successText : Theme.navy)
+                        .font(.sarabun(12, .bold)).foregroundStyle(!needed ? Theme.inkFaint : complete ? Theme.successText : Theme.navy)
                         .padding(.horizontal, 8).frame(height: 22)
                         .background(!needed ? Theme.background : complete ? Theme.successSoft : Theme.primarySoft, in: Capsule())
                     if needed { Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkFaint) }
@@ -299,7 +299,7 @@ struct PWADocsStationPanel: View {
                 if needed {
                     ProgressBar(value: pr.total == 0 ? 1 : Double(pr.ready) / Double(pr.total), color: complete ? Theme.success : Theme.primary)
                 }
-                Text(needed ? p.padNote : "อินเวอร์เตอร์รวมต่ำกว่า 200 kVA").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(needed ? p.padNote : "อินเวอร์เตอร์รวมต่ำกว่า 200 kVA").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .padding(.horizontal, 14).padding(.vertical, 12)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -316,14 +316,14 @@ struct PWADocsStationPanel: View {
     @ViewBuilder private var recentList: some View {
         let recent = PWADocs.recent(st, library: data.library)
         if !recent.isEmpty {
-            Text("ความเคลื่อนไหว").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).padding(.top, 4)
+            Text("ความเคลื่อนไหว").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).padding(.top, 4)
             ForEach(recent, id: \.kind.id) { item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle().fill(item.state.status.isReady ? Theme.success : Theme.primary).frame(width: 8, height: 8).padding(.top, 6)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(item.kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(item.kind.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                         Text(item.state.status.title + (item.state.updatedAt.map { " | " + Self.relative($0) } ?? ""))
-                            .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                            .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     }
                 }
                 .accessibilityElement(children: .combine)

@@ -28,7 +28,7 @@ struct IECPerformancePage: View {
 
     private func card<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             content()
         }
         .padding(18).frame(maxWidth: .infinity, alignment: .leading)
@@ -79,9 +79,9 @@ struct IECPerformancePage: View {
                 else { Circle().fill(Theme.pending).frame(width: 7, height: 7) }
             }
             .frame(width: 24, height: 24)
-            Text(title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(15)).foregroundStyle(Theme.navy)
             Spacer()
-            Text(value).font(.sarabunFixed(15, .bold)).foregroundStyle(ok ? Theme.navy : bad ? Theme.dangerText : Theme.warningInk)
+            Text(value).font(.sarabun(15, .bold)).foregroundStyle(ok ? Theme.navy : bad ? Theme.dangerText : Theme.warningInk)
         }
         .frame(minHeight: 48)
         .contentShape(Rectangle())
@@ -104,9 +104,9 @@ struct IECPerformancePage: View {
 
     private func result(_ title: String, _ value: String?, _ note: String, missing: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-            Text(value ?? "—").font(.sarabunFixed(30, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-            Text(value == nil ? missing : note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+            Text(value ?? "—").font(.sarabun(30, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text(value == nil ? missing : note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
         .accessibilityElement(children: .combine)
     }
@@ -120,11 +120,11 @@ struct IECPerformancePage: View {
         case nil: ("ยังไม่ครบ", Theme.warningInk, Theme.pendingSoft)
         }
         return HStack(spacing: 12) {
-            Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(ink).padding(.horizontal, 12).frame(height: 30)
+            Text(title).font(.sarabun(15, .bold)).foregroundStyle(ink).padding(.horizontal, 12).frame(minHeight: 30)
                 .background(fill, in: Capsule())
             VStack(alignment: .leading, spacing: 0) {
-                Text("ผลหลังเชื่อมต่อ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text("PR ≥ \(IECFormat.number(IECReport.defaultPRThreshold)) และ Inverter testing ปกติ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ผลหลังเชื่อมต่อ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text("PR ≥ \(IECFormat.number(IECReport.defaultPRThreshold)) และ Inverter testing ปกติ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
         }
@@ -153,7 +153,7 @@ struct IECConditionsPage: View {
     /// `gridOn`: the after phase also keeps when the system was switched on (nil until set), `.distantPast` = not that phase.
     private func phase(_ title: String, _ c: IECReport.Conditions, gridOn: Date? = .distantPast, set: @escaping (IECReport.Conditions) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            Text(title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                 .background(Theme.paperBand, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             IECNumberField(title: "อุณหภูมิอากาศ", unit: "°C", value: c.ambientC) { v in var n = c; n.ambientC = v; set(n) }
             IECNumberField(title: "ความเข้มแสง", unit: "W/m²", value: c.irradianceWm2) { v in var n = c; n.irradianceWm2 = v; set(n) }
@@ -171,7 +171,7 @@ struct IECConditionsPage: View {
     /// `ออนระบบเมื่อ`: the after readings are taken from then on.
     private func gridOnRow(_ at: Date?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("ออนระบบเมื่อ").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+            Text("ออนระบบเมื่อ").font(.sarabun(14)).foregroundStyle(Theme.navy)
             if let at {
                 DatePicker("ออนระบบเมื่อ", selection: Binding(get: { at }, set: { d in job.updateIEC(context) { $0.gridOnAt = d } }))
                     .labelsHidden().environment(\.locale, Locale(identifier: "th_TH")).frame(minHeight: 50)
@@ -184,11 +184,11 @@ struct IECConditionsPage: View {
 
     private func record(_ r: IECReport) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("ผู้ทดสอบและเครื่องมือ").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("ผู้ทดสอบและเครื่องมือ").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
             HStack(spacing: 12) {
                 IECTextField(title: "ผู้ทดสอบ", text: r.tester) { t in job.updateIEC(context) { $0.tester = t } }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("วันที่ทดสอบ").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                    Text("วันที่ทดสอบ").font(.sarabun(14)).foregroundStyle(Theme.navy)
                     // no date shown until one is set, so today is never mistaken for a kept date
                     if r.testDate == nil {
                         Button { job.updateIEC(context) { $0.testDate = .now } } label: { Label("ระบุวันที่", systemImage: "calendar") }
@@ -225,7 +225,7 @@ struct IECStationPhotosPage: View {
         let r = job.iecReport ?? job.newIECReport
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("ความเข้มแสงอาทิตย์ (W/m²)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("ความเข้มแสงอาทิตย์ (W/m²)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 IECPhotoTile(caption: "เครื่องวัดแสง", asset: job.iecPhoto(r.irradiancePhoto), height: 220, stubReading: "1022") { data in
                     let id = job.storeIECPhoto(data, replacing: r.irradiancePhoto, context: context)
                     job.updateIEC(context) { $0.irradiancePhoto = id }
@@ -238,7 +238,7 @@ struct IECStationPhotosPage: View {
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             VStack(alignment: .leading, spacing: 12) {
-                Text("ภาพถ่ายความร้อน | \(r.thermalPhotos.count) รูป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("ภาพถ่ายความร้อน | \(r.thermalPhotos.count) รูป").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                     ForEach(r.thermalPhotos, id: \.self) { id in
                         VStack(spacing: 6) {
@@ -278,7 +278,7 @@ extension IECStationPhotosPage {
             }
             if place != nil { Button("ไม่ระบุ", role: .destructive) { job.updateIEC(context) { $0.thermalPlaces[id] = nil } } }
         } label: {
-            Label(place ?? "ระบุตำแหน่ง", systemImage: "mappin.and.ellipse").font(.sarabunFixed(14, .bold))
+            Label(place ?? "ระบุตำแหน่ง", systemImage: "mappin.and.ellipse").font(.sarabun(14, .bold))
                 .foregroundStyle(place == nil ? Theme.primary : Theme.navy).frame(maxWidth: .infinity, minHeight: 44)
         }
         .accessibilityLabel("ตำแหน่งภาพความร้อน " + (place ?? "ยังไม่ระบุ"))
@@ -299,15 +299,15 @@ struct IECNumberField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text(title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                Text(title).font(.sarabun(14)).foregroundStyle(Theme.navy)
                 if value == nil {
-                    Text("● ยังขาด").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.warningInk)
+                    Text("● ยังขาด").font(.sarabun(12, .bold)).foregroundStyle(Theme.warningInk)
                 }
             }
             HStack {
                 TextField(placeholder, text: $text).keyboardType(.decimalPad).focused($focused).accessibilityLabel(title)
-                    .font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                Text(unit).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text(unit).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(minHeight: 50)
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(focused ? Theme.primary : Theme.borderControl, lineWidth: focused ? 2 : 1))
@@ -340,8 +340,8 @@ struct IECTextField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
-            TextField(placeholder, text: $draft).focused($focused).accessibilityLabel(title).font(.sarabunFixed(17)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(14)).foregroundStyle(Theme.navy)
+            TextField(placeholder, text: $draft).focused($focused).accessibilityLabel(title).font(.sarabun(17)).foregroundStyle(Theme.navy)
                 .padding(.horizontal, 14).frame(minHeight: 50)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(focused ? Theme.primary : Theme.borderControl, lineWidth: focused ? 2 : 1))
         }

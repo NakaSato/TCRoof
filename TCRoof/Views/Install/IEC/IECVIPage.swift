@@ -120,9 +120,9 @@ struct IECVIPage: View {
         return Button { inverter = k; slot = inv.strings.first?.slot ?? 1; filter = .all } label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("INV\(k + 1)").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                    Text("INV\(k + 1)").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                     Spacer()
-                    Text(t.isComplete ? "✓ ครบ \(t.done)/\(t.total)" : "วัดแล้ว \(t.done)/\(t.total)").font(.sarabunFixed(13, .bold))
+                    Text(t.isComplete ? "✓ ครบ \(t.done)/\(t.total)" : "วัดแล้ว \(t.done)/\(t.total)").font(.sarabun(13, .bold))
                         .foregroundStyle(t.isComplete ? Theme.okText : on ? Theme.primary : Theme.warningInk)
                 }
                 GeometryReader { g in
@@ -133,7 +133,7 @@ struct IECVIPage: View {
                 }
                 .frame(height: 5)
                 Text("\(IECFormat.number(inv.ratedKW)) kW | \(inv.slotsInUse) ช่อง" + (inv.serial.isEmpty ? "" : " | S/N \(inv.serial)"))
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .padding(.horizontal, 14).padding(.vertical, 12).frame(width: 228, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -159,9 +159,9 @@ struct IECVIPage: View {
             Image(systemName: "checkmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 30, height: 30).background(Theme.success, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ออนระบบแล้ว" + (time.map { " \($0) น." } ?? "") + " | วัดขณะจ่ายไฟ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.okText)
+                Text("ออนระบบแล้ว" + (time.map { " \($0) น." } ?? "") + " | วัดขณะจ่ายไฟ").font(.sarabun(14, .bold)).foregroundStyle(Theme.okText)
                 Text("แรงดัน Vmp และกระแส Imp | เติม INV \(String(format: "%02d", i + 1))-หลัง แถว 17, 19")
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.okText)
+                    .font(.sarabun(12)).foregroundStyle(Theme.okText)
             }
             Spacer(minLength: 0)
         }
@@ -172,12 +172,12 @@ struct IECVIPage: View {
 
     func beforeBanner(_ i: Int) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
+            Text("!").font(.sarabun(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 30, height: 30).background(Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ระบบยังไม่ออน | วัดให้ครบทุกอินเวอร์เตอร์ก่อนออน").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.warningText)
+                Text("ระบบยังไม่ออน | วัดให้ครบทุกอินเวอร์เตอร์ก่อนออน").font(.sarabun(14, .bold)).foregroundStyle(Theme.warningText)
                 Text("วงจรเปิด กระแสต้องเป็น 0 A | เติม INV \(String(format: "%02d", i + 1))-ก่อน แถว 12, 16, 18")
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.warningText)
+                    .font(.sarabun(12)).foregroundStyle(Theme.warningText)
             }
             Spacer(minLength: 0)
         }
@@ -192,9 +192,9 @@ struct IECVIPage: View {
         let chip = seq.map { IECReport.label(inverter: i + 1, seq: $0) } ?? "ช่อง \(slot)"
         let meta = "MPPT \(IECReport.mppt(slot: slot)) | ช่อง \(slot) | " + (s.map { "\($0.modules) แผง" } ?? "ว่าง") + " | คอลัมน์ \(IECReport.excelColumn(slot: slot))"
         return HStack(spacing: 12) {
-            Text(chip).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
+            Text(chip).font(.sarabun(18, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(height: 38).background(Theme.primary, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            Text(meta).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            Text(meta).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             Spacer(minLength: 4)
             stepButton("chevron.left", "ช่องก่อนหน้า", enabled: slot > 1) { slot -= 1 }
             stepButton("chevron.right", "ช่องถัดไป", enabled: slot < inv.slotsInUse) { slot += 1 }
@@ -224,12 +224,12 @@ struct IECVIPage: View {
                     Image(systemName: "arrow.right").font(.system(size: 11)).foregroundStyle(Theme.inkMuted)
                     flowStep("②", "ป้อนค่าจากรูป", done: typed)
                 }
-                Text("ถ่ายแล้ว \(shots)/2").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ถ่ายแล้ว \(shots)/2").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 6)
             Button { startContinuous(r, i) } label: {
                 Label(left > 0 ? "วัดต่อเนื่อง | เหลือ \(left)" : "ครบทุกสตริง", systemImage: "play.fill")
-                    .font(.sarabunFixed(15, .bold)).padding(.horizontal, 16).frame(height: 44)
+                    .font(.sarabun(15, .bold)).padding(.horizontal, 16).frame(minHeight: 44)
                     .foregroundStyle(left > 0 ? Theme.onPrimary : Theme.okText)
                     .background(left > 0 ? AnyShapeStyle(Theme.actionGradient) : AnyShapeStyle(Theme.okSoft), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
@@ -243,7 +243,7 @@ struct IECVIPage: View {
     func flowStep(_ n: String, _ title: String, done: Bool) -> some View {
         HStack(spacing: 3) {
             if done { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.okText) }
-            Text(n + " " + title).font(.sarabunFixed(14, .bold)).foregroundStyle(done ? Theme.okText : Theme.primary)
+            Text(n + " " + title).font(.sarabun(14, .bold)).foregroundStyle(done ? Theme.okText : Theme.primary)
         }
     }
 
@@ -251,15 +251,15 @@ struct IECVIPage: View {
         let reasons = r.viFailures(inv, slot: slot, phase)
         if !reasons.isEmpty {
             HStack(spacing: 12) {
-                Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.danger, in: Circle())
-                Text(reasons.joined(separator: " | ") + " | รูปเดิมเก็บไว้เทียบ").font(.sarabunFixed(13)).foregroundStyle(Theme.dangerText)
+                Text("!").font(.sarabun(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.danger, in: Circle())
+                Text(reasons.joined(separator: " | ") + " | รูปเดิมเก็บไว้เทียบ").font(.sarabun(13)).foregroundStyle(Theme.dangerText)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 Button("วัดซ้ำ") {
                     let kind: IECVIEntry.Kind = reasons.first?.hasPrefix("กระแส") == true ? .current : .voltage
                     shooting = Shot(slot: slot, kind: kind.photoKind(phase), then: .init(slot: slot, kind: kind))
                 }
-                    .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary)
+                    .font(.sarabun(15, .bold)).foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 14).frame(minHeight: 44).background(Theme.danger, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .buttonStyle(.plain).disabled(r.isLocked)
             }
@@ -284,9 +284,9 @@ struct IECVIPage: View {
     /// `รูปที่ถ่ายไปที่ 7 | ภาพถ่าย IEC-test After | หน้า 11 | ช่อง INV1ST1 | Vmp + Imp`.
     func reportLine(_ r: IECReport, _ i: Int, _ seq: Int) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text("รูปที่ถ่ายไปที่ 7 | ภาพถ่าย IEC-test After").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+            Text("รูปที่ถ่ายไปที่ 7 | ภาพถ่าย IEC-test After").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
             Text("หน้า \(r.reportPage(inverter: i, seq: seq, .after)) | ช่อง \(IECReport.label(inverter: i + 1, seq: seq)) | Vmp + Imp")
-                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         }
         .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -310,9 +310,9 @@ struct IECVIPage: View {
 
     func emptyNote(_ inv: IECReport.Inverter) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ช่อง String \(slot) | MPPT \(IECReport.mppt(slot: slot)) ว่าง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("ช่อง String \(slot) | MPPT \(IECReport.mppt(slot: slot)) ว่าง").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
             Text("ไม่มีสตริงต่อเข้าช่องนี้ ใน Excel คอลัมน์ \(IECReport.excelColumn(slot: slot)) จะเว้นว่างทั้งคอลัมน์ และไม่นับในผลรวม")
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             Button { toggleEmpty(slot) } label: { Label("มีสตริงต่อในช่องนี้", systemImage: "plus") }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 .disabled(report.isLocked)
@@ -340,7 +340,7 @@ struct IECVIPage: View {
         return HStack(spacing: 14) {
             Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 28, height: 28).background(ok ? Theme.success : failed > 0 ? Theme.danger : Theme.warning, in: Circle())
-            Text(text).font(.sarabunFixed(14)).foregroundStyle(ok ? Theme.okText : Theme.navy).lineLimit(2)
+            Text(text).font(.sarabun(14)).foregroundStyle(ok ? Theme.okText : Theme.navy).lineLimit(2)
             Spacer(minLength: 8)
             Button { try? context.save(); savedFlash = true; Task { try? await Task.sleep(for: .seconds(1.5)); savedFlash = false } } label: {
                 Text(savedFlash ? "บันทึกแล้ว ✓" : "บันทึกร่างตอนนี้").frame(minWidth: 140)
@@ -362,8 +362,8 @@ struct IECVIPage: View {
             HStack(spacing: 10) {
                 if leading { Image(systemName: "chevron.left") }
                 VStack(alignment: leading ? .leading : .trailing, spacing: 0) {
-                    Text(small).font(.sarabunFixed(12))
-                    Text(big).font(.sarabunFixed(16, .bold)).lineLimit(1)
+                    Text(small).font(.sarabun(12))
+                    Text(big).font(.sarabun(16, .bold)).lineLimit(1)
                 }
                 if !leading { Image(systemName: "chevron.right") }
             }

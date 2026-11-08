@@ -186,7 +186,7 @@ struct InstallBars: View {
                 }
                 .frame(width: max(oend - ox, 10), height: 16).offset(x: ox)
                 // after the bar, or over its end when that would run past the axis into the % column
-                Text("+\(row.overrunDays) วัน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText).fixedSize()
+                Text("+\(row.overrunDays) วัน").font(.sarabun(13, .bold)).foregroundStyle(Theme.dangerText).fixedSize()
                     .padding(.horizontal, 8).frame(height: 22).background(Theme.dangerSoft, in: Capsule())
                     .overlay(Capsule().strokeBorder(Theme.danger.opacity(0.4), lineWidth: 1))
                     .offset(x: min(max(oend - ox, 10) + ox + 8, width - Self.overrunTag))
@@ -268,7 +268,7 @@ struct InstallCurveChart: View {
     }
 
     private func label(_ s: String, _ c: Color, size: CGFloat = 12, bold: Bool = false) -> Text {
-        Text(s).font(.sarabunFixed(size, bold ? .bold : .regular)).foregroundColor(c)
+        Text(s).font(.sarabun(size, bold ? .bold : .regular)).foregroundColor(c)
     }
 
     private func draw(_ ctx: inout GraphicsContext, _ size: CGSize) {

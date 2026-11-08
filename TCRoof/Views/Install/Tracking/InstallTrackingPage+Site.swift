@@ -72,8 +72,8 @@ extension InstallTrackingPage {
         return card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("เอกสารโครงการ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text("แตะเพื่อดูรายละเอียด").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("เอกสารโครงการ").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("แตะเพื่อดูรายละเอียด").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     Spacer(minLength: 8)
                     if open > 0 { chip("ต้องดำเนินการ \(open)", .warn) }
                 }
@@ -94,7 +94,7 @@ extension InstallTrackingPage {
         Button { sheet = .doc(t.id) } label: {
             HStack(spacing: 8) {
                 Circle().fill(Self.ink(t.tone)).frame(width: 8, height: 8)
-                Text(t.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.9)
+                Text(t.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.9)
                 Spacer(minLength: 4)
                 chip(t.chip, t.tone).layoutPriority(1)
             }
@@ -112,7 +112,7 @@ extension InstallTrackingPage {
     }
 
     static func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(ink(tone)).lineLimit(1)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(ink(tone)).lineLimit(1)
             .padding(.horizontal, 9).frame(height: 24)
             .background(fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
@@ -146,7 +146,7 @@ extension InstallTrackingPage {
     // MARK: site panel
 
     static func priorityChip(_ tone: InstallPageData.Tone, _ text: String) -> some View {
-        Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(ink(tone))
+        Text(text).font(.sarabun(14, .bold)).foregroundStyle(ink(tone))
             .frame(width: 48, height: 32)
             .background(fill(tone), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
@@ -196,11 +196,11 @@ struct InstallSitePanel: View {
                            equalWidths: false, fontSize: 15)
                         .fixedSize()
                     } else {
-                        Text("ข้อมูลหน้างาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("ข้อมูลหน้างาน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     }
                     Spacer(minLength: 8)
                     detailButton
-                    Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).fixedSize()
                 }
                 Group {
@@ -244,7 +244,7 @@ struct InstallSitePanel: View {
 
     private func siteTasks(_ s: InstallPageData.Site, spread: Bool) -> some View {
         VStack(alignment: .leading, spacing: spread ? 0 : 8) {
-            Text("ความคืบหน้าตามงาน MP").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
+            Text("ความคืบหน้าตามงาน MP").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
             ForEach(Array(s.tasks.enumerated()), id: \.offset) { _, t in
                 if spread { Spacer(minLength: 0) }
                 taskBar(t.title, percent: t.percent)
@@ -256,9 +256,9 @@ struct InstallSitePanel: View {
     private func taskBar(_ title: String, percent: Double) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(title).font(.sarabun(13)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 6)
-                Text("\(Int(percent.rounded()))%").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text("\(Int(percent.rounded()))%").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
             }
             Capsule().fill(Theme.track).frame(height: 6)
                 .overlay(alignment: .leading) {
@@ -305,12 +305,12 @@ struct InstallSitePanel: View {
     private func kpiRow(_ f: SiteFigure) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(f.label).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.85)
-                Text(f.note).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.85)
+                Text(f.label).font(.sarabun(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.85)
+                Text(f.note).font(.sarabun(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.85)
             }
             .layoutPriority(1)
             Spacer(minLength: 4)
-            Text(f.value).font(.sarabunFixed(18, .bold)).foregroundStyle(f.ink).lineLimit(1).minimumScaleFactor(0.7)
+            Text(f.value).font(.sarabun(18, .bold)).foregroundStyle(f.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -327,7 +327,7 @@ struct InstallSitePanel: View {
                 ScrollView { riskRows(s, spread: false) }.scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
             }
             .frame(maxHeight: .infinity, alignment: .top)
-            Text("จากคำขอรายสัปดาห์นี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
+            Text("จากคำขอรายสัปดาห์นี้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -337,9 +337,9 @@ struct InstallSitePanel: View {
                 HStack(spacing: 12) {
                     InstallTrackingPage.priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(r.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(r.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                         if !r.prevention.isEmpty {
-                            Text("รับมือ: " + r.prevention).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                            Text("รับมือ: " + r.prevention).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                     }
                     Spacer(minLength: 0)
@@ -361,7 +361,7 @@ struct InstallSitePanel: View {
                 legendSwatch(Theme.primary, "จริง")
                 Spacer(minLength: 8)
                 Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " | แผนทั้งโครงการ \($0)" } ?? ""))
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
             GeometryReader { g in labourBars(s, chartHeight: max(g.size.height - 16 - 15 - 8, 20)) }
         }
@@ -373,7 +373,7 @@ struct InstallSitePanel: View {
             ForEach(s.labour) { d in
                 VStack(spacing: 4) {
                     let shown = d.actual ?? d.plan
-                    Text(shown.map(String.init) ?? "").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).frame(height: 16)
+                    Text(shown.map(String.init) ?? "").font(.sarabun(12, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 16)
                     ZStack(alignment: .bottom) {
                         if let p = d.plan {
                             RoundedRectangle(cornerRadius: 4).fill(Theme.track).frame(height: chartHeight * CGFloat(p) / CGFloat(top))
@@ -384,7 +384,7 @@ struct InstallSitePanel: View {
                         }
                     }
                     .frame(height: chartHeight, alignment: .bottom)
-                    Text(ThaiFormat.dayMonth.string(from: d.date)).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                    Text(ThaiFormat.dayMonth.string(from: d.date)).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.7)
                 }
                 .frame(maxWidth: .infinity)
@@ -398,7 +398,7 @@ struct InstallSitePanel: View {
     private func legendSwatch(_ color: Color, _ title: String) -> some View {
         HStack(spacing: 5) {
             RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 14, height: 12)
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
     }
 }
@@ -425,9 +425,9 @@ extension InstallTrackingPage {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.sarabunFixed(26, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text(title).font(.sarabun(26, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     // up to two lines (the 4.2 sheet's state)
-                    Text(about).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    Text(about).font(.sarabun(15)).foregroundStyle(Theme.inkMuted).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 if let chip { self.chip(chip.0, chip.1).padding(.top, 10) }
@@ -459,15 +459,15 @@ extension InstallTrackingPage {
     private func actionsSheet(_ actions: [InstallPageData.Action]) -> some View {
         sheetFrame(width: 730, title: "ต้องดำเนินการ", about: "รายการที่ค้างจากแผน รายงาน และเอกสาร | แตะเพื่อเปิดรายการ", chip: nil) {
             if actions.isEmpty {
-                Text("ไม่มีรายการค้าง").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
+                Text("ไม่มีรายการค้าง").font(.sarabun(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }
             ForEach(actions) { a in
                 Button { go(a.target) } label: {
                     HStack(spacing: 16) {
                         priorityChip(a.priority == .high ? .danger : .warn, a.priority == .high ? "สูง" : "กลาง")
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(a.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                            Text(a.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                            Text(a.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                            Text(a.detail).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 8)
                         Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
@@ -485,7 +485,7 @@ extension InstallTrackingPage {
     private func docSheet(_ t: InstallPageData.DocTile) -> some View {
         sheetFrame(width: 810, title: t.title, about: t.about, chip: (t.chip, t.tone)) {
             if t.items.isEmpty {
-                Text("ยังไม่มีรายการ").font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
+                Text("ยังไม่มีรายการ").font(.sarabun(16)).foregroundStyle(Theme.inkMuted).padding(.vertical, 24)
             }
             ForEach(t.items) { item in
                 docRow(item).overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
@@ -518,11 +518,11 @@ extension InstallTrackingPage {
     private func docRowLabel(_ item: InstallPageData.DocItem) -> some View {
         HStack(alignment: .top, spacing: 16) {
             if !item.code.isEmpty {
-                Text(item.code).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
+                Text(item.code).font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).frame(width: 96, alignment: .leading)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text(item.detail).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text(item.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                Text(item.detail).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 8)
             chip(item.chip, item.tone)

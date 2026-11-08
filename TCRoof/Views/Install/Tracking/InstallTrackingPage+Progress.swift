@@ -44,11 +44,11 @@ extension InstallTrackingPage {
         let range = span.map { "\(ThaiFormat.dayMonth.string(from: $0.lowerBound)) – \(ThaiFormat.numericDate.string(from: $0.upperBound))" } ?? ""
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("ความคืบหน้าเทียบแผน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).frame(height: 24)
+                Text("ความคืบหน้าเทียบแผน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 24)
                     .accessibilityAddTraits(.isHeader)
                 HStack(spacing: 10) {
                     Text([range, "\(g.rows.count) ขั้นตอน", g.subCount > 0 ? "\(g.subCount) งานย่อย" : ""].filter { !$0.isEmpty }.joined(separator: " | "))
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         .minimumScaleFactor(0.8)
                     if let t = data.tracking { forecastPill(t) }
                 }
@@ -83,7 +83,7 @@ extension InstallTrackingPage {
         let slack = t.slackDays(), end = Self.forecastDay(t)
         let (text, tone): (String, InstallPageData.Tone) = slack < 0 ? ("คาดส่งมอบ \(end) | ช้า \(-slack) วัน", .danger)
             : slack == 0 ? ("คาดส่งมอบ \(end) ตามกำหนดพอดี", .warn) : ("คาดส่งมอบ \(end) ตามกำหนด | เผื่อ \(slack) วัน", .ok)
-        return Text(text).font(.sarabunFixed(12, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
+        return Text(text).font(.sarabun(12, .bold)).foregroundStyle(Self.ink(tone)).lineLimit(1)
             .padding(.horizontal, 10).frame(height: 22)
             .background(Self.fill(tone), in: Capsule())
             .fixedSize()
@@ -101,7 +101,7 @@ extension InstallTrackingPage {
                 Text("เกินแผน")
             }
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .accessibilityHidden(true)
     }
 
@@ -119,7 +119,7 @@ extension InstallTrackingPage {
                 Text("วันนี้").foregroundStyle(Theme.dangerText)
             }
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .accessibilityHidden(true)
     }
 
@@ -183,7 +183,7 @@ extension InstallTrackingPage {
     /// `ขั้นตอน`, then the months over the days (or weeks), Sundays rose and today in a red pill.
     private func ganttHeader(_ axis: InstallAxis) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
-            Text("ขั้นตอน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ขั้นตอน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 .frame(width: Self.nameWidth, alignment: .leading).padding(.bottom, 6)
             GeometryReader { geo in
                 let w = geo.size.width
@@ -194,7 +194,7 @@ extension InstallTrackingPage {
                     let avail = xNext - x0
                     if avail >= 60 {
                         Text(avail >= 95 ? ThaiFormat.monthYear.string(from: m) : ThaiFormat.month.string(from: m))
-                            .font(.sarabunFixed(13, .bold))
+                            .font(.sarabun(13, .bold))
                             .foregroundStyle(Theme.navy)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -205,7 +205,7 @@ extension InstallTrackingPage {
                 ForEach(axis.labelled, id: \.self) { d in
                     let today = axis.unit == .day ? Calendar.current.isDate(d, inSameDayAs: axis.today) : axis.contains(axis.today, week: d)
                     let sunday = axis.unit == .day && InstallPlan.isSunday(d)
-                    Text(axis.label(d)).font(.sarabunFixed(12, today ? .bold : .regular))
+                    Text(axis.label(d)).font(.sarabun(12, today ? .bold : .regular))
                         .foregroundStyle(today ? Theme.onPrimary : sunday ? Theme.survey : Theme.inkMuted)
                         .padding(.horizontal, today ? 7 : 0).frame(height: 16)
                         .background { if today { Capsule().fill(Theme.danger) } }
@@ -215,7 +215,7 @@ extension InstallTrackingPage {
                 }
             }
             .frame(height: InstallAxis.headerHeight)
-            Text("%").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text("%").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 .frame(width: Self.percentWidth, alignment: .trailing).padding(.bottom, 6)
         }
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -233,7 +233,7 @@ extension InstallTrackingPage {
         case .current: (Theme.onPrimary, Theme.primary)
         case .waiting: (Theme.inkFaint, Theme.segmentTrack)
         }
-        return Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(15, .bold)).foregroundStyle(ink).monospacedDigit()
+        return Text("\(Int(row.percent.rounded()))%").font(.sarabun(15, .bold)).foregroundStyle(ink).monospacedDigit()
             .frame(minWidth: 48).padding(.horizontal, 4).frame(height: 24)
             .background(fill, in: Capsule())
     }
@@ -255,11 +255,11 @@ extension InstallTrackingPage {
                 VStack(alignment: .leading, spacing: 0) {
                     if row.subs.isEmpty {
                         // the MP plan's long task names get two lines when there is no sub-task count under them
-                        Text(row.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(2).lineSpacing(-2)
+                        Text(row.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(2).lineSpacing(-2)
                     } else {
-                        Text(row.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).frame(height: 21).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(row.title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 21).lineLimit(1).minimumScaleFactor(0.8)
                         Text("งานย่อย \(row.subs.filter { $0.percent >= 99.95 }.count)/\(row.subs.count)")
-                            .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(height: 17)
+                            .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(minHeight: 17)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -289,10 +289,10 @@ extension InstallTrackingPage {
                 Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onPrimary)
             case .current:
                 Circle().fill(Theme.primary)
-                Text(row.code).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.onPrimary).minimumScaleFactor(0.7)
+                Text(row.code).font(.sarabun(12, .bold)).foregroundStyle(Theme.onPrimary).minimumScaleFactor(0.7)
             case .waiting:
                 Circle().fill(Theme.segmentTrack)
-                Text(row.code).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.7)
+                Text(row.code).font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.7)
             }
         }
         .frame(width: 28, height: 28)
@@ -304,7 +304,7 @@ extension InstallTrackingPage {
         return HStack(spacing: 0) {
             HStack(spacing: 10) {
                 Circle().fill(ink).frame(width: 8, height: 8)
-                Text(s.title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(s.title).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
             }
             .padding(.leading, 66)
             .frame(width: Self.nameWidth + 150, alignment: .leading)
@@ -312,7 +312,7 @@ extension InstallTrackingPage {
             .zIndex(1)
             GeometryReader { geo in InstallSubBar(sub: s, parent: parent, axis: axis, width: geo.size.width) }
                 .frame(height: Self.subHeight)
-            Text("\(Int(s.percent.rounded()))%").font(.sarabunFixed(14, .bold)).foregroundStyle(s.percent >= 99.95 ? Theme.successInk : Theme.inkFaint)
+            Text("\(Int(s.percent.rounded()))%").font(.sarabun(14, .bold)).foregroundStyle(s.percent >= 99.95 ? Theme.successInk : Theme.inkFaint)
                 .monospacedDigit().frame(width: Self.percentWidth, alignment: .trailing)
         }
         .frame(height: Self.subHeight)
@@ -341,13 +341,13 @@ extension InstallTrackingPage {
                     }
                     Text("เส้นแดงที่วันนี้ = ห่างจากแผน")
                 }
-                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 .padding(.leading, 48)
                 .accessibilityHidden(true)
             }
             .padding(.top, 4)
         } else {
-            Text("ยังไม่มีแผน MP").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text("ยังไม่มีแผน MP").font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

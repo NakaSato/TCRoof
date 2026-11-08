@@ -84,9 +84,9 @@ struct PWADocsUploadSheet: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("อัปโหลดเอกสาร | " + (station.map { $0.ref + " " + $0.shortName } ?? "คลังกลาง"))
-                    .font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    .font(.sarabun(19, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text(station == nil ? "ใช้กับทุกสถานี" : package?.padTitle ?? "ทุกชุดของสถานีนี้")
-                    .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             Spacer()
@@ -102,7 +102,7 @@ struct PWADocsUploadSheet: View {
     }
 
     private func sectionTitle(_ text: String, ink: Color = Theme.navy) -> some View {
-        Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(ink)
+        Text(text).font(.sarabun(14, .bold)).foregroundStyle(ink)
     }
 
     private var slotSection: some View {
@@ -111,13 +111,13 @@ struct PWADocsUploadSheet: View {
         return VStack(alignment: .leading, spacing: 10) {
             sectionTitle("1 | ใส่ในช่องไหน")
             if all.isEmpty {
-                Text("เอกสารของสถานีนี้ครบแล้ว | เปลี่ยนไฟล์ได้จากหน้าเอกสาร").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("เอกสารของสถานีนี้ครบแล้ว | เปลี่ยนไฟล์ได้จากหน้าเอกสาร").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             FlowLayout(spacing: 8) {
                 ForEach(shown) { k in slotChip(k) }
                 if !showAll, all.count > 12 {
                     Button("อีก \(all.count - 12) ช่อง") { showAll = true }
-                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: touchMin)
+                        .font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).frame(minHeight: touchMin)
                 }
             }
         }
@@ -126,7 +126,7 @@ struct PWADocsUploadSheet: View {
     private func slotChip(_ k: StationDocs.Kind) -> some View {
         let on = slot == k.id
         return Button { slot = k.id } label: {
-            Text(k.name).font(.sarabunFixed(14, on ? .bold : .semibold)).foregroundStyle(on ? Theme.primary : Theme.navy).lineLimit(1)
+            Text(k.name).font(.sarabun(14, on ? .bold : .semibold)).foregroundStyle(on ? Theme.primary : Theme.navy).lineLimit(1)
                 .padding(.horizontal, 14).frame(height: 40)
                 .background(on ? Theme.primarySoft : Theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
@@ -140,7 +140,7 @@ struct PWADocsUploadSheet: View {
     private func sharedNote(_ k: StationDocs.Kind) -> some View {
         let others = k.packages.filter { $0 != package }.map { PWADocs.stepTitle($0) }
         return Text("⇄ ไฟล์นี้จะเข้า " + others.joined(separator: " | ") + " ด้วย | อัปโหลดครั้งเดียว")
-            .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dockTeal)
+            .font(.sarabun(13, .bold)).foregroundStyle(Theme.dockTeal)
             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.tealSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
@@ -162,7 +162,7 @@ struct PWADocsUploadSheet: View {
                 sourceCard(.file, "เลือกไฟล์", "PDF | รูป | Word", enabled: true) { importing = true }
             }
             if let file {
-                Label(file.name, systemImage: "doc.fill").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
+                Label(file.name, systemImage: "doc.fill").font(.sarabun(13, .semibold)).foregroundStyle(Theme.primary)
             }
         }
     }
@@ -172,11 +172,11 @@ struct PWADocsUploadSheet: View {
         return Button(action: action) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(enabled ? Theme.navy : Theme.inkFaint)
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(enabled ? Theme.navy : Theme.inkFaint)
                     Spacer()
                     if on { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.primary) }
                 }
-                Text(enabled ? sub : "เครื่องนี้ไม่มีกล้องสแกนเอกสาร").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(enabled ? sub : "เครื่องนี้ไม่มีกล้องสแกนเอกสาร").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .padding(14).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
             .background(on ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -198,7 +198,7 @@ struct PWADocsUploadSheet: View {
                         HStack(spacing: 8) {
                             Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 22))
                                 .foregroundStyle(on ? Theme.danger : Theme.inkFaint)
-                            Text(c).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.dangerText)
+                            Text(c).font(.sarabun(15, .bold)).foregroundStyle(Theme.dangerText)
                         }
                         .frame(minHeight: touchMin).contentShape(Rectangle())
                     }
@@ -214,7 +214,7 @@ struct PWADocsUploadSheet: View {
 
     private var offlineNote: some View {
         Label("ออฟไลน์ | ไฟล์จะเข้าคิวและส่งเมื่อออนไลน์", systemImage: "wifi.slash")
-            .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.warningText)
+            .font(.sarabun(13, .bold)).foregroundStyle(Theme.warningText)
             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.warningSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
@@ -232,7 +232,7 @@ struct PWADocsUploadSheet: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
-            Text(hint).font(.sarabunFixed(13)).foregroundStyle(ready ? Theme.successText : Theme.inkMuted)
+            Text(hint).font(.sarabun(13)).foregroundStyle(ready ? Theme.successText : Theme.inkMuted)
                 .accessibilityIdentifier("pwaDocs.upload.hint")
             Spacer()
             Button("ยกเลิก") { dismiss() }.buttonStyle(TCButtonStyle(.secondary, size: .bar))
@@ -336,20 +336,20 @@ struct PWALibrarySheet: View {
             head
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if let note = kind.note { Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    if let note = kind.note { Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
                     if PWADocs.isIDCard(kind) {
                         Text("🔒 ก่อนแนบ ปิดศาสนา กรุ๊ปเลือด และวันเกิดบนบัตรทุกใบ | แอปไม่เก็บเลขบัตรเป็นข้อความ")
-                            .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.dangerText)
+                            .font(.sarabun(13, .semibold)).foregroundStyle(Theme.dangerText)
                     }
-                    Text("ใช้ใน \(used.count) สถานี").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                    Text("ใช้ใน \(used.count) สถานี").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                     FlowLayout(spacing: 8) {
                         ForEach(used.prefix(6)) { st in
-                            Text(st.ref + " " + st.shortName).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
+                            Text(st.ref + " " + st.shortName).font(.sarabun(13, .semibold)).foregroundStyle(Theme.primary)
                                 .padding(.horizontal, 10).frame(height: 30).background(Theme.primarySoft, in: Capsule())
                         }
                     }
                     if used.count > 6 {
-                        Text("และอีก \(used.count - 6) สถานี").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        Text("และอีก \(used.count - 6) สถานี").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     }
                 }
                 .padding(20)
@@ -378,16 +378,16 @@ struct PWALibrarySheet: View {
 
     private var head: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text(kind.scope.padBadge).font(.sarabunFixed(12, .heavy)).foregroundStyle(kind.scope.padBadgeInk)
+            Text(kind.scope.padBadge).font(.sarabun(12, .heavy)).foregroundStyle(kind.scope.padBadgeInk)
                 .frame(width: 46, height: 46).background(kind.scope.padBadgeFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
-                Text(kind.name).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
-                if let row { Text(page.librarySub(row)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+                Text(kind.name).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                if let row { Text(page.librarySub(row)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             if let row {
-                Text(row.pill.padTitle).font(.sarabunFixed(11.5, .bold)).foregroundStyle(row.pill.ink)
+                Text(row.pill.padTitle).font(.sarabun(11.5, .bold)).foregroundStyle(row.pill.ink)
                     .padding(.horizontal, 8).frame(height: 22).background(row.pill.fill, in: Capsule())
             }
             Button { dismiss() } label: {

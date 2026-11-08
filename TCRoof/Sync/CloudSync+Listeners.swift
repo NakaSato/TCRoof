@@ -322,30 +322,50 @@ extension CloudSync {
         }
     }
 
-    /// `config/app`, set in the Firebase console: `centerDriveFolder`, `driveShareWith` and `claimShareWith` (`DriveConfig`),
-    /// `minSyncVersion` and `installLink` (`AppGate`: an older build stops sending), and `contactsSplit`, switched on
-    /// once every device runs this version: the jobs are then sent again without their phone and address.
+    /// The config documents, set in the Firebase console. `config/public` (every member): `minSyncVersion` and
+    /// `installLink` (`AppGate`: an older build stops sending), `contactsSplit` (switched on once every device runs this
+    /// version: the jobs are then sent again without their phone and address) and `driveShareWith`, the team emails a
+    /// contractor's job folder is shared with. `config/app` (the team only, CHA-59): `centerDriveFolder` and
+    /// `claimShareWith` (`DriveConfig`), and older copies of the public fields, used while `config/public` lacks them.
     func listenConfig(barrier: StartupLoadBarrier? = nil) {
+        let team = external == nil
+        listenStartupDocument(db.document(Self.publicConfigDocument), barrier: team ? nil : barrier) { [weak self] snapshot, error in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if let error { return print("CloudSync: public config listener: \(error.localizedDescription)") }
+                self.configPublic = snapshot?.data() ?? [:]
+                self.applyConfig()
+            }
+        }
+        // a contractor's device may not read `config/app`
+        guard team else { return }
         listenStartupDocument(db.document(Self.configDocument), barrier: barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
-                // the center Drive (a folder id or link) and the team emails a contractor's job folder is shared with
-                DriveConfig.set(center: snapshot?.get("centerDriveFolder") as? String,
-                                shareWith: snapshot?.get("driveShareWith") as? [String] ?? [],
-                                claimShareWith: snapshot?.get("claimShareWith") as? [String] ?? [])
-                // a build the console has let through again sends what waited
-                if AppGate.shared.update(minimum: (snapshot?.get("minSyncVersion") as? NSNumber)?.intValue,
-                                         installLink: snapshot?.get("installLink") as? String) {
-                    self.push()
-                }
-                let split = snapshot?.get("contactsSplit") as? Bool ?? false
-                guard split != Job.contactsSplit else { return }
-                Job.contactsSplit = split
-                UserDefaults.standard.set(split, forKey: Self.contactsSplitKey)
-                self.push()
+                self.configApp = snapshot?.data() ?? [:]
+                self.applyConfig()
             }
         }
+    }
+
+    /// The config fields as the two documents give them: `config/public`'s first, then `config/app`'s.
+    private func applyConfig() {
+        let pub = configPublic ?? [:], app = configApp ?? [:]
+        func field(_ key: String) -> Any? { pub[key] ?? app[key] }
+        DriveConfig.set(center: app["centerDriveFolder"] as? String,
+                        shareWith: field("driveShareWith") as? [String] ?? [],
+                        claimShareWith: app["claimShareWith"] as? [String] ?? [])
+        // a build the console has let through again sends what waited
+        if AppGate.shared.update(minimum: (field("minSyncVersion") as? NSNumber)?.intValue,
+                                 installLink: field("installLink") as? String) {
+            push()
+        }
+        let split = field("contactsSplit") as? Bool ?? false
+        guard split != Job.contactsSplit else { return }
+        Job.contactsSplit = split
+        UserDefaults.standard.set(split, forKey: Self.contactsSplitKey)
+        push()
     }
 
     /// A post id as a document id: Firestore ids can't hold `/`.

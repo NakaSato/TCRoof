@@ -18,8 +18,8 @@ extension PWAPlanPhoneView {
     func padPlan(_ board: PWAPlanBoard) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("แผน MP").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text("Master Plan | \(board.bars.count) สถานี").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text("แผน MP").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("Master Plan | \(board.bars.count) สถานี").font(.sarabun(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             if board.bars.isEmpty {
                 TCEmptyState("ยังไม่มีสถานีที่มีแผน MP", systemImage: "chart.bar.xaxis", description: Text("สร้างแผนจากการ์ดแผนงาน MP ในหน้างาน"))
@@ -42,16 +42,16 @@ extension PWAPlanPhoneView {
         let behind = curve.behindBy
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("ความก้าวหน้าทั้งโครงการ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("ความก้าวหน้าทั้งโครงการ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 4)
-                Text(week).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text(week).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 figure("จริง", curve.done, Theme.primary)
                 figure("แผน", curve.planned, Theme.navy)
                 Spacer(minLength: 4)
-                Text(behind > 0 ? "ช้ากว่าแผน \(behind)%" : "ตามแผน").font(.sarabunFixed(13, .bold))
+                Text(behind > 0 ? "ช้ากว่าแผน \(behind)%" : "ตามแผน").font(.sarabun(13, .bold))
                     .foregroundStyle(behind > 0 ? Theme.dangerText : Theme.successText)
             }
             .accessibilityElement(children: .combine)
@@ -69,8 +69,8 @@ extension PWAPlanPhoneView {
 
     private func figure(_ title: String, _ value: Double, _ color: Color) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-            Text(PWAPlanFormat.percent(value)).font(.sarabunFixed(20, .bold)).foregroundStyle(color).monospacedDigit()
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+            Text(PWAPlanFormat.percent(value)).font(.sarabun(20, .bold)).foregroundStyle(color).monospacedDigit()
         }
     }
 
@@ -90,7 +90,7 @@ extension PWAPlanPhoneView {
                 Text(PWAPlanFormat.dayMonth.string(from: today))
             }
         }
-        .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
         .accessibilityHidden(true)
     }
 
@@ -102,14 +102,14 @@ extension PWAPlanPhoneView {
         let listed = pad && !ganttAll ? Array(bars.prefix(8)) : bars
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text("รายสถานี").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text("เรียงตามวันส่งมอบ").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                Text("รายสถานี").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("เรียงตามวันส่งมอบ").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.bottom, 2)
             // the months sit over the bars: past the name column (90, on iPad 170) and its gap (6), short of the due column (40 + 6)
             GeometryReader { g in
                 ForEach(axis.months, id: \.start) { m in
-                    Text(PWAPlanFormat.month.string(from: m.start)).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(Theme.inkFaint)
+                    Text(PWAPlanFormat.month.string(from: m.start)).font(.sarabun(pad ? 11 : 10)).foregroundStyle(Theme.inkFaint)
                         .fixedSize().offset(x: axis.fraction(m.start) * g.size.width)
                 }
             }
@@ -117,13 +117,13 @@ extension PWAPlanPhoneView {
             .padding(.leading, ganttNameWidth + 6).padding(.trailing, 46)
             .accessibilityHidden(true)
             if bars.isEmpty {
-                Text("ไม่พบสถานีที่ค้นหา").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่พบสถานีที่ค้นหา").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             ForEach(listed) { ganttRow($0, axis: axis) }
             if listed.count < bars.count {
                 Button { ganttAll = true } label: {
-                    Text("อีก \(bars.count - listed.count) สถานี | เลื่อนดู").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                    Text("อีก \(bars.count - listed.count) สถานี | เลื่อนดู").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                         .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -150,14 +150,14 @@ extension PWAPlanPhoneView {
         return Button { open(.schedule, station: bar.id) } label: {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(bar.name).font(.sarabunFixed(pad ? 13 : 12, .bold)).foregroundStyle(Theme.navy).frame(height: pad ? 15 : 14)
-                    Text(who).font(.sarabunFixed(pad ? 11 : 10)).foregroundStyle(bar.pendingAckDays > 0 ? Theme.pending : Theme.inkMuted)
+                    Text(bar.name).font(.sarabun(pad ? 13 : 12, .bold)).foregroundStyle(Theme.navy).frame(height: pad ? 15 : 14)
+                    Text(who).font(.sarabun(pad ? 11 : 10)).foregroundStyle(bar.pendingAckDays > 0 ? Theme.pending : Theme.inkMuted)
                         .minimumScaleFactor(0.85).frame(height: pad ? 15 : 13)
                 }
                 .lineLimit(1)
                 .frame(width: ganttNameWidth, alignment: .leading)
                 PWAPlanGanttBar(bar: bar, axis: axis).frame(height: 22)
-                Text(due).font(.sarabunFixed(11, .bold)).monospacedDigit().foregroundStyle(bar.behind ? Theme.dangerText : Theme.navy)
+                Text(due).font(.sarabun(11, .bold)).monospacedDigit().foregroundStyle(bar.behind ? Theme.dangerText : Theme.navy)
                     .frame(width: 40, alignment: .trailing)
             }
             // the board's rows are 30 pt; they are 44 here for the touch target
@@ -250,7 +250,7 @@ struct PWAPlanCurveChart: View {
                 }
                 return p
             }
-            func label(_ s: String, _ color: Color) -> Text { Text(s).font(.sarabunFixed(labelSize)).foregroundColor(color) }
+            func label(_ s: String, _ color: Color) -> Text { Text(s).font(.sarabun(labelSize)).foregroundColor(color) }
 
             for p in stride(from: 0.0, through: 100, by: 25) {
                 var grid = Path()

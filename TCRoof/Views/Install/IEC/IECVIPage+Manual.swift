@@ -15,11 +15,11 @@ extension IECVIPage {
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(line.warn ? Theme.warningText : Theme.primary)
                     .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("ตรวจตามคู่มือแผง" + (r.catalogModule.map { " | " + $0.id } ?? "")).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-                    Text(line.main).font(.sarabunFixed(14, .bold)).foregroundStyle(line.warn ? Theme.warningText : line.ok ? Theme.okText : Theme.navy)
+                    Text("ตรวจตามคู่มือแผง" + (r.catalogModule.map { " | " + $0.id } ?? "")).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
+                    Text(line.main).font(.sarabun(14, .bold)).foregroundStyle(line.warn ? Theme.warningText : line.ok ? Theme.okText : Theme.navy)
                         .fixedSize(horizontal: false, vertical: true)
                     if let note = line.note {
-                        Text(note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                        Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer(minLength: 0)

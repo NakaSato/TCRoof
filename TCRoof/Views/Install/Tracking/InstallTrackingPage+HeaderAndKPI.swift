@@ -17,9 +17,9 @@ extension InstallTrackingPage {
             .buttonStyle(.plain)
             .accessibilityLabel("กลับหน้ารายการงาน")
             VStack(alignment: .leading, spacing: 0) {
-                Text(data.title).font(.sarabunFixed(22, .bold)).frame(height: 28)
+                Text(data.title).font(.sarabun(22, .bold)).frame(minHeight: 28)
                     .accessibilityAddTraits(.isHeader)
-                Text(data.subtitle).font(.sarabunFixed(15)).opacity(0.92).frame(height: 20)
+                Text(data.subtitle).font(.sarabun(15)).opacity(0.92).frame(minHeight: 20)
             }
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -45,7 +45,7 @@ extension InstallTrackingPage {
         let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
         return Button(action: action) {
             Label(title, systemImage: symbol)
-                .font(.sarabunFixed(15, primary ? .bold : .semibold))
+                .font(.sarabun(15, primary ? .bold : .semibold))
                 .foregroundStyle(primary ? Theme.primary : Theme.onPrimary)
                 .padding(.horizontal, 16).frame(height: 44)
                 .background(primary ? Theme.surface : Theme.onPrimary.opacity(0.14), in: frame)
@@ -114,7 +114,7 @@ extension InstallTrackingPage {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: item.symbol).font(.system(size: 15, weight: .semibold))
-                                Text(item.title).font(.sarabunFixed(14.5, .bold))
+                                Text(item.title).font(.sarabun(14.5, .bold))
                                     .lineLimit(1)
                                     .fixedSize(horizontal: true, vertical: false)
                                 if item.dot {
@@ -206,11 +206,11 @@ extension InstallTrackingPage {
             HStack(spacing: 0) {
                 ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
                     HStack(spacing: 8) {
-                        Text(c.label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize()
+                        Text(c.label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize()
                         // a long value (`ช้ากว่าแผน`) gives way before a short note (`-6%`) does
-                        Text(c.value).font(.sarabunFixed(18, .bold)).foregroundStyle(c.ink).monospacedDigit()
+                        Text(c.value).font(.sarabun(18, .bold)).foregroundStyle(c.ink).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
-                        Text(c.note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Text(c.note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                             .layoutPriority(c.note.count <= 6 ? 2 : 0)
                     }
                     .padding(.horizontal, 12)

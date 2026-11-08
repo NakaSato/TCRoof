@@ -21,8 +21,8 @@ struct RequestPDFSheet: View {
         NavigationStack {
             VStack(spacing: 14) {
                 VStack(spacing: 2) {
-                    Text("คำขอปฏิบัติงาน สัปดาห์ที่ \(week).pdf").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                    Text("A4 | \(max(pages, 1)) หน้า | " + status).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("คำขอปฏิบัติงาน สัปดาห์ที่ \(week).pdf").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                    Text("A4 | \(max(pages, 1)) หน้า | " + status).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 ZStack {
                     Theme.paper

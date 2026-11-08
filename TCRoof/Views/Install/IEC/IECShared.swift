@@ -96,8 +96,8 @@ struct IECHeader<Trailing: View>: View {
             .buttonStyle(.plain)
             .accessibilityLabel("กลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.sarabunFixed(22, .bold)).lineLimit(1).accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.sarabunFixed(15)).opacity(0.92).lineLimit(1)
+                Text(title).font(.sarabun(22, .bold)).lineLimit(1).accessibilityAddTraits(.isHeader)
+                Text(subtitle).font(.sarabun(15)).opacity(0.92).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             trailing
@@ -120,7 +120,7 @@ struct IECHeaderButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
-                .font(.sarabunFixed(15, .semibold))
+                .font(.sarabun(15, .semibold))
                 .padding(.horizontal, 16).frame(height: 44)
                 .background(Theme.onPrimary.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.onPrimary.opacity(0.6)))
@@ -140,7 +140,7 @@ struct IECPhaseSwitch: View {
             ForEach(IECReport.Phase.allCases, id: \.self) { p in
                 let on = p == phase
                 Button { phase = p } label: {
-                    Text(p == .before ? "ก่อนเชื่อมต่อ" : "หลังเชื่อมต่อ").font(.sarabunFixed(15, .bold))
+                    Text(p == .before ? "ก่อนเชื่อมต่อ" : "หลังเชื่อมต่อ").font(.sarabun(15, .bold))
                         .foregroundStyle(on ? Theme.navy : Theme.onPrimary)
                         .padding(.horizontal, 16).frame(height: 40)
                         .background { if on { RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.surface) } }
@@ -180,10 +180,10 @@ struct IECBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).frame(width: 130, alignment: .leading)
+            Text(title).font(.sarabun(15)).foregroundStyle(Theme.navy).frame(width: 130, alignment: .leading)
             Capsule().fill(tally.isComplete ? Theme.success : Theme.pending).frame(height: 6)
                 .frame(maxWidth: .infinity)
-            Text(value ?? "\(tally.done)/\(tally.total)").font(.sarabunFixed(13, .bold))
+            Text(value ?? "\(tally.done)/\(tally.total)").font(.sarabun(13, .bold))
                 .foregroundStyle(tally.isComplete ? Theme.successInk : Theme.warningInk).monospacedDigit()
                 .frame(minWidth: 44, alignment: .trailing)
         }

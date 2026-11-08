@@ -47,9 +47,9 @@ struct IECInstallPhotosPage: View {
         return layout {
             VStack(alignment: .leading, spacing: 4) {
                 Text(left == 0 ? "ครบ \(t.total) รูปแล้ว" : "ถ่ายแล้ว \(t.done)/\(t.total) รูป | เหลือ \(left)")
-                    .font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                    .font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 Text(left == 0 ? "พร้อมทำรายงาน 9 (\(pages) หน้า + ปก)" : "ช่องที่ยังไม่มีรูปจะว่างในรายงาน | \(pages) หน้า + ปก")
-                    .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             if !compact { Spacer(minLength: 8) }
             TCButton(making ? "กำลังทำ PDF…" : "PDF รายงาน 9", systemImage: "doc.richtext", kind: .primary, fullWidth: compact) { makePDF() }
@@ -65,7 +65,7 @@ struct IECInstallPhotosPage: View {
     private func roofs(_ r: IECReport) -> some View {
         let list = r.installPhotos.effectiveRoofs
         return VStack(alignment: .leading, spacing: 10) {
-            Text("หลังคา | \(list.count) หลัง (หลังละ 2 หน้า)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("หลังคา | \(list.count) หลัง (หลังละ 2 หน้า)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
             ForEach(list) { roof in
                 HStack(spacing: 10) {
                     IECRoofNameField(name: roof.name) { name in
@@ -83,7 +83,7 @@ struct IECInstallPhotosPage: View {
             let add = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))
             add {
                 TextField("ชื่อหลังคาที่เพิ่ม เช่น หลังคาอาคารถังน้ำใส 2", text: $newRoof)
-                    .font(.sarabunFixed(15)).textFieldStyle(OutlinedFieldStyle(dense: true))
+                    .font(.sarabun(15)).textFieldStyle(OutlinedFieldStyle(dense: true))
                     .onSubmit(addRoof)
                 TCButton("เพิ่มหลังคา", systemImage: "plus", kind: .secondary, fullWidth: compact, action: addRoof)
                     .disabled(newRoof.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -97,15 +97,15 @@ struct IECInstallPhotosPage: View {
         let taken = page.slots.filter { r.installPhoto($0) != nil }.count
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("9.\(number)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).monospacedDigit()
+                Text("9.\(number)").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).monospacedDigit()
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(page.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                    Text(page.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     Text(page.slots.contains { if case .inverter = $0.source { true } else { false } }
                          ? "รูปเดียวกับขั้น 1/7 | " + page.subtitle : page.subtitle)
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 8)
-                Text("\(taken)/\(page.slots.count)").font(.sarabunFixed(14, .bold)).monospacedDigit()
+                Text("\(taken)/\(page.slots.count)").font(.sarabun(14, .bold)).monospacedDigit()
                     .foregroundStyle(taken == page.slots.count ? Theme.successInk : Theme.inkMuted)
             }
             // two side by side on iPad, as the printed page; one under the other on iPhone
@@ -122,8 +122,8 @@ struct IECInstallPhotosPage: View {
                             job.removeIECPhoto(r.installPhoto(slot), context: context)
                             job.updateIEC(context) { $0.setInstallPhoto(nil, for: slot) }
                         }
-                        Text(slot.caption).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
-                        Text(slot.tip).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                        Text(slot.caption).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                        Text(slot.tip).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -251,7 +251,7 @@ struct IECInstallPhotosScreen: View {
             VStack(alignment: .leading, spacing: 14) {
                 if locked {
                     Label("ผลทดสอบส่งหรือปิดแล้ว | ทีมต้องเปิด “แก้ไข” ในหน้าทดสอบ IEC ก่อนจึงแก้รูปได้ | ทำ PDF ได้", systemImage: "lock")
-                        .font(.sarabunFixed(14)).foregroundStyle(Theme.warningInk)
+                        .font(.sarabun(14)).foregroundStyle(Theme.warningInk)
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Theme.pendingSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
@@ -277,7 +277,7 @@ private struct IECRoofNameField: View {
 
     var body: some View {
         TextField("ชื่อหลังคา", text: $text)
-            .font(.sarabunFixed(15)).textFieldStyle(OutlinedFieldStyle(dense: true))
+            .font(.sarabun(15)).textFieldStyle(OutlinedFieldStyle(dense: true))
             .focused($focused)
             .onAppear { text = name }
             .onChange(of: name) { _, n in if !focused { text = n } }

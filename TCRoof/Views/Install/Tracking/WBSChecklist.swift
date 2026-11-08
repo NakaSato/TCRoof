@@ -40,9 +40,9 @@ struct WBSChecklist: View {
         let done = tickable.filter { ticks[$0.code] != nil }.count
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("งานย่อย WBS \(done)/\(tickable.count)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Text("งานย่อย WBS \(done)/\(tickable.count)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             rows(parents)
         }
@@ -90,17 +90,17 @@ struct WBSChecklist: View {
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(item.code).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
-                    Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(item.code).font(.sarabun(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
+                    Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let style {
-                    Text(style).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                    Text(style).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                 }
-                Text("ติ๊กตามขั้นงานด้านล่าง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ติ๊กตามขั้นงานด้านล่าง").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             Spacer(minLength: 4)
-            Text(Self.weight(item.weight)).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.muted)
+            Text(Self.weight(item.weight)).font(.sarabun(13, .bold).monospacedDigit()).foregroundStyle(Theme.muted)
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -128,21 +128,21 @@ struct WBSChecklist: View {
                 HStack(alignment: .top, spacing: 4) {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text(item.code).font(.sarabunFixed(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
-                            Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+                            Text(item.code).font(.sarabun(13, .bold).monospacedDigit()).foregroundStyle(Theme.primary)
+                            Text(item.title.trimmingCharacters(in: .whitespaces)).font(.sarabun(15)).foregroundStyle(Theme.navy)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         if let evidence = item.evidence {
-                            Text("หลักฐาน: \(evidence)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                            Text("หลักฐาน: \(evidence)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        if let tick { Text(tickLine(tick)).font(.sarabunFixed(12)).foregroundStyle(Theme.successInk) }
+                        if let tick { Text(tickLine(tick)).font(.sarabun(12)).foregroundStyle(Theme.successInk) }
                     }
                     Spacer(minLength: 4)
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text(item.weight > 0 ? Self.weight(item.weight) : "ไม่นับ").font(.sarabunFixed(13, .bold).monospacedDigit())
+                        Text(item.weight > 0 ? Self.weight(item.weight) : "ไม่นับ").font(.sarabun(13, .bold).monospacedDigit())
                             .foregroundStyle(Theme.muted)
-                        if let who = item.responsible { Text(who).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                        if let who = item.responsible { Text(who).font(.sarabun(12)).foregroundStyle(Theme.inkMuted) }
                     }
                 }
                 .contentShape(Rectangle())
@@ -385,7 +385,7 @@ struct WBSTickUpdateSheet: View {
                     }
                     if !mayModify {
                         Text(tick != nil ? "รายการนี้บันทึกโดยบุคคลอื่น คุณไม่มีสิทธิ์แก้ไข" : "คุณไม่มีสิทธิ์บันทึกรายการนี้")
-                            .font(.sarabunFixed(12))
+                            .font(.sarabun(12))
                             .foregroundStyle(Theme.inkMuted)
                     }
                 }

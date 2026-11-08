@@ -69,7 +69,7 @@ struct IECStringEntry: View {
             // the app going to the background may be the last chance: it can be closed from there
             .onChange(of: scenePhase) { _, p in if p != .active { commit() } }
         } else {
-            Text("ไม่มีสตริงในช่องนี้").font(.sarabunFixed(17)).foregroundStyle(Theme.inkMuted)
+            Text("ไม่มีสตริงในช่องนี้").font(.sarabun(17)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.phonePage)
         }
     }
@@ -145,7 +145,7 @@ struct IECStringEntry: View {
                 ForEach(inv.strings, id: \.slot) { st in
                     let on = st.slot == slot, ok = done(st.value)
                     Button { go(st.slot) } label: {
-                        Text("ST\(st.seq)").font(.sarabunFixed(14, .bold)).foregroundStyle(on ? Theme.navy : ok ? Theme.successInk : Theme.inkMuted)
+                        Text("ST\(st.seq)").font(.sarabun(14, .bold)).foregroundStyle(on ? Theme.navy : ok ? Theme.successInk : Theme.inkMuted)
                             .padding(.horizontal, 12).frame(height: 40)
                             .background(on ? Theme.primarySoft : ok ? Theme.successSoft : Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(on ? Theme.primary : Theme.borderSubtle, lineWidth: on ? 2 : 1))
@@ -186,7 +186,7 @@ struct IECStringEntry: View {
         let before = phase == .before
         return card {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Voltage testing และ Current testing").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("Voltage testing และ Current testing").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 HStack(spacing: 12) {
                     photo(before ? .voltageBefore : .voltageAfter, s, caption: "แรงดัน", reading: text(s, .voltage).isEmpty ? "0" : text(s, .voltage))
                     photo(before ? .currentBefore : .currentAfter, s, caption: "กระแส", reading: text(s, .current).isEmpty ? "0.0" : text(s, .current))
@@ -194,11 +194,11 @@ struct IECStringEntry: View {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         fieldBox(before ? "String Voltage (Voc)" : "Vmp", "V", s, .voltage)
-                        Text(voltageHint(r, inv, s)).font(.sarabunFixed(13)).foregroundStyle(voltageOff(r, inv) ? Theme.dangerText : Theme.inkMuted)
+                        Text(voltageHint(r, inv, s)).font(.sarabun(13)).foregroundStyle(voltageOff(r, inv) ? Theme.dangerText : Theme.inkMuted)
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         fieldBox(before ? "String Current" : "Imp", "A", s, .current)
-                        Text(currentHint(s)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        Text(currentHint(s)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     }
                 }
             }
@@ -233,14 +233,14 @@ struct IECStringEntry: View {
         return Button { field = f; typed = nil } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 4) {
-                    Text(title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                    Text(title).font(.sarabun(14)).foregroundStyle(Theme.navy)
                     if has { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.successInk) }
                 }
                 HStack {
-                    Text(text(s, f).isEmpty ? "—" : text(s, f)).font(.sarabunFixed(18, .bold))
+                    Text(text(s, f).isEmpty ? "—" : text(s, f)).font(.sarabun(18, .bold))
                         .foregroundStyle(has || on ? Theme.navy : Theme.inkMuted).monospacedDigit()
                     Spacer()
-                    Text(unit).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                    Text(unit).font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 14).frame(height: 50)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -258,18 +258,18 @@ struct IECStringEntry: View {
         card {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Text("Insulation Resistance testing").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                    Text("Insulation Resistance testing").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     switch s.irPass {
-                    case true?: Text("ผ่าน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.successInk).padding(.horizontal, 10).frame(height: 26).background(Theme.successSoft, in: Capsule())
-                    case false?: Text("ไม่ผ่าน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.dangerText).padding(.horizontal, 10).frame(height: 26).background(Theme.dangerSoft, in: Capsule())
-                    case nil: Text("● ยังขาด").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.warningInk).padding(.horizontal, 10).frame(height: 26).background(Theme.pendingSoft, in: Capsule())
+                    case true?: Text("ผ่าน").font(.sarabun(13, .bold)).foregroundStyle(Theme.successInk).padding(.horizontal, 10).frame(minHeight: 26).background(Theme.successSoft, in: Capsule())
+                    case false?: Text("ไม่ผ่าน").font(.sarabun(13, .bold)).foregroundStyle(Theme.dangerText).padding(.horizontal, 10).frame(minHeight: 26).background(Theme.dangerSoft, in: Capsule())
+                    case nil: Text("● ยังขาด").font(.sarabun(13, .bold)).foregroundStyle(Theme.warningInk).padding(.horizontal, 10).frame(minHeight: 26).background(Theme.pendingSoft, in: Capsule())
                     }
                 }
                 HStack(alignment: .bottom, spacing: 12) {
                     photo(.insulation, s, caption: "หน้าจอ IR", reading: s.irPosMOhm.map { IECFormat.number($0, digits: 0) } ?? "250").frame(width: 150)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Test Voltage").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
-                        Text(verbatim: s.irTestV.map { String($0) + " V" } ?? "—").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                        Text("Test Voltage").font(.sarabun(14)).foregroundStyle(Theme.navy)
+                        Text(verbatim: s.irTestV.map { String($0) + " V" } ?? "—").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
                             .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
@@ -277,7 +277,7 @@ struct IECStringEntry: View {
                     fieldBox("Negative – Earth", "MΩ", s, .irNeg)
                 }
                 Text("ผ่านเมื่อทั้งสองค่า ≥ 1 MΩ ที่ 1000 V" + (s.polarityOK == true ? " | ขั้วถูกต้อง ✓" : ""))
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
         }
     }
@@ -302,18 +302,18 @@ struct IECStringEntry: View {
             .map { [IECReport.label(inverter: inverter + 1, seq: $0.seq)] } ?? [])
         return VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("กำลังกรอก").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("กำลังกรอก").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(text(s, field).isEmpty ? "—" : text(s, field)).font(.sarabunFixed(34, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                    Text(unit(field)).font(.sarabunFixed(17)).foregroundStyle(Theme.inkMuted)
+                    Text(text(s, field).isEmpty ? "—" : text(s, field)).font(.sarabun(34, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text(unit(field)).font(.sarabun(17)).foregroundStyle(Theme.inkMuted)
                 }
-                Text("\(fieldName(field)) | \(label)").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("\(fieldName(field)) | \(label)").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             IECKeypad(press: { press($0, s) }, back: { step(false, inv) }, next: { step(true, inv) })
             if !after.isEmpty {
-                Text("ถัดไป: " + after.joined(separator: " → ")).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ถัดไป: " + after.joined(separator: " → ")).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
         }
     }
@@ -339,8 +339,8 @@ struct IECStringEntry: View {
             if let n = neighbour(inv, 1), let st = inv.strings.first(where: { $0.slot == n }) {
                 Button { go(n) } label: {
                     VStack(spacing: 0) {
-                        Text(IECReport.label(inverter: inverter + 1, seq: st.seq) + " ›").font(.sarabunFixed(16, .bold))
-                        Text("String \(n) | MPPT \(IECReport.mppt(slot: n))").font(.sarabunFixed(12))
+                        Text(IECReport.label(inverter: inverter + 1, seq: st.seq) + " ›").font(.sarabun(16, .bold))
+                        Text("String \(n) | MPPT \(IECReport.mppt(slot: n))").font(.sarabun(12))
                     }
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -352,7 +352,7 @@ struct IECStringEntry: View {
     }
 
     private func chip(_ text: String, _ ok: Bool) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(ok ? Theme.successInk : Theme.warningInk)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(ok ? Theme.successInk : Theme.warningInk)
             .padding(.horizontal, 10).frame(height: 28).background(ok ? Theme.successSoft : Theme.pendingSoft, in: Capsule())
     }
 }

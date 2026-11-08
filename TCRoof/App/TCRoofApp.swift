@@ -70,7 +70,7 @@ struct TCRoofApp: App {
                     // a new account, or this one's records to prepare again, starts the activation over
                     .id("\(session.email ?? "")#\(session.activation)")
                     .overlay {
-                        // `config/app.minSyncVersion` is above this build: nothing more until the update
+                        // `config/public.minSyncVersion` is above this build: nothing more until the update
                         if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }
                     }
                     .transition(.opacity)
@@ -97,7 +97,8 @@ private struct AccountActivationView: View {
     var body: some View {
         Group {
             if ready {
-                RootView()
+                // the app's screens follow the text-size setting up to here; past it their boards no longer fit
+                RootView().dynamicTypeSize(...DynamicTypeSize.accessibility2)
             } else if failed {
                 ContentUnavailableView {
                     Label("เตรียมข้อมูลบัญชีไม่สำเร็จ", systemImage: "exclamationmark.lock")

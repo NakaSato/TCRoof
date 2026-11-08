@@ -118,14 +118,14 @@ struct IECPhotoTile: View {
                 .overlay { PhotoImage(data: asset.data, maxPixel: 1000) }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(alignment: .bottomLeading) {
-                    Text("\(caption) | \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabunFixed(13, .bold))
+                    Text("\(caption) | \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabun(13, .bold))
                         .foregroundStyle(Theme.successInk).padding(.horizontal, 10).frame(height: 26)
                         .background(Theme.successSoft, in: Capsule()).padding(10)
                 }
         } else {
             VStack(spacing: 6) {
                 Image(systemName: "camera").font(.system(size: 22))
-                Text("ถ่าย" + caption).font(.sarabunFixed(14))
+                Text("ถ่าย" + caption).font(.sarabun(14))
             }
             .foregroundStyle(Theme.inkMuted)
             .frame(maxWidth: .infinity).frame(height: height)
@@ -151,7 +151,7 @@ struct IECKeypad: View {
                         Group {
                             if k == "⌫" { Image(systemName: "delete.left") } else { Text(k) }
                         }
-                        .font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
+                        .font(.sarabun(22, .bold)).foregroundStyle(Theme.navy)
                         .frame(maxWidth: .infinity, minHeight: 52)
                         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .contentShape(Rectangle())

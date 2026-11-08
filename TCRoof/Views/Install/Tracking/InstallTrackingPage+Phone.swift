@@ -95,9 +95,9 @@ extension InstallTrackingPage {
     private func phoneHeader(_ data: InstallPageData) -> some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(data.title).font(.sarabunFixed(19, .bold)).lineLimit(1).minimumScaleFactor(0.75)
+                Text(data.title).font(.sarabun(19, .bold)).lineLimit(1).minimumScaleFactor(0.75)
                     .accessibilityAddTraits(.isHeader)
-                Text(phoneSubtitle(data)).font(.sarabunFixed(13)).opacity(0.92).lineLimit(1)
+                Text(phoneSubtitle(data)).font(.sarabun(13)).opacity(0.92).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if permissions.can(.assistantUse), job.scheduleInput != nil {
@@ -163,7 +163,7 @@ extension InstallTrackingPage {
                         } label: {
                             HStack(spacing: 7) {
                                 Image(systemName: item.symbol).font(.system(size: 15, weight: .semibold))
-                                Text(item.title).font(.sarabunFixed(15, .bold)).lineLimit(1)
+                                Text(item.title).font(.sarabun(15, .bold)).lineLimit(1)
                                 if t == .daily, data.dailyUnsent {
                                     Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("วันนี้ยังไม่ส่ง")
                                 }
@@ -218,8 +218,8 @@ extension InstallTrackingPage {
 
     static func cardHeading(_ title: String, note: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-            if let note { Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+            Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            if let note { Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
         }
     }
 
@@ -230,9 +230,9 @@ extension InstallTrackingPage {
     /// A tile of a 2 × 2 summary: label, value, note.
     static func statCell(_ label: String, _ value: String, ink: Color, note: String, valueSize: CGFloat = 26) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            Text(value).font(.sarabunFixed(valueSize, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
-            Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            Text(label).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Text(value).font(.sarabun(valueSize, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+            Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -268,8 +268,8 @@ extension InstallTrackingPage {
     /// A small tile on the page's tint: label over a bold value.
     static func factTile(_ label: String, _ value: String, ink: Color = Theme.navy) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
-            Text(value).font(.sarabunFixed(17, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
+            Text(value).font(.sarabun(17, .bold)).foregroundStyle(ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -293,8 +293,8 @@ extension InstallTrackingPage {
             .buttonStyle(.plain).accessibilityLabel("สัปดาห์ก่อน")
             Rectangle().fill(Theme.borderSubtle).frame(width: 1)
             VStack(spacing: 0) {
-                Text("สัปดาห์ที่ \(number)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text(RoutineReport.thaiDate(week) + " – " + RoutineReport.thaiDate(end)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("สัปดาห์ที่ \(number)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                Text(RoutineReport.thaiDate(week) + " – " + RoutineReport.thaiDate(end)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity)
@@ -326,11 +326,11 @@ extension InstallTrackingPage {
                         if i < current {
                             Image(systemName: "checkmark").font(.system(size: 10, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                         } else {
-                            Text("\(i + 1)").font(.sarabunFixed(12, .bold)).foregroundStyle(i == current ? Theme.onPrimary : Theme.inkMuted)
+                            Text("\(i + 1)").font(.sarabun(12, .bold)).foregroundStyle(i == current ? Theme.onPrimary : Theme.inkMuted)
                         }
                     }
                     .frame(width: 22, height: 22)
-                    Text(titles[i]).font(.sarabunFixed(14, i == current ? .bold : .regular))
+                    Text(titles[i]).font(.sarabun(14, i == current ? .bold : .regular))
                         .foregroundStyle(i == current ? Theme.warningInk : i < current ? Theme.successInk : Theme.inkMuted).lineLimit(1)
                         .fixedSize()
                 }

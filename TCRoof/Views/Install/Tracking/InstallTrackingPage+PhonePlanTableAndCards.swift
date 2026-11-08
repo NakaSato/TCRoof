@@ -19,8 +19,8 @@ extension InstallPhonePlanTabView {
                 tableHead("WBS | งาน", width: nil, leading: true)
                 ForEach(rows, id: \.0.id) { r, stage in
                     HStack(spacing: 6) {
-                        Text(r.code).font(.sarabunFixed(12, stage ? .bold : .regular)).foregroundStyle(Theme.inkMuted).frame(width: 30, alignment: .leading)
-                        Text(r.title).font(.sarabunFixed(13, stage ? .bold : .regular)).foregroundStyle(Theme.navy).lineLimit(2)
+                        Text(r.code).font(.sarabun(12, stage ? .bold : .regular)).foregroundStyle(Theme.inkMuted).frame(width: 30, alignment: .leading)
+                        Text(r.title).font(.sarabun(13, stage ? .bold : .regular)).foregroundStyle(Theme.navy).lineLimit(2)
                         Spacer(minLength: 0)
                     }
                     .padding(.leading, stage ? 10 : 18).padding(.trailing, 4)
@@ -54,7 +54,7 @@ extension InstallPhonePlanTabView {
     }
 
     private func tableHead(_ title: String, width: CGFloat?, leading: Bool = false) -> some View {
-        Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+        Text(title).font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
             .padding(.leading, leading ? 10 : 8)
             .frame(width: width, alignment: .leading)
             .frame(maxWidth: width == nil ? .infinity : nil, minHeight: 44, maxHeight: 44, alignment: .leading)
@@ -104,7 +104,7 @@ extension InstallPhonePlanTabView {
             if showsBaselinePhone(p) { slipLabel(r.slip).padding(.leading, 8).frame(width: PCol.slip, alignment: .leading) }
             planStatus(r.status).padding(.leading, 8).frame(width: PCol.status, alignment: .leading)
         }
-        .font(.sarabunFixed(14, stage ? .bold : .regular)).foregroundStyle(Theme.navy).monospacedDigit()
+        .font(.sarabun(14, stage ? .bold : .regular)).foregroundStyle(Theme.navy).monospacedDigit()
         .frame(height: 52)
         .background(stage ? Theme.phonePage : .clear)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
@@ -137,14 +137,14 @@ extension InstallPhonePlanTabView {
         return phoneCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("กำลังคนตามแผน").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("กำลังคนตามแผน").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 6)
-                    Text(cap.map { "เส้นประ = ทีม \($0) คน" } ?? "จากคำขอรายสัปดาห์").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(cap.map { "เส้นประ = ทีม \($0) คน" } ?? "จากคำขอรายสัปดาห์").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 HStack(alignment: .bottom, spacing: 3) {
                     ForEach(days, id: \.date) { d in
                         VStack(spacing: 2) {
-                            Text(d.count > 0 ? "\(d.count)" : "").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).frame(height: 13)
+                            Text(d.count > 0 ? "\(d.count)" : "").font(.sarabun(11)).foregroundStyle(Theme.inkMuted).frame(minHeight: 13)
                             RoundedRectangle(cornerRadius: 2).fill(crewColor(d.date, d.count, p)).frame(height: chart * CGFloat(d.count) / top)
                         }
                         .frame(maxWidth: .infinity, maxHeight: chart + 15, alignment: .bottom)
@@ -160,7 +160,7 @@ extension InstallPhonePlanTabView {
                 if days.count <= 31 {
                     HStack(spacing: 3) {
                         ForEach(days, id: \.date) { d in
-                            Text("\(MasterSchedule.calendar.component(.day, from: d.date))").font(.sarabunFixed(11))
+                            Text("\(MasterSchedule.calendar.component(.day, from: d.date))").font(.sarabun(11))
                                 .foregroundStyle(d.date == p.today ? Theme.dangerText : InstallPlan.isSunday(d.date) ? Theme.survey : Theme.inkMuted)
                                 .lineLimit(1).minimumScaleFactor(0.5).frame(maxWidth: .infinity)
                         }
@@ -168,7 +168,7 @@ extension InstallPhonePlanTabView {
                 }
                 if cap != nil {
                     Text(over.isEmpty ? "ไม่มีวันที่เกินกำลังทีม" : "เกินกำลัง " + over.map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", "))
-                        .font(.sarabunFixed(13, .bold)).foregroundStyle(over.isEmpty ? Theme.successInk : Theme.dangerText)
+                        .font(.sarabun(13, .bold)).foregroundStyle(over.isEmpty ? Theme.successInk : Theme.dangerText)
                 }
             }
         }
@@ -184,14 +184,14 @@ extension InstallPhonePlanTabView {
     func phoneMilestones(_ p: InstallPlan) -> some View {
         phoneCard {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("Milestone").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(p.milestones) { m in
                     let state = m.state(today: p.today)
                     HStack(spacing: 12) {
                         MilestoneDiamond(state: state)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                            Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text(m.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                            Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
                         toneChip(InstallPlanTabView.milestoneText(state), InstallPlanTabView.milestoneTone(state))
@@ -208,9 +208,9 @@ extension InstallPhonePlanTabView {
         phoneCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("ความพร้อมขั้นถัดไป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("ความพร้อมขั้นถัดไป").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 6)
-                    Text(r.stage).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(r.stage).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 ForEach(r.items, id: \.label) { item in checkRow(item.label, ok: item.ok, note: item.note) }
             }

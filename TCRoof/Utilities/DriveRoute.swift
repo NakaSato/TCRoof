@@ -85,7 +85,7 @@ struct DriveRoute {
 }
 
 /// Who should read a job's photos on Drive (the user, 2026-10-19: every photo in a report reaches everyone who can open
-/// the job): the team (the directory a team device reads, else `config/app.driveShareWith`) and the job's contractors
+/// the job): the team (the directory a team device reads, else `config/public.driveShareWith`) and the job's contractors
 /// and supervisor.
 @MainActor
 enum DriveReaders {

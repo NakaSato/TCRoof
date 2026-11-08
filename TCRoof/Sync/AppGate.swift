@@ -3,7 +3,7 @@ import Observation
 import TCRoofCore
 import TCRoofUI
 
-/// `config/app.minSyncVersion` against this build (`AppCompat`): an outdated build shows `ต้องอัปเดตแอป` over everything
+/// `config/public.minSyncVersion` against this build (`AppCompat`): an outdated build shows `ต้องอัปเดตแอป` over everything
 /// and `CloudSync` pushes nothing. The minimum is kept on the device, so an outdated build stays stopped offline.
 @MainActor
 @Observable
@@ -13,7 +13,7 @@ final class AppGate {
     private static let linkKey = "appGate.installLink"
 
     private(set) var minimum: Int?
-    /// `config/app.installLink`: where to get the new build (TestFlight or the App Store).
+    /// `config/public.installLink`: where to get the new build (TestFlight or the App Store).
     private(set) var installLink: URL?
 
     var outdated: Bool {

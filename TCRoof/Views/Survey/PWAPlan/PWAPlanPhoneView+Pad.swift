@@ -44,8 +44,8 @@ extension PWAPlanPhoneView {
     /// A card's title with its note: `ตารางงาน ทุกงานของโครงการ`.
     func padCardHeader(_ title: String, _ note: String) -> some View {
         HStack(spacing: 6) {
-            Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-            Text(note).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text(note).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
         }
         .lineLimit(1)
         .padding(.bottom, 2)

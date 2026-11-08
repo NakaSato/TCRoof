@@ -21,7 +21,7 @@ struct IECSetupSheet: View {
                 }
                 recordSection
             }
-            .font(.sarabunFixed(16))
+            .font(.sarabun(16))
             .navigationTitle("ตั้งค่าการทดสอบ IEC 62446")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -79,7 +79,7 @@ struct IECSetupSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 ForEach(1...IECReport.slotCount / 2, id: \.self) { m in
-                    Text("MPPT \(m)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity)
+                    Text("MPPT \(m)").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity)
                 }
             }
             ForEach(0..<2, id: \.self) { row in
@@ -88,7 +88,7 @@ struct IECSetupSheet: View {
                         let slot = (m - 1) * 2 + row + 1
                         TextField("\(slot)", value: modules(i, slot), format: .number.grouping(.never))
                             .keyboardType(.numberPad).multilineTextAlignment(.center)
-                            .font(.sarabunFixed(16, .bold))
+                            .font(.sarabun(16, .bold))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(report.inverters[i].slots[slot - 1] == nil ? Theme.phonePage : Theme.primarySoft,
                                         in: RoundedRectangle(cornerRadius: 8, style: .continuous))

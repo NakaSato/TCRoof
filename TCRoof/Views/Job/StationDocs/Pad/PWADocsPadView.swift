@@ -95,12 +95,12 @@ struct PWADocsPadView: View {
             Image(systemName: "lock.doc").font(.system(size: 30, weight: .medium)).foregroundStyle(Theme.inkMuted)
                 .frame(width: 88, height: 88).background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .accessibilityHidden(true)
-            Text("เอกสารสำหรับทีมภายใน").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy)
+            Text("เอกสารสำหรับทีมภายใน").font(.sarabun(24, .bold)).foregroundStyle(Theme.navy)
                 .accessibilityAddTraits(.isHeader)
             Text("เอกสาร PWA ร่างและยื่นโดยทีมภายใน | ผู้รับเหมาไม่มีสิทธิ์เข้าถึงหน้านี้")
-                .font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(16)).foregroundStyle(Theme.inkMuted)
             Text("งานที่ต้องส่งจากหน้างาน เช่น รายงานประจำวันและผลทดสอบ IEC ทำได้ในหน้างานของแต่ละสถานี")
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 63)
@@ -267,11 +267,11 @@ struct PWADocsPadView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Circle().fill(dot).frame(width: 7, height: 7)
-                    Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(count)").font(.sarabunFixed(28, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                    Text("รายการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("\(count)").font(.sarabun(28, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text("รายการ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
             }
             .padding(.horizontal, 16)
@@ -357,8 +357,8 @@ struct PWADocsPadSummary: View {
             ring
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(summary.percent)%").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                    Text("อนุมัติแล้ว \(summary.approved) / \(summary.total) ฉบับ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("\(summary.percent)%").font(.sarabun(24, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text("อนุมัติแล้ว \(summary.approved) / \(summary.total) ฉบับ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 }
                 bar
                 legend
@@ -403,7 +403,7 @@ struct PWADocsPadSummary: View {
             ForEach(PWADocs.Band.allCases, id: \.self) { b in
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 2).fill(b.color).frame(width: 8, height: 8)
-                    Text("\(b.title) \(summary.bands[b] ?? 0)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("\(b.title) \(summary.bands[b] ?? 0)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
         }

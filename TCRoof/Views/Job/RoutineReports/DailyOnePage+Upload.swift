@@ -13,7 +13,7 @@ extension DailyOnePage {
     /// The compact white key-plan button: 28 pt to see, 44 pt to tap.
     func planChip<L: View>(_ label: L) -> some View {
         label
-            .font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.navy)
+            .font(.sarabun(12.5, .bold)).foregroundStyle(Theme.navy)
             .padding(.horizontal, 8).frame(minWidth: 28).frame(height: 28)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.borderSubtle))
@@ -69,7 +69,7 @@ extension DailyOnePage {
     private var uploadMenu: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("ผังตำแหน่งงาน (Key Plan) ของสถานีนี้ | ใช้ทุกวัน และในหน้า 2 ของ DAILY REPORT")
-                .font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                .font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 6).padding(.bottom, 4)
             uploadRow("camera", "ถ่ายรูปผัง", "กล้อง | ปรับมุมกระดาษอัตโนมัติ", enabled: DocumentCamera.isAvailable) { showScan = true }
             uploadRow("photo", "เลือกจากคลังภาพ", "JPG | PNG") { showLibrary = true }
@@ -96,8 +96,8 @@ extension DailyOnePage {
                 Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.primary)
                     .frame(width: 32, height: 32).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text(sub).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(sub).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -168,7 +168,7 @@ struct KeyPlanPDFSheet: View {
                                                 .background(Theme.paper)
                                                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.borderSubtle))
                                         }
-                                        Text("หน้า \(i + 1)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                                        Text("หน้า \(i + 1)").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                                     }
                                     .frame(minHeight: 44)
                                 }

@@ -79,12 +79,12 @@ struct InstallStageSheet: View {
         }
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(days).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
-                Text(row.title).font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(days).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+                Text(row.title).font(.sarabun(24, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                     .accessibilityAddTraits(.isHeader)
             }
             Spacer(minLength: 8)
-            Text(title).font(.sarabunFixed(12, .bold)).foregroundStyle(ink)
+            Text(title).font(.sarabun(12, .bold)).foregroundStyle(ink)
                 .padding(.horizontal, 10).frame(height: 24).background(fill, in: Capsule()).padding(.top, 6)
             Button(action: close) {
                 Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.navy)
@@ -99,7 +99,7 @@ struct InstallStageSheet: View {
 
     /// One row on iPad; on a phone the cause chips go under the text, two by two when one row of them is too wide.
     private var lateBox: some View {
-        let label = Text("คาดว่าเกินแผน \(row.overrunDays) วัน | สาเหตุ").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+        let label = Text("คาดว่าเกินแผน \(row.overrunDays) วัน | สาเหตุ").font(.sarabun(16, .bold)).foregroundStyle(Theme.dangerText)
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
                 label.fixedSize()
@@ -124,7 +124,7 @@ struct InstallStageSheet: View {
         ForEach(MasterSchedule.LateCause.allCases, id: \.self) { c in
             let on = cause == c
             Button { setCause(on ? nil : c) } label: {
-                Text(c.title).font(.sarabunFixed(14, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.dangerText)
+                Text(c.title).font(.sarabun(14, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.dangerText)
                     .lineLimit(1).fixedSize()
                     .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44)
                     .background(on ? Theme.danger : Theme.surface, in: Capsule())
@@ -141,7 +141,7 @@ struct InstallStageSheet: View {
     private var checklist: some View {
         let done = row.subs.filter { $0.percent >= 99.95 }.count
         return VStack(alignment: .leading, spacing: 8) {
-            Text("รายการตรวจ \(done)/\(row.subs.count)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text("รายการตรวจ \(done)/\(row.subs.count)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 10) {
                 ForEach(row.subs) { checkItem($0) }
             }
@@ -158,10 +158,10 @@ struct InstallStageSheet: View {
                 if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary) }
             }
             .frame(width: 26, height: 26)
-            Text(s.title).font(.sarabunFixed(16)).foregroundStyle(Theme.navy).lineLimit(1)
+            Text(s.title).font(.sarabun(16)).foregroundStyle(Theme.navy).lineLimit(1)
             Spacer(minLength: 4)
             if !on && s.percent > 0 {
-                Text("\(Int(s.percent.rounded()))%").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.pending).monospacedDigit()
+                Text("\(Int(s.percent.rounded()))%").font(.sarabun(13, .bold)).foregroundStyle(Theme.pending).monospacedDigit()
             }
         }
         .padding(.horizontal, 14).frame(minHeight: 52)
@@ -176,8 +176,8 @@ struct InstallStageSheet: View {
             if !photos.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
-                        Text("รูปถ่ายหน้างาน").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                        Text("\(photos.count) รูป").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        Text("รูปถ่ายหน้างาน").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                        Text("\(photos.count) รูป").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     }
                     HStack(spacing: 8) {
                         ForEach(Array(photos.prefix(6).enumerated()), id: \.offset) { _, d in

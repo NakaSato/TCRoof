@@ -54,7 +54,7 @@ struct SLDViewer: View {
             if SLDFile.isPDF(doc.data) { PDFKitView(data: doc.data).ignoresSafeArea(edges: .bottom) }
             else if let img = UIImage(data: doc.data) { IECZoomableImage(image: img) }
             HStack(spacing: 12) {
-                Text(doc.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.onPrimary).lineLimit(1)
+                Text(doc.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.onPrimary).lineLimit(1)
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.onPrimary)
                         .frame(width: 44, height: 44).background(Theme.navy.opacity(0.6), in: Circle())

@@ -169,9 +169,9 @@ struct ToolLogPadScreen: View {
                 .buttonStyle(.plain).accessibilityLabel("กลับ").accessibilityIdentifier("toollog.back")
             }
             VStack(alignment: .leading, spacing: 0) {
-                Text("บันทึกเครื่องมือและรถ").font(.sarabunFixed(24, .bold)).accessibilityAddTraits(.isHeader)
+                Text("บันทึกเครื่องมือและรถ").font(.sarabun(24, .bold)).accessibilityAddTraits(.isHeader)
                 HStack(spacing: 8) {
-                    Text("บันทึก · เครื่องมือวัด · การใช้รถ").font(.sarabunFixed(14)).opacity(0.92)
+                    Text("บันทึก · เครื่องมือวัด · การใช้รถ").font(.sarabun(14)).opacity(0.92)
                     if ToolLogDemo.on { TCSampleChip() }
                 }
             }
@@ -180,7 +180,7 @@ struct ToolLogPadScreen: View {
             Spacer(minLength: 12)
             if permissions.role != .external {
                 recordMenu {
-                    Label("สแกน / บันทึก", systemImage: "qrcode.viewfinder").font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.onPrimary)
+                    Label("สแกน / บันทึก", systemImage: "qrcode.viewfinder").font(.sarabun(15, .semibold)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 18).frame(minHeight: 48)
                         .background(Theme.onPrimary.opacity(0.16), in: RoundedRectangle(cornerRadius: Radius.lg))
                         .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Theme.onPrimary.opacity(0.35)))

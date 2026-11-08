@@ -43,8 +43,8 @@ extension WeeklyRequestOnePage {
         let line = request.work.first { $0.id == e.line }
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(e.hazard.name).font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text("ประเมินความเสี่ยง " + (line?.description ?? "")).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(e.hazard.name).font(.sarabun(22, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("ประเมินความเสี่ยง " + (line?.description ?? "")).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 8)
             Button { riskEdit = nil } label: {
@@ -59,10 +59,10 @@ extension WeeklyRequestOnePage {
 
     private func riskGrid(_ e: RiskEdit) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("ความรุนแรง แตะช่องที่ตรงกับงานนี้").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+            Text("ความรุนแรง แตะช่องที่ตรงกับงานนี้").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
             ForEach((1...5).reversed(), id: \.self) { s in
                 HStack(spacing: 6) {
-                    Text("\(s) \(RoutineReport.severityTitles[s - 1])").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                    Text("\(s) \(RoutineReport.severityTitles[s - 1])").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                         .frame(width: 92, alignment: .trailing)
                     ForEach(1...5, id: \.self) { l in riskCell(e, likelihood: l, severity: s) }
                 }
@@ -70,11 +70,11 @@ extension WeeklyRequestOnePage {
             HStack(alignment: .top, spacing: 6) {
                 Color.clear.frame(width: 92, height: 1)
                 ForEach(1...5, id: \.self) { l in
-                    Text("\(l) \(RoutineReport.likelihoodTitles[l - 1])").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                    Text("\(l) \(RoutineReport.likelihoodTitles[l - 1])").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).frame(width: 54)
                 }
             }
-            Text("โอกาสเกิด →").font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .trailing)
+            Text("โอกาสเกิด →").font(.sarabun(12.5, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .trailing)
         }
         .fixedSize()
     }
@@ -82,7 +82,7 @@ extension WeeklyRequestOnePage {
     private func riskCell(_ e: RiskEdit, likelihood l: Int, severity s: Int) -> some View {
         let score = l * s, band = RoutineReport.RiskBand(score: score), on = e.likelihood == l && e.severity == s
         return Button { riskEdit?.likelihood = l; riskEdit?.severity = s } label: {
-            Text("\(score)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text("\(score)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 .frame(width: 54, height: 48)
                 .background(Theme.riskBandsSoft[band.rawValue], in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay { if on { RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Theme.navy, lineWidth: 3) } }
@@ -97,10 +97,10 @@ extension WeeklyRequestOnePage {
         let score = e.likelihood * e.severity, band = RoutineReport.RiskBand(score: score)
         return VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("ระดับความเสี่ยง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("ระดับความเสี่ยง").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
                 HStack(spacing: 14) {
-                    Text("โอกาส \(e.likelihood) × ความรุนแรง \(e.severity) = \(score)").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                    Text(band.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.riskBands[band.rawValue])
+                    Text("โอกาส \(e.likelihood) × ความรุนแรง \(e.severity) = \(score)").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
+                    Text(band.title).font(.sarabun(16, .bold)).foregroundStyle(Theme.riskBands[band.rawValue])
                         .accessibilityIdentifier("riskBand")
                 }
                 .accessibilityElement(children: .combine)
@@ -108,7 +108,7 @@ extension WeeklyRequestOnePage {
                 ForEach(RoutineReport.RiskBand.allCases, id: \.self) { b in
                     HStack(spacing: 6) {
                         RoundedRectangle(cornerRadius: 3).fill(Theme.riskBands[b.rawValue]).frame(width: 10, height: 10)
-                        Text("\(b.range) \(b.title)").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                        Text("\(b.range) \(b.title)").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                     }
                 }
             }
@@ -116,9 +116,9 @@ extension WeeklyRequestOnePage {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             VStack(alignment: .leading, spacing: 8) {
-                Text("มาตรการควบคุม (Hierarchy of Controls)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                Text("มาตรการควบคุม (Hierarchy of Controls)").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
                 ForEach(e.hazard.controls, id: \.self) { c in
-                    Text(c).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
+                    Text(c).font(.sarabun(14)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
                         .padding(.leading, 10)
                         .overlay(alignment: .leading) { Rectangle().fill(Theme.borderOutdoor).frame(width: 2) }
                 }
@@ -134,18 +134,18 @@ extension WeeklyRequestOnePage {
                     request.removeAssessment(e.hazard)
                     riskEdit = nil
                 } label: {
-                    Text("ไม่ใช้กับงานนี้").font(.sarabunFixed(16, .bold)).padding(.horizontal, 6)
+                    Text("ไม่ใช้กับงานนี้").font(.sarabun(16, .bold)).padding(.horizontal, 6)
                 }
                 .buttonStyle(TCButtonStyle(.destructive, size: .card))
                 .accessibilityIdentifier("riskRemove")
             }
             Spacer(minLength: 8)
-            Button { riskEdit = nil } label: { Text("ยกเลิก").font(.sarabunFixed(16, .bold)).frame(width: 96) }
+            Button { riskEdit = nil } label: { Text("ยกเลิก").font(.sarabun(16, .bold)).frame(width: 96) }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button {
                 request.assess(e.hazard, likelihood: e.likelihood, severity: e.severity)
                 riskEdit = nil
-            } label: { Text("บันทึกระดับ").font(.sarabunFixed(16, .bold)).frame(width: 128) }
+            } label: { Text("บันทึกระดับ").font(.sarabun(16, .bold)).frame(width: 128) }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
                 .accessibilityIdentifier("riskSave")
         }

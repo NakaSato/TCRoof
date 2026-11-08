@@ -177,9 +177,9 @@ extension InstallPadSettingsTabView {
         return HStack(spacing: 14) {
             padIconTile("pencil", Theme.warning, size: 44)
             VStack(alignment: .leading, spacing: 0) {
-                Text("แก้ไข \(changes.count) รายการ | ยังไม่บันทึก").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text("แก้ไข \(changes.count) รายการ | ยังไม่บันทึก").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 Text("หมวด " + cats.joined(separator: ", ") + " | บันทึกแล้วซิงก์ให้ทีมของงานนี้")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 8)
             Button("ยกเลิกการแก้") { settingsDraft = SettingsDraft() }

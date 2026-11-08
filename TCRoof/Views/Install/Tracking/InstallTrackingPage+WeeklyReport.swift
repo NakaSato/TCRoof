@@ -234,7 +234,7 @@ struct InstallWeeklyReportTabView: View {
     }
 
     private func weeklyToast(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(15, .semibold)).foregroundStyle(Theme.onPrimary)
+        Text(text).font(.sarabun(15, .semibold)).foregroundStyle(Theme.onPrimary)
             .padding(.horizontal, 18).padding(.vertical, 12)
             .background(Theme.toast, in: Capsule())
             .transition(.opacity)
@@ -255,9 +255,9 @@ struct InstallWeeklyReportTabView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Weekly Report").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("Weekly Report").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         // nothing builds or reminds R3 on a schedule yet (§7 Q1)
-                        Text("จากรายงานประจำวัน").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                        Text("จากรายงานประจำวัน").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                     }
                     .fixedSize()
                     weeklyWeekSwitcher(range)
@@ -281,8 +281,8 @@ struct InstallWeeklyReportTabView: View {
             .buttonStyle(.plain).foregroundStyle(Theme.primary)
             .accessibilityLabel("สัปดาห์ก่อน")
             VStack(spacing: 0) {
-                Text("สัปดาห์ที่ \(reportContent?.weekNumber ?? 0)").font(.sarabunFixed(14.5, .bold)).foregroundStyle(Theme.navy)
-                Text(Self.weekDates(range)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text("สัปดาห์ที่ \(reportContent?.weekNumber ?? 0)").font(.sarabun(14.5, .bold)).foregroundStyle(Theme.navy)
+                Text(Self.weekDates(range)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .frame(minWidth: 178, minHeight: 48)
             .background(Theme.surface)
@@ -332,11 +332,11 @@ struct InstallWeeklyReportTabView: View {
                         if done {
                             Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                         } else {
-                            Text("\(i + 1)").font(.sarabunFixed(12, .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.borderControl)
+                            Text("\(i + 1)").font(.sarabun(12, .bold)).foregroundStyle(current ? Theme.onPrimary : Theme.borderControl)
                         }
                     }
                     .frame(width: 22, height: 22)
-                    Text(titles[i]).font(.sarabunFixed(14, current ? .bold : .regular)).foregroundStyle(ink).lineLimit(1)
+                    Text(titles[i]).font(.sarabun(14, current ? .bold : .regular)).foregroundStyle(ink).lineLimit(1)
                 }
                 .padding(.horizontal, current ? 10 : 2).padding(.vertical, 5)
                 .background(fill, in: Capsule())
@@ -361,8 +361,8 @@ struct InstallWeeklyReportTabView: View {
             value = Self.weekdayShort(due) + " \(cal.component(.day, from: due)) " + RoutineReport.thaiMonthsShort[cal.component(.month, from: due) - 1] + " · " + when
         }
         return VStack(alignment: .trailing, spacing: 0) {
-            Text(sent ? "ส่งเจ้าของงานแล้ว" : "กำหนดส่งเจ้าของงาน").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(15, .bold)).foregroundStyle(sent ? Theme.successInk : Theme.warningInk).lineLimit(1)
+            Text(sent ? "ส่งเจ้าของงานแล้ว" : "กำหนดส่งเจ้าของงาน").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(15, .bold)).foregroundStyle(sent ? Theme.successInk : Theme.warningInk).lineLimit(1)
         }
         .fixedSize()
         .accessibilityElement(children: .combine)
@@ -383,7 +383,7 @@ struct InstallWeeklyReportTabView: View {
         Button { withAnimation(.easeOut(duration: 0.15)) { reportDownload.toggle() } } label: {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.down.to.line").font(.system(size: 15, weight: .semibold))
-                Text("ดาวน์โหลด").font(.sarabunFixed(15, .bold))
+                Text("ดาวน์โหลด").font(.sarabun(15, .bold))
                 Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
             }
             .foregroundStyle(Theme.navy)
@@ -416,7 +416,7 @@ struct InstallWeeklyReportTabView: View {
 
     private func menuRow(_ title: String, _ symbol: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: symbol).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+            Label(title, systemImage: symbol).font(.sarabun(15)).foregroundStyle(Theme.navy)
                 .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading).padding(.horizontal, 14).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -429,8 +429,8 @@ struct InstallWeeklyReportTabView: View {
         weeklyCard(padding: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("สไลด์ \(c.outline.count) หน้า").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text("แม่แบบ Weekly Report Template").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("สไลด์ \(c.outline.count) หน้า").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("แม่แบบ Weekly Report Template").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 8)
                 ScrollViewReader { proxy in
@@ -457,8 +457,8 @@ struct InstallWeeklyReportTabView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.borderSubtle))
                 HStack(spacing: 6) {
-                    Text("\(o.number)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted).frame(width: 18, alignment: .leading)
-                    Text(o.label).font(.sarabunFixed(12)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text("\(o.number)").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted).frame(width: 18, alignment: .leading)
+                    Text(o.label).font(.sarabun(12)).foregroundStyle(Theme.navy).lineLimit(1)
                     Spacer(minLength: 0)
                     statusDot(o.ready)
                 }
@@ -490,7 +490,7 @@ struct InstallWeeklyReportTabView: View {
         return weeklyCard(padding: 0) {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    Text("สไลด์ \(o.number)/\(outline.count) · \(o.label)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("สไลด์ \(o.number)/\(outline.count) · \(o.label)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     InstallTrackingPage.toneChip(o.ready ? "ข้อมูลครบ" : "รอข้อมูล", o.ready ? .ok : .warn)
                         .accessibilityIdentifier("slideChip")
                     Spacer(minLength: 0)

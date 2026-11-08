@@ -40,7 +40,7 @@ extension ToolLogPadScreen {
 
     private func ledgerHead(_ all: [ToolLog.Event]) -> some View {
         HStack(spacing: 16) {
-            Text("สมุดบันทึกเครื่องมือและรถ").font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy)
+            Text("สมุดบันทึกเครื่องมือและรถ").font(.sarabun(19, .bold)).foregroundStyle(Theme.navy)
                 .lineLimit(1).minimumScaleFactor(0.8).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             HStack(spacing: 4) {
@@ -49,7 +49,7 @@ extension ToolLogPadScreen {
                 kindTab("รถ", count: all.filter { $0.action.kind == .car }.count, value: .car, id: "car")
             }
             recordMenu {
-                Label("บันทึกรายการ", systemImage: "plus").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Label("บันทึกรายการ", systemImage: "plus").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 16).frame(minHeight: 44)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.6)))
@@ -63,7 +63,7 @@ extension ToolLogPadScreen {
     private func kindTab(_ title: String, count: Int, value: ToolLog.Kind?, id: String) -> some View {
         let on = kind == value
         return Button { kind = value } label: {
-            Text("\(title) \(count)").font(.sarabunFixed(15, on ? .bold : .regular)).monospacedDigit()
+            Text("\(title) \(count)").font(.sarabun(15, on ? .bold : .regular)).monospacedDigit()
                 .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .padding(.horizontal, 10).frame(minHeight: 44)
                 .overlay(alignment: .bottom) { if on { Rectangle().fill(Theme.navy).frame(height: 3) } }
@@ -80,11 +80,11 @@ extension ToolLogPadScreen {
     private func outSection(_ outs: [ToolLog.Out], now: Date) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             (Text("กำลังใช้อยู่ ").bold() + Text("(\(outs.count))"))
-                .font(.sarabunFixed(15)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                .font(.sarabun(15)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
                 outHeader
                 if outs.isEmpty {
-                    Text("ไม่มีรายการที่ยืมหรือออกใช้อยู่").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("ไม่มีรายการที่ยืมหรือออกใช้อยู่").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                         .frame(maxWidth: .infinity, minHeight: 56)
                 }
                 ForEach(outs) { o in
@@ -116,13 +116,13 @@ extension ToolLogPadScreen {
             cal.isDate(d, inSameDayAs: now) ? "วันนี้ " + ToolLogCard.clock(d) : ToolLogCard.time(d, now: now)
         } else { car ? "วันนี้" : "—" }
         return HStack(spacing: 8) {
-            Text(e.itemName).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .leading)
+            Text(e.itemName).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).frame(maxWidth: .infinity, alignment: .leading)
             Text(e.person).frame(width: 58, alignment: .leading)
             Text(e.job.isEmpty ? "—" : e.job).foregroundStyle(Theme.inkMuted).frame(width: 112, alignment: .leading)
             Text(Self.stamp(e.at, now: now)).frame(width: 92, alignment: .leading)
             Group {
                 if o.late {
-                    Text(due + " (เกิน \(ToolLog.daysLate(e, now: now)) วัน)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.dangerText)
+                    Text(due + " (เกิน \(ToolLog.daysLate(e, now: now)) วัน)").font(.sarabun(15, .bold)).foregroundStyle(Theme.dangerText)
                 } else {
                     Text(due)
                 }
@@ -134,7 +134,7 @@ extension ToolLogPadScreen {
                 .frame(width: 96, alignment: .trailing)
                 .accessibilityIdentifier("toollog.out.\(e.item)")
         }
-        .font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+        .font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
         .padding(.horizontal, 14)
         .frame(minHeight: 44)
         .background(o.late ? Theme.dangerSoft.opacity(0.5) : Color.clear)
@@ -166,7 +166,7 @@ extension ToolLogPadScreen {
             .accessibilityLabel(searching ? "ปิดการค้นหา" : "ค้นหาในบันทึก")
             .accessibilityIdentifier("toollog.search")
         }
-        let title = Text("บันทึก").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+        let title = Text("บันทึก").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
         // one line on the board's width, two when the card is narrower
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) { title; segments; Spacer(minLength: 0); tools }
@@ -190,7 +190,7 @@ extension ToolLogPadScreen {
                 Text(who.title).lineLimit(1)
                 Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
             }
-            .font(.sarabunFixed(15, .bold)).foregroundStyle(who == .all ? Theme.navy : Theme.primary)
+            .font(.sarabun(15, .bold)).foregroundStyle(who == .all ? Theme.navy : Theme.primary)
             .padding(.horizontal, 14).frame(minHeight: 44)
             .background(who == .all ? Theme.surface : Theme.primarySoft, in: RoundedRectangle(cornerRadius: Radius.md))
             .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Theme.navy.opacity(0.6)))
@@ -219,7 +219,7 @@ extension ToolLogPadScreen {
             logHeader
             ForEach(days, id: \.day) { d in
                 Rectangle().fill(Theme.headerLine).frame(height: 1)
-                Text(ToolLogCard.dayTitle(d.day, now: now)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text(ToolLogCard.dayTitle(d.day, now: now)).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                     .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading).padding(.horizontal, 14)
                     .background(Theme.background)
                     .accessibilityAddTraits(.isHeader)
@@ -247,11 +247,11 @@ extension ToolLogPadScreen {
         HStack(spacing: 8) {
             Text(ToolLogCard.clock(e.at)).monospacedDigit().frame(width: 52, alignment: .leading)
             TCStatusChip(e.action.title, kind: Self.chip(e.action)).frame(width: 92, alignment: .leading)
-            Text(e.itemName).font(.sarabunFixed(15, .bold)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(e.itemName).font(.sarabun(15, .bold)).frame(maxWidth: .infinity, alignment: .leading)
             Text(e.person).frame(width: 58, alignment: .leading)
             Text(Self.detail(e, km: km)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+        .font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
         .padding(.horizontal, 14)
         .frame(minHeight: 44)
         .accessibilityElement(children: .combine)
@@ -291,7 +291,7 @@ extension ToolLogPadScreen {
         let count = min(shown, list.count)
         return HStack(spacing: 14) {
             Text("แสดง \(count) จาก \(list.count) รายการ" + (list.isEmpty ? " · ไม่มีรายการตามตัวกรองนี้" : ""))
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                 .accessibilityIdentifier("toollog.footer")
             Spacer(minLength: 8)
             Button("ส่งออก CSV") { export(list, log: log, now: now) }
@@ -325,7 +325,7 @@ struct LedgerSegments: View {
             ForEach(options.indices, id: \.self) { i in
                 let on = i == selection
                 Button { selection = i } label: {
-                    Text(options[i]).font(.sarabunFixed(14, on ? .bold : .regular))
+                    Text(options[i]).font(.sarabun(14, on ? .bold : .regular))
                         .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1).fixedSize()
                         .padding(.horizontal, 10).frame(minHeight: 40)
@@ -357,7 +357,7 @@ private extension View {
 
     /// A table's header row: muted 13 pt on the page tint.
     func tableHeaderStyle() -> some View {
-        font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+        font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             .padding(.horizontal, 14)
             .frame(minHeight: 36)
             .background(Theme.background)

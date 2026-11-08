@@ -498,7 +498,7 @@ struct InspectionReport: View {
     static func renderPDF(_ inspection: Inspection) -> URL? {
         let name = "ICL-\(inspection.job?.code ?? "report").pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        let renderer = ImageRenderer(content: InspectionReport(inspection: inspection).background(Theme.paper))
+        let renderer = ImageRenderer(content: InspectionReport(inspection: inspection).background(Theme.paper).dynamicTypeSize(.large))
         var ok = false
         renderer.render { size, draw in
             var box = CGRect(origin: .zero, size: size)

@@ -59,7 +59,7 @@ struct InstallPhoneDailyTabView: View {
                 .accessibilityIdentifier("dailyAckAll")
             }
             if rows.isEmpty {
-                Text(data.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                Text(data.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, minHeight: 80)
             }
             ForEach(rows) { dayCard($0, workEnd: data.workEnd) }
@@ -81,7 +81,7 @@ struct InstallPhoneDailyTabView: View {
     private func filterCapsule(_ title: String, _ count: Int, _ index: Int) -> some View {
         let on = dailyFilter == index
         return Button { dailyFilter = index } label: {
-            Text("\(title) \(count)").font(.sarabunFixed(15, .bold)).monospacedDigit()
+            Text("\(title) \(count)").font(.sarabun(15, .bold)).monospacedDigit()
                 .foregroundStyle(on ? Theme.onPrimary : Theme.navy)
                 .padding(.horizontal, 14).frame(minHeight: 44)
                 .background(on ? Theme.navy : Theme.surface, in: Capsule())
@@ -93,7 +93,7 @@ struct InstallPhoneDailyTabView: View {
     }
 
     private func toneChip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
             .padding(.horizontal, 9).frame(height: 24)
             .background(InstallTrackingPage.fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             .fixedSize()
@@ -105,22 +105,22 @@ struct InstallPhoneDailyTabView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(spacing: 0) {
-                    Text(InstallTrackingPage.dayLabel(r.date).split(separator: " ").first.map(String.init) ?? "").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                    Text("\(RoutineReport.calendar.component(.day, from: r.date))").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text(InstallTrackingPage.dayLabel(r.date).split(separator: " ").first.map(String.init) ?? "").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                    Text("\(RoutineReport.calendar.component(.day, from: r.date))").font(.sarabun(22, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 }
                 .frame(width: 36)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top, spacing: 8) {
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(r.work).font(.sarabunFixed(16, .bold)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy).lineLimit(2)
-                            Text(subline(r, workEnd: workEnd)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                            Text(r.work).font(.sarabun(16, .bold)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy).lineLimit(2)
+                            Text(subline(r, workEnd: workEnd)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                         Spacer(minLength: 4)
                         dayChip(r)
                     }
                     if let p = r.planned, let a = r.actual { progressLine(actual: a, planned: p) }
                     if r.hasProblem {
-                        Text(r.problem).font(.sarabunFixed(13)).foregroundStyle(Theme.warningInk).lineLimit(2)
+                        Text(r.problem).font(.sarabun(13)).foregroundStyle(Theme.warningInk).lineLimit(2)
                     }
                 }
             }
@@ -160,7 +160,7 @@ struct InstallPhoneDailyTabView: View {
     private func progressLine(actual a: Double, planned p: Double) -> some View {
         let diff = Int((a - p).rounded())
         return HStack(spacing: 8) {
-            Text("\(Int(a.rounded()))%").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: 40, alignment: .leading)
+            Text("\(Int(a.rounded()))%").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: 40, alignment: .leading)
             GeometryReader { g in
                 let w = g.size.width
                 ZStack(alignment: .leading) {

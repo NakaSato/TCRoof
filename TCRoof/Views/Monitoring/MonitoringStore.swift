@@ -37,14 +37,37 @@ final class MonitoringStore {
         #endif
     }
 
-    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings) }
+    /// DEBUG: Growatt's web portal example plants in place of the stations (`-growattDemo YES`, or the PWA settings'
+    /// `สถานีตัวอย่าง Growatt` switch, the same flag as the `บำรุงรักษา` overview's). `test` and `-growattToken` stay
+    /// the overview's only: here a token goes in ตั้งค่า Monitoring and a station is paired with its plant.
+    static var growattWebDemo: Bool {
+        #if DEBUG
+        let d = UserDefaults.standard
+        let flag = (d.string(forKey: "growattDemo") ?? "").lowercased()
+        let token = (d.string(forKey: "growattToken") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return !demo && token.isEmpty && !["", "no", "0", "false", "test"].contains(flag)
+        #else
+        false
+        #endif
+    }
+
+    /// The line under the page's header naming where the rows come from, nil for the stations' own.
+    var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
+
+    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, belowSince: belowSince) }
+
+    /// When each station's `ผลิตต่ำกว่าที่คาด` line was first raised, so its age carries from one reading to the next.
+    private var belowSince: [String: Date] = [:]
 
     /// The dock's badge: the stations in alarm or offline (`Fleet.needingAttention`), worked out when the stations or the
     /// settings change, not on each redraw of the dock.
     private(set) var attentionCount = 0
 
     private func recount() {
-        let n = fleet.needingAttention
+        let f = fleet
+        let since = f.belowSinceAfter(belowSince)
+        if since != belowSince { belowSince = since }
+        let n = f.needingAttention
         if n != attentionCount { attentionCount = n }
     }
 
@@ -54,6 +77,10 @@ final class MonitoringStore {
         if Self.demo {
             now = Monitoring.demoNow()
             stations = Monitoring.demo(now: now)
+        } else if Self.growattWebDemo {
+            // the example plants come with the next poll; keep the ones read
+            if !stations.allSatisfy({ $0.id.hasPrefix(Monitoring.GrowattWebMap.stationID("")) }) { stations = [] }
+            return recount()
         } else {
             now = Date()
             stations = Self.handedOver(jobs).map { job in
@@ -70,6 +97,7 @@ final class MonitoringStore {
     /// its row. A station whose server has no token on this device, or whose read failed, keeps its last figures.
     func poll(jobs: [Job]) async {
         guard !Self.demo else { return refresh(jobs: jobs) }
+        if Self.growattWebDemo { return await pollWebDemo() }
         let handed = Self.handedOver(jobs)
         var targets: [MonitoringFeed.Target] = []
         for job in handed {
@@ -105,6 +133,25 @@ final class MonitoringStore {
             MonitoringNotification.plans(previous: before, stations: stations, now: readAt,
                                          offlineAfter: settings.loggerOfflineMinutes).forEach(NotificationService.shared.post)
         }
+    }
+
+    /// DEBUG `growattWebDemo`: every example plant read again (a guest session on the portal, read only), mapped as a
+    /// paired station's. A plant whose figures fail keeps its last row; no alerts are posted for them.
+    private func pollWebDemo() async {
+        let readAt = Date()
+        let result = await feed.readWebDemo()
+        guard !Task.isCancelled, Self.growattWebDemo else { return }
+        let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        now = readAt
+        stations = result.plants.compactMap { p in
+            let id = Monitoring.GrowattWebMap.stationID(p.id)
+            guard let plant = p.plant else { return previous[id] }
+            return Monitoring.GrowattWebMap.station(plant, day: p.day, previous: previous[id], now: readAt,
+                                                    offlineAfter: settings.loggerOfflineMinutes)
+        }
+        feedFailure = result.failure?.message
+        refreshedAt = Date()
+        recount()
     }
 
     private static func stationID(_ job: Job) -> String { job.syncID ?? job.code }

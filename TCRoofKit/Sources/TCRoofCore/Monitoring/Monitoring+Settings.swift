@@ -37,6 +37,8 @@ extension Monitoring {
         public static let loggerChoices = [15, 30, 60]
         public static let stringChoices = [10, 20, 30]
         public static let belowExpectedChoices = [80, 85, 90]
+        /// ฿/kWh until a manager sets the company's own (issue #259 decision 1): a PEA business rate with Ft.
+        public static let defaultRate = 4.18
         public static let prChoices = [65, 70, 75]
 
         public var servers: [Server]
@@ -55,7 +57,8 @@ extension Monitoring {
         public var notifyMaintenance: Bool
         public var notifySupervisor: Bool
         public var notifyContractor: Bool
-        /// Baht per kWh, for `มูลค่าไฟที่ผลิตได้`; nil until a manager picks one, and the value reads `—`.
+        /// Baht per kWh, for `มูลค่าไฟที่ผลิตได้`: `defaultRate` until a manager sets one; nil when a manager cleared
+        /// it, and the value reads `—`.
         public var rate: Double?
         /// Station id → Growatt plant id.
         public var pairings: [String: String]
@@ -66,7 +69,7 @@ extension Monitoring {
         public init(servers: [Server] = [], pollMinutes: Int = 5, archiveNightly: Bool = true, loggerOfflineMinutes: Int = 30,
                     stringLowPercent: Int = 20, belowExpectedPercent: Int = 85, prLowPercent: Int = 70,
                     notifyMaintenance: Bool = true, notifySupervisor: Bool = true, notifyContractor: Bool = false,
-                    rate: Double? = nil, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
+                    rate: Double? = Settings.defaultRate, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
             self.servers = servers; self.pollMinutes = max(pollMinutes, Monitoring.minimumPollMinutes)
             self.archiveNightly = archiveNightly; self.loggerOfflineMinutes = loggerOfflineMinutes
             self.stringLowPercent = stringLowPercent; self.belowExpectedPercent = belowExpectedPercent
@@ -94,9 +97,28 @@ extension Monitoring {
                       notifyMaintenance: try c.decodeIfPresent(Bool.self, forKey: .notifyMaintenance) ?? d.notifyMaintenance,
                       notifySupervisor: try c.decodeIfPresent(Bool.self, forKey: .notifySupervisor) ?? d.notifySupervisor,
                       notifyContractor: try c.decodeIfPresent(Bool.self, forKey: .notifyContractor) ?? d.notifyContractor,
-                      rate: try c.decodeIfPresent(Double.self, forKey: .rate),
+                      // no key: a file from before the default, which takes it; an explicit null: a manager cleared it
+                      rate: c.contains(.rate) ? try c.decodeIfPresent(Double.self, forKey: .rate) : d.rate,
                       pairings: try c.decodeIfPresent([String: String].self, forKey: .pairings) ?? d.pairings,
                       pairingServers: try c.decodeIfPresent([String: UUID].self, forKey: .pairingServers) ?? d.pairingServers)
+        }
+
+        /// Writes `rate` even when nil (as null), so a cleared rate stays cleared and isn't read back as the default.
+        public func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(servers, forKey: .servers)
+            try c.encode(pollMinutes, forKey: .pollMinutes)
+            try c.encode(archiveNightly, forKey: .archiveNightly)
+            try c.encode(loggerOfflineMinutes, forKey: .loggerOfflineMinutes)
+            try c.encode(stringLowPercent, forKey: .stringLowPercent)
+            try c.encode(belowExpectedPercent, forKey: .belowExpectedPercent)
+            try c.encode(prLowPercent, forKey: .prLowPercent)
+            try c.encode(notifyMaintenance, forKey: .notifyMaintenance)
+            try c.encode(notifySupervisor, forKey: .notifySupervisor)
+            try c.encode(notifyContractor, forKey: .notifyContractor)
+            try c.encode(rate, forKey: .rate)
+            try c.encode(pairings, forKey: .pairings)
+            try c.encode(pairingServers, forKey: .pairingServers)
         }
 
         /// The poll interval as used: one of the choices, never under Growatt's limit.

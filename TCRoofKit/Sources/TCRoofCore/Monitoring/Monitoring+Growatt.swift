@@ -109,9 +109,11 @@ extension Monitoring {
 
         /// `base` (the job's station: id, MP, name, kWp, inverters) filled from `reading`, with `previous` (the
         /// station as last mapped) standing in for every part the reading lacks. `forecastDailyKWhPerKWp` is the
-        /// site's figure (`Forecast.dailyKWhPerKWp`), `offlineAfter` the settings' logger threshold, minutes.
+        /// site's figure (`Forecast.dailyKWhPerKWp`), `offlineAfter` the settings' logger threshold, minutes. `ผลิตต่ำกว่าที่คาด` needs
+        /// the other stations, so the fleet raises it (`Fleet.belowAlarm`).
         public static func station(_ base: Station, reading: GrowattReading, previous: Station?, now: Date,
-                                   offlineAfter: Int, forecastDailyKWhPerKWp: Double, calendar: Calendar = .current) -> Station {
+                                   offlineAfter: Int, forecastDailyKWhPerKWp: Double,
+                                   calendar: Calendar = .current) -> Station {
             let prev = previous.flatMap { $0.paired ? $0 : nil }
             var s = Station(id: base.id, mpNumber: base.mpNumber, name: base.name, kWp: base.kWp,
                             inverters: max(base.inverters, prev?.inverters ?? 0), paired: true)

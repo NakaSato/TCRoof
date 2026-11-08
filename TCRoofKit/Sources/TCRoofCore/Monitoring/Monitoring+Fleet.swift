@@ -17,12 +17,21 @@ extension Monitoring {
         public var health: Health
         /// kWh/kWp against the median of the stations running normally: -0.46 is 46 % under it.
         public var yieldVsMedian: Double?
+        /// The fleet's reference, kWh/kWp so far (`Fleet.reference`); nil when the forecast stands in.
+        public var reference: Double? = nil
         public var id: String { station.id }
+
+        /// What the station should have made by now, kWh: its size at the fleet's median kWh/kWp (issue #259
+        /// decision 2: the weather is the same for all, so a cloudy day isn't a loss), else the forecast so far.
+        public var expected: Double? { reference.map { $0 * station.kWp } ?? station.expectedSoFar }
+
+        /// `expected` less what was made, kWh, never below 0; all of it when no energy is known.
+        public var shortfall: Double? { expected.map { max($0 - (station.energyToday ?? 0), 0) } }
 
         /// `สูญเสีย`: only for a station that isn't normal (a normal one's gap is the weather, not a fault). Offline, all
         /// of it is at most a figure: nothing has been read since.
         public var loss: Alarm.Loss? {
-            guard health != .normal, let s = station.shortfall else { return nil }
+            guard health != .normal, let s = shortfall else { return nil }
             return health == .offline ? .atMost(s) : .measured(s)
         }
 
@@ -48,20 +57,79 @@ extension Monitoring {
         public let now: Date
         public let settings: Settings
 
-        public init(_ stations: [Station], now: Date, settings: Settings) {
+        /// The median kWh/kWp so far of the stations running normally, the loss's reference; nil with fewer than
+        /// `minimumForMedian` of them, when each station's forecast stands in.
+        public let reference: Double?
+
+        /// Normal stations needed before their median is the reference.
+        public static let minimumForMedian = 3
+
+        /// The share of the day's forecast that must have passed before `ผลิตต่ำกว่าที่คาด` is checked: about 09:00
+        /// on the clear-day curve, so the early morning (a few kWh against a few kWh) raises nothing.
+        public static let belowMinimumShare = 0.15
+
+        /// `belowSince`: when each station's `ผลิตต่ำกว่าที่คาด` line was first raised (`belowSinceAfter`), so the line
+        /// keeps its age from one reading to the next.
+        public init(_ stations: [Station], now: Date, settings: Settings, belowSince: [String: Date] = [:]) {
             self.now = now
             self.settings = settings
             let health = stations.map { $0.health(now: now, offlineAfter: settings.loggerOfflineMinutes) }
             let normal: [Double] = zip(stations, health).compactMap { s, h in h == .normal ? s.specificYield : nil }
             let median = Fleet.median(normal)
+            let reference = normal.count >= Fleet.minimumForMedian ? median : nil
+            self.reference = reference
             rows = zip(stations, health).map { s, h in
                 let delta: Double? = {
                     // offline: today's energy isn't known, so neither is its yield against the others
                     guard h != .offline, let m = median, m > 0, let y = s.specificYield else { return nil }
                     return y / m - 1
                 }()
-                return Row(station: s, health: h, yieldVsMedian: delta)
+                var s = s
+                s.alarms.removeAll { $0.id == Fleet.belowID(s.id) }
+                var row = Row(station: s, health: h, yieldVsMedian: delta, reference: reference)
+                // a lost logger's line is priced as the row's loss is (against the median when there is one), so the
+                // action list and `สูญเสียวันนี้` give the same figure for it
+                if reference != nil, let short = row.shortfall {
+                    for i in row.station.alarms.indices where row.station.alarms[i].source == .lost {
+                        if case .atMost = row.station.alarms[i].loss { row.station.alarms[i].loss = .atMost(short) }
+                    }
+                }
+                if h == .normal, let a = Fleet.belowAlarm(row, percent: settings.belowExpectedPercent,
+                                                          since: belowSince[s.id] ?? now) {
+                    row.station.alarms.append(a)
+                }
+                return row
             }
+        }
+
+        static func belowID(_ station: String) -> String { station + "/below" }
+
+        /// `ผลิตต่ำกว่าที่คาด` (`Settings.belowExpectedPercent`) for a station running normally: a `TCRoof` line, so
+        /// it stays `ปกติ` and nothing is notified, once `belowMinimumShare` of its day's forecast has passed and its
+        /// energy is under `percent` % of what it should have made (`Row.expected`). A station in alarm or offline is
+        /// listed by its cause already.
+        static func belowAlarm(_ r: Row, percent: Int, since: Date) -> Alarm? {
+            let s = r.station
+            guard s.paired, let made = s.energyToday, let expected = r.expected, expected > 0,
+                  let soFar = s.expectedSoFar, let day = s.expectedToday, day > 0,
+                  soFar >= day * belowMinimumShare else { return nil }
+            let share = made / expected
+            guard share < Double(percent) / 100 else { return nil }
+            // floored, so a station just under the threshold never reads as on it
+            let shown = Int((share * 100).rounded(.down))
+            let basis = r.reference == nil ? "ที่คาด" : "ค่ากลาง"
+            return Alarm(id: belowID(s.id), source: .tcroof, part: "สถานี",
+                         detail: "ผลิต \(shown)% ของ\(basis) · เกณฑ์ \(percent)%", since: since,
+                         loss: .measured(expected - made))
+        }
+
+        /// `belowSince` for the next fleet: the lines raised now, each keeping when it was first raised.
+        public func belowSinceAfter(_ previous: [String: Date]) -> [String: Date] {
+            var out: [String: Date] = [:]
+            for s in stations where s.alarms.contains(where: { $0.id == Fleet.belowID(s.id) }) {
+                out[s.id] = previous[s.id] ?? now
+            }
+            return out
         }
 
         public var stations: [Station] { rows.map(\.station) }
@@ -124,8 +192,8 @@ extension Monitoring {
             return y / m - 1
         }
 
-        /// `สูญเสียวันนี้`: what the stations not running normally fell short of the forecast, kWh, its share of the
-        /// fleet's forecast so far and how many stations.
+        /// `สูญเสียวันนี้`: what the stations not running normally fell short of what they should have made
+        /// (`Row.expected`), kWh, its share of the fleet's forecast so far and how many stations.
         public var lossToday: Double? {
             let l = rows.compactMap { $0.loss?.kWh }
             return l.isEmpty ? (expectedSoFar == nil ? nil : 0) : l.reduce(0, +)
@@ -198,7 +266,7 @@ extension Monitoring {
             return rows(f).sorted { a, b in
                 switch sort {
                 case .loss:
-                    let x = a.station.shortfall ?? -1, y = b.station.shortfall ?? -1
+                    let x = a.shortfall ?? -1, y = b.shortfall ?? -1
                     return x != y ? x > y : mp(a) < mp(b)
                 case .specificYield:
                     // a station with no energy read last

@@ -173,13 +173,27 @@ extension MonitoringPage {
     private func invertersCell(_ r: Monitoring.Row) -> some View {
         let s = r.station
         let online = r.health == .offline ? 0 : (s.invertersOnline ?? s.inverters)
+        // a square each up to 4 (the column's width); a bigger station shows the share working as one bar
+        let squares = s.inverters <= 4
         return HStack(spacing: 4) {
-            ForEach(0..<max(s.inverters, 0), id: \.self) { i in
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(r.health == .offline ? Theme.track : i < online ? Theme.success : Theme.danger)
-                    .frame(width: 14, height: 14)
+            if squares {
+                ForEach(0..<max(s.inverters, 0), id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(r.health == .offline ? Theme.track : i < online ? Theme.success : Theme.danger)
+                        .frame(width: 14, height: 14)
+                }
+            } else {
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3).fill(r.health == .offline ? Theme.track : Theme.danger)
+                        RoundedRectangle(cornerRadius: 3).fill(Theme.success)
+                            .frame(width: g.size.width * Double(online) / Double(max(s.inverters, 1)))
+                    }
+                }
+                .frame(width: 68, height: 14)
             }
             Text("\(online)/\(s.inverters)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 2)
+                .lineLimit(1).fixedSize()
         }
     }
 

@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "id": "D8CE1AA4-1CAE-45D8-87F9-81CA15D2C3E2",
+      "name": "Default",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "testTimeoutsEnabled": false
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:TCRoof.xcodeproj",
+        "identifier": "A1000000000000000000E006",
+        "name": "TCRoofUITests"
+      }
+    }
+  ],
+  "version": 1
+}

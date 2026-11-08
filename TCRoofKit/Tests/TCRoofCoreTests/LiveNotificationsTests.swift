@@ -5,6 +5,9 @@ import XCTest
 final class LiveNotificationsTests: XCTestCase {
     private let cal = FeedBuilder.calendar
 
+    // install days and calibration reminders are named and timed in the device's local time
+    override func setUp() { super.setUp(); BangkokTime.pin() }
+
     private func d(_ day: Int, _ hour: Int = 0, _ minute: Int = 0) -> Date {
         cal.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour, minute: minute))!
     }

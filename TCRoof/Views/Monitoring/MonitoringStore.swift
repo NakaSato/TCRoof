@@ -54,14 +54,20 @@ final class MonitoringStore {
     /// The line under the page's header naming where the rows come from, nil for the stations' own.
     var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
 
-    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings) }
+    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, belowSince: belowSince) }
+
+    /// When each station's `ผลิตต่ำกว่าที่คาด` line was first raised, so its age carries from one reading to the next.
+    private var belowSince: [String: Date] = [:]
 
     /// The dock's badge: the stations in alarm or offline (`Fleet.needingAttention`), worked out when the stations or the
     /// settings change, not on each redraw of the dock.
     private(set) var attentionCount = 0
 
     private func recount() {
-        let n = fleet.needingAttention
+        let f = fleet
+        let since = f.belowSinceAfter(belowSince)
+        if since != belowSince { belowSince = since }
+        let n = f.needingAttention
         if n != attentionCount { attentionCount = n }
     }
 
@@ -117,8 +123,7 @@ final class MonitoringStore {
             guard let r = byID[base.id] else { return previous[base.id].flatMap { $0.paired ? $0 : nil } ?? base }
             return Monitoring.GrowattMap.station(base, reading: r.reading, previous: previous[base.id], now: readAt,
                                                  offlineAfter: settings.loggerOfflineMinutes,
-                                                 forecastDailyKWhPerKWp: r.forecastDailyKWhPerKWp,
-                                                 belowExpectedPercent: settings.belowExpectedPercent)
+                                                 forecastDailyKWhPerKWp: r.forecastDailyKWhPerKWp)
         }
         feedFailure = readings.compactMap(\.failure).first?.message
         refreshedAt = Date()
@@ -142,8 +147,7 @@ final class MonitoringStore {
             let id = Monitoring.GrowattWebMap.stationID(p.id)
             guard let plant = p.plant else { return previous[id] }
             return Monitoring.GrowattWebMap.station(plant, day: p.day, previous: previous[id], now: readAt,
-                                                    offlineAfter: settings.loggerOfflineMinutes,
-                                                    belowExpectedPercent: settings.belowExpectedPercent)
+                                                    offlineAfter: settings.loggerOfflineMinutes)
         }
         feedFailure = result.failure?.message
         refreshedAt = Date()

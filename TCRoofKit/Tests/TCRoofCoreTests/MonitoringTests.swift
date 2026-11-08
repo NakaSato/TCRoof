@@ -14,8 +14,11 @@ final class MonitoringTests: XCTestCase {
         XCTAssertEqual(f.inverters, 9)
         XCTAssertEqual(try XCTUnwrap(f.totalEnergy), 1_310_000, accuracy: 1)
         XCTAssertEqual(try XCTUnwrap(f.co2Tonnes), 655, accuracy: 1)
-        // no rate yet: no value, never 0
-        XCTAssertNil(f.value)
+        // the default rate until a manager sets one (issue #259 decision 1); none set: no value, never 0
+        XCTAssertEqual(try XCTUnwrap(f.value), 1_310_000 * Monitoring.Settings.defaultRate, accuracy: 1)
+        var unset = Monitoring.Settings()
+        unset.rate = nil
+        XCTAssertNil(Monitoring.Fleet(f.stations, now: now, settings: unset).value)
         // 7 of 9 inverters working: the offline station's and MP 25's second are down
         XCTAssertEqual(f.invertersOnline, 7)
         XCTAssertEqual(try XCTUnwrap(f.availability), 7.0 / 9, accuracy: 1e-9)
@@ -37,9 +40,14 @@ final class MonitoringTests: XCTestCase {
     func testLossCountsOnlyStationsNotRunningNormally() throws {
         let f = demo
         let rows = Dictionary(uniqueKeysWithValues: f.rows.map { ($0.station.mpNumber ?? 0, $0) })
-        // offline: nothing read since, so at most the forecast
-        XCTAssertEqual(rows[44]?.loss, .atMost(try XCTUnwrap(rows[44]?.station.shortfall)))
-        XCTAssertEqual(try XCTUnwrap(rows[25]?.loss?.kWh), 380, accuracy: 0.5)
+        // against the median kWh/kWp of the normal stations (issue #259 decision 2), the weather being the same
+        let median = (690.0 / 200 + 330.0 / 95) / 2
+        XCTAssertEqual(try XCTUnwrap(f.reference), median, accuracy: 1e-9)
+        // offline: nothing read since, so at most what it should have made
+        XCTAssertEqual(rows[44]?.loss, .atMost(try XCTUnwrap(rows[44]?.shortfall)))
+        let kWp44 = try XCTUnwrap(rows[44]?.station.kWp)
+        XCTAssertEqual(try XCTUnwrap(rows[44]?.shortfall), median * kWp44, accuracy: 1e-6)
+        XCTAssertEqual(try XCTUnwrap(rows[25]?.loss?.kWh), median * 220 - 410, accuracy: 0.01)
         XCTAssertNil(rows[12]?.loss)
         XCTAssertEqual(f.lossStations, 2)
         let lost = try XCTUnwrap(f.lossToday)
@@ -184,7 +192,7 @@ final class MonitoringTests: XCTestCase {
         // an older file with only some fields
         let old = try JSONDecoder().decode(Monitoring.Settings.self, from: Data(#"{"pollMinutes":10}"#.utf8))
         XCTAssertEqual(old.pollMinutes, 10)
-        XCTAssertNil(old.rate)
+        XCTAssertEqual(old.rate, Monitoring.Settings.defaultRate)
         XCTAssertEqual(old.belowExpectedPercent, 85)
     }
 
@@ -250,5 +258,62 @@ final class MonitoringTests: XCTestCase {
         XCTAssertNil(s.pairings["demo-mp44"])
         XCTAssertNil(s.pairingServers["demo-mp44"])
         XCTAssertEqual(s.paired(of: ["demo-mp44", "demo-mp25"]), 1)
+    }
+
+    // MARK: ผลิตต่ำกว่าที่คาด
+
+    /// A normal station `kWp` making `kWh` by 14:55, its forecast so far 3.6 kWh/kWp of a 4.5 kWh/kWp day.
+    func normal(_ id: String, kWp: Double, kWh: Double) -> Monitoring.Station {
+        Monitoring.Station(id: id, name: id, kWp: kWp, inverters: 1, invertersOnline: 1, energyToday: kWh,
+                           expectedSoFar: 3.6 * kWp, expectedToday: 4.5 * kWp, lastReading: now)
+    }
+
+    func below(_ f: Monitoring.Fleet, _ id: String) -> Monitoring.Alarm? {
+        f.stations.first { $0.id == id }?.alarms.first { $0.id == id + "/below" }
+    }
+
+    /// Against the median of the normal stations: a station at 70 % of it is raised, one at 95 % isn't, and a cloudy
+    /// day (every station well under the forecast) raises nothing.
+    func testBelowTheMedianRaisesTheAppsOwnLine() throws {
+        // a cloudy day: 2.0 kWh/kWp against a forecast of 3.6
+        let f = Monitoring.Fleet([normal("a", kWp: 100, kWh: 200), normal("b", kWp: 100, kWh: 200),
+                                  normal("c", kWp: 100, kWh: 190), normal("d", kWp: 100, kWh: 140)],
+                                 now: now, settings: .init())
+        XCTAssertEqual(try XCTUnwrap(f.reference), 1.95, accuracy: 1e-9)
+        XCTAssertNil(below(f, "a"))
+        XCTAssertNil(below(f, "c"))
+        let a = try XCTUnwrap(below(f, "d"))
+        XCTAssertEqual(a.source, .tcroof)
+        XCTAssertEqual(a.detail, "ผลิต 71% ของค่ากลาง · เกณฑ์ 85%")
+        XCTAssertEqual(a.loss.kWh, 195 - 140, accuracy: 1e-9)
+        // listed, but the station stays normal and the dock doesn't count it
+        XCTAssertEqual(f.rows.first { $0.id == "d" }?.health, .normal)
+        XCTAssertEqual(f.needingAttention, 0)
+        XCTAssertEqual(f.actions.first?.station.id, "d")
+    }
+
+    /// With fewer than 3 normal stations, the forecast stands in.
+    func testFewNormalStationsUseTheForecast() throws {
+        let f = Monitoring.Fleet([normal("a", kWp: 100, kWh: 340), normal("b", kWp: 100, kWh: 200)],
+                                 now: now, settings: .init())
+        XCTAssertNil(f.reference)
+        XCTAssertNil(below(f, "a"))
+        XCTAssertEqual(try XCTUnwrap(below(f, "b")).detail, "ผลิต 55% ของที่คาด · เกณฑ์ 85%")
+    }
+
+    /// Not before 15 % of the day's forecast; the line keeps when it was first raised.
+    func testEarlyMorningRaisesNothingAndALineKeepsItsAge() throws {
+        var early = normal("b", kWp: 100, kWh: 10)
+        early.expectedSoFar = 40
+        XCTAssertNil(below(Monitoring.Fleet([normal("a", kWp: 100, kWh: 340), early], now: now, settings: .init()), "b"))
+
+        let stations = [normal("a", kWp: 100, kWh: 340), normal("b", kWp: 100, kWh: 200)]
+        let first = Monitoring.Fleet(stations, now: now, settings: .init())
+        let since = first.belowSinceAfter([:])
+        XCTAssertEqual(since, ["b": now])
+        let later = now.addingTimeInterval(600)
+        let next = Monitoring.Fleet(stations, now: later, settings: .init(), belowSince: since)
+        XCTAssertEqual(below(next, "b")?.since, now)
+        XCTAssertEqual(next.belowSinceAfter(since), ["b": now])
     }
 }

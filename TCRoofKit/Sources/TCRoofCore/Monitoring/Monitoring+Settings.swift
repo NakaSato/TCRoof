@@ -37,6 +37,8 @@ extension Monitoring {
         public static let loggerChoices = [15, 30, 60]
         public static let stringChoices = [10, 20, 30]
         public static let belowExpectedChoices = [80, 85, 90]
+        /// ฿/kWh until a manager sets the company's own (issue #259 decision 1): a PEA business rate with Ft.
+        public static let defaultRate = 4.18
         public static let prChoices = [65, 70, 75]
 
         public var servers: [Server]
@@ -66,7 +68,7 @@ extension Monitoring {
         public init(servers: [Server] = [], pollMinutes: Int = 5, archiveNightly: Bool = true, loggerOfflineMinutes: Int = 30,
                     stringLowPercent: Int = 20, belowExpectedPercent: Int = 85, prLowPercent: Int = 70,
                     notifyMaintenance: Bool = true, notifySupervisor: Bool = true, notifyContractor: Bool = false,
-                    rate: Double? = nil, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
+                    rate: Double? = Settings.defaultRate, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
             self.servers = servers; self.pollMinutes = max(pollMinutes, Monitoring.minimumPollMinutes)
             self.archiveNightly = archiveNightly; self.loggerOfflineMinutes = loggerOfflineMinutes
             self.stringLowPercent = stringLowPercent; self.belowExpectedPercent = belowExpectedPercent
@@ -94,7 +96,7 @@ extension Monitoring {
                       notifyMaintenance: try c.decodeIfPresent(Bool.self, forKey: .notifyMaintenance) ?? d.notifyMaintenance,
                       notifySupervisor: try c.decodeIfPresent(Bool.self, forKey: .notifySupervisor) ?? d.notifySupervisor,
                       notifyContractor: try c.decodeIfPresent(Bool.self, forKey: .notifyContractor) ?? d.notifyContractor,
-                      rate: try c.decodeIfPresent(Double.self, forKey: .rate),
+                      rate: try c.decodeIfPresent(Double.self, forKey: .rate) ?? d.rate,
                       pairings: try c.decodeIfPresent([String: String].self, forKey: .pairings) ?? d.pairings,
                       pairingServers: try c.decodeIfPresent([String: UUID].self, forKey: .pairingServers) ?? d.pairingServers)
         }

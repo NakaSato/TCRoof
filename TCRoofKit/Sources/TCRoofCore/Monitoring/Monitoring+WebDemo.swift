@@ -59,15 +59,23 @@ extension Monitoring {
         /// station's. `forecastDailyKWhPerKWp` defaults to the figure without a site (the portal gives no position).
         public static func station(_ plant: GrowattWebDemo.Plant, day: [Double?], previous: Station?, now: Date,
                                    offlineAfter: Int, forecastDailyKWhPerKWp: Double? = nil,
-                                   belowExpectedPercent: Int? = nil, calendar: Calendar = .current) -> Station {
+                                   calendar: Calendar? = nil) -> Station {
             let watts = plant.nominalPower > 0 ? plant.nominalPower : plant.devices.reduce(0) { $0 + $1.nominalPower }
             let inverters = plant.devices.filter { $0.typeName.lowercased() != "storage" }.count
             let base = Station(id: stationID(plant.id), name: plant.name, kWp: watts / 1000, inverters: max(inverters, 1))
-            return GrowattMap.station(base, reading: reading(plant, day: day, now: now), previous: previous, now: now,
+            let r = reading(plant, day: day, now: now)
+            // the plant's day on its own clock, so the forecast is daylight where the plant is (the demo's plants are
+            // abroad; a station in Thailand reads on the device's clock)
+            let cal = calendar ?? {
+                var c = Calendar(identifier: .gregorian)
+                c.timeZone = GrowattMap.timeZone(r.data?.timezone ?? "")
+                return c
+            }()
+            return GrowattMap.station(base, reading: r, previous: previous, now: now,
                                       offlineAfter: offlineAfter,
                                       forecastDailyKWhPerKWp: forecastDailyKWhPerKWp
                                           ?? Forecast.dailyKWhPerKWp(latitude: nil, longitude: nil),
-                                      belowExpectedPercent: belowExpectedPercent, calendar: calendar)
+                                      calendar: cal)
         }
     }
 }

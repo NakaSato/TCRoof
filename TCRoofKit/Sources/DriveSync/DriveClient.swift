@@ -160,6 +160,8 @@ public struct DriveClient: Sendable {
 
     /// The request and body of a multipart upload (no token yet).
     static func multipart(_ data: Data, name: String, mimeType: String, parent: String) throws -> (request: URLRequest, body: Data) {
+        // photos lose their GPS on the way to Drive (`PhotoPrivacy`)
+        let data = PhotoPrivacy.withoutLocation(data, mimeType: mimeType)
         var c = URLComponents(url: Self.upload, resolvingAgainstBaseURL: false)!
         c.queryItems = [.init(name: "uploadType", value: "multipart"), .init(name: "fields", value: Self.fields)]
         let boundary = "survey-" + UUID().uuidString
@@ -199,9 +201,10 @@ public struct DriveClient: Sendable {
     }
 
     /// The file of that name with the same content already in `parent`, if any.
-    func existing(_ data: Data, name: String, parent: String) async throws -> DriveFile? {
+    func existing(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile? {
         #if canImport(CryptoKit)
-        let md5 = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        // the bytes `multipart` sends
+        let md5 = Insecure.MD5.hash(data: PhotoPrivacy.withoutLocation(data, mimeType: mimeType)).map { String(format: "%02x", $0) }.joined()
         let same = try await search("name = '\(Self.q(name))' and '\(Self.q(parent))' in parents and trashed = false")
         return same.first { $0.md5Checksum == md5 }
         #else
@@ -212,7 +215,7 @@ public struct DriveClient: Sendable {
     /// Uploads unless `parent` already holds a file of that name with the same content, which it returns instead: an
     /// upload whose answer was lost, or a photo a stale list says was never sent, never lands on Drive twice.
     public func uploadOnce(_ data: Data, name: String, mimeType: String, parent: String) async throws -> DriveFile {
-        if let f = try await existing(data, name: name, parent: parent) { return f }
+        if let f = try await existing(data, name: name, mimeType: mimeType, parent: parent) { return f }
         return try await upload(data, name: name, mimeType: mimeType, parent: parent)
     }
 
@@ -221,7 +224,7 @@ public struct DriveClient: Sendable {
     /// background or after the system ends it, so a caller starts every file before waiting on any. A file that lands
     /// while nothing waits (the app was ended) is found by the same check on the next pass, not sent again.
     public func startUploadOnce(_ data: Data, name: String, mimeType: String, parent: String) async throws -> Task<DriveFile, Error> {
-        if let f = try await existing(data, name: name, parent: parent) { return Task { f } }
+        if let f = try await existing(data, name: name, mimeType: mimeType, parent: parent) { return Task { f } }
         guard let transfer else {
             let client = self
             return Task { try await client.upload(data, name: name, mimeType: mimeType, parent: parent) }

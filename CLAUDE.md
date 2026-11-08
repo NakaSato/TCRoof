@@ -23,7 +23,7 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 - **Lint:** there is no SwiftLint or swift-format config; the checks are `swift test` and the xcodebuild build.
 - **CI:** `.github/workflows/ci.yml` runs on pull requests and `main`: the Linux package tests (`tools/linux-swift/test.sh` in `swift:6.2-noble`), the Master Plan sheet script, the Cloud Functions and the Firestore rules tests (emulator, Java 21). Every TCRoofKit test on macOS runs on `main` and by hand only (macOS minutes cost more). Nothing in CI builds the app or runs `TCRoofTests` and the UI tests: they need xcodebuild with a simulator, so a decision worth testing goes in TCRoofCore (as `DriveDestination` does for `DriveRoute`).
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
-- **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it.
+- **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it. A key built in there ships readable in the app, so restrict it at its provider; keys typed in the survey settings (Mapbox, Google Maps, GISTDA) are kept in the device's Keychain (`SurveySettings.secretKeys`), not in the settings JSON.
 
 ### UI tests (iPhone taps)
 

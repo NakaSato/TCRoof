@@ -30,7 +30,8 @@ if ! command -v soffice >/dev/null 2>&1; then
 fi
 
 # Swift for the Linux test package; optional, so a failed download doesn't stop the session
-SWIFT_VERSION=6.1.2
+# 6.2: the swift-tools-version TCRoofKit/Package.swift and tools/linux-swift/test.sh declare (an older toolchain refuses them)
+SWIFT_VERSION=6.2
 SWIFT_DIR="/opt/swift-$SWIFT_VERSION"
 if [ ! -x "$SWIFT_DIR/usr/bin/swift" ]; then
   name="swift-$SWIFT_VERSION-RELEASE-ubuntu24.04"

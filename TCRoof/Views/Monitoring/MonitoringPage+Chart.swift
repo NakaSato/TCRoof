@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import Accessibility
 import TCRoofUI
 import TCRoofCore
 
@@ -244,6 +245,7 @@ struct MonitoringChartView: View {
         .chartXAxis { xAxis }
         .chartYAxis { AxisMarks(position: .leading) { _ in AxisGridLine().foregroundStyle(Theme.hairline); AxisValueLabel().font(.sarabun(11)) } }
         .chartLegend(.hidden)
+        .accessibilityChartDescriptor(MonitoringChartDescriptor(chart: chart))
     }
 
     private var xAxis: some AxisContent {
@@ -348,3 +350,27 @@ struct MonitoringChartView: View {
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(danger ? Theme.dangerLine : Theme.borderSubtle))
     }
 }
+
+/// VoiceOver's summary of the power chart (Audio Graphs): the fleet's total, produced and expected, over time.
+struct MonitoringChartDescriptor: AXChartDescriptorRepresentable {
+    let chart: Monitoring.Chart
+
+    func makeChartDescriptor() -> AXChartDescriptor {
+        let pts = chart.total, unit = chart.range == .today ? "kW" : "kWh"
+        let xs = pts.map { $0.x.timeIntervalSince1970 }
+        let ys = pts.flatMap { [$0.actual, $0.expected].compactMap { $0 } }
+        let x = AXNumericDataAxisDescriptor(title: "เวลา", range: (xs.min() ?? 0)...(max(xs.max() ?? 1, (xs.min() ?? 0) + 1)), gridlinePositions: []) {
+            Date(timeIntervalSince1970: $0).formatted(chart.range == .today ? .dateTime.hour().minute() : .dateTime.day().month())
+        }
+        let y = AXNumericDataAxisDescriptor(title: unit, range: 0...max(ys.max() ?? 1, 1), gridlinePositions: []) {
+            "\(Int($0.rounded())) \(unit)"
+        }
+        let produced = AXDataSeriesDescriptor(name: "ผลิตได้", isContinuous: true,
+                                              dataPoints: pts.compactMap { p in p.actual.map { .init(x: p.x.timeIntervalSince1970, y: $0) } })
+        let expected = AXDataSeriesDescriptor(name: "คาดการณ์", isContinuous: true,
+                                              dataPoints: pts.compactMap { p in p.expected.map { .init(x: p.x.timeIntervalSince1970, y: $0) } })
+        return AXChartDescriptor(title: "กำลังผลิตรวมทุกสถานี", summary: nil, xAxis: x, yAxis: y, additionalAxes: [],
+                                 series: [produced, expected])
+    }
+}
+

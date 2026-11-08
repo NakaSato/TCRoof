@@ -102,6 +102,7 @@ struct QueueFilterBar: View {
                     .focused($searching)
                 if !search.isEmpty {
                     Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted) }
+                        .accessibilityLabel("ล้างคำค้นหา")
                 }
                 Image(systemName: "magnifyingglass").foregroundStyle(Theme.navy)
             }

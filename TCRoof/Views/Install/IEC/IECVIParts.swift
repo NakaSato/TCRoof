@@ -99,6 +99,8 @@ struct IECDCInputMap: View {
                     }
                 }
                 .frame(minWidth: 38, minHeight: 38)
+                // a 44 pt hit area without moving the grid
+                .contentShape(Circle().inset(by: -3))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(seq.map { "สตริง \($0) ช่อง \(slot)" } ?? "ช่อง \(slot) ว่าง")

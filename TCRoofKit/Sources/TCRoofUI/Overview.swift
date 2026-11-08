@@ -314,6 +314,7 @@ public struct TCFilterCircle: View {
                 }
             }
             .contentShape(Circle())
+            .accessibilityValue(filtered ? "มีตัวกรอง" : "")
     }
 }
 

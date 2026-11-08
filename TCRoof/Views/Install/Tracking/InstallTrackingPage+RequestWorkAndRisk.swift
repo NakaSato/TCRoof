@@ -168,7 +168,7 @@ extension InstallWeeklyRequestTabView {
                 }
                 Spacer(minLength: 4)
                 if editable {
-                    Button { reqChange { $0.risks.removeAll { $0.id == risk.id } } } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 32, height: 32) }
+                    Button { reqChange { $0.risks.removeAll { $0.id == risk.id } } } label: { Image(systemName: "xmark").foregroundStyle(Theme.inkMuted).frame(width: 32, height: 32).contentShape(Rectangle().inset(by: -6)) }
                         .buttonStyle(.plain).accessibilityLabel("ลบความเสี่ยง")
                 }
             }

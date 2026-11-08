@@ -370,6 +370,7 @@ struct InverterPageWide: View {
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).disabled(!enabled)
+        .accessibilityLabel(symbol == "minus" ? "ลด" : "เพิ่ม")
     }
 
     // MARK: column spans
@@ -482,7 +483,7 @@ struct PlanViewer: View {
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { Button("ปิด") { dismiss() } }
-                ToolbarItem(placement: .topBarLeading) { Button { zoom = 1 } label: { Image(systemName: "arrow.down.right.and.arrow.up.left") }.disabled(zoom == 1) }
+                ToolbarItem(placement: .topBarLeading) { Button { zoom = 1 } label: { Image(systemName: "arrow.down.right.and.arrow.up.left") }.disabled(zoom == 1).accessibilityLabel("ซูม 100%") }
             }
         }
     }

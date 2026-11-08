@@ -199,7 +199,17 @@ struct InstallBars: View {
             }
         }
         .frame(width: width, height: InstallTrackingPage.stageHeight, alignment: .leading)
-        .accessibilityHidden(true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Self.summary(row))
+    }
+
+    /// `2.2 ติดตั้งแผง: แผน 1/10 ถึง 15/10, เสร็จ 40%, เกินแผน 3 วัน`, for VoiceOver.
+    static func summary(_ row: InstallGantt.Row) -> String {
+        var s = "\(row.code) \(row.title): แผน \(ThaiFormat.dayMonth.string(from: row.start)) ถึง \(ThaiFormat.dayMonth.string(from: row.end))"
+        s += row.status == .done ? ", เสร็จแล้ว" : row.status == .waiting && row.percent <= 0 ? ", ยังไม่เริ่ม" : ", เสร็จ \(Int(row.percent.rounded()))%"
+        if row.overrunDays > 0 { s += ", เกินแผน \(row.overrunDays) วัน" }
+        else if let f = row.forecastEnd, row.status == .current, f > row.end { s += ", คาดเสร็จ \(ThaiFormat.dayMonth.string(from: f))" }
+        return s
     }
 }
 

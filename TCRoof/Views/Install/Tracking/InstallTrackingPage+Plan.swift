@@ -75,10 +75,9 @@ struct InstallPlanTabView: View {
 
     var body: some View {
         if let p = data.plan, let g = data.gantt {
-            // the card fills the page down to the dock (CHA-64): the scroll view's height less its own bottom inset (the
-            // dock when it runs under it, none when it already ends above it) and a margin, with the header as measured;
-            // a fixed dock clearance counted the dock twice when the scroll view ended above it
-            let body = max(viewport - 14 - headerHeight - 14 - viewportInset - 16, 440)
+            // the card fills the page down to the dock: the scroll view's height less its bottom inset (the dock) and the
+            // gap under the last card, with the header as measured
+            let body = max(viewport - 14 - headerHeight - 14 - viewportInset - InstallTrackingPage.dockClearance, 440)
             let axis = InstallAxis(g, forecast: p, explicitUnit: zoomLevel)
             VStack(alignment: .leading, spacing: 14) {
                 planHeader(p, axis: axis)

@@ -208,7 +208,7 @@ final class InstallPlanTests: XCTestCase {
     func testMilestoneStateFollowsItsWork() {
         typealias M = InstallPlan.Milestone
         let today = d(10)
-        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: false).state(today: today, calendar: cal), .overdue)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: false).state(today: today, calendar: cal), .overdue(1))
         XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: true).state(today: today, calendar: cal), .done)
         XCTAssertEqual(M(title: "ส่งมอบ", date: d(12), done: true).state(today: today, calendar: cal), .done, "done early")
         XCTAssertEqual(M(title: "ส่งมอบ", date: d(10), done: false).state(today: today, calendar: cal), .today)

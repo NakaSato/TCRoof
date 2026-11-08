@@ -235,7 +235,7 @@ UI conventions from the specs:
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
 
-The server runs the `code-review-graph` binary from `.mcp.json`; install it with `uv tool install code-review-graph`. If it fails to connect, use grep and Read instead.
+The server runs the `code-review-graph` binary from `.mcp.json`, in the repo's folder; install it with `uv tool install code-review-graph`. It is optional: when it isn't installed or fails to connect, use CodeGraph (`codegraph_explore`, the `.codegraph/` index) and then grep and Read instead, and treat the graph-first steps below as applying only while it is connected.
 
 **This project has a knowledge graph. Start with the code-review-graph
 MCP tools to narrow scope, then read the source.** The graph is cheaper than scanning files and

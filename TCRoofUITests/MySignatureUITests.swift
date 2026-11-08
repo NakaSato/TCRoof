@@ -13,7 +13,7 @@ final class MySignatureUITests: XCTestCase {
     func launch(_ args: [String], email: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = args + ["-roleEmail", email, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

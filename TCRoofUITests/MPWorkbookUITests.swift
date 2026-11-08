@@ -28,7 +28,7 @@ final class MPWorkbookUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
                                "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         // import from the empty plan
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
@@ -76,11 +76,13 @@ final class MPWorkbookUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
                                "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: slow))
         importButton.tap()
         app.alerts["ไฟล์นี้อาจเป็นของสถานีอื่น"].buttons["นำเข้าที่สถานีนี้"].tap()
+        // ตั้งค่าแผน reads the plan when it opens: wait for the file's weights (2.4's 7.5) first
+        XCTAssertTrue(app.staticTexts["7.5%"].firstMatch.waitForExistence(timeout: 10), "the plan should take the file's weights")
 
         let setup = app.buttons["ตั้งค่าแผน"].firstMatch
         XCTAssertTrue(setup.waitForExistence(timeout: 10))
@@ -114,7 +116,7 @@ final class MPWorkbookUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
                                "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: slow))
         importButton.tap()
@@ -146,7 +148,7 @@ final class MPWorkbookUITests: XCTestCase {
         // the app moves on; then the exported copy comes back
         app.terminate()
         app.launchArguments = ["-screen", "mp", "-mpWeek", "2024-11-03", "-mpImportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(done.waitForExistence(timeout: slow))
         book()
         let moved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", exportedFigure), object: done)

@@ -13,7 +13,7 @@ final class PhonePWAHomeUITests: XCTestCase {
     func launch(tab: String = "projects", _ more: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyHomeTab", tab, "-noNotificationPrompt", "YES"] + more
-        app.launch()
+        app.launchInThai()
         return app
     }
 

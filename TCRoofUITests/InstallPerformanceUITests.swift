@@ -11,7 +11,7 @@ final class InstallPerformanceUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installSeed", "YES",
                                "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         // the install page, or the IEC test pushed over it
         let ready = app.buttons.matching(NSPredicate(format: "label IN %@", ["กลับหน้ารายการงาน", "กลับ"])).firstMatch
         XCTAssertTrue(ready.waitForExistence(timeout: slow))

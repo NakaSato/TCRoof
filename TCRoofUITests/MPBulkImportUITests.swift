@@ -19,7 +19,7 @@ final class MPBulkImportUITests: XCTestCase {
     func testPickCheckAndImport() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mpall", "-homeBoard", "YES", "-mpImportFiles", "\(fixture)|\(fixture)", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let title = app.staticTexts["นำเข้า 2 ไฟล์"]
         XCTAssertTrue(title.waitForExistence(timeout: slow), "the files should open their check")

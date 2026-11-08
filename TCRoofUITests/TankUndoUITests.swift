@@ -12,7 +12,7 @@ final class TankUndoUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyWideA1", "YES",
                                "-surveyPage", "tank", "-surveyD1", "layout", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let plan = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ผังแผง ")).firstMatch
         XCTAssertTrue(plan.waitForExistence(timeout: slow))

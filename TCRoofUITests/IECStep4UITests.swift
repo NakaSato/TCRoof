@@ -13,7 +13,7 @@ final class IECStep4UITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecCameraStub", "YES", "-iecStep4", "YES", "-iecStep4State", state]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

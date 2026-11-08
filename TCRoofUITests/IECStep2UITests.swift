@@ -14,7 +14,7 @@ final class IECStep2UITests: XCTestCase {
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecCameraStub", "YES"]
             + (step2 ? ["-iecStep2", "YES"] : []) + (state.map { ["-iecStep2State", $0] } ?? [])
-        app.launch()
+        app.launchInThai()
         return app
     }
 

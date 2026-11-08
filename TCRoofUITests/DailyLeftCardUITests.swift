@@ -12,7 +12,7 @@ final class DailyLeftCardUITests: XCTestCase {
     private func launch(_ extra: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "daily", "-role", "internal", "-jobTeam", "none", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

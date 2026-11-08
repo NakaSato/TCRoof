@@ -12,7 +12,7 @@ final class PhoneSurveyHomeUITests: XCTestCase {
         // the home tab's demo puts two appointments on today
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeDemo", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(app.buttons["งานบ้าน"].firstMatch.waitForExistence(timeout: slow) || app.buttons.firstMatch.waitForExistence(timeout: slow))
         app.terminate()
     }
@@ -20,7 +20,7 @@ final class PhoneSurveyHomeUITests: XCTestCase {
     func launch() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "homework", "-surveyListDraft", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

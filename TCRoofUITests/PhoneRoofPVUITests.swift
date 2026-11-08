@@ -8,7 +8,7 @@ final class PhoneRoofPVUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES",
                                "-noNotificationPrompt", "YES", "-surveyPage", "roof"] + extra
-        app.launch()
+        app.launchInThai()
         let b = app.buttons["จัดแผง"].firstMatch
         XCTAssertTrue(b.waitForExistence(timeout: 90)); b.tap()
         return app

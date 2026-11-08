@@ -15,7 +15,7 @@ final class ProjectSetupUITests: XCTestCase {
     func testTakingOneFactFromThePlanFile() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpTemplate", "P3-001", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let menu = app.buttons["ไฟล์ Excel"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: slow), "the template's plan should show")

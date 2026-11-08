@@ -11,7 +11,7 @@ final class TankShadeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyWideA1", "YES",
                                "-surveyPage", "tank", "-surveyD1", state, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

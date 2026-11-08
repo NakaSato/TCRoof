@@ -11,7 +11,7 @@ final class LoginUITests: XCTestCase {
     func launch(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "login", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

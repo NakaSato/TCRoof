@@ -14,7 +14,7 @@ final class PhoneHomeFeedUITests: XCTestCase {
     func launch(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeFeed", "demo", "-homeNoAppointments", "YES", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

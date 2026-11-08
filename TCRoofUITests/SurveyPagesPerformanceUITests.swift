@@ -12,7 +12,7 @@ final class SurveyPagesPerformanceUITests: XCTestCase {
     func testWalkEveryPage() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let next = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ถัดไป")).firstMatch
         XCTAssertTrue(next.waitForExistence(timeout: slow), "a page with its bar")
         sleep(2)
@@ -37,7 +37,7 @@ final class SurveyPagesPerformanceUITests: XCTestCase {
     func testTypeOnA1() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let field = app.textFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: slow))
         field.tap()
@@ -55,7 +55,7 @@ final class SurveyPagesPerformanceUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyWideA1", "YES",
                                "-surveyPage", "tank", "-surveyD1", "layout", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let plan = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ผังแผง")).firstMatch
         XCTAssertTrue(plan.waitForExistence(timeout: slow), "the layout plan")
         sleep(2)

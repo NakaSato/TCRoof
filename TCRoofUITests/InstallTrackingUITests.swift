@@ -15,7 +15,7 @@ final class InstallTrackingUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
                                "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         _ = app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: 300)
         app.terminate()
     }
@@ -24,11 +24,19 @@ final class InstallTrackingUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", demo ? "YES" : "NO",
                                "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 
     func pageBack(_ app: XCUIApplication) -> XCUIElement { app.buttons["กลับหน้ารายการงาน"] }
+
+    /// `ส่งออก Excel IEC 62446`: the IEC tab has it in its footer, in a lazy grid made only once scrolled to.
+    func iecExport(_ app: XCUIApplication) -> XCUIElement {
+        let export = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch
+        XCTAssertTrue(app.staticTexts["ภาพรวมการทดสอบ"].waitForExistence(timeout: slow), "the IEC tab should open")
+        for _ in 0..<8 where !export.isHittable { app.swipeUpOnBoard() }
+        return export
+    }
 
     func waitGone(_ element: XCUIElement, timeout: TimeInterval = 8) -> Bool {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
@@ -68,11 +76,13 @@ final class InstallTrackingUITests: XCTestCase {
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ยังไม่วางบนผัง")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5), "ยังไม่วาง should list an unplaced point")
         row.tap()
-        let placeButton = app.buttons["วางบนผัง"]
+        // the row and the point panel both offer it
+        let placeButton = app.buttons["วางบนผัง"].firstMatch
         XCTAssertTrue(placeButton.waitForExistence(timeout: 5), "an unplaced row should offer วางบนผัง")
         placeButton.tap()
         XCTAssertTrue(app.descendants(matching: .any)["keyPlanPlacing"].waitForExistence(timeout: 5), "place mode should show its banner")
-        app.descendants(matching: .any)["keyPlanImage"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.85)).tap()
+        // the pins carry the plan's identifier too: tap the picture itself, on an empty spot
+        app.images["keyPlanImage"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.85)).tap()
         // every point at the placed location is placed with it, so the count goes up by one or more
         let counted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in placed() > before }, object: nil)
         XCTAssertEqual(XCTWaiter().wait(for: [counted], timeout: 5), .completed, "placing should count more points (was \(before))")
@@ -248,8 +258,8 @@ final class InstallTrackingUITests: XCTestCase {
     func testIECTabTypesAReading() {
         let app = launch(["-iecDemo", "reset", "-iecCameraStub", "YES"], demo: false)
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ทดสอบ IEC 62446")).firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["ทดสอบระบบ IEC 62446"].waitForExistence(timeout: 10), "the tab should open the IEC test")
+        app.buttons["installTab.iec"].tap()
+        XCTAssertTrue(app.staticTexts["ภาพรวมการทดสอบ"].waitForExistence(timeout: 10), "the tab should open the IEC test in the page")
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "หลังการเชื่อมต่อระบบ")).firstMatch.tap()
         let card = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "มิเตอร์ V")).firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 15), "the band should open step 4's page")
@@ -312,8 +322,8 @@ final class InstallTrackingUITests: XCTestCase {
     /// `ส่งออก Excel IEC 62446` fills the PWA's workbook and opens the share sheet with it.
     func testIECExportOpensTheShareSheet() {
         let app = launch(["-iecDemo", "YES", "-iecOpen", "YES"], demo: false)
-        let export = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch
-        XCTAssertTrue(export.waitForExistence(timeout: slow))
+        let export = iecExport(app)
+        XCTAssertTrue(export.exists)
         export.tap()
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
                       "the export should open the share sheet")
@@ -328,8 +338,8 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertTrue(waitGone(notice), "ใช้ชื่อของงาน should fix it")
         app.terminate()
         app = launch(["-iecOpen", "YES", "-iecDemo", "YES", "-iecStationLine", "สถานีอื่น ขนาดกำลังผลิต 1 kWp"], demo: false)
-        let export = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch
-        XCTAssertTrue(export.waitForExistence(timeout: slow))
+        let export = iecExport(app)
+        XCTAssertTrue(export.exists)
         export.tap()
         let useJob = app.buttons["ใช้ชื่อของงานแล้วส่งออก"]
         XCTAssertTrue(useJob.waitForExistence(timeout: 10), "exporting with another station's line should ask first")
@@ -341,7 +351,7 @@ final class InstallTrackingUITests: XCTestCase {
     func testIECSampleIsLabelled() {
         let app = launch(["-iecOpen", "YES", "-iecDemo", "reset"], demo: false)
         XCTAssertTrue(app.staticTexts["ข้อมูลตัวอย่างจากสถานีแพรกหนามแดง ไม่ใช่ผลทดสอบของงานนี้"].waitForExistence(timeout: slow))
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งออก Excel IEC 62446")).firstMatch.tap()
+        iecExport(app).tap()
         XCTAssertTrue(app.otherElements.matching(identifier: "ActivityListView").firstMatch.waitForExistence(timeout: 30),
                       "a sample exports at once, named as the sample")
     }
@@ -352,7 +362,8 @@ final class InstallTrackingUITests: XCTestCase {
     func testDocsTab() {
         let app = launch([])
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
-        app.buttons.matching(NSPredicate(format: "label == %@", "เอกสาร")).firstMatch.tap()
+        // by its identifier: the dock has a `เอกสาร` too
+        app.buttons["installTab.docs"].tap()
         let grid = app.buttons["docsStep.grid_connection"]
         XCTAssertTrue(grid.waitForExistence(timeout: 8), "เอกสาร should open the tab in the page")
         XCTAssertTrue(pageBack(app).exists, "the tab stays on the page")

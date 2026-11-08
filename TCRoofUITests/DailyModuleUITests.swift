@@ -8,7 +8,7 @@ final class DailyModuleUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "daily", "-noNotificationPrompt", "YES", "-role", "manager", "-dailyModuleDemo", "YES"]
-        app.launch()
+        app.launchInThai()
         let card = app.buttons["dailyModuleCheck"]
         XCTAssertTrue(card.waitForExistence(timeout: 90))
         XCTAssertTrue(card.label.contains("ห้าม"), card.label)
@@ -29,7 +29,7 @@ final class DailyModuleUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "daily", "-noNotificationPrompt", "YES", "-role", "manager", "-dailyModuleDemo", "open",
                                "-dailyModuleCameraStub", "YES", "-dailyModuleScanStub", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(app.navigationBars["ตรวจติดตั้งแผงตามคู่มือ"].waitForExistence(timeout: 90), "the sheet opens")
         // the checklist is a Form: its rows exist once scrolled to
         let camera = app.buttons["moduleEvidence.torque.camera"]

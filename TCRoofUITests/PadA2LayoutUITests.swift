@@ -22,7 +22,7 @@ final class PadA2LayoutUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyFreshJob", "YES", "-surveyDemoSection", "YES",
                                "-surveyWideA1", "YES", "-surveyPage", "site", "-surveyAutofill", "fill", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad layout") }
 
         // the rail's tile keeps the grid's label (title + detail) and arms its tool

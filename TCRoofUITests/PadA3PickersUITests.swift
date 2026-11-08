@@ -12,7 +12,7 @@ final class PadA3PickersUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyFreshJob", "YES", "-surveyDemoSection", "YES",
                                "-surveyWideA1", "YES", "-surveyPage", "electrical", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let add = app.buttons["เพิ่มหม้อแปลง"]
         XCTAssertTrue(add.waitForExistence(timeout: slow))
         add.tap()

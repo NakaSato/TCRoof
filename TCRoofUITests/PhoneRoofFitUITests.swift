@@ -18,7 +18,7 @@ final class PhoneRoofFitUITests: XCTestCase {
     func check(tab: String?) {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES", "-surveyPage", "roof"]
-        app.launch()
+        app.launchInThai()
         if let tab {
             let b = app.buttons[tab].firstMatch
             XCTAssertTrue(b.waitForExistence(timeout: 90)); b.tap()
@@ -43,7 +43,7 @@ final class PhoneRoofFitUITests: XCTestCase {
         for page in ["site", "electrical", "sld", "inverter", "panels", "flood", "water", "backfeed", "fts", "tank", "final"] {
             let app = XCUIApplication()
             app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES", "-surveyPage", page]
-            app.launch()
+            app.launchInThai()
             sleep(page == "site" ? 12 : 6)
             for pass in 0..<6 {
                 XCTAssertEqual(wide(app), [], "page \(page), pass \(pass)")

@@ -9,7 +9,7 @@ final class RoofDesignDragUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-noNotificationPrompt", "YES", "-surveyDemo", "YES", "-surveyFreshJob", "YES",
                                "-surveyDemoSection", "YES", "-surveyWideA1", "YES", "-surveyPage", "roof", "-surveyC1", "design"]
-        app.launch()
+        app.launchInThai()
         // the design's counts: the purlins already differ
         let counts = { (n: Int) in app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "ต่างจากแบบ \(n) |")).firstMatch }
         XCTAssertTrue(counts(1).waitForExistence(timeout: 90))

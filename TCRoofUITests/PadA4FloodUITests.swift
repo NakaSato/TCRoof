@@ -18,7 +18,7 @@ final class PadA4FloodUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyFreshJob", "YES", "-surveyDemoSection", "YES",
                                "-surveyWideA1", "YES", "-surveyPage", "flood", "-surveyA4", "flooded", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let result = app.descendants(matching: .any)["a4.result"]
         XCTAssertTrue(result.waitForExistence(timeout: slow))

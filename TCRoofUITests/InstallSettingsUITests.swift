@@ -13,7 +13,7 @@ final class InstallSettingsUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
                                "-noNotificationPrompt", "YES", "-pwaDocsCameraStub", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: slow), "the install page should open")
         guard app.windows.firstMatch.frame.width > 900 else { throw XCTSkip("the iPad page's tab, on an iPad simulator") }
         return app

@@ -12,7 +12,7 @@ final class MPStationFilesUITests: XCTestCase {
     func testAddOneStationFromItsPlanFile() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mpall", "-homeBoard", "YES", "-mpStationFiles", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let summary = app.staticTexts.matching(identifier: "stationFiles.summary").firstMatch
         XCTAssertTrue(summary.waitForExistence(timeout: slow), "the sheet should list the stations the app doesn't have")

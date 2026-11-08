@@ -20,7 +20,7 @@ final class IECInstallPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecInverter", "1", "-iecPage", "install", "-iecCameraStub", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 
@@ -37,6 +37,8 @@ final class IECInstallPhotosUITests: XCTestCase {
     /// The summary's `ถ่ายแล้ว 3/19 รูป | เหลือ 16` (or `ครบ 19 รูปแล้ว`), as the photos taken.
     func taken(_ app: XCUIApplication) -> Int? {
         let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "ถ่ายแล้ว ", "ครบ ")).firstMatch
+        // the summary is at the top of the page: scroll back to it after `reach` (on iPad, inside the board)
+        if !isPhone { for _ in 0..<12 where app.state == .runningForeground && !line.exists { app.swipeDownOnBoard() } }
         guard line.waitForExistence(timeout: slow) else { return nil }
         let label = line.label
         if label.hasPrefix("ครบ ") { return Int(label.dropFirst(4).prefix { $0.isNumber }) }
@@ -46,7 +48,7 @@ final class IECInstallPhotosUITests: XCTestCase {
     /// Scrolls the page until `e` can be tapped.
     func reach(_ e: XCUIElement, in app: XCUIApplication) {
         var n = 0
-        while !e.isHittable, n < 12 { app.swipeUp(); n += 1 }
+        while !e.isHittable, n < 12 { app.swipeUpOnBoard(); n += 1 }
         XCTAssertTrue(e.isHittable, "reached \(e)")
     }
 
@@ -100,7 +102,7 @@ final class IECInstallPhotosUITests: XCTestCase {
         try XCTSkipUnless(isPhone, "the iPhone job screen")
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "job", "-jobKind", "pwa", "-noNotificationPrompt", "YES", "-iecCameraStub", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ภาพถ่ายติดตั้งระบบ")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: slow), "the job screen's row")

@@ -14,7 +14,7 @@ final class UserAdminUITests: XCTestCase {
     private func launch(_ extra: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "useradmin", "-userAdminDemo", "YES", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 
@@ -123,7 +123,7 @@ final class UserAdminUITests: XCTestCase {
         func settings(_ role: String) -> XCUIApplication {
             let app = XCUIApplication()
             app.launchArguments = ["-screen", "home", "-homeSettings", "YES", "-role", role, "-noNotificationPrompt", "YES"]
-            app.launch()
+            app.launchInThai()
             XCTAssertTrue(text(app, "สมาชิกทีม").waitForExistence(timeout: slow))
             for _ in 0..<4 where !app.buttons["settings.userAdmin"].exists || !app.buttons["settings.userAdmin"].isHittable {
                 app.scrollViews.firstMatch.swipeUp()

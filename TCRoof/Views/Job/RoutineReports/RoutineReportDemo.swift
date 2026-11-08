@@ -86,6 +86,15 @@ struct RoutineDebugScreen: View {
                 job.supervisorEmail = nil
                 try? context.save()
             }
+            // `-routineAckPending YES`: the latest signed report waits for the inspector's `รับทราบ` again, whatever
+            // earlier runs acknowledged (the seed above runs once per job); for good
+            if UserDefaults.standard.bool(forKey: "routineAckPending"),
+               let log = job.dailyLogs.filter({ $0.engineerSignedAt != nil }).max(by: { $0.date < $1.date }) {
+                log.inspectorAckAt = nil
+                log.setSignature(nil, tag: InstallLog.inspectorSignatureTag, context: context)
+                job.feedMP()
+                try? context.save()
+            }
             seeded = true
         }
     }

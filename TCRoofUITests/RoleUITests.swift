@@ -12,7 +12,7 @@ final class RoleUITests: XCTestCase {
     private func launch(_ screen: String, role: String, _ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", screen, "-role", role, "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

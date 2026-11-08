@@ -18,7 +18,7 @@ final class AssistantUITests: XCTestCase {
     func testAskProposeAndConfirm() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let behind = app.buttons["สถานีไหนช้ากว่าแผน"]
         XCTAssertTrue(behind.waitForExistence(timeout: slow), "the prompt chips should show")
@@ -63,7 +63,7 @@ final class AssistantUITests: XCTestCase {
     func testStrategyChips() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "assistant", "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         func ask(_ chip: String, expect: String, shot name: String) {
             let b = app.buttons[chip]
@@ -99,7 +99,7 @@ final class AssistantUITests: XCTestCase {
     func testKeyOnTheDevice() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeSettings", "YES", "-role", "manager", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let row = app.buttons["assistantSettingsRow"]
         XCTAssertTrue(row.waitForExistence(timeout: slow), "settings should list the assistant")
@@ -141,7 +141,7 @@ final class AssistantUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES",
                                "-assistantDemo", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let open = app.buttons["ผู้ช่วย AI"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย AI")

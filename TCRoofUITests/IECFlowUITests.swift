@@ -39,7 +39,7 @@ final class IECFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecClear", "YES"]
-        app.launch()
+        app.launchInThai()
 
         // 1 | set-up: on iPad step 1's page
         let setUp = button(app, "ตั้งค่าการทดสอบ", contains: true)
@@ -133,7 +133,7 @@ final class IECFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecDemo", "praek", "-iecStep", "1", "-iecCameraStub", "YES"]
-        app.launch()
+        app.launchInThai()
 
         // step 1's add sheet: the 60 kW model (6 MPPT, 12 strings of 16), its two required photos from the stub camera
         let add = button(app, "+ เพิ่มอินเวอร์เตอร์")

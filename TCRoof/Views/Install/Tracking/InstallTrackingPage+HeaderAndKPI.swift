@@ -135,6 +135,7 @@ extension InstallTrackingPage {
                         .buttonStyle(.plain)
                         .id(item.id)
                         .accessibilityAddTraits(on ? .isSelected : [])
+                        .accessibilityIdentifier("installTab.\(item.id)")
                     }
                 }
                 .padding(4)

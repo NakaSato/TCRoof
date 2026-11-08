@@ -12,7 +12,7 @@ final class PhonePWAPlanUITests: XCTestCase {
         // `mpall` gives the first four jobs an MP plan around today, which makes them PWA stations
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mpall", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(app.navigationBars["แผน MP ทุกสถานี"].waitForExistence(timeout: slow) || app.buttons.firstMatch.waitForExistence(timeout: slow))
         app.terminate()
     }
@@ -20,7 +20,7 @@ final class PhonePWAPlanUITests: XCTestCase {
     func launch(_ pane: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyHomeTab", "plan", "-pwaPlanView", pane, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

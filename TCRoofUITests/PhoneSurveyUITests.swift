@@ -12,7 +12,7 @@ final class PhoneSurveyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES"]
             + (page.map { ["-surveyPage", $0] } ?? []) + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

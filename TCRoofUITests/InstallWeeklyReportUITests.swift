@@ -13,7 +13,7 @@ final class InstallWeeklyReportUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
                                "-installTab", "weekly", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         _ = app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: 300)
         app.terminate()
     }
@@ -22,7 +22,7 @@ final class InstallWeeklyReportUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-installDemo", "YES",
                                "-installTab", "weekly", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(app.buttons["กลับหน้ารายการงาน"].waitForExistence(timeout: slow))
         return app
     }

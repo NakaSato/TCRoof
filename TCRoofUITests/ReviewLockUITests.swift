@@ -11,7 +11,7 @@ final class ReviewLockUITests: XCTestCase {
     func launch(_ args: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-noNotificationPrompt", "YES"] + args
-        app.launch()
+        app.launchInThai()
         return app
     }
 

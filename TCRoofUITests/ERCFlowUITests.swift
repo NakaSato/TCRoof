@@ -12,7 +12,7 @@ final class ERCFlowUITests: XCTestCase {
     func testRequestingAgainWaitsOnTheUtility() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "stationdocs", "-stationDocsERC", "failed", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let request = app.buttons["erc.designRequest"]
         XCTAssertTrue(request.waitForExistence(timeout: slow), "the flag should open ลำดับ กกพ.")
@@ -32,7 +32,7 @@ final class ERCFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "stationdocs", "-stationDocsERC", "ready", "-stationDocsERCSize", "150",
                                "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let inspection = app.buttons["erc.inspectionRequest"]
         XCTAssertTrue(inspection.waitForExistence(timeout: slow), "the flag should open ลำดับ กกพ. on the small flow")
@@ -45,7 +45,7 @@ final class ERCFlowUITests: XCTestCase {
     func testOpenRequestLeadsToItsPapersAndShowsOnTheJobCard() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "stationdocs", "-stationDocsERC", "ready", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let papers = app.buttons["erc.papers.pk2"]
         XCTAssertTrue(papers.waitForExistence(timeout: slow), "an open พค.2 request should offer its papers")
@@ -55,7 +55,7 @@ final class ERCFlowUITests: XCTestCase {
         app.terminate()
 
         app.launchArguments = ["-screen", "job", "-jobKind", "pwa", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let line = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "ลำดับ กกพ. | ถึงคิวทีมเรา")).firstMatch
         XCTAssertTrue(app.staticTexts["เอกสารสถานี กปภ."].waitForExistence(timeout: slow) || line.waitForExistence(timeout: 8))
         for _ in 0..<8 where !line.exists { app.swipeUp() }

@@ -14,7 +14,7 @@ final class WeeklyRequestOnePageUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "request", "-routineRequest", "onepage", "-requestDemo", "YES", "-role", "internal",
                                "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom != .pad, "the one-page layout is iPad only")
         XCTAssertTrue(app.descendants(matching: .any)["requestTitle"].waitForExistence(timeout: slow), "the one page should open")
         return app

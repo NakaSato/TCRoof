@@ -10,7 +10,7 @@ final class TankKeyboardUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-noNotificationPrompt", "YES", "-surveyDemo", "YES", "-surveyFreshJob", "YES",
                                "-surveyDemoSection", "YES", "-surveyWideA1", "YES", "-surveyPage", "tank", "-surveyD1", "design"]
-        app.launch()
+        app.launchInThai()
         let point = { (n: Int) in app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "จุด V\(n) ")).firstMatch }
         // the design state selects V3
         XCTAssertTrue(point(3).waitForExistence(timeout: 90))

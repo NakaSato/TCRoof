@@ -14,7 +14,7 @@ final class PadA1UITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyFreshJob", "YES", "-surveyDemoSection", "YES",
                                "-surveyWideA1", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         // the frame shows once the job has coordinates
         let gps = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "17.0062, 99.8235")).firstMatch

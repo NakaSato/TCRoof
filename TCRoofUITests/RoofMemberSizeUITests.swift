@@ -20,7 +20,7 @@ final class RoofMemberSizeUITests: XCTestCase {
     func testPickingMemberSizes() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyPage", "roof", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(row(app, 1).waitForExistence(timeout: 90), "C1 shows the member rows")
         for n in 1...7 {
             open(app, n)
@@ -37,7 +37,7 @@ final class RoofMemberSizeUITests: XCTestCase {
     func launch() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyPage", "roof", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(row(app, 1).waitForExistence(timeout: 90), "C1 shows the member rows")
         return app
     }

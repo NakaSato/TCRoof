@@ -11,8 +11,9 @@ final class HomeNavbarUITests: XCTestCase {
 
     func launch() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-screen", "home", "-homeDemo", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        // `-surveyHomeType all`: the PWA home keeps its type between runs, and only the project list has the sorts
+        app.launchArguments = ["-screen", "home", "-homeDemo", "YES", "-noNotificationPrompt", "YES", "-surveyHomeType", "all"]
+        app.launchInThai()
         return app
     }
 

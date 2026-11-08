@@ -12,7 +12,7 @@ final class LiveNotificationBannerUITests: XCTestCase {
     func testEachLiveCaseShowsItsBanner() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeFeed", "demo", "-notifDemo", "live"]
-        app.launch()
+        app.launchInThai()
         let titles = ["เริ่มติดตั้งพรุ่งนี้", "ติดตั้ง Day 1/5", "เริ่มงานพรุ่งนี้ตามแผน MP", "ส่งรายงานประจำวันแล้ว", "งานเสร็จ รอผู้ตรวจ",
                       "ปัญหาใหม่", "สรุปวันนี้"]
         func banner(_ title: String) -> XCUIElement {
@@ -42,7 +42,7 @@ final class LiveNotificationBannerUITests: XCTestCase {
         for c in cases {
             let app = XCUIApplication()
             app.launchArguments = ["-screen", "home", "-homeFeed", "demo", "-notifDemo", "live", "-notifOnly", "\(c.only)"]
-            app.launch()
+            app.launchInThai()
             let banner = springboard.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", c.title)).firstMatch
             let asked = Date()
             while Date().timeIntervalSince(asked) < 90, !banner.exists {

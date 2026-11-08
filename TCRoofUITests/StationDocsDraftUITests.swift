@@ -17,7 +17,7 @@ final class StationDocsDraftUITests: XCTestCase {
     func testOutageLetterBecomesThePapersFile() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "stationdocs", "-stationDocsDraft", "outage", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let number = app.textFields["outage.number"]
         XCTAssertTrue(number.waitForExistence(timeout: slow), "the flag should open ร่างหนังสือแจ้งดับไฟ")

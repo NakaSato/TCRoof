@@ -9,7 +9,7 @@ final class RoofShadeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-noNotificationPrompt", "YES", "-surveyDemo", "YES", "-surveyFreshJob", "YES", "-surveyDemoSection", "YES",
                                "-surveyWideA1", "YES", "-surveyPage", "roof", "-surveyC1", "pvshade"]
-        app.launch()
+        app.launchInThai()
         if UIDevice.current.userInterfaceIdiom != .pad { throw XCTSkip("the shade card is the iPad's") }
         let sunAccess = app.descendants(matching: .any).matching(identifier: "shade-Sun Access").firstMatch
         XCTAssertTrue(sunAccess.waitForExistence(timeout: 90), "the card's Sun Access tile")

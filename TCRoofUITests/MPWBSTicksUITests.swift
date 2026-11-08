@@ -17,7 +17,7 @@ final class MPWBSTicksUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpTemplate", "P3-028", "-mpTickWBS", "2.1.1,2.1.3",
                                "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         // the tick booked its share of 2.1 into the plan
         let menu = app.buttons["ไฟล์ Excel"].firstMatch

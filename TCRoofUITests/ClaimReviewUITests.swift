@@ -11,7 +11,7 @@ final class ClaimReviewUITests: XCTestCase {
     func launch() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "claimreview", "-claimReviewDemo", "YES", "-role", "manager", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         return app
     }
 

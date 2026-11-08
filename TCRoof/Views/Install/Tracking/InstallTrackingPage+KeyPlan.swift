@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 import TCRoofUI
 import TCRoofCore
 
@@ -12,13 +13,10 @@ struct InstallKeyPlanTabView: View {
     let demo: Bool
 
     @Environment(\.modelContext) private var context
-    #if DEBUG
-    @State private var keyDemo: RoutineReport.Settings?
-    #endif
 
     private var settings: RoutineReport.Settings {
         #if DEBUG
-        if demo { return keyDemo ?? KeyPlanDemo.settings }
+        if demo { return KeyPlanDemo.current }
         #endif
         return job.routineSettings
     }
@@ -32,7 +30,7 @@ struct InstallKeyPlanTabView: View {
 
     private func saveSettings(_ s: RoutineReport.Settings) {
         #if DEBUG
-        if demo { keyDemo = s; return }
+        if demo { KeyPlanDemo.Edits.shared.settings = s; return }
         #endif
         job.routineSettings = s
         try? context.save()
@@ -46,7 +44,8 @@ struct InstallKeyPlanTabView: View {
 extension InstallTrackingPage {
     func keyPlanModel(_ data: InstallPageData) -> InstallKeyPlan {
         #if DEBUG
-        if Debug.demo { return InstallKeyPlan(rows: KeyPlanDemo.rows, planned: KeyPlanDemo.planned, settings: KeyPlanDemo.settings) }
+        // the panel's edits, so `วางแล้ว n/N` counts what was placed in the demo
+        if Debug.demo { return InstallKeyPlan(rows: KeyPlanDemo.rows, planned: KeyPlanDemo.planned, settings: KeyPlanDemo.current) }
         #endif
         return InstallKeyPlan(rows: data.gantt?.rows ?? [], planned: data.plannedByTask, settings: job.routineSettings)
     }
@@ -236,6 +235,9 @@ struct KeyPlanBoard: View {
     let place: (Double, Double) -> Void
     let cancel: () -> Void
     var arm: ((String) -> Void)? = nil
+    /// Each pin's frame in the plan, and the plan's size: the plan's one tap gesture finds the pin under the finger.
+    @State private var pinFrames: [String: CGRect] = [:]
+    @State private var planSize: CGSize = .zero
 
     private var selectedPoint: InstallKeyPlan.Point? {
         selected.flatMap { id in model.points.first { $0.id == id } }
@@ -249,9 +251,11 @@ struct KeyPlanBoard: View {
                 } else if let p = selectedPoint, !p.placed {
                     unplacedBanner(p)
                 }
+                // the plan takes every tap, a pin's too: the pins' own buttons lost their touches to this gesture
                 KeyPlanImage(image: picture, points: []) { x, y in
-                    if placing != nil { place(x, y) } else { select(nil) }
+                    if placing != nil { place(x, y) } else { select(pin(at: x, y)) }
                 }
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { planSize = $0 }
                 .overlay { if placing != nil { Theme.navySolid.opacity(0.12).allowsHitTesting(false).clipShape(RoundedRectangle(cornerRadius: 8)) } }
                 .overlay { pins }
                 .accessibilityIdentifier("keyPlanImage")
@@ -277,10 +281,22 @@ struct KeyPlanBoard: View {
             ForEach(model.points.filter(\.placed)) { p in
                 let o = offsets[p.id] ?? (0, 0)
                 KeyPlanPin(point: p, selected: selected == p.id) { select(p.id) }
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("keyPlanPins")) } action: { pinFrames[p.id] = $0 }
                     .position(x: (p.at?.x ?? 0) * g.size.width + o.dx, y: (p.at?.y ?? 0) * g.size.height + o.dy)
-                    .allowsHitTesting(placing == nil)
+                    .allowsHitTesting(false)
             }
         }
+        .coordinateSpace(.named("keyPlanPins"))
+    }
+
+    /// The placed pin whose 44 pt area holds the tap (the plan's fractions), the nearest when they overlap.
+    private func pin(at x: Double, _ y: Double) -> String? {
+        let at = CGPoint(x: x * planSize.width, y: y * planSize.height)
+        let placed = Set(model.points.filter(\.placed).map(\.id))
+        func distance(_ r: CGRect) -> CGFloat { hypot(r.midX - at.x, r.midY - at.y) }
+        func area(_ r: CGRect) -> CGRect { r.insetBy(dx: -max(0, (44 - r.width) / 2), dy: -max(0, (44 - r.height) / 2)) }
+        return pinFrames.filter { placed.contains($0.key) && area($0.value).contains(at) }
+            .min { distance($0.value) < distance($1.value) }?.key
     }
 
     /// `แตะบนผังเพื่อวาง 2.5-1 · จุด 2.5` with `ยกเลิก`.
@@ -548,6 +564,15 @@ enum KeyPlanDemo {
         s.keyPoints = ["หลังคา 1": [0.30, 0.31], "หลังคา 2": [0.56, 0.26], "หลังคา 3": [0.72, 0.55], "หลังคา 4": [0.50, 0.715],
                        "หลังคา 5": [0.15, 0.18], "ถังน้ำใส 1": [0.25, 0.70], "ถังน้ำใส 2": [0.86, 0.20]]
         return s
+    }
+
+    /// The demo's settings with what was placed or removed since launch (nothing is saved).
+    @MainActor static var current: RoutineReport.Settings { Edits.shared.settings ?? settings }
+
+    /// The demo's edits, shared by the panel that writes them and the progress card's header chip that counts them.
+    @MainActor @Observable final class Edits {
+        static let shared = Edits()
+        var settings: RoutineReport.Settings?
     }
 }
 #endif

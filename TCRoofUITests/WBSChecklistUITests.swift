@@ -13,7 +13,7 @@ final class WBSChecklistUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
                                "-installStage", "1", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let first = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.")).firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: slow), "the task sheet should list its WBS sub-tasks")
@@ -40,7 +40,7 @@ final class WBSChecklistUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
                                "-installStage", "1", "-role", "internal", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let editButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.edit.")).firstMatch
         XCTAssertTrue(editButton.waitForExistence(timeout: slow), "internal role should see WBS edit button")
@@ -62,7 +62,7 @@ final class WBSChecklistUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
                                "-installStage", "1", "-role", "external", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let updateButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.update.")).firstMatch
         XCTAssertTrue(updateButton.waitForExistence(timeout: slow), "external role should see WBS update button")

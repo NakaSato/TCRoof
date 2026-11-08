@@ -18,7 +18,7 @@ final class MPTemplateUITests: XCTestCase {
     func testStartFromATemplate() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let setup = app.buttons["ตั้งค่าแผน"].firstMatch
         XCTAssertTrue(setup.waitForExistence(timeout: slow), "an empty plan should offer ตั้งค่าแผน")
@@ -62,7 +62,7 @@ final class MPTemplateUITests: XCTestCase {
     func testStartFromAnInstallCase() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let setup = app.buttons["ตั้งค่าแผน"].firstMatch
         XCTAssertTrue(setup.waitForExistence(timeout: slow), "an empty plan should offer ตั้งค่าแผน")

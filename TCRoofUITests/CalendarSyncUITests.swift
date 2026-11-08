@@ -18,7 +18,7 @@ final class CalendarSyncUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "plan", "-planDemo", "YES", "-planToday", "2026-10-25", "-planDay", "2026-10-25",
                                "-calendarSync.on", "NO", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         XCTAssertTrue(text(app, "นำทาง").waitForExistence(timeout: slow))
         XCTAssertTrue(text(app, "โทร").exists)
         let add = app.buttons["addToCalendar"].firstMatch
@@ -32,7 +32,7 @@ final class CalendarSyncUITests: XCTestCase {
     func testSettingsHasTheCalendarSection() {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeSettings", "YES", "-calendarSync.on", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         let toggle = app.switches["settings.calendarSync"].firstMatch
         XCTAssertTrue(text(app, "การแจ้งเตือน").waitForExistence(timeout: slow))
         for _ in 0..<4 where !toggle.isHittable { app.scrollViews.firstMatch.swipeUp() }

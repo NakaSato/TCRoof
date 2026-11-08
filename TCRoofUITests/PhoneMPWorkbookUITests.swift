@@ -26,7 +26,7 @@ final class PhoneMPWorkbookUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "mp", "-mpClear", "YES", "-mpWeek", "2024-11-03",
                                "-mpImportFile", fixture.path, "-mpExportFile", exported.path, "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let importButton = app.buttons["นำเข้าไฟล์แผน (Excel)"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: slow), "an empty plan should offer the import")

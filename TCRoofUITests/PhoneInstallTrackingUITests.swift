@@ -16,7 +16,7 @@ final class PhoneInstallTrackingUITests: XCTestCase {
     func launch(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-installOpen", "YES", "-installDemo", "YES", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

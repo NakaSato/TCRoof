@@ -12,7 +12,7 @@ final class IECStagesUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

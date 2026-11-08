@@ -12,7 +12,7 @@ final class IECSheetPreviewUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecDemo", "reset"]
-        app.launch()
+        app.launchInThai()
         let open = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ดูชีต Excel")).firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: slow))
         open.tap()
@@ -63,7 +63,7 @@ final class IECSheetPreviewUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-homeBoard", "YES", "-installOpen", "YES", "-noNotificationPrompt", "YES",
                                "-iecOpen", "YES", "-iecDemo", "full"]
-        app.launch()
+        app.launchInThai()
         let submit = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "ส่งผลให้ทีม")).firstMatch
         XCTAssertTrue(submit.waitForExistence(timeout: slow))
         submit.tap()

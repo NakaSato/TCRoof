@@ -12,7 +12,7 @@ final class PadPWADocsUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "docs", "-homeBoard", "YES", "-pwaDocsDemo", "YES",
                                "-pwaDocsCameraStub", "YES", "-noNotificationPrompt", "YES"] + extra
-        app.launch()
+        app.launchInThai()
         return app
     }
 

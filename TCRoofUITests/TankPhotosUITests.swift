@@ -13,7 +13,7 @@ final class TankPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "pwa", "-surveyDemo", "YES", "-surveyDemoSection", "YES", "-surveyWideA1", "YES",
                                "-surveyPage", "tank", "-surveyD1", "photo", "-surveyCameraStub", "YES", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
 
         let ring = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "ภาพบังคับ ")).firstMatch
         XCTAssertTrue(ring.waitForExistence(timeout: slow))

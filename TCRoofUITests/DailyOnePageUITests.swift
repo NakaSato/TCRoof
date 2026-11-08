@@ -14,7 +14,7 @@ final class DailyOnePageUITests: XCTestCase {
     func testRightColumn() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "daily", "-role", "internal", "-jobTeam", "none", "-noNotificationPrompt", "YES"]
-        app.launch()
+        app.launchInThai()
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom != .pad, "the one-page layout is iPad only")
 
         // the calendar: pick the latest sent day before this one, and the date changes
@@ -57,7 +57,7 @@ final class DailyOnePageUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchArguments = ["-screen", "daily", "-routineDaily", "onepage", "-routineKeyPlan", "YES", "-routineDailyState", state,
                                    "-role", role, "-jobTeam", "none", "-noNotificationPrompt", "YES"]
-            app.launch()
+            app.launchInThai()
             return app
         }
         let team = launch("ack", role: "internal")
@@ -69,7 +69,7 @@ final class DailyOnePageUITests: XCTestCase {
         XCTAssertFalse(team.buttons["dailyAckConfirm"].isEnabled, "nothing to confirm before the acknowledgement")
         XCTAssertTrue(team.buttons["dailySendBack"].exists)
         box.tap()
-        XCTAssertTrue(team.navigationBars["Inspector รับทราบ"].waitForExistence(timeout: 10))
+        XCTAssertTrue(team.navigationBars["อนุมัติรายงานประจำวัน"].waitForExistence(timeout: 10))
         team.buttons["ยกเลิก"].tap()
         team.terminate()
 
@@ -85,12 +85,15 @@ final class DailyOnePageUITests: XCTestCase {
         XCTAssertFalse(contractor.buttons["dailySendBack"].exists)
     }
 
-    /// The daily list's `รับทราบ` on a signed report not yet acknowledged: the team opens the inspector sheet (cancelled,
-    /// nothing saved); a contractor has no button. Any simulator.
+    /// The daily list's `รับทราบ` on a signed report not yet acknowledged: a team member the job names (`daily.sign` is
+    /// the job's own people only, `Permissions.signsDaily`; `-jobTeam` names the test's `-roleEmail`) opens the inspector
+    /// sheet (cancelled, nothing saved); a contractor has no button. `-routineAckPending` takes the latest signed day's
+    /// acknowledgement off, whatever earlier runs left. Any simulator.
     func testDailyListAcknowledge() {
         let team = XCUIApplication()
-        team.launchArguments = ["-screen", "dailies", "-role", "internal", "-jobTeam", "none", "-noNotificationPrompt", "YES"]
-        team.launch()
+        team.launchArguments = ["-screen", "dailies", "-role", "internal", "-jobTeam", "uitest@tcroof.test",
+                                "-routineAckPending", "YES", "-noNotificationPrompt", "YES"]
+        team.launchInThai()
         let ack = team.buttons["dailyListAck"].firstMatch
         XCTAssertTrue(ack.waitForExistence(timeout: slow), "the seeded latest signed days have no acknowledgement yet")
         ack.tap()
@@ -100,7 +103,7 @@ final class DailyOnePageUITests: XCTestCase {
 
         let contractor = XCUIApplication()
         contractor.launchArguments = ["-screen", "dailies", "-role", "external", "-noNotificationPrompt", "YES"]
-        contractor.launch()
+        contractor.launchInThai()
         XCTAssertTrue(contractor.buttons["dailyListMenu"].firstMatch.waitForExistence(timeout: slow))
         XCTAssertFalse(contractor.buttons["dailyListAck"].waitForExistence(timeout: 5))
     }

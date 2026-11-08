@@ -10,8 +10,8 @@ import TCRoofCore
 /// - The PWA settings' `นักพัฒนา` switch (`GrowattDemoSwitch`) keeps `growattDemo` on in the device's defaults, so the web
 ///   example plants show without launching from a Mac. A launch argument wins over it for that launch.
 /// What Growatt doesn't give (expected energy, PR, PM, repairs, modules) is sample data (`MaintenanceMock`).
-/// The plant list comes first, then each plant's figures: 1 s apart on the portal, 6 s on the OpenAPI, which refuses
-/// calls closer together.
+/// The plant list comes first, then each plant's figures: all at once on the portal, 6 s apart on the OpenAPI, which
+/// refuses calls closer together.
 @MainActor @Observable
 final class GrowattDemoFeed {
     enum Source {
@@ -88,24 +88,31 @@ final class GrowattDemoFeed {
         stations = plants.map { GrowattWebDemo.summary(id: $0.id, name: $0.name) }
         pending = Set(stations.map(\.id))
         loaded = true
-        for p in plants {
-            let id = GrowattWebDemo.summary(id: p.id, name: p.name).id
-            if let plant = try? await web.plant(id: p.id, name: p.name) {
-                var row = GrowattWebDemo.summary(plant)
-                // today's curve for the card's sparkline, on the plant's own date; the row shows without it
-                if let date = plant.devices.map(\.lastUpdate).max().map({ String($0.prefix(10)) }), !date.isEmpty,
-                   let day = try? await web.dayPower(plantID: p.id, date: date) {
-                    row.hourly = GrowattWebDemo.hourly(day)
-                }
-                replace(Self.mocked(row))
-            } else {
-                // a request cancelled with the load is no failure of the plant
-                try Task.checkCancellation()
-                failed(id)
+        // every plant at once, each row filled as it comes: one plant the portal is slow on mustn't hold up the rest
+        await withTaskGroup(of: (String, MaintenanceStationSummary?).self) { group in
+            for p in plants {
+                group.addTask { (GrowattWebDemo.summary(id: p.id, name: p.name).id, await Self.webRow(web, id: p.id, name: p.name)) }
             }
-            pending.remove(id)
-            try await Task.sleep(nanoseconds: 1_000_000_000)
+            for await (id, row) in group {
+                if let row { replace(Self.mocked(row)) }
+                // a request cancelled with the load is no failure of the plant
+                else if !Task.isCancelled { failed(id) }
+                pending.remove(id)
+            }
         }
+        try Task.checkCancellation()
+    }
+
+    /// A plant's row with today's curve for the card's sparkline (on the plant's own date; the row shows without it).
+    /// Nil when the plant's figures fail.
+    nonisolated private static func webRow(_ web: GrowattWebDemo, id: String, name: String) async -> MaintenanceStationSummary? {
+        guard let plant = try? await web.plant(id: id, name: name) else { return nil }
+        var row = GrowattWebDemo.summary(plant)
+        if let date = plant.devices.map(\.lastUpdate).max().map({ String($0.prefix(10)) }), !date.isEmpty,
+           let day = try? await web.dayPower(plantID: id, date: date) {
+            row.hourly = GrowattWebDemo.hourly(day)
+        }
+        return row
     }
 
     private func loadAPI(_ api: GrowattAPI) async throws {

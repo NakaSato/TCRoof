@@ -56,7 +56,9 @@ public struct GrowattWebDemo: Sendable {
     }
 
     public var baseURL = URL(string: "https://server.growatt.com/")!
-    public var timeout: TimeInterval = 25
+    /// Seconds without an answer before a call fails. Long, since the portal answers nothing for about 70 s on the first
+    /// call for a plant it hasn't served lately (then under a second).
+    public var timeout: TimeInterval = 90
     public let session: URLSession
 
     /// A session with its own cookies, so the guest login stays in it.
@@ -85,17 +87,28 @@ public struct GrowattWebDemo: Sendable {
     }
 
     /// One plant's totals and all its devices. The portal gives the devices 4 to a page, so every page is read, up to
-    /// `maxDevicePages`.
+    /// `maxDevicePages`. The totals and the first page are asked together, then the other pages together: the portal
+    /// takes about 70 s over each call for a plant it hasn't served lately, so one after another would add those up.
     public func plant(id: String, name: String) async throws -> Plant {
-        let info = try await send("panel/getPlantData", query: ["plantId": id])
-        var pages: [Data] = [], page = 1, last = 1
-        repeat {
-            let data = try await send("panel/getDevicesByPlantList", form: ["plantId": id, "currPage": "\(page)"])
-            pages.append(data)
-            last = min(try Self.devicePage(data).pages, Self.maxDevicePages)
-            page += 1
-        } while page <= last
-        return try Self.parsePlant(info, devicePages: pages, id: id, name: name)
+        async let info = send("panel/getPlantData", query: ["plantId": id])
+        let first = try await devices(plantID: id, page: 1)
+        let last = min(try Self.devicePage(first).pages, Self.maxDevicePages)
+        var pages = [first]
+        if last > 1 {
+            pages += try await withThrowingTaskGroup(of: (Int, Data).self) { group in
+                for page in 2...last {
+                    group.addTask { (page, try await devices(plantID: id, page: page)) }
+                }
+                var rest: [(Int, Data)] = []
+                for try await r in group { rest.append(r) }
+                return rest.sorted { $0.0 < $1.0 }.map(\.1)
+            }
+        }
+        return try Self.parsePlant(try await info, devicePages: pages, id: id, name: name)
+    }
+
+    private func devices(plantID: String, page: Int) async throws -> Data {
+        try await send("panel/getDevicesByPlantList", form: ["plantId": plantID, "currPage": "\(page)"])
     }
 
     /// Pages of devices read at most: 200 devices at the portal's 4 a page.

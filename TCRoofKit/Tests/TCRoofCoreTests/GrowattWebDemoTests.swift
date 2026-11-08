@@ -70,6 +70,21 @@ final class GrowattWebDemoTests: XCTestCase {
         XCTAssertEqual(GrowattWebDemo.summary(p).energy, 100)
     }
 
+    /// `plant(id:name:)` asks for the totals and the device pages together (the portal can take about 70 s over each on a
+    /// cold plant) and still keeps the pages in order.
+    func testPlantCallsOverlap() async throws {
+        let pages = [try devicesPage(1, of: 3, start: 0, n: 4), try devicesPage(2, of: 3, start: 4, n: 4), try devicesPage(3, of: 3, start: 8, n: 2)]
+        PortalStub.reset(info: info, pages: pages)
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [PortalStub.self]
+        let p = try await GrowattWebDemo(session: URLSession(configuration: config)).plant(id: "1", name: "C")
+        XCTAssertEqual(p.devices.map(\.sn), (0..<10).map { "SN\($0)" })
+        XCTAssertEqual(p.eTotal, 9322.8)
+        XCTAssertEqual(PortalStub.calls, 4)
+        // the totals with page 1, then pages 2 and 3 together
+        XCTAssertGreaterThanOrEqual(PortalStub.mostAtOnce, 2)
+    }
+
     func testSignedOutPageIsAnError() {
         XCTAssertThrowsError(try GrowattWebDemo.parsePlant(notSignedIn, devices: devices, id: "1", name: "x")) {
             XCTAssertEqual($0 as? GrowattAPI.Failure, .badResponse)
@@ -184,5 +199,59 @@ final class GrowattWebDemoLiveTests: XCTestCase {
             }
             try await Task.sleep(nanoseconds: 1_000_000_000)
         }
+    }
+}
+
+/// The portal for one plant: `getPlantData` gives `info`, `getDevicesByPlantList` the page its form asks for. Each answer
+/// waits 0.2 s, so calls asked together are seen open at once (`mostAtOnce`).
+private final class PortalStub: URLProtocol, @unchecked Sendable {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var info = Data()
+    nonisolated(unsafe) private static var pages: [Data] = []
+    nonisolated(unsafe) private static var open = 0
+    nonisolated(unsafe) private static var most = 0
+    nonisolated(unsafe) private static var count = 0
+
+    static func reset(info: Data, pages: [Data]) {
+        lock.lock(); self.info = info; self.pages = pages; open = 0; most = 0; count = 0; lock.unlock()
+    }
+    static var mostAtOnce: Int { lock.lock(); defer { lock.unlock() }; return most }
+    static var calls: Int { lock.lock(); defer { lock.unlock() }; return count }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        let body = Self.body(of: request)
+        let page = body.split(separator: "&").first { $0.hasPrefix("currPage=") }.flatMap { Int($0.dropFirst(9)) }
+        Self.lock.lock()
+        Self.open += 1; Self.count += 1; Self.most = max(Self.most, Self.open)
+        let data = request.url?.path.hasSuffix("getPlantData") == true ? Self.info
+            : page.flatMap { Self.pages.indices.contains($0 - 1) ? Self.pages[$0 - 1] : nil } ?? Data()
+        Self.lock.unlock()
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { [self] in
+            Self.lock.lock(); Self.open -= 1; Self.lock.unlock()
+            if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+                client?.urlProtocol(self, didReceive: r, cacheStoragePolicy: .notAllowed)
+            }
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        }
+    }
+
+    override func stopLoading() {}
+
+    /// A POST's form: URLSession hands it to the protocol as a stream.
+    private static func body(of request: URLRequest) -> String {
+        if let d = request.httpBody { return String(decoding: d, as: UTF8.self) }
+        guard let stream = request.httpBodyStream else { return "" }
+        stream.open(); defer { stream.close() }
+        var data = Data(), buffer = [UInt8](repeating: 0, count: 1024)
+        while stream.hasBytesAvailable {
+            let n = stream.read(&buffer, maxLength: buffer.count)
+            if n <= 0 { break }
+            data.append(buffer, count: n)
+        }
+        return String(decoding: data, as: UTF8.self)
     }
 }

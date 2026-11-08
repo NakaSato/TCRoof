@@ -36,8 +36,14 @@ final class MonitoringStore {
 
     var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings) }
 
-    /// The dock's badge: the lines of `ต้องดำเนินการ`.
-    var actionCount: Int { fleet.actions.count }
+    /// The dock's badge: the stations in alarm or offline (`Fleet.needingAttention`), worked out when the stations or the
+    /// settings change, not on each redraw of the dock.
+    private(set) var attentionCount = 0
+
+    private func recount() {
+        let n = fleet.needingAttention
+        if n != attentionCount { attentionCount = n }
+    }
 
     /// Reads the stations again: the demo's, or the handed-over PWA stations (`jobs` from the page's query).
     func refresh(jobs: [Job]) {
@@ -52,6 +58,7 @@ final class MonitoringStore {
             }
         }
         refreshedAt = Date()
+        recount()
     }
 
     /// PWA stations handed over (`ส่งมอบแล้ว`): the ones maintenance looks after.
@@ -65,6 +72,8 @@ final class MonitoringStore {
     func save(_ s: Monitoring.Settings) {
         settings = s
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: Self.settingsKey) }
+        // the offline threshold is a setting
+        recount()
     }
 
     // MARK: connection test

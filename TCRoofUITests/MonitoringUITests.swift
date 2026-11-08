@@ -29,8 +29,8 @@ final class MonitoringUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(row(app, 25).waitForExistence(timeout: slow), "the table lists the example stations")
         XCTAssertTrue(app.staticTexts["ต้องดำเนินการ"].exists)
-        // the dock's tab counts the three actions
-        XCTAssertTrue(app.buttons["Monitor | ต้องดำเนินการ 3"].exists)
+        // the dock's tab counts the stations in alarm or offline (MP 25, MP 44), not the three actions
+        XCTAssertTrue(app.buttons["Monitor | ต้องดูแล 2"].firstMatch.exists)
 
         app.buttons["มีปัญหา 3"].tap()
         XCTAssertTrue(waitGone(row(app, 52)), "a normal station with nothing listed leaves `มีปัญหา`")

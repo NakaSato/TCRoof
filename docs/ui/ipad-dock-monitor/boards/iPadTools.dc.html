@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เครื่องมือ · หน้าแท็บ (iPad)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/tcroofsurvey/tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Sarabun;src:url(/_blob/cce3275ea50e42de3cbe91576b63f24b) format("truetype");font-weight:400}
+@font-face{font-family:Sarabun;src:url(/_blob/6981a627824e19ea636fd6eabaa19e55) format("truetype");font-weight:700}
+body{margin:0}
+.pc-nav{flex:none;min-height:72px;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-6);background:var(--surface);border-bottom:1px solid var(--border-subtle)}
+.pc-crumb{font:400 14px/21px var(--font-sans);color:var(--ink-muted);white-space:nowrap}
+.pc-crumb b{font-weight:700;color:var(--navy)}
+.sv,.sv *{box-sizing:border-box}
+.sv{font-family:var(--font-sans);color:var(--paper-ink);-webkit-font-smoothing:antialiased}
+.card{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-card)}
+.ch{font:700 20px/30px var(--font-sans);color:var(--navy)}
+.sec{font:700 12px/18px var(--font-sans);color:var(--ink-muted)}
+.row{display:flex;align-items:center;gap:var(--space-3);min-height:52px;padding:6px var(--space-4);font:400 16px/24px var(--font-sans);color:var(--paper-ink);border-top:1px solid var(--border-subtle);text-decoration:none;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;cursor:pointer}
+.row:first-child{border-top:0}
+.row .v{margin-left:auto;text-align:right;color:var(--paper-value);font-weight:700;white-space:nowrap}
+.row .ph{margin-left:auto;text-align:right;color:var(--ink-muted);font-size:14px;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:var(--space-1);font:700 12px/18px var(--font-sans);border-radius:var(--radius-pill);padding:2px 10px;white-space:nowrap}
+.c-int{color:var(--navy);background:var(--primary-soft)} .c-ins{color:var(--pending);background:var(--pending-soft)}
+.c-ok{color:var(--paper-tick-strong);background:var(--paper-band)} .c-red{color:var(--danger-text);background:var(--danger-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:var(--touch-min);padding:0 var(--space-4);border-radius:var(--radius-sm);font:700 16px/24px var(--font-sans);text-decoration:none;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.btn.p{background:var(--primary);color:var(--on-primary)}
+.btn.s{background:var(--surface);color:var(--navy);border-color:var(--border-control)}
+.btn.q{background:var(--surface);color:var(--primary);border-color:var(--border-control)}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile{flex:none;display:grid;place-items:center;border-radius:var(--radius-md)}
+.t-b{background:var(--primary-soft);color:var(--primary)} .t-g{background:var(--paper-band);color:var(--paper-tick-strong)} .t-o{background:var(--pending-soft);color:var(--pending)} .t-r{background:var(--danger-soft);color:var(--danger-text)} .t-n{background:var(--background);color:var(--ink-muted)}
+.kv{display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font:400 12px/18px var(--font-sans);color:var(--ink-muted);white-space:nowrap}
+.kv b{font:700 20px/28px var(--font-sans);color:var(--paper-value);font-variant-numeric:tabular-nums}
+.nav74{height:74px!important;min-height:74px!important;max-height:74px;box-sizing:border-box!important;padding-top:0!important;padding-bottom:0!important;flex:none!important}
+.nav74 .t{font-size:22px!important;line-height:28px!important}
+.nav74 .s{font-size:15px!important;line-height:20px!important}
+
+.tl-big{display:flex;flex-direction:column;gap:12px;padding:16px 18px;text-decoration:none;color:inherit;min-height:0}
+.tl-hd{display:flex;align-items:center;gap:12px}
+.tl-hd b{font:700 18px/26px var(--font-sans);color:var(--navy)}
+.tl-hd span.s{font:400 13px/18px var(--font-sans);color:var(--ink-muted)}
+.tl-go{margin-left:auto;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);flex:none}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wk a{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:64px;justify-content:center;border-radius:12px;background:var(--background);text-decoration:none;color:var(--paper-ink)}
+.wk a span{font:400 12px/16px var(--font-sans);color:var(--ink-muted)}
+.wk a b{font:700 17px/22px var(--font-sans);color:var(--navy)}
+.wk a i{font:700 11px/14px var(--font-sans);font-style:normal;color:var(--primary)}
+.sh{display:flex;align-items:baseline;gap:8px;margin:2px 2px -6px}
+.sh b{font:700 15px/22px var(--font-sans);color:var(--navy)}
+.sh span{font:400 13px/18px var(--font-sans);color:var(--ink-muted)}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.mod{display:flex;flex-direction:column;gap:10px;padding:16px;min-height:150px;text-decoration:none;color:inherit;border:1px solid var(--border-subtle)}
+.mod b.t{font:700 16px/22px var(--font-sans);color:var(--navy)}
+.mod span.d{font:400 13px/18px var(--font-sans);color:var(--ink-muted)}
+.mod .m{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap}
+.lst{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--border-subtle);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden}
+.lst a{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px;text-decoration:none;color:inherit;border-top:1px solid var(--border-subtle)}
+.lst a b{font:700 15px/21px var(--font-sans);color:var(--navy);display:block}
+.lst a span.d{font:400 13px/18px var(--font-sans);color:var(--ink-muted);display:block}
+.td{display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 12px;border-top:1px solid var(--border-subtle)}
+.td:first-child{border-top:0}
+.td b{font:700 14.5px/20px var(--font-sans);color:var(--navy);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td span.d{font:400 12.5px/17px var(--font-sans);color:var(--ink-muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{min-height:44px;padding:0 12px;border-radius:10px;border:0;background:var(--primary-soft);color:var(--primary);font:700 13.5px/18px var(--font-sans);cursor:pointer;white-space:nowrap;flex:none}
+.srch{display:flex;align-items:center;gap:8px;height:44px;width:300px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.14);color:#fff;font:400 15px/20px var(--font-sans);cursor:pointer}
+</style>
+</helmet>
+<div class="sv" style="position:relative;width:1366px;height:1024px;display:flex;flex-direction:column;overflow:hidden;background:var(--background)">
+<header class="nav74" style="flex:none;display:flex;align-items:center;gap:14px;padding:12px 24px 14px;background:linear-gradient(90deg,#1F6FB5,#2E8FDB);border-radius:0 0 15px 15px;color:#fff">
+<div style="flex-grow:1;min-width:0"><div style="font-size:22px;line-height:28px;font-weight:700;white-space:nowrap">เครื่องมือ</div><div style="font-size:15px;line-height:20px;opacity:.92">แผนงาน · เดินทาง · เครื่องมือวัด · รถ · งานสำรวจ <span style="margin-left:6px;font-size:12px;font-weight:700;background:#FFC53D;color:#16325C;border-radius:999px;padding:1px 8px">ข้อมูลตัวอย่าง</span></div></div>
+<button onClick="{{find}}" class="srch" aria-label="ค้นหาเครื่องมือ รถ หรือหน้าในเมนู"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg><span style="opacity:.9">ค้นหาเครื่องมือ รถ หรือเมนู</span></button>
+<a href="iPadToolRecord.dc.html" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;border:0;background:#fff;color:#16325C;font-family:inherit;font-size:15px;font-weight:700;text-decoration:none"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h2v2H8zM14 9h2v2h-2zM8 13h2v2H8zM14 13h2v2h-2z"></path></svg>สแกน / บันทึก</a>
+</header>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px;padding:20px 24px 100px">
+<div class="scroll" style="min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:18px">
+<div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px">
+<section aria-label="ปฏิทินแผนงาน" class="card tl-big">
+<a href="iPadPlanCal.dc.html" class="tl-hd" style="text-decoration:none"><span class="tile t-b" style="width:44px;height:44px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke-width:1.75"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3v3H8z"></path></svg></span><span style="display:flex;flex-direction:column;min-width:0"><b>ปฏิทินแผนงาน</b><span class="s">นัดสำรวจ วันติดตั้ง ทดสอบ และกำหนดส่งเอกสาร</span></span><span class="tl-go"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 5l7 7-7 7"></path></svg></span></a>
+<div class="wk"><sc-for list="{{week}}" as="d" hint-placeholder-count="7"><a href="iPadPlanCal.dc.html" aria-label="{{d.al}}" style="border:2px solid transparent;{{d.st}}"><span>{{d.w}}</span><b>{{d.n}}</b><i>{{d.c}}</i></a></sc-for></div>
+<div style="display:flex;flex-direction:column;border-top:1px solid var(--border-subtle);padding-top:4px"><sc-for list="{{today}}" as="t" hint-placeholder-count="3"><a href="{{t.href}}" style="display:flex;align-items:center;gap:10px;min-height:44px;text-decoration:none;color:var(--paper-ink);font:400 14.5px/20px var(--font-sans)"><span style="width:48px;flex:none;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums">{{t.time}}</span><span style="width:8px;height:8px;border-radius:4px;flex:none;background:{{t.dot}}"></span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.what}}</span><span class="chip {{t.ck}}">{{t.k}}</span></a></sc-for></div>
+</section>
+<section aria-label="เดินทางและเบิกค่าใช้จ่าย" class="card tl-big">
+<a href="iPadTravel.dc.html" class="tl-hd" style="text-decoration:none"><span class="tile t-o" style="width:44px;height:44px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke-width:1.75"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg></span><span style="display:flex;flex-direction:column;min-width:0"><b>เดินทางและเบิกค่าใช้จ่าย</b><span class="s">ใบเสร็จ · ใบเบิกรายเดือน</span></span><span class="tl-go"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 5l7 7-7 7"></path></svg></span></a>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><sc-for list="{{trv}}" as="k" hint-placeholder-count="3"><div class="kv" style="padding:8px 10px;border-radius:var(--radius-md);background:var(--background)"><span>{{k.t}}</span><b>{{k.v}}</b></div></sc-for></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--pending-soft)"><span style="flex:1;font:400 14px/20px var(--font-sans);color:var(--paper-ink)">{{trvNote}}</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto"><button onClick="{{arrive}}" class="btn p" style="min-height:48px;border:0">ถึงสถานีแล้ว</button><button onClick="{{receipt}}" class="btn s" style="min-height:48px">ถ่ายใบเสร็จ</button></div>
+</section>
+</div>
+<div class="sh"><b>เครื่องมือวัดและรถ</b><span>ยืม-คืน สอบเทียบ และการใช้รถของทีม</span></div>
+<div class="grid4"><sc-for list="{{mods}}" as="m" hint-placeholder-count="4"><a href="{{m.href}}" class="card mod"><span style="display:flex;align-items:center;gap:10px"><span class="tile {{m.tc}}" style="width:40px;height:40px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px;stroke-width:1.75"><path d="{{m.ic}}"></path></svg></span><span style="margin-left:auto;color:var(--ink-muted)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 5l7 7-7 7"></path></svg></span></span><span style="display:flex;flex-direction:column;gap:2px"><b class="t">{{m.t}}</b><span class="d">{{m.d}}</span></span><span class="m"><sc-for list="{{m.chips}}" as="c" hint-placeholder-count="2"><span class="chip {{c.k}}">{{c.t}}</span></sc-for></span></a></sc-for></div>
+<div class="sh"><b>งานสำรวจและเอกสาร</b><span>เครื่องมือช่วยงานบ้านและงาน PWA</span></div>
+<div class="lst"><sc-for list="{{more}}" as="r" hint-placeholder-count="8"><a href="{{r.href}}" onClick="{{r.go}}" style="color:inherit;{{r.bd}}"><span class="tile {{r.tc}}" style="width:38px;height:38px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;stroke-width:1.75"><path d="{{r.ic}}"></path></svg></span><span style="flex:1;min-width:0"><b>{{r.t}}</b><span class="d">{{r.s}}</span></span><span style="color:var(--ink-muted)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 5l7 7-7 7"></path></svg></span></a></sc-for></div>
+</div>
+<div style="min-height:0;display:flex;flex-direction:column;gap:16px">
+<section aria-label="ต้องจัดการวันนี้" class="card" style="flex:none;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><b class="ch" style="font-size:18px">ต้องจัดการ</b><span class="chip c-red">{{todoN}}</span><a href="iPadToolsHub.dc.html" class="btn q" style="margin-left:auto;border:0;padding:0 8px;font-size:14px">สมุดบันทึก <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 5l7 7-7 7"></path></svg></a></div>
+<div style="display:flex;flex-direction:column;border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"><sc-for list="{{todo}}" as="t" hint-placeholder-count="4"><div class="td"><span class="tile {{t.tc}}" style="width:34px;height:34px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;stroke-width:1.75"><path d="{{t.ic}}"></path></svg></span><span style="flex:1;min-width:0"><b>{{t.t}}</b><span class="d" style="{{t.sSt}}">{{t.s}}</span></span><button onClick="{{t.go}}" class="mini">{{t.act}}</button></div></sc-for></div>
+</section>
+<section aria-label="ออกใช้งานอยู่" class="card" style="flex:1;min-height:0;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><b class="ch" style="font-size:18px">ออกใช้งานอยู่</b><span style="font:400 13px/18px var(--font-sans);color:var(--ink-muted)">{{outSum}}</span></div>
+<div class="scroll" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;border:1px solid var(--border-subtle);border-radius:var(--radius-md)"><sc-for list="{{outs}}" as="o" hint-placeholder-count="3"><div class="td"><span style="width:34px;height:34px;flex:none;border-radius:17px;display:grid;place-items:center;color:#fff;font:700 14px/1 var(--font-sans);{{o.av}}">{{o.ini}}</span><span style="flex:1;min-width:0"><b>{{o.what}}</b><span class="d">{{o.who}}</span></span><span style="text-align:right;flex:none;font:400 12.5px/17px var(--font-sans);{{o.dSt}}">{{o.dur}}</span></div></sc-for></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><sc-for list="{{carsMini}}" as="v" hint-placeholder-count="3"><a href="iPadVehicle.dc.html" style="display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:12px;background:var(--background);text-decoration:none;color:inherit;min-height:44px"><span style="font:700 12px/16px var(--font-sans);color:var(--navy);white-space:nowrap">{{v.plate}}</span><span class="chip {{v.ck}}" style="align-self:flex-start">{{v.st}}</span><span style="height:5px;border-radius:3px;background:var(--border-subtle);overflow:hidden"><i style="display:block;height:100%;{{v.fuel}}"></i></span></a></sc-for></div>
+</section>
+</div></div>
+<sc-if value="{{hasToast}}" hint-placeholder-val="false"><div role="status" style="position:absolute;left:50%;bottom:110px;transform:translateX(-50%);z-index:12;background:var(--navy);color:var(--surface);border-radius:var(--radius-md);padding:10px 18px;font:700 14px/21px var(--font-sans);box-shadow:var(--shadow-sheet)">{{toast}}</div></sc-if>
+<nav aria-label="เมนูหลัก" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:2px;padding:6px;border-radius:28px;background:rgba(255,255,255,0.96);border:1px solid #C9D3E0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)"><a href="iPadMenu.dc.html" aria-label="หน้าแรก" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">หน้าแรก</span></a><a href="iPadHome.dc.html" aria-label="โครงการ · นัดวันนี้ 2" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">โครงการ</span><b aria-hidden="true" style="position:absolute;top:5px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;outline:2px solid #fff">2</b></a><a href="iPadSurveyHome.dc.html" aria-label="งานบ้าน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M3.5 11.5L12 4l8.5 7.5"></path><path d="M6 10v10h12V10"></path><path d="M9 14.5l3-1.8 3 1.8M9 17.5l3-1.8 3 1.8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">งานบ้าน</span></a><a href="iPadPdfPreview.dc.html" aria-label="เอกสาร" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14.5l2 2 4-4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">เอกสาร</span></a><a href="iPadPwaMonitoring.dc.html" aria-label="Monitor" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M6.5 11.5h2.5l1.5-3 2.5 5 1.5-2h3M9 21h6M12 17v4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">Monitor</span><b aria-hidden="true" style="position:absolute;top:5px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#D9453B;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;outline:2px solid #fff">3</b></a><a href="iPadTools.dc.html" aria-current="page" aria-label="เครื่องมือ" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#fff;background:#16325C"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><rect x="8.5" y="5" width="7" height="4" rx="1"></rect><circle cx="12" cy="14" r="2.6"></circle><path d="M12 14l1.4-1.4"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:800;white-space:nowrap">เครื่องมือ</span></a><a href="iPadEquip.dc.html" aria-label="สแกน" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"></path><path d="M8 8v8M11 8v8M14 8v8M17 8v8"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">สแกน</span></a><i aria-hidden="true" style="width:1px;align-self:stretch;margin:10px 4px;background:#DDE4ED"></i><a href="iPadSettings.dc.html" aria-label="ตั้งค่าและบัญชี" style="position:relative;width:84px;min-height:58px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;border:0;padding:0;font-family:inherit;cursor:pointer;color:#3E4C60;background:transparent"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;fill:none;stroke:#3E4C60;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg><span style="font-size:11.5px;line-height:14px;font-weight:600;white-space:nowrap">ตั้งค่า</span></a></nav>
+</div>
+</x-dc><script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1024}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // หน้าแท็บ "เครื่องมือ" (iPad): ทางเข้าแผนงาน เดินทาง เครื่องมือวัด รถ และเครื่องมืองานสำรวจ · ค่าตัวอย่าง · วันอ้างอิง พ. 30 ก.ย. 2569 (ตรงกับสมุดบันทึกเครื่องมือและรถ)
+    const s = Object.assign({ toast: '', day: 2 }, this.state || {});
+    const set = p => this.setState(Object.assign({}, s, p));
+    const say = t => () => set({ toast: t });
+    const C = (t, k) => ({ t, k });
+    const W = [['จ.', 28, 2], ['อ.', 29, 1], ['พ.', 30, 3], ['พฤ.', 1, 2], ['ศ.', 2, 0], ['ส.', 3, 1], ['อา.', 4, 0]];
+    const week = W.map(([w, n, c], i) => ({ w, n, c: c ? c + ' งาน' : '—', al: w + ' ' + n + ' · ' + (c ? c + ' งาน' : 'ว่าง'),
+      st: i === 2 ? 'background:var(--surface);border-color:var(--primary)' : '' }));
+    const today = [
+      { time: '08:00', what: 'ติดตั้งแผง · MP 25 กปภ. สาขาตัวอย่าง', k: 'ติดตั้ง', ck: 'c-int', dot: 'var(--primary)', href: 'iPadPlanCal.dc.html' },
+      { time: '10:30', what: 'นัดสำรวจ · บ้านคุณตัวอย่าง (งานบ้าน)', k: 'สำรวจ', ck: 'c-ins', dot: 'var(--pending)', href: 'iPadPlanCal.dc.html' },
+      { time: '16:00', what: 'กำหนดส่ง พค.2 · MP 12', k: 'เอกสาร', ck: 'c-red', dot: 'var(--danger)', href: 'iPadPlanCal.dc.html' }];
+    const trv = [{ t: 'เดินทางเดือนนี้', v: '3 วัน' }, { t: 'ใบเสร็จ', v: '5 ใบ' }, { t: 'ใบเบิก ก.ย.', v: 'ร่าง' }];
+    const mods = [
+      { t: 'ทะเบียนเครื่องมือวัด', d: '10 เครื่อง · ใบรับรองสอบเทียบ', href: 'iPadToolRegister.dc.html', tc: 't-g', ic: 'M8 10V7a4 4 0 0 1 8 0v3M10 10V7.5a2 2 0 0 1 4 0V10M6.5 10h11v11h-11zM9.5 14h5M12 17.5v.01', chips: [C('สอบเทียบใกล้ครบ 3', 'c-ins'), C('งดใช้ 2', 'c-red')] },
+      { t: 'บันทึกเครื่องมือและรถ', d: 'ยืม · คืน · ออกรถ · เติมน้ำมัน', href: 'iPadToolsHub.dc.html', tc: 't-b', ic: 'M5 4h11l3 3v13H5zM9 9h6M9 13h6M9 17h4', chips: [C('วันนี้ 3 รายการ', 'c-int')] },
+      { t: 'รถของบริษัท', d: 'ไมล์ น้ำมัน และรอบเช็กระยะ', href: 'iPadVehicle.dc.html', tc: 't-b', ic: 'M3 13l2-5a2 2 0 0 1 1.9-1.4h10.2A2 2 0 0 1 19 8l2 5v5h-2.5M3 13v5h2.5M3 13h18M7.5 18.5a1.5 1.5 0 1 0 0-.1zM16.5 18.5a1.5 1.5 0 1 0 0-.1zM9 18h6', chips: [C('ออกอยู่ 1 / 3', 'c-int'), C('ถึงรอบ 1', 'c-ins')] },
+      { t: 'สแกน / บันทึก', d: 'สแกน QR ที่ตัวเครื่องหรือรถ', href: 'iPadToolRecord.dc.html', tc: 't-n', ic: 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h2v2H8zM14 9h2v2h-2zM8 13h2v2H8zM14 13h2v2h-2z', chips: [C('ยืม · คืน · รถ', 'c-ok')] }];
+    const M = [
+      ['รายการแผนก่อสร้าง', '12 สถานี · ช้ากว่าแผน 2', 'M4 6h10M4 12h16M4 18h7M17 4v4M20 6h-6', 't-b', 'iPadPlanList.dc.html'],
+      ['บันทึกอุปกรณ์ที่ติดตั้ง', 'S/N และภาพป้าย · ขาด 14', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2', 't-g', 'iPadEquip.dc.html'],
+      ['ประวัติการสำรวจ', 'เดือนนี้ 18 งาน', 'M12 8v4l3 2M12 3a9 9 0 1 0 9 9M21 3v6h-6', 't-o', 'iPadSurveyHistory.dc.html'],
+      ['น้ำหนักบนหลังคา', 'ภาระแผง + ราง ต่อ ตร.ม.', 'M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z', 't-b', '#'],
+      ['ชุดไฟล์ PPIM', 'รวมไฟล์ยื่น กฟภ.', 'M4 7h6l2 2h8v10H4zM4 7V5h6l2 2', 't-b', '#'],
+      ['ข้อมูลกรอก PPIM', 'คัดลอกค่าไปกรอกเว็บ', 'M8 4h8v4H8zM6 6H4v14h16V6h-2M8 13h8M8 17h5', 't-b', '#'],
+      ['แฟ้มเอกสาร', 'เอกสารงานบ้านที่เก็บไว้', 'M3 7h7l2 2h9v11H3z', 't-o', '#'],
+      ['ตั้งค่ากลาง', 'สเปกอุปกรณ์ · ค่าเริ่มต้น', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4', 't-n', 'iPadGlobal.dc.html']];
+    const more = M.map(([t, sub, ic, tc, href], i) => ({ t, s: sub, ic, tc, href, go: href === '#' ? say('เปิด ' + t + ' (หน้านี้ยังไม่มีบอร์ด)') : () => {},
+      bd: (i < 2 ? 'border-top:0;' : '') + (i % 2 === 0 ? 'border-right:1px solid var(--border-subtle);' : '') }));
+    const TOOLI = 'M8 10V7a4 4 0 0 1 8 0v3M10 10V7.5a2 2 0 0 1 4 0V10M6.5 10h11v11h-11zM9.5 14h5M12 17.5v.01';
+    const CARI = 'M3 13l2-5a2 2 0 0 1 1.9-1.4h10.2A2 2 0 0 1 19 8l2 5v5h-2.5M3 13v5h2.5M3 13h18M7.5 18.5a1.5 1.5 0 1 0 0-.1zM16.5 18.5a1.5 1.5 0 1 0 0-.1zM9 18h6';
+    const done = s.done || {};
+    const T = [
+      { id: 'a', t: 'Fluke 376 FC แคลมป์มิเตอร์', s: 'วิชัย · ครบคืน 29/9 · เกิน 1 วัน', tc: 't-r', ic: TOOLI, act: 'ทวงคืน', ok: 'ส่งข้อความทวงคืนถึง วิชัย แล้ว', red: true },
+      { id: 'b', t: 'Fluke Ti401 PRO', s: 'ใบรับรองสอบเทียบหมด 20/9 · งดใช้', tc: 't-r', ic: TOOLI, act: 'นัดสอบเทียบ', ok: 'เปิดนัดสอบเทียบ Fluke Ti401 PRO', red: true },
+      { id: 'c', t: 'Toyota Commuter · 2กค 5678', s: 'ถึงรอบเช็กระยะใน 500 กม.', tc: 't-o', ic: CARI, act: 'นัดเข้าศูนย์', ok: 'บันทึกนัดเข้าศูนย์ 2กค 5678', red: false },
+      { id: 'd', t: 'ใบเบิกค่าใช้จ่าย ก.ย.', s: 'ยังไม่ส่ง · ปิดรอบสิ้นเดือน', tc: 't-o', ic: 'M3 12h4l3-8 4 16 3-8h4', act: 'ลงนามส่ง', ok: 'เปิดหน้าลงนามใบเบิก ก.ย.', red: false }];
+    const todoL = T.filter(t => !done[t.id]);
+    const todo = todoL.map(t => Object.assign({}, t, { sSt: t.red ? 'color:var(--danger-text)' : '', go: () => set({ done: Object.assign({}, done, { [t.id]: 1 }), toast: t.ok }) }));
+    const AV = ['var(--primary)', 'var(--paper-tick-strong)', '#6B4FBB'];
+    const outs = [
+      ['Fluke 376 FC แคลมป์มิเตอร์', 'วิชัย · NO.098 งานติดตั้ง', '4 วัน', true],
+      ['DJI Mavic 3 Thermal', 'สมชาย · NO.224 กปภ. สาขาตัวอย่าง', '2 ชม. 18 น.', false],
+      ['Isuzu D-Max · 1กข 1234', 'สมชาย · NO.224 · ออก 07:40', '3 ชม. 40 น.', false]].map(([what, who, dur, late], i) => ({ what, who, dur: late ? 'เกินกำหนด ' + dur : dur,
+        ini: who.slice(0, 1), av: 'background:' + AV[i % 3], dSt: late ? 'color:var(--danger-text);font-weight:700' : 'color:var(--ink-muted)' }));
+    const carsMini = [['1กข 1234', 'ออกใช้งาน', 'c-int', 0.55], ['2กค 5678', 'ว่าง', 'c-ok', 0.3], ['3กง 9012', 'จองแล้ว', 'c-ins', 0.9]].map(([plate, st, ck, f]) => ({ plate, st, ck,
+      fuel: 'width:' + Math.round(f * 100) + '%;background:' + (f < 0.35 ? 'var(--danger)' : 'var(--paper-tick)') }));
+    return { week, today, trv, trvNote: 'ใบเบิก ก.ย. ยังเป็นร่าง · ลงนามส่งก่อนสิ้นเดือน', mods, more, todo, todoN: todoL.length + ' รายการ',
+      outs, outSum: 'เครื่องมือ 2 · รถ 1', carsMini,
+      arrive: say('บันทึกถึงสถานี · ใช้ตำแหน่งของเครื่อง'), receipt: say('เปิดกล้องถ่ายใบเสร็จ · อ่านยอดเงินจากรูป'),
+      find: say('ค้นหาชื่อเครื่อง ทะเบียนรถ หรือหน้าในเมนูเครื่องมือ'),
+      hasToast: !!s.toast, toast: s.toast };
+  }
+}
+</script>
+</body>
+</html>

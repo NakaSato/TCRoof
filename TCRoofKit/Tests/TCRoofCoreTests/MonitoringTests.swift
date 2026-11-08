@@ -68,6 +68,19 @@ final class MonitoringTests: XCTestCase {
         XCTAssertEqual(demo.alarmCount, 4)
     }
 
+    func testTheDockCountsStationsInAlarmOrOffline() {
+        // MP 44 offline and MP 25 in alarm; MP 12's own string check leaves it normal (issue #270)
+        XCTAssertEqual(demo.needingAttention, 2)
+        // a station not paired yet reads offline in the table but has no feed to fall silent: the badge stays 0
+        let unpaired = Monitoring.Station.unpaired(id: "a", mpNumber: 1, name: "A", kWp: 100, inverters: 1)
+        let fleet = Monitoring.Fleet([unpaired], now: now, settings: .init())
+        XCTAssertEqual(fleet.rows.first?.health, .offline)
+        XCTAssertEqual(fleet.needingAttention, 0)
+        // paired but never heard from is offline, and counts
+        let silent = Monitoring.Station(id: "b", name: "B", kWp: 100, inverters: 1)
+        XCTAssertEqual(Monitoring.Fleet([unpaired, silent], now: now, settings: .init()).needingAttention, 1)
+    }
+
     func testFiltersAndSorts() {
         let f = demo
         XCTAssertEqual(f.count(.all), 6)

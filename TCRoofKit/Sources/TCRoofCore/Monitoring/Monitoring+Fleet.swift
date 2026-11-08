@@ -152,9 +152,14 @@ extension Monitoring {
         public var online: Int { rows.filter { $0.health != .offline }.count }
         public var alarmCount: Int { stations.reduce(0) { $0 + $1.alarms.count } }
 
+        /// Stations that need someone (the iPad dock's `Monitor` badge, issue #270, decision 1 of #267): paired with a
+        /// source and in alarm or offline. A station not paired yet has no feed to fall silent, so it doesn't count:
+        /// until stations are paired the badge is 0.
+        public var needingAttention: Int { rows.filter { $0.station.paired && $0.health != .normal }.count }
+
         // MARK: ต้องดำเนินการ
 
-        /// One line per station and part, the costliest first: the dock's badge counts them.
+        /// One line per station and part, the costliest first.
         public var actions: [Action] {
             var groups: [String: Action] = [:]
             var order: [String] = []

@@ -109,7 +109,7 @@ struct PadTabs<HomeRoot: View>: View {
         #if DEBUG
         // `-screen pwa` is the PWA module: the `โครงการ` tab
         if DebugScreen.requested == "pwa" { return .pwa }
-        // `-homeTab survey|pwa|docs|tools|scan` opens with that tab selected, for simulator checks
+        // `-homeTab survey|pwa|docs|monitor|tools|scan` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PadTab(rawValue: raw), PadTab.stacks.contains(t) { return t }
         #endif
         return .home
@@ -142,7 +142,7 @@ private struct PadDockBarContent: View {
     let permissions: Permissions
     let today: Date
     @Query private var jobsToday: [Job]
-    /// The badge of `Monitor`: the lines of its `ต้องดำเนินการ`.
+    /// The badge of `Monitor`: the stations in alarm or offline.
     @State private var monitoring = MonitoringStore.shared
 
     init(dock: PadDock, permissions: Permissions, today: Date) {
@@ -164,13 +164,14 @@ private struct PadDockBarContent: View {
     private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {
         let home = jobsToday.filter { $0.kind == .home }.count
         let pwa = jobsToday.filter { $0.kind == .pwa }.count
+        let attention = monitoring.attentionCount
         return [
             TCTabItem<PadTab>(.home, title: "หน้าแรก", symbol: "house"),
             TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
-            TCTabItem(.monitor, title: "Monitor", symbol: "waveform.path.ecg.rectangle", badge: monitoring.actionCount,
-                      accessibilityLabel: monitoring.actionCount > 0 ? "Monitor | ต้องดำเนินการ \(monitoring.actionCount)" : "Monitor"),
+            TCTabItem(.monitor, title: "Monitor", asset: "tab-monitor", badge: attention,
+                      accessibilityLabel: attention > 0 ? "Monitor | ต้องดูแล \(attention)" : "Monitor"),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),
             // not a tab: settings stays a sheet, as on the iPhone

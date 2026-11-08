@@ -1,4 +1,5 @@
 import Foundation
+import os
 import SwiftData
 import Network
 import FirebaseAuth
@@ -397,12 +398,14 @@ extension CloudSync {
             let contextID = ObjectIdentifier(context)
             // Startup saves have no upload observer yet; don't let their marker swallow the first later UI edit.
             if !observers.isEmpty { remoteSavePushSuppressions.insert(contextID) }
+            let signpost = SyncLog.signposts.beginInterval("snapshot save", id: SyncLog.signposts.makeSignpostID())
             do {
                 try context.save()
             } catch {
                 remoteSavePushSuppressions.remove(contextID)
                 SyncLog.sync.error("remote save: \(error.localizedDescription)")
             }
+            SyncLog.signposts.endInterval("snapshot save", signpost)
         }
         applyingRemoteSnapshots = false
     }

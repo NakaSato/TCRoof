@@ -96,22 +96,31 @@ struct ClaimExport {
 
     // MARK: submit
 
-    /// ยื่นเบิก: locks the month with the signature and logs it. The upload follows (`upload`).
-    func submit(signature: Data?) {
+    /// ยื่นเบิก: locks the month with the signature and logs it. The upload follows (`upload`). A save that fails puts the
+    /// month back as it was and throws, so it never looks submitted while nothing was kept.
+    func submit(signature: Data?) throws {
         let c = TravelStore.claim(context, month: month, create: true)!
+        let before = (c.signature, c.submittedAt, c.log)
         c.signature = signature
         c.submittedAt = .now
         c.addLog("ยื่นเบิก \(Self.stamp(.now)) | \(TravelClaim.baht(summary.total)) บาท")
-        try? context.save()
+        if let error = context.saveOrReport("claim submit") {
+            (c.signature, c.submittedAt, c.log) = before
+            throw error
+        }
     }
 
     /// ถอนการยื่น: unlocks the month for edits; the files on Drive stay as the record of what was sent.
-    func withdraw(reason: String) {
+    func withdraw(reason: String) throws {
         // an approved month stays as approved; a manager sends it back first
         guard let c = claim, !ClaimReviews.shared.status(month: month, submittedAt: c.submittedAt).isApproved else { return }
+        let before = (c.submittedAt, c.log)
         c.submittedAt = nil
         c.addLog("ถอนการยื่น \(Self.stamp(.now))" + (reason.isEmpty ? "" : " | \(reason)"))
-        try? context.save()
+        if let error = context.saveOrReport("claim withdraw") {
+            (c.submittedAt, c.log) = before
+            throw error
+        }
     }
 
     static func stamp(_ d: Date) -> String {

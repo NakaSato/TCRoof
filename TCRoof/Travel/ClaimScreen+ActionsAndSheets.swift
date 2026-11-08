@@ -51,8 +51,9 @@ extension ClaimScreen {
         do { share = try ClaimExport(month: month, context: context).files() } catch { notice = "ส่งออกไม่สำเร็จ: \(error.localizedDescription)" }
     }
 
-    func submit(_ signature: Data?) {
-        ClaimExport(month: month, context: context).submit(signature: signature)
+    /// Throws when the month couldn't be saved; the sheet stays open and says so.
+    func submit(_ signature: Data?) throws {
+        try ClaimExport(month: month, context: context).submit(signature: signature)
         Task { await upload() }
     }
 
@@ -92,9 +93,10 @@ enum ClaimPagesTime {
 struct ClaimSubmitSheet: View {
     let total: Int
     let warnings: Int
-    let submit: (Data?) -> Void
+    let submit: (Data?) throws -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var signature: Data?
+    @State private var failure: String?
 
     var body: some View {
         NavigationStack {
@@ -120,7 +122,9 @@ struct ClaimSubmitSheet: View {
                 Text("เมื่อยื่นแล้ว รายการของเดือนนี้จะแก้ไม่ได้จนกว่าจะถอนการยื่น ใบเบิก PDF, Excel และรูปใบเสร็จจะส่งขึ้น Google Drive ของคุณ")
                     .font(.sarabun(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
                 Spacer()
-                Button { submit(signature); dismiss() } label: { Label("ยื่นเบิก", systemImage: "paperplane.fill") }
+                Button {
+                    do { try submit(signature); dismiss() } catch { failure = error.localizedDescription }
+                } label: { Label("ยื่นเบิก", systemImage: "paperplane.fill") }
                     .buttonStyle(TCButtonStyle(.primary, fullWidth: true))
                     .disabled(signature == nil)
                     .accessibilityIdentifier("claim.submit")
@@ -130,6 +134,11 @@ struct ClaimSubmitSheet: View {
             .navigationTitle("ยื่นเบิก")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("ยกเลิก") { dismiss() } } }
+            .alert("ยื่นเบิกไม่สำเร็จ", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
+                Button("ตกลง", role: .cancel) {}
+            } message: {
+                Text("บันทึกในเครื่องไม่ได้ เดือนนี้ยังไม่ได้ยื่น ลองอีกครั้ง\n\(failure ?? "")")
+            }
         }
     }
 }

@@ -142,7 +142,7 @@ final class PhotoSync {
                     if let photo = context.model(for: modelID) as? PhotoAsset, !photo.isDeleted {
                         photo.data = data
                         photo.needsDownload = false
-                        try? context.save()
+                        context.saveOrReport("photo download")
                     }
                 case .failure(let error): failure = error
                 }
@@ -189,7 +189,7 @@ final class PhotoSync {
                     // deleted while it uploaded: the Drive file stays, the record isn't made
                     guard !w.photo.isDeleted else { continue }
                     w.photo.driveFileID = id
-                    try? context.save()
+                    context.saveOrReport("photo Drive id")
                 } catch { failure = failure ?? error }
             }
             if let failure { throw failure }
@@ -228,7 +228,7 @@ final class PhotoSync {
             // replaced while it downloaded: the next pass takes the new one
             guard !job.isDeleted, job.scheduleWorkbookDriveID == id else { return }
             job.scheduleWorkbook = data
-            try? context.save()
+            context.saveOrReport("plan workbook download")
         } else if job.scheduleWorkbookUnsent, let data = job.scheduleWorkbook {
             let route = DriveRoute(survey: survey)
             let folder = try await route.jobFolder(job)
@@ -240,7 +240,7 @@ final class PhotoSync {
             // another file imported while this one uploaded: it goes up next pass
             guard !job.isDeleted, job.scheduleWorkbook == data else { return }
             job.scheduleWorkbookDriveID = id
-            try? context.save()
+            context.saveOrReport("plan workbook Drive id")
         }
     }
 

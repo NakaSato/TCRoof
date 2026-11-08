@@ -166,6 +166,8 @@ final class PhotoAsset {
     var driveFileID: String?
     /// Firestore document id once synced (`photos`, `CloudRecords`): a photo on Drive reaches every device that way.
     var syncID: String?
+    /// Who added the photo (`AddedByRecord`): firestore.rules let a contractor change or delete only the ones they added.
+    var addedBy: String?
     /// Received from another device and not downloaded from Drive yet; `data` is empty until `PhotoSync` brings it.
     var needsDownload = false
 

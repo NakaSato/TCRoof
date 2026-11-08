@@ -27,7 +27,8 @@ need attention.
 
 Do only the change list in §5. Out of scope; do not touch these:
 
-- The iPhone dock (`PhoneTabs`, `TCTabBar(size: .phone)`) and its items.
+- The iPhone dock (`PhoneTabs`, `TCTabBar(size: .phone)`) and its items. The iPhone's monitor entry is a separate
+  task (§7, decision 4).
 - `TCTabBar` / `TCTabItem` in TCRoofUI. The dock already takes any number of items. Change it only if the 8-item dock
   doesn't fit (§5 item 6), and then only its spacing.
 - The fleet monitoring page and the per-station monitor page (canvas boards `iPadPwaMonitoring` and
@@ -107,10 +108,11 @@ Do only the change list in §5. Out of scope; do not touch these:
 - [ ] Simulator dock screenshots like `states/01`–`03` are saved to `screenshots/`: `-homeTab survey`,
       `-homeTab monitor -growattDemo YES`, `-homeTab tools`, with `-homeBoard YES`.
 
-## 7. Open questions (answer in your report; don't build these)
+## 7. Decisions (answered 8 Nov 2569)
 
-1. Badge: count `.alarm` and `.offline` both (the board's 3 = one fault, one lost logger, one weak string), or only
-   faults? A weak string has no status yet.
-2. Should contractors who maintain a station see `Monitor` for their own stations?
-3. Once CHA-21's fleet page lands, does the `บำรุงรักษา` segment stay on the PWA home or move to `Monitor` only?
-4. iPhone: should the `กปภ.` tab get a monitor entry too, or does the phone stay without one?
+1. **Badge:** count both `.alarm` and `.offline` (as §5 item 5).
+2. **Contractors:** they don't get `Monitor` (as §5 item 2).
+3. **`บำรุงรักษา` segment:** it stays on the PWA home after CHA-21's fleet page lands. `Monitor` is an extra way in,
+   not a move.
+4. **iPhone:** it gets a monitor entry too, but not in this task. It needs its own design and has its own Linear
+   issue. Keep the iPhone dock unchanged here.

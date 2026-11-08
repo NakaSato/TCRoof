@@ -32,6 +32,6 @@ When done:
 - run HomeNavbarUITests on an iPad simulator;
 - save dock screenshots like states/ to screenshots/;
 - tick the change list;
-- answer §7's open questions in your report.
+- follow §7's decisions (already answered).
 Commit on feat/ipad-dock-monitor and push it.
 ```

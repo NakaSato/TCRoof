@@ -238,9 +238,35 @@ struct InstallTrackingPage: View {
                               canEditWBS: permissions.can(.mpSetup, on: job.access),
                               currentUserEmail: permissions.email,
                               toggleWBS: toggleWBS, setDocument: setWBSDocument,
-                              updateWBSTick: updateWBSTick, updateWBSItem: updateWBSItem)
+                              updateWBSTick: updateWBSTick, updateWBSItem: updateWBSItem,
+                              pending: wbsPending(row.id), pickPhoto: pickPhoto,
+                              contractors: Set(job.externals.map(Permissions.normalized)),
+                              canConfirm: permissions.mayConfirmWBS(on: job.access),
+                              confirmWBS: { pick in
+                                  guard permissions.mayConfirmWBS(on: job.access) else { return }
+                                  job.confirmWBS([pick], by: permissions.email, context: context)
+                              },
+                              returnWBS: { pick, reason in
+                                  guard permissions.mayConfirmWBS(on: job.access) else { return }
+                                  job.returnWBS(pick, reason: reason, context: context)
+                              },
+                              openReport: { pick in stage = nil; route = .day(pick.day) },
+                              openPlan: { stage = nil; route = .plan },
+                              weight: MasterSchedule.Task(rawValue: row.id).flatMap { t in job.scheduleInput?.weight(t) },
+                              booked: (job.scheduleActual.points[row.id] ?? [:]).values.reduce(0, +))
         }
         .transition(.opacity)
+    }
+
+    /// The daily reports' picks of the task waiting for the team (CHA-71).
+    private func wbsPending(_ task: String) -> [RoutineReport.WBSPick] {
+        let codes = Set(wbsItems(task).map(\.code))
+        return job.wbsPending.filter { codes.contains($0.code) }
+    }
+
+    private func pickPhoto(_ pick: RoutineReport.WBSPick) -> Data? {
+        let tag = pick.lineID.uuidString
+        return job.dailyLog(for: pick)?.sortedPhotos.first { $0.tag == tag }?.data
     }
 
     /// The task's WBS sub-tasks, without the other case's rows.
@@ -249,8 +275,8 @@ struct InstallTrackingPage: View {
         return job.scheduleWBS.items(for: t).filter { !$0.notForThisStation }
     }
 
-    /// Ticks a WBS row done today, or takes the tick back; the job books it into the plan (`Job.wbsTicks`). A contractor's
-    /// device sends it signed with their email.
+    /// Ticks a WBS row done today (`ทีมติ๊ก`), or takes the tick back; the job books it into the plan (`Job.wbsTicks`).
+    /// The team's only (CHA-71).
     private func toggleWBS(_ item: MasterSchedule.WorkItem) {
         var ticks = job.wbsTicks
         if let tick = ticks[item.code] {
@@ -258,7 +284,7 @@ struct InstallTrackingPage: View {
             ticks[item.code] = nil
         } else {
             guard permissions.mayTickWBS(on: job.access) else { return }
-            ticks[item.code] = .init(by: permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now))
+            ticks[item.code] = .init(by: permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now), source: .team)
         }
         saveWBS(ticks)
     }
@@ -288,8 +314,8 @@ struct InstallTrackingPage: View {
     }
 
     private func saveWBS(_ ticks: [String: MasterSchedule.WBSTick]) {
+        guard permissions.mayTickWBS(on: job.access) else { return }
         job.wbsTicks = ticks
-        if permissions.role == .external { job.wbsTicksUnsent = true }
         try? context.save()
     }
 

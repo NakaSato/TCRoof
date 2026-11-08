@@ -334,7 +334,8 @@ struct DebugScreen: View {
                 if let codes = d.string(forKey: "mpTickWBS") {
                     var ticks = job.wbsTicks
                     for code in codes.split(separator: ",") {
-                        ticks[String(code)] = .init(by: MemberRole.shared.permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now))
+                        ticks[String(code)] = .init(by: MemberRole.shared.permissions.email, at: MasterSchedule.calendar.startOfDay(for: .now),
+                                                       source: .team)
                     }
                     job.wbsTicks = ticks
                 }

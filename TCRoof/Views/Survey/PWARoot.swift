@@ -96,6 +96,9 @@ struct PWARoot: View {
                     }
                     try? context.save()
                 }
+                // `-wbsPending YES`: the latest signed daily report gets a line of the first WBS task with two of its
+                // sub-tasks picked finished, for the task sheet's `รอยืนยัน` (for good, once)
+                if UserDefaults.standard.bool(forKey: "wbsPending"), let pick { pick.seedWBSPending(context) }
                 station = pick
             }
             #endif

@@ -90,6 +90,8 @@ extension Job {
         }
         log.inspectorAckAt = when
         log.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
+        // the acknowledgement confirms the report's finished sub-tasks (CHA-71)
+        confirmWBSPicks(in: [log])
         feedMP()
         if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }
         if let excel = RoutineReportFiles.dailyExcel(self, log: log) { RoutineReportFiles.file(excel, job: self, context: context) }
@@ -107,6 +109,7 @@ extension Job {
             log.inspectorAckAt = when
             log.setSignature(signature, tag: InstallLog.inspectorSignatureTag, context: context)
         }
+        confirmWBSPicks(in: logs)
         feedMP()
         for log in logs {
             if let built = RoutineReportFiles.daily(self, log: log) { RoutineReportFiles.file(built, job: self, context: context) }

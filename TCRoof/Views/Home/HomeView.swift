@@ -378,6 +378,7 @@ struct HomeView: View {
         case .homework(let key): openRecord(.homework(job: key), job: key)
         case .records: feedLink = .records
         case .claims(let month): feedLink = .claims(month: month)
+        case .monitor: dock?.select(.monitor)
         case .driveFolder(let url): openURL(url)
         case .share(let url): shareURL = SharedLink(url: url)
         case .remindLater, .home: break

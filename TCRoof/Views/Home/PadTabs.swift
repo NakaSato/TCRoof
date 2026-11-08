@@ -159,6 +159,8 @@ private struct PadDockBarContent: View {
         TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
             // the demo's fleet counts from launch; real stations once the page has read them
             .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
+            // the team's devices read Growatt while the app is open; contractors have no Monitor
+            .background { if permissions.role != .external { MonitoringPoller() } }
     }
 
     private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {

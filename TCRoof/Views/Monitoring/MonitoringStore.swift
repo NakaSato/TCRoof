@@ -85,6 +85,10 @@ final class MonitoringStore {
         guard !Task.isCancelled else { return }
         let byID = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
         let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        // what each station read as before this poll, for the alerts; a station never read since launch has none
+        let before = previous.values.reduce(into: [String: Monitoring.Health]()) { out, s in
+            if s.lastReading != nil { out[s.id] = s.health(now: readAt, offlineAfter: settings.loggerOfflineMinutes) }
+        }
         now = readAt
         stations = handed.map { job in
             let base = Self.base(job)
@@ -96,6 +100,11 @@ final class MonitoringStore {
         feedFailure = readings.compactMap(\.failure).first?.message
         refreshedAt = Date()
         recount()
+        // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt)
+        if settings.notifyMaintenance {
+            MonitoringNotification.plans(previous: before, stations: stations, now: readAt,
+                                         offlineAfter: settings.loggerOfflineMinutes).forEach(NotificationService.shared.post)
+        }
     }
 
     private static func stationID(_ job: Job) -> String { job.syncID ?? job.code }

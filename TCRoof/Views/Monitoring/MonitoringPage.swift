@@ -23,10 +23,8 @@ struct MonitoringPage: View {
     @Environment(\.isPresented) private var isPushed
     @Environment(\.dismiss) private var dismiss
     @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
-    /// iPad: the dock; the page reads Growatt only while its tab is the one shown (the tab's stack stays alive behind
-    /// the others).
+    /// iPad: the dock, whose `MonitoringPoller` reads Growatt; nil where the page is pushed on its own.
     @Environment(PadDock.self) private var dock: PadDock?
-    private var isShown: Bool { dock.map { $0.tab == .monitor } ?? true }
     var survey: SurveyModel { envSurvey ?? SurveyModel.shared }
 
     /// Leading and trailing margin, as the board's 1366 pt page.
@@ -52,16 +50,8 @@ struct MonitoringPage: View {
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task(id: jobs.map(\.persistentModelID)) { store.refresh(jobs: jobs) }
-        // read Growatt while the page shows, at once and then every `pollMinutes` (never closer than its 5 minutes);
-        // a new pairing or server reads again at once
-        .task(id: PollKey(minutes: store.settings.pollMinutes, shown: isShown, pairings: store.settings.pairings,
-                          servers: store.settings.servers.map(\.id))) {
-            guard isShown else { return }
-            while !Task.isCancelled {
-                await store.poll(jobs: jobs)
-                try? await Task.sleep(for: .seconds(store.settings.pollInterval))
-            }
-        }
+        // Growatt is read by the dock's `MonitoringPoller` while the app is open; off the dock (pushed elsewhere) here
+        .background { if dock == nil { MonitoringPoller() } }
         .overlay {
             if showSettings {
                 MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
@@ -70,10 +60,6 @@ struct MonitoringPage: View {
         .navigationDestination(item: $opened) { s in
             PWAMaintenanceStationView(station: Self.summary(s, health: s.health(now: store.now, offlineAfter: store.settings.loggerOfflineMinutes)))
         }
-    }
-
-    private struct PollKey: Equatable {
-        var minutes: Int, shown: Bool, pairings: [String: String], servers: [UUID]
     }
 
     /// Managers edit the settings (issue #259 §7); everyone else sees them.
@@ -215,4 +201,27 @@ struct MonitoringPage: View {
     static var debugSettings: Bool { false }
     static var debugPairing: Bool { false }
     #endif
+}
+
+/// Reads Growatt while the app is open, at once and then every `pollMinutes` (never closer than its 5 minutes), so the
+/// dock's badge and the alerts follow the stations whichever tab shows (CHA-21). A new pairing or server reads again at
+/// once. Draws nothing.
+struct MonitoringPoller: View {
+    @Query(sort: \Job.installStart) private var jobs: [Job]
+    @State private var store = MonitoringStore.shared
+
+    var body: some View {
+        Color.clear.frame(width: 0, height: 0)
+            .task(id: PollKey(minutes: store.settings.pollMinutes, pairings: store.settings.pairings,
+                              servers: store.settings.servers.map(\.id))) {
+                while !Task.isCancelled {
+                    await store.poll(jobs: jobs)
+                    try? await Task.sleep(for: .seconds(store.settings.pollInterval))
+                }
+            }
+    }
+
+    private struct PollKey: Equatable {
+        var minutes: Int, pairings: [String: String], servers: [UUID]
+    }
 }

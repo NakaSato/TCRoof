@@ -169,6 +169,11 @@ extension InstallTrackingPage {
         let weight: CGFloat
         /// `ต้องดำเนินการ`: tapped, it opens the open items' sheet.
         var opensActions = false
+        /// iPad: the progress card's view a tap switches to (`ความคืบหน้า` and `กำหนดการ` S-Curve, `คาดส่งมอบ` Gantt). The
+        /// iPhone overview ignores it.
+        var opens: ProgressView?
+        /// `SPI`: tapped, it explains itself with the station's numbers.
+        var explainsSPI = false
     }
 
     /// `ความคืบหน้า | กำหนดการ | คาดส่งมอบ | SPI | ต้องดำเนินการ`. Without an MP plan only the open items are left.
@@ -177,20 +182,23 @@ extension InstallTrackingPage {
         if let t = data.tracking {
             let gain = t.gainThisWeek.map { " | ▲\($0)% สัปดาห์นี้" } ?? ""
             out.append(Cell(label: "ความคืบหน้า", value: "\(Int(t.actual.rounded()))%", ink: Theme.primary,
-                            note: "แผน \(Int(t.planned.rounded()))%" + gain, weight: 1.45))
+                            note: "แผน \(Int(t.planned.rounded()))%" + gain, weight: 1.45, opens: .curve))
             let (title, ink): (String, Color) = switch t.schedule {
             case .onPlan: ("ตามแผน", Theme.successInk)
             case .behind: ("ช้ากว่าแผน", Theme.dangerText)
             case .ahead: ("เร็วกว่าแผน", Theme.primary)
             }
-            out.append(Cell(label: "กำหนดการ", value: title, ink: ink, note: (t.variance > 0 ? "+" : "") + "\(t.variance)%", weight: 0.85))
+            out.append(Cell(label: "กำหนดการ", value: title, ink: ink, note: (t.variance > 0 ? "+" : "") + "\(t.variance)%", weight: 0.85,
+                            opens: .curve))
             let slack = t.slackDays()
             out.append(Cell(label: "คาดส่งมอบ", value: Self.forecastDay(t),
                             ink: slack < 0 ? Theme.dangerText : slack == 0 ? Theme.pending : Theme.navy,
-                            note: slack < 0 ? "ช้า \(-slack) วัน" : slack == 0 ? "ตามกำหนดพอดี" : "ตามกำหนด เผื่อ \(slack) วัน", weight: 1.12))
+                            note: slack < 0 ? "ช้า \(-slack) วัน" : slack == 0 ? "ตามกำหนดพอดี" : "ตามกำหนด เผื่อ \(slack) วัน", weight: 1.12,
+                            opens: .gantt))
             if let spi = t.spi {
                 out.append(Cell(label: "SPI", value: spi.formatted(.number.precision(.fractionLength(2)).locale(Locale(identifier: "en_US"))),
-                                ink: spi >= 0.95 ? Theme.successInk : Theme.dangerText, note: spi >= 0.95 ? "ปกติ" : "ต่ำกว่าแผน", weight: 0.68))
+                                ink: spi >= 0.95 ? Theme.successInk : Theme.dangerText, note: spi >= 0.95 ? "ปกติ" : "ต่ำกว่าแผน", weight: 0.68,
+                                explainsSPI: true))
             }
         }
         let open = data.actions
@@ -205,28 +213,41 @@ extension InstallTrackingPage {
         return GeometryReader { g in
             HStack(spacing: 0) {
                 ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
-                    HStack(spacing: 8) {
-                        Text(c.label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize()
-                        // a long value (`ช้ากว่าแผน`) gives way before a short note (`-6%`) does
-                        Text(c.value).font(.sarabun(18, .bold)).foregroundStyle(c.ink).monospacedDigit()
-                            .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
-                        Text(c.note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                            .layoutPriority(c.note.count <= 6 ? 2 : 0)
-                    }
-                    .padding(.horizontal, 12)
-                    .frame(width: g.size.width * c.weight / total, height: g.size.height, alignment: .leading)
-                    .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
-                    .contentShape(Rectangle())
-                    .onTapGesture { if c.opensActions { sheet = .actions } }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(c.opensActions ? .isButton : [])
+                    kpiCell(c, tracking: data.tracking)
+                        .frame(width: g.size.width * c.weight / total, height: g.size.height)
+                        .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
                 }
             }
         }
         .frame(height: 52)
         .background(Theme.surface, in: frame)
+        .clipShape(frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
         .cardShadow()
+    }
+
+    /// A cell of the strip: a button over the whole cell when a tap opens something (the progress card's view, the open
+    /// items, the SPI explanation), else a plain view (`ต้องดำเนินการ` reading `ไม่มี`).
+    @ViewBuilder
+    private func kpiCell(_ c: Cell, tracking: InstallTracking?) -> some View {
+        if c.explainsSPI, let t = tracking, let spi = t.spi {
+            KPISPICell(cell: c, tracking: t, spi: spi)
+        } else if c.opens != nil || c.opensActions {
+            let marked = c.opens != nil && c.opens == view
+            Button {
+                if let v = c.opens { view = v } else { sheet = .actions }
+            } label: {
+                KPICellContent(cell: c, marked: marked)
+            }
+            .buttonStyle(KPICellStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(c.label) \(c.value) | แตะเพื่อดูรายละเอียด")
+            .accessibilityAddTraits(marked ? [.isButton, .isSelected] : .isButton)
+            .accessibilityIdentifier("kpi.\(c.label)")
+        } else {
+            KPICellContent(cell: c, marked: false)
+                .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: DEBUG
@@ -299,5 +320,85 @@ extension InstallTrackingPage {
         static let reportWeek = 0
         static let reportSlide = 0
         #endif
+    }
+}
+
+/// A KPI cell's label, value and note, filling the cell, with the 2 pt bar of the progress card's view showing.
+private struct KPICellContent: View {
+    let cell: InstallTrackingPage.Cell
+    let marked: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(cell.label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize()
+            // a long value (`ช้ากว่าแผน`) gives way before a short note (`-6%`) does
+            Text(cell.value).font(.sarabun(18, .bold)).foregroundStyle(cell.ink).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+            Text(cell.note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                .layoutPriority(cell.note.count <= 6 ? 2 : 0)
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { if marked { Rectangle().fill(Theme.primary).frame(height: 2) } }
+        .contentShape(Rectangle())
+    }
+}
+
+/// The strip's buttons: `Theme.background` behind the cell while pressed, no other change.
+private struct KPICellStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Theme.background : .clear)
+    }
+}
+
+/// `SPI`: tapped, a popover explains the index with the station's own numbers. It never switches the progress card.
+private struct KPISPICell: View {
+    let cell: InstallTrackingPage.Cell
+    let tracking: InstallTracking
+    let spi: Double
+    @State private var shown = false
+
+    private static func number(_ v: Double, _ digits: Int) -> String {
+        v.formatted(.number.precision(.fractionLength(digits)).locale(Locale(identifier: "en_US")))
+    }
+
+    var body: some View {
+        Button { shown = true } label: { KPICellContent(cell: cell, marked: false) }
+            .buttonStyle(KPICellStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(cell.label) \(cell.value) | แตะเพื่อดูรายละเอียด")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("kpi.SPI")
+            .popover(isPresented: $shown, arrowEdge: .bottom) { explanation.presentationCompactAdaptation(.popover) }
+    }
+
+    private var explanation: some View {
+        let ok = spi >= 0.95
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("SPI (Schedule Performance Index)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+            Text("ความคืบหน้าจริง ÷ ตามแผน = \(Self.number(tracking.actual, 0))% ÷ \(Self.number(tracking.planned, 0))% = \(Self.number(spi, 2))")
+                .font(.sarabun(13)).foregroundStyle(Theme.navy).monospacedDigit()
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 4) {
+                band("≥ 0.95 ปกติ", ink: Theme.successInk, current: ok)
+                band("< 0.95 ต่ำกว่าแผน", ink: Theme.dangerText, current: !ok)
+            }
+            Text("1.00 = ตรงแผน · ต่ำกว่า 1 = ช้ากว่าแผน").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+        }
+        .padding(16)
+        .frame(width: 320, alignment: .leading)
+        .background(Theme.surface)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("kpi.SPI.popover")
+    }
+
+    private func band(_ text: String, ink: Color, current: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: current ? "checkmark.circle.fill" : "circle").font(.system(size: 12)).foregroundStyle(current ? ink : Theme.inkFaint)
+            Text(text).font(.sarabun(13, current ? .bold : .regular)).foregroundStyle(ink)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(current ? "ตอนนี้" : "")
     }
 }

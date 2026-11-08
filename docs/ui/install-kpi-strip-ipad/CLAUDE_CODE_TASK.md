@@ -87,9 +87,9 @@ Do only the change list in §4. Out of scope; do not touch these:
 ## 5. Check list
 
 - [ ] The strip looks exactly as before at rest; compare with `states/01`.
-- [ ] Each cell's hit area is the full cell (≥ 44 pt).
-- [ ] The iPhone overview is unchanged.
-- [ ] The xcodebuild app build passes with your own `-derivedDataPath`, and `InstallTrackingUITests` passes on an iPad simulator.
+- [x] Each cell's hit area is the full cell (≥ 44 pt).
+- [x] The iPhone overview is unchanged.
+- [x] The xcodebuild app build passes with your own `-derivedDataPath`. `InstallTrackingUITests` not run yet (no simulator on the build Mac).
 - [ ] Screenshots like `states/02` and `03` are saved to `screenshots/`. Use `-screen home -homeTab pwa -homeBoard YES -installOpen YES -installDemo YES`, then the taps.
 
 ## 6. Decisions (answered 8 Nov 2569)

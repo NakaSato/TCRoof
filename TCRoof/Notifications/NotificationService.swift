@@ -90,11 +90,17 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         c.threadIdentifier = plan.type.rawValue
         c.categoryIdentifier = plan.type.rawValue
         c.userInfo = plan.info
-        switch plan.type.level {
-        case .passive: c.interruptionLevel = .passive
-        case .active: c.interruptionLevel = .active; c.sound = plan.type.silent ? nil : .default
-        case .timeSensitive: c.interruptionLevel = .timeSensitive; c.sound = .default
+        // urgent ones (the late tool, the ERC wait overdue, an issue due today) break through Focus with sound and
+        // lead the app's summary on the lock screen (issue #315); needs the time-sensitive entitlement
+        if plan.isTimeSensitive {
+            c.interruptionLevel = .timeSensitive; c.sound = .default
+        } else {
+            switch plan.type.level {
+            case .passive: c.interruptionLevel = .passive
+            case .active, .timeSensitive: c.interruptionLevel = .active; c.sound = plan.type.silent ? nil : .default
+            }
         }
+        c.relevanceScore = plan.relevance
         return c
     }
 
@@ -262,7 +268,9 @@ struct ActivitySheet: UIViewControllerRepresentable {
 #if DEBUG
 /// Simulator checks without touch input:
 /// - `-notifDemo survey` moves the first sample job's appointment 31 min ahead (its reminder fires in 1 min);
-/// - `-notifDemo all` posts the board's six examples a few seconds apart (lock screen / banners);
+/// - `-notifDemo all` posts every kind on the iPad board (issue #315): the six examples, the live cases and the two
+///   urgent ones, a few seconds apart (lock screen / banners);
+/// - `-notifDemo urgent` posts the three urgent ones (late tool, ERC wait overdue, issue due today), time sensitive;
 /// - `-notifDemo live` posts one example of each live case 8 s apart (install eve and day, MP start, report sent,
 ///   waiting for the inspector, new issue, daily summary) about the first job, so a tap opens its screens; with
 ///   `-notifOnly <0-6>` just that one;
@@ -295,7 +303,7 @@ extension NotificationService {
         plans.forEach(post)
     }
 
-    func postLiveExamples(job: String = "demo", only: Int? = nil) {
+    func postLiveExamples(job: String = "demo", only: Int? = nil, startingAt first: Double = 4) {
         let now = Date.now, cal = Calendar.current
         let start = cal.date(bySettingHour: 8, minute: 0, second: 0, of: now.adding(days: 1)) ?? now
         func post(_ id: String, _ kind: FeedPost.Kind, _ place: String, _ text: String, _ source: FeedPost.Source) -> NotificationPlan {
@@ -311,11 +319,33 @@ extension NotificationService {
             post("demo-issue", .issue, "TC-0012 | ติดตั้ง Day 2/5", "พบรอยรั่วที่ครอบหลังคาจุด B3", .punch(project: job, id: "demo")),
             post("demo-summary", .summary, "", "สรุปวันที่ 13 ต.ค. — ส่งรายงานแล้ว 8/12 สถานี กปภ. ความคืบหน้ารวม +2%", .summary(day: now)),
         ].compactMap { $0 }
-        for i in plans.indices { plans[i].fire = .after(Double(4 + 8 * i)) }
+        for i in plans.indices { plans[i].fire = .after(first + Double(8 * i)) }
         if let only, plans.indices.contains(only) {
             plans = [plans[only]]
             plans[0].fire = .after(4)
         }
+        plans.forEach { self.post($0) }
+    }
+
+    /// The three urgent kinds (issue #315), time sensitive, 6 s apart: a tool past its return day, an ERC wait past its
+    /// due day, an issue due today.
+    func postUrgentExamples(job: String = "demo", startingAt first: Double = 4, includeLateTool: Bool = true) {
+        let now = Date.now
+        var plans: [NotificationPlan] = []
+        if includeLateTool, let late = ToolNotification.notifyOverdue(toolID: "fluke376", tool: "Fluke 376 FC", due: now.adding(days: -2),
+                                                                        waiting: "สมชาย", waitingFrom: now.adding(days: 1),
+                                                                        waitingPhone: "0812345678", now: now.adding(days: -1)).first {
+            plans.append(late)
+        }
+        plans.append(NotificationPlan(id: "demo-erc-over", type: .mp, title: "ผลพิจารณาแบบ เกินกำหนดแล้ว", body: "MP 189 ทุ่งน้อย",
+                                      sub: "กฟภ. | ลำดับ กกพ. ข้อ 5 | ครบกำหนด 22 ต.ค. | ติดตามกับกฟภ.", fire: .after(1),
+                                      info: [NotificationInfo.job: job], urgent: true))
+        var due = FeedNotification.plan(FeedPost(id: "demo-due", kind: .issue, project: .pwa, initials: "TC", who: "",
+                                                  place: "TC-0012 | ติดตั้ง Day 2/5", date: now, text: "พบรอยรั่วที่ครอบหลังคาจุด B3",
+                                                  source: .punch(project: job, id: "demo")))
+        due.id = "due-demo"; due.title = "ครบกำหนดแก้วันนี้"; due.urgent = true
+        plans.append(due)
+        for i in plans.indices { plans[i].fire = .after(first + Double(6 * i)) }
         plans.forEach { self.post($0) }
     }
 

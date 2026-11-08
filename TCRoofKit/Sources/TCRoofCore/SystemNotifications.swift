@@ -194,10 +194,23 @@ public struct NotificationPlan: Equatable, Sendable {
     public var sub: String
     public var fire: Fire
     public var info: [String: String]
+    /// Urgent beyond its type (issue #315): the ERC wait overdue and an issue due today, as `.late` is by type.
+    public var urgent: Bool
 
-    public init(id: String, type: NotificationType, title: String, body: String, sub: String, fire: Fire, info: [String: String] = [:]) {
+    public init(id: String, type: NotificationType, title: String, body: String, sub: String, fire: Fire,
+                info: [String: String] = [:], urgent: Bool = false) {
         self.id = id; self.type = type; self.title = title; self.body = body; self.sub = sub; self.fire = fire
         self.info = info.merging([NotificationInfo.bell: id]) { old, _ in old }
+        self.urgent = urgent
+    }
+
+    /// Time sensitive (breaks through Focus, stays longer, with sound): urgent, or a type that always is.
+    public var isTimeSensitive: Bool { urgent || type.level == .timeSensitive }
+
+    /// The order in the app's summary on the lock screen: urgent first, then active, then passive.
+    public var relevance: Double {
+        if isTimeSensitive { return 1 }
+        return type.level == .active ? 0.5 : 0.2
     }
 
     /// `content.body`: the body, then the sub line.

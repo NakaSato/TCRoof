@@ -290,7 +290,14 @@ private struct NotificationScheduler: ViewModifier {
             job.surveyDate = Date.now.addingTimeInterval(61 * 60)
             UserDefaults.standard.set(job.syncID ?? job.code, forKey: "notifJob")
         }
-        if NotificationService.demo == "all" { service.postBoardExamples() }
+        let firstJob = jobs.sorted { $0.code < $1.code }.first.map { $0.syncID ?? $0.code } ?? "demo"
+        if NotificationService.demo == "all" {
+            // every kind on the iPad board (issue #315): the six, the live cases, then the two urgent ones not in them
+            service.postBoardExamples()
+            service.postLiveExamples(job: firstJob, startingAt: 10)
+            service.postUrgentExamples(job: firstJob, startingAt: 70, includeLateTool: false)
+        }
+        if NotificationService.demo == "urgent" { service.postUrgentExamples(job: firstJob) }
         if NotificationService.demo == "live" {
             let first = jobs.sorted { $0.code < $1.code }.first
             service.postLiveExamples(job: first.map { $0.syncID ?? $0.code } ?? "demo",

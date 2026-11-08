@@ -60,6 +60,10 @@ struct TCRoofApp: App {
             // light everywhere, the login page included (it's on the design system's light page)
             .preferredColorScheme(.light)
             .tint(Theme.primary)
+            // Thai with Buddhist years for every DatePicker and SwiftUI date text, as the rest of the app writes dates
+            // (CHA-63); `.formatted()` strings still follow the device's settings
+            .environment(\.locale, ThaiFormat.locale)
+            .environment(\.calendar, Calendar(identifier: .buddhist))
         }
     }
 

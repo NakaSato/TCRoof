@@ -13,6 +13,7 @@ extension JobEditorView {
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button { withAnimation { sidebarVisible.toggle() } } label: { Image(systemName: "sidebar.left") }
+                .accessibilityLabel(sidebarVisible ? "ซ่อนแถบรายการ" : "แสดงแถบรายการ")
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button { model.flush(job.id); showExport = true } label: {

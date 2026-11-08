@@ -138,6 +138,7 @@ struct InspectionView: View {
         }
         .buttonStyle(TCButtonStyle(.primaryGradient, size: .bar))
         .disabled(disabled)
+        .accessibilityLabel(symbol == "chevron.left" ? "หัวข้อก่อนหน้า" : "หัวข้อถัดไป")
     }
 
     private var canEdit: Bool { permissions.can(.iclChecklist, on: job.access) }

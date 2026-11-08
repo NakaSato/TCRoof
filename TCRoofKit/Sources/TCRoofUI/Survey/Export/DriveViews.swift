@@ -26,7 +26,7 @@ struct DriveOpenView: View {
             .navigationTitle("เปิดงานจาก Google Drive").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() } }
-                ToolbarItem(placement: .primaryAction) { Button { load() } label: { Image(systemName: "arrow.clockwise") } }
+                ToolbarItem(placement: .primaryAction) { Button { load() } label: { Image(systemName: "arrow.clockwise") }.accessibilityLabel("โหลดใหม่") }
             }
             .task { load() }
         }

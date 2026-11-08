@@ -144,6 +144,7 @@ struct RevisionsPage: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("ดูรูปก่อนและหลังแก้")
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) { old(c); Image(systemName: "arrow.right").foregroundStyle(Theme.inkMuted); new(c) }

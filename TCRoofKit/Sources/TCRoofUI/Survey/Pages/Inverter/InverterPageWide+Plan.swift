@@ -128,6 +128,7 @@ extension InverterPageWide {
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).disabled(!enabled)
+        .accessibilityLabel(symbol == "minus" ? "ลด" : "เพิ่ม")
     }
 
     // MARK: B4

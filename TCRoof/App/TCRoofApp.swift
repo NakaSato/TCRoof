@@ -67,7 +67,8 @@ struct TCRoofApp: App {
         Group {
             if session.isSignedIn {
                 AccountActivationView()
-                    .id(session.email)
+                    // a new account, or this one's records to prepare again, starts the activation over
+                    .id("\(session.email ?? "")#\(session.activation)")
                     .overlay {
                         // `config/app.minSyncVersion` is above this build: nothing more until the update
                         if AppGate.shared.outdated { UpdateRequiredView().transition(.opacity) }

@@ -50,6 +50,67 @@ final class AccountDataTransitionTests: XCTestCase {
         XCTAssertFalse(transition.needsCleanup)
     }
 
+    func testTheSameAccountMadeExternalLosesTheTeamsRecords() async throws {
+        let transition = AccountDataTransition(defaults: defaults())
+        transition.signedIn("member@example.com", external: false)
+        XCTAssertFalse(transition.needsCleanup)
+        XCTAssertFalse(transition.signedIn("member@example.com", external: true))
+        XCTAssertTrue(transition.needsCleanup)
+        var cleaned = 0
+        try transition.cleanupIfNeeded { cleaned += 1 }
+        XCTAssertEqual(cleaned, 1)
+        // signed in again as external: the records are theirs now
+        transition.signedIn("member@example.com", external: true)
+        XCTAssertFalse(transition.needsCleanup)
+    }
+
+    func testAnExternalAccountMadeTeamKeepsItsRecords() async {
+        let transition = AccountDataTransition(defaults: defaults())
+        transition.signedIn("contractor@example.com", external: true)
+        try? transition.cleanupIfNeeded { }
+        transition.signedIn("contractor@example.com", external: false)
+        XCTAssertFalse(transition.needsCleanup)
+    }
+
+    func testRecordsKeptBeforeTheRoleWasRecordedStay() async {
+        let defaults = defaults()
+        // an owner from an app version that didn't record the role
+        defaults.set("contractor@example.com", forKey: "session.owner")
+        let transition = AccountDataTransition(defaults: defaults)
+        transition.signedIn("contractor@example.com", external: true)
+        XCTAssertFalse(transition.needsCleanup)
+        // the device's records decide, once: only the contractor's own jobs here
+        XCTAssertTrue(transition.needsRecordCheck)
+        transition.checkedRecords(teamRecordsFound: false)
+        XCTAssertFalse(transition.needsRecordCheck)
+        XCTAssertFalse(transition.needsCleanup)
+        transition.signedIn("contractor@example.com", external: true)
+        XCTAssertFalse(transition.needsRecordCheck)
+        // from then on the role is known, and a later demotion is caught
+        transition.signedIn("contractor@example.com", external: false)
+        transition.signedIn("contractor@example.com", external: true)
+        XCTAssertTrue(transition.needsCleanup)
+    }
+
+    func testAMemberMadeExternalBeforeTheRoleWasRecordedLosesTheTeamsRecords() async throws {
+        let defaults = defaults()
+        defaults.set("member@example.com", forKey: "session.owner")
+        let transition = AccountDataTransition(defaults: defaults)
+        transition.signedIn("member@example.com", external: true)
+        XCTAssertTrue(transition.needsRecordCheck)
+        transition.checkedRecords(teamRecordsFound: true)
+        XCTAssertTrue(transition.needsCleanup)
+        XCTAssertFalse(transition.needsRecordCheck)
+    }
+
+    func testATeamOwnerNeedsNoRecordCheck() async {
+        let defaults = defaults()
+        defaults.set("member@example.com", forKey: "session.owner")
+        let transition = AccountDataTransition(defaults: defaults)
+        transition.signedIn("member@example.com", external: false)
+        XCTAssertFalse(transition.needsRecordCheck)
+    }
+
     func testExternalAccountCannotInheritRecordsWithUnknownOwner() async {
         let transition = AccountDataTransition(defaults: defaults())
         transition.signedIn("external@example.com", external: true)

@@ -71,6 +71,9 @@ struct MonitoringSettingsDialog: View {
             .shadow(color: .black.opacity(0.18), radius: 30, y: 10)
             .padding(40)
         }
+        // the keyboard covers the dialog's lower part rather than squeezing all of it above the keys: the server's
+        // name, URL and token fields are at the top of the left column, so they stay in view while typed
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .accessibilityAddTraits(.isModal)
     }
 

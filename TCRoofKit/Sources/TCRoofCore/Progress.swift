@@ -118,7 +118,12 @@ public struct SurveyStep: Identifiable, Hashable, Sendable {
 }
 
 public extension Job {
-    var steps: [SurveyStep] {
+    /// Every page with its completion. The editor reads this several times per pass (sidebar, step bar, next step,
+    /// the page's own bar) and on every keystroke, and it walks every field of the schema, so the last answer's steps are
+    /// kept (`StepsMemo`): they depend on the answers and the sections only.
+    var steps: [SurveyStep] { StepsMemo.shared.steps(values: values, modules: modules) { computedSteps } }
+
+    private var computedSteps: [SurveyStep] {
         func cover(_ p: MissingGroup.Target, _ code: String, _ title: String, _ g: GroupSpec) -> SurveyStep {
             SurveyStep(page: p, code: code, title: title, category: .general, completion: g.completion(values))
         }
@@ -213,4 +218,26 @@ public func fmt(_ x: Double, digits: Int = 2) -> String {
     while s.hasSuffix("0") { s.removeLast() }
     if s.hasSuffix(".") { s.removeLast() }
     return s
+}
+
+/// The last `Job.steps` worked out, with the answers and sections it came from. Repeated reads in one pass hand over
+/// the same storage, so the comparison is quick; any edit gives a different value and works them out again.
+final class StepsMemo: @unchecked Sendable {
+    static let shared = StepsMemo()
+    private let lock = NSLock()
+    private var last: (values: Values, modules: [SurveyModule], steps: [SurveyStep])?
+
+    func steps(values: Values, modules: [SurveyModule], make: () -> [SurveyStep]) -> [SurveyStep] {
+        lock.lock()
+        if let last, last.values == values, last.modules == modules {
+            defer { lock.unlock() }
+            return last.steps
+        }
+        lock.unlock()
+        let steps = make()
+        lock.lock()
+        last = (values, modules, steps)
+        lock.unlock()
+        return steps
+    }
 }

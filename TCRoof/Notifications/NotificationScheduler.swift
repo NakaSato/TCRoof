@@ -42,8 +42,13 @@ private struct NotificationScheduler: ViewModifier {
     @AppStorage("userName") private var userName = ""
     @Environment(\.permissions) private var permissions
     @State private var instruments = InstrumentStore.shared
+    /// Every server snapshot (records from another device, and this device's writes confirmed) moves `lastSync`, so
+    /// the feed is rebuilt when there is something new to announce, not each minute.
+    @State private var sync = CloudSync.shared
     /// Bumped each minute and when the app comes back, so a new day reschedules and a synced record is announced.
     @State private var tick = 0
+    /// Bumped when the app comes back, so the hourly keys reschedule then too.
+    @State private var foregrounds = 0
 
     func body(content: Content) -> some View {
         let mp = mpState
@@ -81,7 +86,13 @@ private struct NotificationScheduler: ViewModifier {
                 guard !Task.isCancelled else { return }
                 await NotificationService.shared.schedule(plans.install, type: .install)
             }
-            .task(id: FeedState(tick: tick, jobs: jobs.count, on: feedOn)) { await refreshFeed() }
+            .task(id: FeedState(day: RoutineReport.day(.now), hour: Self.hour(.now), synced: sync.lastSync, foregrounds: foregrounds,
+                                   jobs: jobs.count, on: feedOn)) {
+                // a sync burst moves `lastSync` many times: build once it settles
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                await refreshFeed()
+            }
             .task {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(60))
@@ -95,6 +106,7 @@ private struct NotificationScheduler: ViewModifier {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 tick += 1
+                foregrounds += 1
                 Task { await NotificationService.shared.refreshAuthorization() }
             }
     }
@@ -165,10 +177,13 @@ private struct NotificationScheduler: ViewModifier {
         }
     }
 
+    /// Changes each hour, and each time the app comes back (`tick` is bumped then too).
+    private var hourKey: String { "\(Int(Date.now.timeIntervalSince1970 / 3600))-\(foregrounds)" }
+
     /// Tasks of a PWA station's MP plan that start tomorrow, a station behind its plan, and a step of the ERC flow
     /// whose time limit is about to end or has passed.
     private var mpState: MPState {
-        guard planOn else { return MPState(tick: tick, jobs: [], installs: []) }
+        guard planOn else { return MPState(hour: hourKey, jobs: [], installs: []) }
         let now = Date.now
         let snapshots = heard.pwaStations.filter { $0.status != .completed }.map { job in
             let key = job.syncID ?? job.code
@@ -177,7 +192,7 @@ private struct NotificationScheduler: ViewModifier {
             } ?? []
             return MPJob(key: key, station: job.stationName, input: job.scheduleInput, actual: job.scheduleActual, erc: erc)
         }
-        return MPState(tick: tick, jobs: snapshots, installs: installSnapshots)
+        return MPState(hour: hourKey, jobs: snapshots, installs: installSnapshots)
     }
 
     /// Snapshot SwiftData on the main actor; the worker receives only value types.
@@ -198,7 +213,9 @@ private struct NotificationScheduler: ViewModifier {
     }
 
     private struct MPState: Equatable, Sendable {
-        let tick: Int
+        /// The hour (and `tick` when the app comes back): the MP and install reminders are hours to days ahead, so
+        /// working them out each minute only repeats the same plans.
+        let hour: String
         let jobs: [MPJob]
         let installs: [InstallJob]
 
@@ -238,7 +255,11 @@ private struct NotificationScheduler: ViewModifier {
         fresh.filter(heard).forEach(service.post)
     }
 
-    private struct FeedState: Equatable { let tick: Int; let jobs: Int; let on: Bool }
+    /// Day and hour, not the minute: a new day reschedules, the hour lets an issue's due day and the 18:00 summary
+    /// move on while nothing syncs.
+    private struct FeedState: Equatable { let day: Date; let hour: Int; let synced: Date?; let foregrounds: Int; let jobs: Int; let on: Bool }
+
+    private static func hour(_ d: Date) -> Int { Calendar.current.component(.hour, from: d) }
 
     #if DEBUG
     /// `-notifDemo survey|all`, `-notifAction <type>.<action>` (see `NotificationService.demo`).

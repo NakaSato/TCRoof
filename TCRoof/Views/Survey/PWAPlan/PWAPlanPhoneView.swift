@@ -46,6 +46,7 @@ struct PWAPlanPhoneView: View {
     @State var showDueMenu = Debug.dueMenuOpen
     @State var route: Route?
     @State private var library = StationDocsStore.loadLibrary()
+    @State private var boardCache = ObservedCache<PWAPlanBoard>()
     @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
     private var survey: SurveyModel { envSurvey ?? SurveyModel.shared }
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -134,8 +135,14 @@ struct PWAPlanPhoneView: View {
         #if DEBUG
         if UserDefaults.standard.bool(forKey: "pwaPlanDemo") { return PWAPlanDemo.board(today: Self.today) }
         #endif
-        return PWAPlanBoard(stations: stations.map(\.planStation), library: library, today: Self.today,
-                            threshold: survey.settings.behindThreshold)
+        // built once per change of the stations or their records, not on every pass (scrolling the day list selects
+        // days, which re-runs the body); the rows of the query, the switch and the day aren't observed: they are the key
+        let stations = stations, library = library, today = Self.today, threshold = survey.settings.behindThreshold
+        let key = [AnyHashable(stations.map(\.persistentModelID)), AnyHashable(today), AnyHashable(threshold),
+                   AnyHashable(StationDocsStore.libraryStamp())]
+        return boardCache.value(key: key) {
+            PWAPlanBoard(stations: stations.map(\.planStation), library: library, today: today, threshold: threshold)
+        }
     }
 
     // MARK: pills

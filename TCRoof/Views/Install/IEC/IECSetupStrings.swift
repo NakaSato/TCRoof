@@ -64,8 +64,8 @@ extension IECSetupPage {
     func inverterRow(_ inv: IECReport.Inverter, _ i: Int) -> some View {
         HStack(spacing: 12) {
             Group {
-                if let a = job.iecPhoto(inv.photos[IECReport.InverterPhoto.front.rawValue]), let img = UIImage(data: a.data) {
-                    Color.clear.overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
+                if let a = job.iecPhoto(inv.photos[IECReport.InverterPhoto.front.rawValue]), !a.data.isEmpty {
+                    PhotoImage(data: a.data, maxPixel: 200).clipped()
                 } else {
                     Image(systemName: "bolt.horizontal").font(.system(size: 20)).foregroundStyle(Theme.inkMuted)
                         .frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.phonePage)

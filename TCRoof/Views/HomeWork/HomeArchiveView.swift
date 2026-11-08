@@ -92,7 +92,7 @@ struct HomeArchiveView: View {
                 Task {
                     for (i, item) in items.enumerated() {
                         if let data = try? await item.loadTransferable(type: Data.self) {
-                            HomeArchive.keep(ImageUtil.compressed(data), name: "รูป \(job.code) \(Self.stamp()) \(i + 1).jpg", job: job)
+                            HomeArchive.keep(await ImageUtil.compressedAsync(data), name: "รูป \(job.code) \(Self.stamp()) \(i + 1).jpg", job: job)
                         }
                     }
                     picks = []

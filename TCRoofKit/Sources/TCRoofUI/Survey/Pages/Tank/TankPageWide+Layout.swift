@@ -383,8 +383,10 @@ extension TankPageWide {
     func refreshShade() async {
         let v = values, site = RoofMount.site(job), lat = site.latitude ?? RoofMount.defaultLatitude, lon = site.longitude
         shadeBusy = true
-        let r = await Task.detached(priority: .userInitiated) { TankShade(v, latitude: lat, longitude: lon) }.value
-        guard !Task.isCancelled else { return }
+        // a year's simulation per run: a typed height or distance waits for the last key
+        let wait: Duration = shadeResult == nil ? .zero : .milliseconds(400)
+        guard let r = await BackgroundRun.run(debounce: wait, { TankShade(v, latitude: lat, longitude: lon) }),
+              !Task.isCancelled else { return }
         shadeResult = r
         shadeBusy = false
     }

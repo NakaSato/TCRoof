@@ -58,6 +58,11 @@ struct SitePageWide: View {
     @State var chooseLand = false
     @State var realLength = ""
     @State var draggingMark: UUID?
+    /// Where the symbol or model being dragged is now: shown from here and written to the job once, when the drag
+    /// ends. Writing the job each frame would run the editor's change, its save and A3 / B4's link (`SiteSync`) 60
+    /// times a second.
+    @State var liveMark: (id: UUID, x: Double, y: Double)?
+    @State var liveModel: (id: String, x: Double, y: Double)?
     /// Building model picked on the picture or in the panel (v2 §5).
     @State var selectedModel: String?
     /// A model being dragged on the picture, with the grab offset from its centre (fractions); one undo step per drag.
@@ -90,6 +95,8 @@ struct SitePageWide: View {
         }
         .foregroundStyle(Theme.navy)
         .onAppear { tickFromCover() }
+        // a drag the system cancelled (no end) still lands
+        .onDisappear { commitDrags() }
         #if DEBUG
         // `-surveyA2 layers|fullscreen` opens the layers menu or full screen (with the first placed model selected and the
         // building panel open) for simulator checks; `rail|armed|listopen|fullpanel` are docs/ui/survey-a2-ipad-v3's
@@ -166,9 +173,32 @@ struct SitePageWide: View {
 
     // MARK: values
 
-    var marks: [MapMark] { job.values.marks("siteMarks") }
+    var marks: [MapMark] {
+        var a = job.values.marks("siteMarks")
+        if let l = liveMark, let i = a.firstIndex(where: { $0.id == l.id }) { a[i].x = l.x; a[i].y = l.y }
+        return a
+    }
     var shapes: [SiteShape] { job.values.shapes(SiteShapes.key) }
-    var models: [SiteModel] { SiteModels.models(job.values) }
+    var models: [SiteModel] {
+        var a = SiteModels.models(job.values)
+        if let l = liveModel, let i = a.firstIndex(where: { $0.id == l.id }) { a[i].x = l.x; a[i].y = l.y }
+        return a
+    }
+
+    /// Writes a dragged symbol's or model's place to the job (once per drag), and drops the live one.
+    func commitDrags() {
+        draggingMark = nil
+        if let l = liveMark {
+            liveMark = nil   // `marks` is the job's again, so the link sees the move
+            var a = marks
+            if let i = a.firstIndex(where: { $0.id == l.id }), a[i].x != l.x || a[i].y != l.y { a[i].x = l.x; a[i].y = l.y; setMarks(a) }
+        }
+        if let l = liveModel {
+            liveModel = nil
+            var a = models
+            if let i = a.firstIndex(where: { $0.id == l.id }), a[i].x != l.x || a[i].y != l.y { a[i].x = l.x; a[i].y = l.y; setModels(a) }
+        }
+    }
     /// The toolbar's "ล็อก": every building model stays where it is.
     var allLocked: Bool { SiteModels.allLocked(job.values) }
     func isLocked(_ m: SiteModel) -> Bool { allLocked || m.locked }

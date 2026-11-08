@@ -42,9 +42,16 @@ extension SurveyModel {
             photoLoads[loadKey] = Task { [weak self, writer] in
                 let data = await writer.photoData(p, job: job)
                 guard let self, !Task.isCancelled, self.storageSession == session else { return }
+                // decoded off the main thread now, not on the main thread at the first draw; the load stays listed
+                // until then, so a redraw meanwhile doesn't start a second one
+                let raw = data.flatMap(UIImage.init(data:))
+                let decoded = await raw?.byPreparingForDisplay()
+                guard !Task.isCancelled, self.storageSession == session else { return }
                 self.photoLoads[loadKey] = nil
-                guard let data, let image = UIImage(data: data) else { return }
-                self.cache.setObject(image, forKey: key)
+                guard let data, let raw else { return }
+                let image = decoded ?? raw
+                let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? data.count
+                self.cache.setObject(image, forKey: key, cost: cost)
                 self.photoRevision += 1
             }
         }

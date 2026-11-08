@@ -14,7 +14,9 @@ struct RoutineSummaryScreen: View {
     @Environment(\.modelContext) private var context
     @Environment(\.permissions) private var permissions
     @State private var anchor: Date
-    @State private var pdf: Data?
+    /// The period's PDF, built once per period (and after an acknowledgement); filing and sharing reuse it.
+    @State private var made: RoutineReportFiles.Ready?
+    private var pdf: Data? { made?.data }
     @State private var share: ReportShare?
     @State private var filed = false
     @State private var slidesError: String?
@@ -27,6 +29,11 @@ struct RoutineSummaryScreen: View {
 
     private var built: RoutineReportFiles.Built {
         period == .week ? RoutineReportFiles.weekly(job, week: anchor) : RoutineReportFiles.monthly(job, month: anchor)
+    }
+
+    private func make() -> RoutineReportFiles.Ready {
+        let b = built
+        return RoutineReportFiles.Ready(name: b.name, folder: b.folder, data: b.data)
     }
 
     private var pendingInPeriod: [InstallLog] {
@@ -124,11 +131,11 @@ struct RoutineSummaryScreen: View {
             let pending = pendingInPeriod
             InspectorAckSheet(title: "รับทราบทั้งหมด (\(pending.count) วัน)", name: job.routineSettings.inspector, date: .now, signs: true) { name, when, drawn in
                 job.recordInspectorAckAll(pending, name: name, at: when, signature: drawn, context: context)
-                pdf = built.data
+                made = make()
                 filed = false
             }
         }
-        .task(id: anchor) { pdf = built.data; filed = false }
+        .task(id: anchor) { made = make(); filed = false }
     }
 
     private func shift(_ n: Int) {
@@ -137,13 +144,16 @@ struct RoutineSummaryScreen: View {
     }
 
     private func fileIt() {
-        RoutineReportFiles.file(built, job: job, context: context)
+        guard let made else { return }
+        RoutineReportFiles.file(made, job: job, context: context)
         try? context.save()
         filed = true
     }
 
     private func exportPDF() {
-        if let url = try? RoutineReportFiles.temporaryURL(built, data: pdf) { share = ReportShare(url: url) }
+        guard let made else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(made.name)
+        if (try? made.data.write(to: url, options: .atomic)) != nil { share = ReportShare(url: url) }
     }
 
     /// The week as PowerPoint for the meeting (`WeeklySlides`): the same content as the PDF, every text editable.

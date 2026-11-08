@@ -112,7 +112,7 @@ struct PhotoReportView: View {
             Task {
                 for item in items {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        home.photoReport.add(store.addPhoto(ImageUtil.compressed(data)), to: id)
+                        home.photoReport.add(store.addPhoto(await ImageUtil.compressedAsync(data)), to: id)
                     }
                 }
                 picks = []

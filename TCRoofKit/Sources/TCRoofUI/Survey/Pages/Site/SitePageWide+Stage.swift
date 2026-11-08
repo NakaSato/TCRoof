@@ -200,7 +200,7 @@ extension SitePageWide {
                 .onTapGesture { open(.mark(m.id), at: point(ShapePoint(m.x, m.y), in: r)) }
                 .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named(Self.stageSpace))
                     .onChanged { g in move(m.id, to: g.location, in: r) }
-                    .onEnded { _ in draggingMark = nil })
+                    .onEnded { _ in commitDrags() })
                 .accessibilityLabel(m.label.isEmpty ? m.kind.paletteTitle : m.label)
                 .accessibilityHint("แตะเพื่อแก้ไข ลากเพื่อย้าย")
         }
@@ -217,18 +217,26 @@ extension SitePageWide {
     func move(_ id: UUID, to p: CGPoint, in r: CGRect) {
         guard let f = fraction(p, in: r) else { return }
         if draggingMark != id {   // one undo step per drag
+            commitDrags()     // one the system cancelled
             draggingMark = id
             history.record(snapshot)
         }
-        var a = marks
-        guard let i = a.firstIndex(where: { $0.id == id }) else { return }
-        a[i].x = f.x; a[i].y = f.y
-        setMarks(a)
+        guard marks.contains(where: { $0.id == id }) else { return }
+        liveMark = (id, f.x, f.y)
     }
 
     // MARK: building models on the picture
 
-    var placedModels: [(model: SiteModel, source: SiteModels.Source)] { SiteModels.placed(job) }
+    var placedModels: [(model: SiteModel, source: SiteModels.Source)] {
+        let placed = SiteModels.placed(job)
+        guard let l = liveModel else { return placed }
+        return placed.map { q in
+            guard q.model.id == l.id else { return q }
+            var m = q.model
+            m.x = l.x; m.y = l.y
+            return (m, q.source)
+        }
+    }
 
     /// The topmost model under `p` (symbols layer on, scale known).
     func modelHit(_ p: CGPoint, in r: CGRect) -> SiteModel? {
@@ -248,16 +256,15 @@ extension SitePageWide {
             guard hypot(g.translation.width, g.translation.height) > 4, let m = modelHit(g.startLocation, in: r) else { return }
             selectedModel = m.id
             guard !isLocked(m) else { return }
+            commitDrags()     // one the system cancelled
             let start = ShapePoint(Double((g.startLocation.x - r.minX) / r.width), Double((g.startLocation.y - r.minY) / r.height))
             history.record(snapshot)
             modelGrab = (m.id, m.x - start.x, m.y - start.y)
         }
         guard let grab = modelGrab, r.width > 0, r.height > 0 else { return }
-        var a = models
-        guard let i = a.firstIndex(where: { $0.id == grab.id }) else { return }
-        a[i].x = min(max(Double((g.location.x - r.minX) / r.width) + grab.dx, 0), 1)
-        a[i].y = min(max(Double((g.location.y - r.minY) / r.height) + grab.dy, 0), 1)
-        setModels(a)
+        guard models.contains(where: { $0.id == grab.id }) else { return }
+        liveModel = (grab.id, min(max(Double((g.location.x - r.minX) / r.width) + grab.dx, 0), 1),
+                     min(max(Double((g.location.y - r.minY) / r.height) + grab.dy, 0), 1))
     }
 
     // MARK: taps and drags on the picture
@@ -275,7 +282,7 @@ extension SitePageWide {
 
     func ended(_ g: DragGesture.Value, in size: CGSize) {
         showLayers = false
-        if modelGrab != nil { modelGrab = nil; return }
+        if modelGrab != nil { modelGrab = nil; commitDrags(); return }
         guard let r = currentRect(size) else { return }
         let isTap = hypot(g.translation.width, g.translation.height) <= 8
         if !isTap, let end = dragEnd, draft.count == 1, case .shape(let k)? = tool {

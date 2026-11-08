@@ -1,10 +1,25 @@
 import UIKit
+import ImageIO
 import Vision
 import AVFoundation
 
 enum ImageUtil {
-    /// Downscales to at most `maxDimension` and re-encodes as JPEG to keep the store small.
+    /// Downscales to at most `maxDimension` and re-encodes as JPEG to keep the store small. ImageIO reads the photo
+    /// straight at that size (with its orientation applied), so a 48 MP camera photo is never decoded whole.
     static func compressed(_ data: Data, maxDimension: CGFloat = 1600) -> Data {
+        if let src = CGImageSourceCreateWithData(data as CFData, nil),
+           let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+           let w = props[kCGImagePropertyPixelWidth] as? Int, let h = props[kCGImagePropertyPixelHeight] as? Int {
+            // never larger than the photo itself, as the resize below
+            let side = min(CGFloat(max(w, h)), maxDimension)
+            let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                                         kCGImageSourceThumbnailMaxPixelSize: Int(side.rounded()),
+                                         kCGImageSourceCreateThumbnailWithTransform: true]
+            if let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary),
+               let jpeg = UIImage(cgImage: cg).jpegData(compressionQuality: 0.7) {
+                return jpeg
+            }
+        }
         guard let image = UIImage(data: data) else { return data }
         return compressed(image, maxDimension: maxDimension)
     }

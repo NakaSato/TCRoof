@@ -220,14 +220,8 @@ struct TimelineItem: Identifiable {
         #if DEBUG
         if UserDefaults.standard.string(forKey: "homeTimeline") == "demo" { return demoRows(jobs: jobs, report: report) }
         #endif
-        let now = Date.now
-        let pwa = jobs.pwaStations
-        let stations = pwa.map(\.planStation)
-        let threshold = survey.settings.behindThreshold
-        let deadlines = PWAPlan.deadlines(stations, library: StationDocsStore.loadLibrary(), today: now, threshold: threshold)
-        let bars = Dictionary(PWAPlan.bars(stations, today: now, threshold: threshold).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let byID = Dictionary(zip(pwa, stations).map { ($1.id, ($0, $1)) }, uniquingKeysWith: { a, _ in a })
-        return PWAPlan.agenda(stations, deadlines: deadlines, days: [now], today: now, threshold: threshold).compactMap { item in
+        let (agenda, bars, byID) = todaysAgenda(jobs: jobs, survey: survey)
+        return agenda.compactMap { item in
             guard let (job, s) = byID[item.station] else { return nil }
             let done = (bars[item.station]?.actual ?? 0) / 100
             // `ทุ่งน้อย | ผู้รับเหมา A | TCR01 | ช้ากว่าแผน 12%` without the station, which an install row has in its name
@@ -240,6 +234,35 @@ struct TimelineItem: Identifiable {
             case .survey, .notice: return nil
             }
         }
+    }
+
+    /// Today's agenda of every PWA station, with each station's bar and job. The home redraws each minute for its
+    /// countdowns, but this is the same all day until a station or its records change, so it is kept
+    /// (`ObservedCache`): the day, the stations, the threshold and the shared papers' file are its key.
+    private struct TodaysAgenda {
+        let items: [PWAPlan.AgendaItem]
+        let bars: [String: PWAPlan.Bar]
+        let byID: [String: (Job, PWAPlan.Station)]
+    }
+
+    @MainActor private static let agendaCache = ObservedCache<TodaysAgenda>()
+
+    @MainActor private static func todaysAgenda(jobs: [Job], survey: SurveyModel)
+        -> (items: [PWAPlan.AgendaItem], bars: [String: PWAPlan.Bar], byID: [String: (Job, PWAPlan.Station)]) {
+        let pwa = jobs.pwaStations
+        let threshold = survey.settings.behindThreshold, day = Calendar.current.startOfDay(for: .now)
+        let key = [AnyHashable(pwa.map(\.persistentModelID)), AnyHashable(day), AnyHashable(threshold),
+                   AnyHashable(StationDocsStore.libraryStamp())]
+        let a = agendaCache.value(key: key) {
+            let now = Date.now
+            let stations = pwa.map(\.planStation)
+            let deadlines = PWAPlan.deadlines(stations, library: StationDocsStore.loadLibrary(), today: now, threshold: threshold)
+            let bars = Dictionary(PWAPlan.bars(stations, today: now, threshold: threshold).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            let byID = Dictionary(zip(pwa, stations).map { ($1.id, ($0, $1)) }, uniquingKeysWith: { a, _ in a })
+            return TodaysAgenda(items: PWAPlan.agenda(stations, deadlines: deadlines, days: [now], today: now, threshold: threshold),
+                                bars: bars, byID: byID)
+        }
+        return (a.items, a.bars, a.byID)
     }
 
     /// One agenda row. The button follows the type: the station's daily report of today, its ICL check list, its

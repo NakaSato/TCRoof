@@ -397,9 +397,9 @@ struct IECValuePhotoCard: View {
     }
 
     @ViewBuilder private var photo: some View {
-        if let asset, let img = UIImage(data: asset.data) {
+        if let asset, !asset.data.isEmpty {
             Color.clear.frame(height: 168)
-                .overlay { Image(uiImage: img).resizable().scaledToFill() }
+                .overlay { PhotoImage(data: asset.data, maxPixel: 800) }
                 .clipped()
                 .overlay(alignment: .topLeading) {
                     Label("ถ่ายแล้ว", systemImage: "checkmark").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.okText)

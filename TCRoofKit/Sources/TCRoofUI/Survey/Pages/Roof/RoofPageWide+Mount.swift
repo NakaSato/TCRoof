@@ -30,8 +30,10 @@ extension RoofPageWide {
         guard mode == .pv else { return }
         let v = values, lat = latitude, lon = longitude
         mountBusy = true
-        let result = await Task.detached(priority: .userInitiated) { RoofMount.layout(v, latitude: lat, longitude: lon) }.value
-        guard !Task.isCancelled else { return }
+        // the first layout at once; a change waits for the next one (a burst of edits runs once)
+        let wait: Duration = mount == nil ? .zero : .milliseconds(300)
+        guard let result = await BackgroundRun.run(debounce: wait, { RoofMount.layout(v, latitude: lat, longitude: lon) }),
+              !Task.isCancelled else { return }
         if result.fresh {
             mountTried = (result.layout.faces.map(\.tried).reduce(0, +), result.layout.quantities.modules)
             mountArrangements = []

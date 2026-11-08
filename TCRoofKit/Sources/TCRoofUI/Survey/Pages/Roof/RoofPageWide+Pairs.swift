@@ -78,9 +78,14 @@ extension RoofPageWide {
 
     /// 2278 → `2,278`.
     static func mm(_ n: Int) -> String {
+        mmFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
+
+    /// One formatter for every row's sizes (each body pass formats several).
+    private static let mmFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal; f.groupingSeparator = ","
-        return f.string(from: NSNumber(value: n)) ?? "\(n)"
-    }
+        return f
+    }()
 }
 #endif

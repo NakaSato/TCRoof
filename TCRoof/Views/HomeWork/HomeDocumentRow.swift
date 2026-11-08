@@ -49,7 +49,7 @@ struct HomeDocumentRow<Destination: View>: View {
             Task {
                 for item in items {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        add(ImageUtil.compressed(data), ext: "jpg")
+                        add(await ImageUtil.compressedAsync(data), ext: "jpg")
                     }
                 }
                 photoItems = []

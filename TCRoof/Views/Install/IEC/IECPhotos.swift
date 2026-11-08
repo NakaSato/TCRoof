@@ -111,11 +111,11 @@ struct IECPhotoTile: View {
     }
 
     @ViewBuilder private var tile: some View {
-        if let asset, let img = UIImage(data: asset.data) {
+        if let asset, !asset.data.isEmpty {
             // the tile's size first, the photo filling it: a photo wider than a narrow tile (IR, 150 pt) would
             // otherwise widen the frame and spill out of its card
             Color.clear.frame(maxWidth: .infinity).frame(height: height)
-                .overlay { Image(uiImage: img).resizable().scaledToFill() }
+                .overlay { PhotoImage(data: asset.data, maxPixel: 1000) }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(alignment: .bottomLeading) {
                     Text("\(caption) | \(ThaiFormat.time.string(from: asset.createdAt))").font(.sarabunFixed(13, .bold))

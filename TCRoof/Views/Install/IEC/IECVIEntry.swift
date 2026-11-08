@@ -165,8 +165,9 @@ struct IECVIEntry: View {
     private var photoColumn: some View {
         VStack(spacing: 12) {
             Group {
-                if let a = job.iecPhoto(slot.photo(photoKind)), let img = UIImage(data: a.data) {
-                    Color.clear.overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
+                if let a = job.iecPhoto(slot.photo(photoKind)), !a.data.isEmpty {
+                    // decoded once, not on every keypad press (the dialog's `typed` redraws this view)
+                    PhotoImage(data: a.data, maxPixel: 1200).clipped()
                 } else {
                     Theme.phonePage.overlay { Text("ยังไม่มีรูป").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted) }
                 }

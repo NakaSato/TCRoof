@@ -58,6 +58,8 @@ struct InstallTrackingPage: View {
     @State var phoneSheet: PhoneSheet?
     /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the edits not saved yet, and where the person was going when asked about unsaved edits.
     @State var settingsDraft = SettingsDraft()
+    /// `data`, kept until the job, its reports or the survey change (`ObservedCache`).
+    @State private var dataCache = ObservedCache<InstallPageData>()
     @State var leaving: Leave?
 
     var body: some View {
@@ -196,7 +198,11 @@ struct InstallTrackingPage: View {
             return d
         }
         #endif
-        return InstallPageData(job: job, survey: survey)
+        let job = job, survey = survey
+        // the day and the shared papers' file aren't observed: they are the key
+        let key = [AnyHashable(job.persistentModelID), AnyHashable(Calendar.current.startOfDay(for: .now)),
+                   AnyHashable(StationDocsStore.libraryStamp())]
+        return dataCache.value(key: key) { InstallPageData(job: job, survey: survey) }
     }
 
     @ViewBuilder func destination(_ r: Route) -> some View {

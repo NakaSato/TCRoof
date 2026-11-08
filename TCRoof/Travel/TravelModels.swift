@@ -160,6 +160,11 @@ extension Expense: OwnedRecord {}
 extension ClaimMonth: OwnedRecord {}
 
 extension Trip: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [Trip] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<Trip>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var date: Int64
         var ownerEmail, person, vehicle, plate, startPlace, stops: String
@@ -196,6 +201,11 @@ extension Trip: CloudSynced {
 }
 
 extension Expense: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [Expense] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<Expense>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var date, createdAt: Int64
         var ownerEmail, person, category: String
@@ -227,6 +237,11 @@ extension Expense: CloudSynced {
 }
 
 extension ClaimMonth: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [ClaimMonth] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<ClaimMonth>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var ownerEmail, month, log: String
         var submittedAt: Int64?

@@ -61,7 +61,7 @@ struct PhotoPickerSection: View {
             Task {
                 for item in newItems {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        onAdd(ImageUtil.compressed(data))
+                        onAdd(await ImageUtil.compressedAsync(data))
                     }
                 }
                 items = []
@@ -114,38 +114,61 @@ private struct IndexBox: Identifiable { let id: Int }
 /// every full-size photo each time its body runs.
 struct Thumbnail: View {
     let data: Data
-    @State private var image: UIImage?
-    private static let cache = NSCache<NSString, UIImage>()
 
     var body: some View {
         Theme.track
+            .overlay { PhotoImage(data: data) }
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
+    }
+}
+
+/// A photo filling its frame (`scaledToFill`), decoded off the main thread at most `maxPixel` on its long side and
+/// cached, so a tile redrawn on every keypad press or list pass doesn't decode the full-size JPEG again. Empty until
+/// the image is ready; the caller gives the frame, clip and placeholder.
+struct PhotoImage: View {
+    let data: Data
+    var maxPixel: Int = 600
+    @State private var image: UIImage?
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.totalCostLimit = 96 << 20  // decoded bytes; a 600 px thumbnail is about 1 MB
+        return c
+    }()
+
+    var body: some View {
+        Color.clear
             .overlay {
                 if let image { Image(uiImage: image).resizable().scaledToFill() }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.navy.opacity(0.3)))
-            .task(id: Self.key(data)) {
+            .task(id: Self.key(data, maxPixel)) {
                 guard !Task.isCancelled else { return }
-                let key = Self.key(data) as NSString
+                let key = Self.key(data, maxPixel) as NSString
                 if let hit = Self.cache.object(forKey: key) { image = hit; return }
                 image = nil
-                let made = try? await BackgroundWork.value { [data] in Self.thumbnail(data) }
+                let max = maxPixel
+                let made = try? await BackgroundWork.value { [data] in Self.thumbnail(data, maxPixel: max) }
                 guard !Task.isCancelled else { return }
-                if let made { Self.cache.setObject(made, forKey: key) }
+                if let made { Self.cache.setObject(made, forKey: key, cost: Self.cost(made)) }
                 image = made
             }
     }
 
     /// The size and a hash of both ends: cheap, and two photos do not share it.
-    private static func key(_ data: Data) -> String {
+    private static func key(_ data: Data, _ maxPixel: Int) -> String {
         var hash = SHA256()
         hash.update(data: data.prefix(4096)); hash.update(data: data.suffix(4096))
-        return "\(data.count)-" + hash.finalize().prefix(8).map { String(format: "%02x", $0) }.joined()
+        return "\(data.count)-\(maxPixel)-" + hash.finalize().prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 
-    private nonisolated static func thumbnail(_ data: Data) -> UIImage? {
+    private static func cost(_ image: UIImage) -> Int {
+        guard let cg = image.cgImage else { return 1 }
+        return cg.bytesPerRow * cg.height
+    }
+
+    private nonisolated static func thumbnail(_ data: Data, maxPixel: Int) -> UIImage? {
         guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 600,
+        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: maxPixel,
                                      kCGImageSourceCreateThumbnailWithTransform: true]
         return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
     }

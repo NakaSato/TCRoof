@@ -181,8 +181,8 @@ struct InstallStageSheet: View {
                     }
                     HStack(spacing: 8) {
                         ForEach(Array(photos.prefix(6).enumerated()), id: \.offset) { _, d in
-                            if let img = UIImage(data: d) {
-                                Image(uiImage: img).resizable().scaledToFill().frame(width: 64, height: 64)
+                            if !d.isEmpty {
+                                PhotoImage(data: d, maxPixel: 200).frame(width: 64, height: 64)
                                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }
                         }

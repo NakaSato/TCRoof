@@ -27,7 +27,8 @@ struct IECInstallPhotosPage: View {
     var body: some View {
         let r = job.iecReport ?? job.newIECReport
         let pages = r.installPages
-        VStack(alignment: .leading, spacing: 14) {
+        // lazy: a page's photos are read and decoded when it scrolls near, not all 12+ pages at once
+        LazyVStack(alignment: .leading, spacing: 14) {
             summary(r, pages: pages.count)
             roofs(r).disabled(readOnly)
             ForEach(Array(pages.enumerated()), id: \.element.id) { n, page in

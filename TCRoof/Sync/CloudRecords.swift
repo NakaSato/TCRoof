@@ -7,6 +7,7 @@ import TCRoofCore
 protocol CloudSynced: PersistentModel {
     associatedtype Record: Codable & Equatable & Sendable
     static var collection: String { get }
+    /// The local models with these sync ids (one snapshot chunk), never the whole table.
     static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [Self]
     var syncID: String? { get set }
     var record: Record { get }
@@ -22,10 +23,6 @@ protocol CloudSynced: PersistentModel {
 
 extension CloudSynced {
     var syncs: Bool { true }
-
-    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [Self] {
-        try context.fetch(FetchDescriptor<Self>())
-    }
 }
 
 extension Job { var ownerJob: Job? { self } }
@@ -228,6 +225,11 @@ extension Job: CloudSynced {
 // MARK: - Survey
 
 extension SurveyForm: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [SurveyForm] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<SurveyForm>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var createdAt: Int64
         var surveyor, roofType, orientation, shading, meterPhase, notes: String
@@ -285,6 +287,11 @@ extension SurveyForm: CloudSynced {
 // MARK: - Devices
 
 extension ScannedDevice: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [ScannedDevice] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<ScannedDevice>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var kind, serial, scannedBy: String
         var scannedAt: Int64
@@ -316,6 +323,11 @@ extension ScannedDevice: CloudSynced {
 // MARK: - Install log
 
 extension InstallLog: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [InstallLog] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<InstallLog>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var date, createdAt: Int64
         var recorder, details: String
@@ -357,6 +369,11 @@ extension InstallLog: CloudSynced {
 // MARK: - Inspection
 
 extension Inspection: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [Inspection] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<Inspection>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var createdAt, updatedAt: Int64
         var submittedAt: Int64?
@@ -397,6 +414,11 @@ extension Inspection: CloudSynced {
 /// A sheet of the PWA site ICL (`SiteICL`), one document each. `state` is the sheet's hand-over, beside it for the
 /// rules: a contractor writes a sheet only while it is open and may send it (`sent`), never sign it (`closed`).
 extension ICLSheet: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [ICLSheet] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<ICLSheet>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var sheetID: String
         var sheet: String
@@ -444,6 +466,11 @@ extension ICLSheet: CloudSynced {
 /// A daily-report, ICL or IEC 62446 photo, one document each, so photos added or deleted on two devices at once never
 /// overwrite each other. Only the Drive file travels: the other devices download it (`PhotoSync`).
 extension PhotoAsset: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [PhotoAsset] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<PhotoAsset>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var tag: String
         var createdAt: Int64
@@ -467,14 +494,23 @@ extension PhotoAsset: CloudSynced {
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {
         guard let context = modelContext else { return false }
         if let id = r.log {
-            guard let owner = try? context.fetch(FetchDescriptor<InstallLog>(predicate: #Predicate { $0.syncID == id })).first else { return false }
-            if log !== owner { log = owner }
+            // already linked (an update to a known photo): no lookup
+            if log?.syncID != id {
+                guard let owner = try? context.fetch(FetchDescriptor<InstallLog>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+                log = owner
+            }
         } else if let id = r.inspection {
-            guard let owner = try? context.fetch(FetchDescriptor<Inspection>(predicate: #Predicate { $0.syncID == id })).first else { return false }
-            if inspection !== owner { inspection = owner }
+            // already linked (an update to a known photo): no lookup
+            if inspection?.syncID != id {
+                guard let owner = try? context.fetch(FetchDescriptor<Inspection>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+                inspection = owner
+            }
         } else if let id = r.iclSheet {
-            guard let owner = try? context.fetch(FetchDescriptor<ICLSheet>(predicate: #Predicate { $0.syncID == id })).first else { return false }
-            if iclSheet !== owner { iclSheet = owner }
+            // already linked (an update to a known photo): no lookup
+            if iclSheet?.syncID != id {
+                guard let owner = try? context.fetch(FetchDescriptor<ICLSheet>(predicate: #Predicate { $0.syncID == id })).first else { return false }
+                iclSheet = owner
+            }
         } else if let id = r.iecJob {
             guard let owner = jobs[id] else { return false }
             if iecJob !== owner { iecJob = owner }

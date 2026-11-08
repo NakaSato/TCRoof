@@ -56,6 +56,11 @@ final class CompanyVehicle {
 }
 
 extension ToolEvent: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [ToolEvent] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<ToolEvent>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var event: String
         var at: Int64
@@ -78,6 +83,11 @@ extension ToolEvent: CloudSynced {
 }
 
 extension CompanyVehicle: CloudSynced {
+    static func fetchForSync(in context: ModelContext, ids: [String]) throws -> [CompanyVehicle] {
+        let optionalIDs = ids.map { Optional($0) }
+        return try context.fetch(FetchDescriptor<CompanyVehicle>(predicate: #Predicate { optionalIDs.contains($0.syncID) }))
+    }
+
     struct Record: Codable, Equatable, Sendable {
         var vehicle: String
     }

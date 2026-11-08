@@ -63,7 +63,12 @@ public final class SurveyModel {
     /// Called with a survey just before it is deleted. TCRoof deletes the job `makeInstallJob` made for it from here,
     /// when nothing was recorded on that job.
     @ObservationIgnored public var onDeleted: ((Job) -> Void)?
-    let cache = NSCache<NSString, UIImage>()
+    /// Decoded photos, by job and file: a 1600 px photo is about 10 MB decoded, so the cache keeps about 20.
+    let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.totalCostLimit = 200 << 20
+        return c
+    }()
     /// Download progress per job of photos taken on another iPad.
     public internal(set) var photoFetch: [UUID: PhotoTransfer] = [:]
     var photoRevision = 0

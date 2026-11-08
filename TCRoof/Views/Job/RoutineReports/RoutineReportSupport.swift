@@ -158,11 +158,13 @@ enum RoutineReportFiles {
         }
     }
 
-    /// Every daily report with its photos and signatures.
-    static func entries(_ job: Job) -> (entries: [RoutineReportPages.DailyEntry], images: [UUID: Data]) {
+    /// The daily reports dated within `range` with their photos and signatures. Only their photos are read: the
+    /// weekly and monthly pages show no other day (they filter on the report's date, as here).
+    static func entries(_ job: Job, in range: ClosedRange<Date>) -> (entries: [RoutineReportPages.DailyEntry], images: [UUID: Data]) {
         var images: [UUID: Data] = [:]
+        let cal = RoutineReport.calendar
         let entries = job.dailyLogs.compactMap { log -> RoutineReportPages.DailyEntry? in
-            guard let r = log.report else { return nil }
+            guard let r = log.report, range.contains(cal.startOfDay(for: r.date)) else { return nil }
             let (photos, imgs) = log.dayPhotos(r)
             images.merge(imgs) { a, _ in a }
             return .init(report: r, photos: photos, engineerSignedAt: log.engineerSignedAt, inspectorAckAt: log.inspectorAckAt)
@@ -260,7 +262,7 @@ enum RoutineReportFiles {
     }
 
     static func weekly(_ job: Job, week: Date) -> Built {
-        let (entries, images) = entries(job)
+        let (entries, images) = entries(job, in: RoutineReport.week(of: week))
         let ws = MasterSchedule.weekStart(week)
         let next = job.weeklyRequest(for: RoutineReport.calendar.date(byAdding: .day, value: 7, to: ws) ?? ws)
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())
@@ -318,7 +320,7 @@ enum RoutineReportFiles {
     }
 
     static func monthly(_ job: Job, month: Date) -> Built {
-        let (entries, images) = entries(job)
+        let (entries, images) = entries(job, in: RoutineReport.month(of: month))
         let first = RoutineReport.month(of: month).lowerBound
         let pages = RoutineReportPages(station: job.reportStation, measure: PDFRenderer.Measure())
             .monthly(month: first, entries: entries, all: job.dailyReports, schedule: job.reportSchedule, installStart: job.installStart)

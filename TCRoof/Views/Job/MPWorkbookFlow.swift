@@ -127,7 +127,7 @@ final class MPWorkbookFlow {
     /// exported it (the record the export keeps in the file), else since the app imported the file it keeps; a file with
     /// neither adds its bookings. No task ends above its weight in the job's plan.
     static func merged(_ imported: MPWorkbook.Imported, into job: Job) -> (actual: MasterSchedule.Actual, changed: Int) {
-        let base = imported.base ?? job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).actual }
+        let base = imported.base ?? job.scheduleWorkbook.flatMap { KeptWorkbook.read($0)?.actual }
         var weights: [String: Double] = [:]
         if let input = job.scheduleInput {
             for task in MasterSchedule.Task.allCases { weights[task.rawValue] = input.weight(task) }
@@ -144,7 +144,7 @@ final class MPWorkbookFlow {
         let (a, changed) = merged(imported, into: job)
         if a != job.scheduleActual { job.scheduleActual = a }
         let (rows, edited) = MasterSchedule.mergingText(job.scheduleWBS, file: imported.wbs,
-                                                        base: job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).wbs })
+                                                        base: job.scheduleWorkbook.flatMap { KeptWorkbook.read($0)?.wbs })
         if rows != job.scheduleWBS { job.scheduleWBS = rows }
         let ticked = takeTicks(imported, on: job)
         job.scheduleWorkbook = data
@@ -161,7 +161,7 @@ final class MPWorkbookFlow {
         guard !imported.wbs.isEmpty else { return 0 }
         // imports run from the screens, on the main thread
         let by = by ?? MainActor.assumeIsolated { MemberRole.shared.permissions.email }
-        let base = imported.wbsBase ?? job.scheduleWorkbook.flatMap { try? MPWorkbook.read($0).wbsDone }
+        let base = imported.wbsBase ?? job.scheduleWorkbook.flatMap { KeptWorkbook.read($0)?.wbsDone }
         let (ticks, n) = MasterSchedule.mergingTicks(job.wbsTicks, fileDone: imported.wbsDone, dates: imported.wbsDoneDates,
                                                      base: base, by: by, today: MasterSchedule.calendar.startOfDay(for: .now))
         if ticks != job.wbsTicks { job.wbsTicks = ticks }
@@ -365,5 +365,21 @@ struct MPWorkbookMenuItems: View {
                   : job.scheduleWorkbook == nil ? "ส่งออกไฟล์แผน (นำเข้าไฟล์ก่อน)" : "ส่งออกไฟล์แผน (Excel)", systemImage: "square.and.arrow.up")
         }
         .disabled(job.scheduleWorkbook == nil || job.scheduleInput == nil)
+    }
+}
+
+/// The job's kept plan file, read once: an import compares the new file with it three times over (progress, texts,
+/// ticks) and the confirmation's summary again on each redraw, and each read unzips it and works out its formulas.
+private enum KeptWorkbook {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var last: (data: Data, read: MPWorkbook.Imported)?
+
+    static func read(_ data: Data) -> MPWorkbook.Imported? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let last, last.data == data { return last.read }
+        guard let read = try? MPWorkbook.read(data) else { return nil }
+        last = (data, read)
+        return read
     }
 }

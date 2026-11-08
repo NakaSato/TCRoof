@@ -24,6 +24,9 @@ struct MonitoringSettingsDialog: View {
     @State private var newToken = ""
     /// Tokens typed for new servers, saved to the Keychain on `บันทึก`; servers removed, their tokens removed then.
     @State private var pendingTokens: [UUID: String] = [:]
+    /// The server whose token is being replaced, and the new one typed.
+    @State private var changingToken: UUID?
+    @State private var changedToken = ""
     @State private var testing: Set<UUID> = []
     @State private var testNote: [UUID: String] = [:]
 
@@ -141,7 +144,7 @@ struct MonitoringSettingsDialog: View {
             .disabled(adding)
             Divider()
             settingRow("Token", "เก็บในพวงกุญแจของ iPad เครื่องนี้ · ใช้ร่วมกันทุกบัญชี · แสดงแค่ 4 ตัวท้าย") {
-                Text("ซ่อนไว้").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                Text(tokensOnDevice).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
             }
             Divider()
             settingRow("สิทธิ์", "แอปไม่ส่งคำสั่งเปิดปิดหรือตั้งค่าอินเวอร์เตอร์") {
@@ -156,11 +159,20 @@ struct MonitoringSettingsDialog: View {
         }
     }
 
+    /// How many servers have their token on this iPad (one typed and not saved yet counts): another iPad's servers
+    /// come with the settings, but their tokens stay on the iPad they were typed on.
+    private var tokensOnDevice: String {
+        guard !draft.servers.isEmpty else { return "ยังไม่มี" }
+        let n = draft.servers.filter { pendingTokens[$0.id] != nil || MonitoringToken.token($0.id) != nil }.count
+        return "ในเครื่องนี้ \(n)/\(draft.servers.count)"
+    }
+
     private var lastTested: String {
         guard let d = draft.servers.compactMap(\.testedAt).max() else { return "ยังไม่ได้ทดสอบ" }
         return "ทดสอบล่าสุด " + d.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(Locale(identifier: "th_TH")))
     }
 
+    @ViewBuilder
     private func serverRow(_ s: Monitoring.Settings.Server) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "server.rack").font(.system(size: 16)).foregroundStyle(Theme.primary)
@@ -179,12 +191,49 @@ struct MonitoringSettingsDialog: View {
                 MonChip((ok ? "ทดสอบล่าสุด " : "ล้มเหลว ") + MonFormat.time(at), ok ? .ok : .bad)
             }
             Button {
+                changingToken = changingToken == s.id ? nil : s.id
+                changedToken = ""
+            } label: { Text(verbatim: "เปลี่ยน Token") }
+            .font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
+            .accessibilityIdentifier("monitoring.server.changeToken")
+            Button {
                 draft.servers.removeAll { $0.id == s.id }
                 pendingTokens[s.id] = nil
+                if changingToken == s.id { changingToken = nil }
             } label: { Text(verbatim: "ลบ") }
             .font(.sarabun(14, .bold)).foregroundStyle(Theme.dangerText).frame(minWidth: 44, minHeight: 44)
         }
         .padding(.horizontal, 16).padding(.vertical, 8)
+        if changingToken == s.id { changeTokenForm(s) }
+    }
+
+    /// A new token for a server already added: kept with the others typed and saved to the Keychain on `บันทึก`
+    /// (or on its connection test), its last four shown at once and the last test cleared, since it was the old one's.
+    private func changeTokenForm(_ s: Monitoring.Settings.Server) -> some View {
+        HStack(spacing: 10) {
+            SecureField("Token ใหม่จาก Growatt", text: $changedToken)
+                .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .accessibilityIdentifier("monitoring.server.newToken")
+            Button { changingToken = nil; changedToken = "" } label: { Text(verbatim: "ยกเลิก") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+            Button {
+                let token = changedToken.trimmingCharacters(in: .whitespacesAndNewlines)
+                pendingTokens[s.id] = token
+                if let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
+                    draft.servers[i].tokenSuffix = Monitoring.Settings.Server.suffix(of: token)
+                    draft.servers[i].testOK = nil
+                    draft.servers[i].testedAt = nil
+                    draft.servers[i].plants = nil
+                }
+                testNote[s.id] = nil
+                changingToken = nil; changedToken = ""
+            } label: { Text(verbatim: "ใช้ Token นี้") }
+                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
+                .disabled(changedToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .padding(.horizontal, 16).padding(.bottom, 12)
     }
 
     private var addServerForm: some View {

@@ -175,8 +175,8 @@ final class Job {
     var scheduleWBSJSON: String?
     /// Encoded `[String: MasterSchedule.WBSTick]`, by row code: the WBS rows ticked done.
     var wbsTicksJSON: String?
-    /// A contractor ticked here and Firestore hasn't echoed it back yet: their device pushes the ticks (signed
-    /// `wbsTicksBy`) and keeps them over an older copy arriving meanwhile. Device only.
+    /// A contractor ticked here and Firestore hasn't echoed it back yet. Since CHA-71 a contractor no longer ticks, so
+    /// nothing sets it; kept so the store keeps its shape. Device only.
     var wbsTicksUnsent = false
     /// Encoded `StationDocs.Station`: the station's papers for a PWA job (เอกสารสถานี กปภ.); optional for the same reason.
     var stationDocsJSON: String?

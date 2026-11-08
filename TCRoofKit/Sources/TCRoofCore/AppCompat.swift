@@ -24,7 +24,12 @@ public enum AppCompat {
     /// ticks booked (`Actual.fromWBS`). Builds before it drop `fromWBS` when they save the plan's progress, so the ticks
     /// would book again; set the minimum before anyone ticks.
     /// 7: explicit WBS dependency links; older builds drop them when rewriting WBS rows.
-    public static let syncVersion = 7
+    /// 8: WBS ticks say where they came from (`WBSTick.source`, `reportedBy`, `confirmedAt`), a daily report line's
+    /// finished sub-tasks (`ProgressLine.wbsDone` / `wbsReturned`) and only the team ticks (CHA-71). Builds before it drop
+    /// the sources and the picks when they save, take a contractor's ticks, and a contractor's build sends its ticks in
+    /// the same write as its IEC test and weekly request, which the rules then refuse whole: set the minimum before
+    /// the rules without `wbsTicks` for contractors go live.
+    public static let syncVersion = 8
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

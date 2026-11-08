@@ -91,7 +91,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         c.categoryIdentifier = plan.type.rawValue
         c.userInfo = plan.info
         // urgent ones (the late tool, the ERC wait overdue, an issue due today) break through Focus with sound and
-        // lead the app's summary on the lock screen (issue #315); needs the time-sensitive entitlement
+        // lead the app's summary on the lock screen (issue #315). Breaking through Focus needs the time-sensitive
+        // entitlement, which the personal signing team can't add: until a paid team signs the app iOS treats it as active
         if plan.isTimeSensitive {
             c.interruptionLevel = .timeSensitive; c.sound = .default
         } else {

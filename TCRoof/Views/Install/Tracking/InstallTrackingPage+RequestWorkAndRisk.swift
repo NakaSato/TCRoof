@@ -11,7 +11,7 @@ extension InstallWeeklyRequestTabView {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     numbered(3, "งานที่ขอเข้าปฏิบัติ")
-                    Text("\(r.work.count) งาน | \(r.work.count - r.linesWithoutDay) มีวัน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("\(r.work.count) งาน | \(r.work.count - r.linesWithoutDay) มีวัน").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     if let at = reqPulledAt { InstallTrackingPage.chip("✓ ดึงจากแผน MP " + String(format: "%02d:%02d", RoutineReport.calendar.component(.hour, from: at), RoutineReport.calendar.component(.minute, from: at)), .ok).fixedSize() }
                     Spacer(minLength: 8)
                     legendSwatch(Theme.primary, "วันทำงาน", outlined: false)
@@ -24,10 +24,10 @@ extension InstallWeeklyRequestTabView {
                     } title: {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("งาน | ตำแหน่ง | ปริมาณ")
-                            if editable { Text("แตะช่องวันเพื่อเลือก / ยกเลิก").font(.sarabunFixed(12)) }
+                            if editable { Text("แตะช่องวันเพื่อเลือก / ยกเลิก").font(.sarabun(12)) }
                         }
                     } days: { d in Text(Self.dayTitle(r, d)) } tail: { EmptyView() }
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(height: 46)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(minHeight: 46)
                     ForEach(Array(r.work.enumerated()), id: \.element.id) { i, line in
                         Rectangle().fill(Theme.hairline).frame(height: 1)
                         workLine(r, line, index: i, late: lateDays(line, plan: plan, weekStart: r.weekStart), editable: editable)
@@ -37,12 +37,12 @@ extension InstallWeeklyRequestTabView {
                         let n = r.lines(on: d)
                         Text(n > 0 ? "\(n) งาน" : "–").bold().foregroundStyle(n > 0 ? Theme.navy : Theme.inkFaint).accessibilityIdentifier("workDay\(d)")
                     } tail: { EmptyView() }
-                        .font(.sarabunFixed(14)).frame(height: 46)
+                        .font(.sarabun(14)).frame(minHeight: 46)
                 }
                 .padding(.horizontal, 12)
                 .background(Theme.phonePage.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 if editable {
-                    Button { reqSheet = .addLine } label: { Label("เพิ่มงานนอกแผน MP", systemImage: "plus").font(.sarabunFixed(15, .bold)) }
+                    Button { reqSheet = .addLine } label: { Label("เพิ่มงานนอกแผน MP", systemImage: "plus").font(.sarabun(15, .bold)) }
                         .buttonStyle(TCButtonStyle(.secondary, size: .card)).accessibilityIdentifier("requestAddLine")
                 }
             }
@@ -53,7 +53,7 @@ extension InstallWeeklyRequestTabView {
         HStack(spacing: 5) {
             RoundedRectangle(cornerRadius: 3).fill(outlined ? Color.clear : c).frame(width: 12, height: 12)
                 .overlay { if outlined { RoundedRectangle(cornerRadius: 3).strokeBorder(c, lineWidth: 1.5) } }
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -73,14 +73,14 @@ extension InstallWeeklyRequestTabView {
             : line.days.isEmpty ? ("ยังไม่มีวัน | รอนัด", .warn) : late.map { ("ยกมา | ช้า \($0) วัน", .warn) } ?? ("จากแผน MP", .info)
         let qty = line.qty > 0 ? (line.qty.formatted(.number.precision(.fractionLength(0...2))) + (line.unit.isEmpty ? "" : " " + line.unit)) : ""
         return workRow {
-            Text(line.task?.code ?? "+\(outside)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).monospacedDigit()
+            Text(line.task?.code ?? "+\(outside)").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).monospacedDigit()
         } title: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(line.description.isEmpty ? (line.task?.title ?? "งานอื่น") : line.description)
-                    .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    .font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 HStack(spacing: 6) {
                     InstallTrackingPage.chip(tag, tone).fixedSize()
-                    Text([line.location, qty].filter { !$0.isEmpty }.joined(separator: " | ")).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text([line.location, qty].filter { !$0.isEmpty }.joined(separator: " | ")).font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
             }
         } days: { d in
@@ -104,7 +104,7 @@ extension InstallWeeklyRequestTabView {
             ZStack {
                 if on {
                     shape.fill(carried ? Theme.warning : Theme.primary)
-                    if carried { Text("ยกมา").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.onPrimary) }
+                    if carried { Text("ยกมา").font(.sarabun(12, .bold)).foregroundStyle(Theme.onPrimary) }
                 } else if none {
                     shape.strokeBorder(Theme.warning.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 } else {
@@ -142,7 +142,7 @@ extension InstallWeeklyRequestTabView {
                     HStack(spacing: 8) {
                         ForEach(missing, id: \.self) { m in
                             Button("+ " + m) { reqChange { $0.risks.append(.init(description: m)) } }
-                                .font(.sarabunFixed(14, .bold)).buttonStyle(TCButtonStyle(.secondary, size: .card))
+                                .font(.sarabun(14, .bold)).buttonStyle(TCButtonStyle(.secondary, size: .card))
                         }
                     }
                 }
@@ -162,9 +162,9 @@ extension InstallWeeklyRequestTabView {
             HStack(alignment: .top) {
                 if editable {
                     TextField("ความเสี่ยง", text: riskText(risk.id, \.description))
-                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                        .font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 } else {
-                    Text(risk.description).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(risk.description).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 }
                 Spacer(minLength: 4)
                 if editable {
@@ -173,12 +173,12 @@ extension InstallWeeklyRequestTabView {
                 }
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("ป้องกัน:").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("ป้องกัน:").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
                 if editable {
                     TextField("แนวทางป้องกัน", text: riskText(risk.id, \.prevention), axis: .vertical)
-                        .font(.sarabunFixed(13))
+                        .font(.sarabun(13))
                 } else {
-                    Text(risk.prevention).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(risk.prevention).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
             }
             HStack(spacing: 6) {
@@ -190,7 +190,7 @@ extension InstallWeeklyRequestTabView {
                     case .high: (Theme.dangerText, Theme.dangerSoft)
                     }
                     Button { if editable { reqChange { $0.updateRisk(risk.id) { $0.level = l } } } } label: {
-                        Text(l.title).font(.sarabunFixed(13, .bold)).foregroundStyle(on ? ink : Theme.inkMuted)
+                        Text(l.title).font(.sarabun(13, .bold)).foregroundStyle(on ? ink : Theme.inkMuted)
                             .padding(.horizontal, 14).frame(minHeight: 44)
                             .background(on ? fill : Theme.hairline, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     }
@@ -212,7 +212,7 @@ extension InstallWeeklyRequestTabView {
     }
 
     func toast(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
+        Text(text).font(.sarabun(14, .bold)).foregroundStyle(Theme.onPrimary)
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(Theme.navySolid.opacity(0.9), in: Capsule())
             .padding(.bottom, 110)

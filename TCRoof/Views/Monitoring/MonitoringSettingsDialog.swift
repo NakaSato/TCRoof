@@ -82,9 +82,9 @@ struct MonitoringSettingsDialog: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(page == .pairing ? "จับคู่สถานีกับ Plant" : "ตั้งค่า Monitoring")
-                    .font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    .font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 Text(page == .pairing ? pairedLine : canEdit ? "ใช้กับ Monitoring เท่านั้น · แก้ได้เฉพาะผู้จัดการ" : "ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             Button(action: close) {
@@ -99,7 +99,7 @@ struct MonitoringSettingsDialog: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Text("ค่าที่เปลี่ยนมีผลกับทุกสถานี").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ค่าที่เปลี่ยนมีผลกับทุกสถานี").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             Spacer()
             Button(action: close) { Text(verbatim: "ยกเลิก") }.buttonStyle(TCButtonStyle(.secondary, fullWidth: false))
             if canEdit {
@@ -131,9 +131,9 @@ struct MonitoringSettingsDialog: View {
             if adding { addServerForm; Divider() }
             Button { adding = true } label: {
                 HStack {
-                    Label("เพิ่มเซิร์ฟเวอร์", systemImage: "plus").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
+                    Label("เพิ่มเซิร์ฟเวอร์", systemImage: "plus").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary)
                     Spacer()
-                    Text("เช่น บัญชี Growatt แยกตามเฟส").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("เช่น บัญชี Growatt แยกตามเฟส").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 16).frame(minHeight: 48).contentShape(Rectangle())
             }
@@ -141,11 +141,11 @@ struct MonitoringSettingsDialog: View {
             .disabled(adding)
             Divider()
             settingRow("Token", "เก็บในพวงกุญแจของ iPad เครื่องนี้ · ใช้ร่วมกันทุกบัญชี · แสดงแค่ 4 ตัวท้าย") {
-                Text("ซ่อนไว้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text("ซ่อนไว้").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
             }
             Divider()
             settingRow("สิทธิ์", "แอปไม่ส่งคำสั่งเปิดปิดหรือตั้งค่าอินเวอร์เตอร์") {
-                Text("อ่านอย่างเดียว").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk)
+                Text("อ่านอย่างเดียว").font(.sarabun(14, .bold)).foregroundStyle(Theme.successInk)
             }
             Divider()
             settingRow("สถานะ", lastTested) {
@@ -166,11 +166,11 @@ struct MonitoringSettingsDialog: View {
             Image(systemName: "server.rack").font(.system(size: 16)).foregroundStyle(Theme.primary)
                 .frame(width: 40, height: 40).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text(s.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text(s.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Text([s.host, s.tokenSuffix.isEmpty ? "ไม่มี Token" : "Token •••• " + s.tokenSuffix, s.plants.map { "\($0) Plant" }]
                     .compactMap { $0 }.joined(separator: " · "))
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                if let note = testNote[s.id] { Text(note).font(.sarabunFixed(12)).foregroundStyle(Theme.dangerText) }
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                if let note = testNote[s.id] { Text(note).font(.sarabun(12)).foregroundStyle(Theme.dangerText) }
             }
             Spacer(minLength: 8)
             if testing.contains(s.id) {
@@ -182,7 +182,7 @@ struct MonitoringSettingsDialog: View {
                 draft.servers.removeAll { $0.id == s.id }
                 pendingTokens[s.id] = nil
             } label: { Text(verbatim: "ลบ") }
-            .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.dangerText).frame(minWidth: 44, minHeight: 44)
+            .font(.sarabun(14, .bold)).foregroundStyle(Theme.dangerText).frame(minWidth: 44, minHeight: 44)
         }
         .padding(.horizontal, 16).padding(.vertical, 8)
     }
@@ -192,7 +192,7 @@ struct MonitoringSettingsDialog: View {
             TCTextField("ชื่อ เช่น Growatt · บัญชีเฟส 3", text: $newName)
             TCTextField("URL", text: $newURL)
             SecureField("Token จาก Growatt", text: $newToken)
-                .font(.sarabunFixed(15)).padding(.horizontal, 12).frame(minHeight: 44)
+                .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
             HStack {
@@ -296,12 +296,12 @@ struct MonitoringSettingsDialog: View {
                 HStack(spacing: 8) {
                     TextField("เช่น 4.20", value: $draft.rate, format: .number.precision(.fractionLength(0...2)))
                         .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                        .font(.sarabunFixed(16, .bold)).frame(width: 96, height: 44)
+                        .font(.sarabun(16, .bold)).frame(width: 96, height: 44)
                         .padding(.horizontal, 10)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
                         .accessibilityLabel("อัตราค่าไฟ บาทต่อ kWh")
-                    Text("฿/kWh").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("฿/kWh").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
             }
         }
@@ -312,8 +312,8 @@ struct MonitoringSettingsDialog: View {
     private func section<Content: View>(_ title: String, note: String?, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
-                if let note { Text(note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted.opacity(0.75)) }
+                Text(title).font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
+                if let note { Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted.opacity(0.75)) }
             }
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
             content()
@@ -325,8 +325,8 @@ struct MonitoringSettingsDialog: View {
     private func settingRow<Trailing: View>(_ title: String, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text(detail).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             trailing()

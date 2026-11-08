@@ -9,12 +9,12 @@ extension IECTestScreen {
     func bottomBar(_ r: IECReport) -> some View {
         HStack(spacing: 12) {
             if let result = r.result {
-                Text(result.passed ? "ผ่าน" : "ไม่ผ่าน").font(.sarabunFixed(15, .bold))
+                Text(result.passed ? "ผ่าน" : "ไม่ผ่าน").font(.sarabun(15, .bold))
                     .foregroundStyle(result.passed ? Theme.successInk : Theme.dangerText)
                     .padding(.horizontal, 12).frame(height: 30).background(result.passed ? Theme.successSoft : Theme.dangerSoft, in: Capsule())
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ปิดการทดสอบแล้ว | แก้ไขไม่ได้").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text(Self.stamp(result.completedAt, result.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("ปิดการทดสอบแล้ว | แก้ไขไม่ได้").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(Self.stamp(result.completedAt, result.by)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
                 if permissions.can(.iecClose, on: job.access) {
@@ -22,19 +22,19 @@ extension IECTestScreen {
                         .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 }
             } else if let sent = r.submission {
-                Text("รอปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
+                Text("รอปิด").font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk)
                     .padding(.horizontal, 12).frame(height: 30).background(Theme.pendingSoft, in: Capsule())
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ส่งผลให้ทีมแล้ว | รอทีมภายในปิด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text(Self.stamp(sent.submittedAt, sent.by)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("ส่งผลให้ทีมแล้ว | รอทีมภายในปิด").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(Self.stamp(sent.submittedAt, sent.by)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
             } else {
                 IECRing(fraction: r.completion, size: 30)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("บันทึกอัตโนมัติ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("บันทึกอัตโนมัติ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     Text("ครบ \(IECReport.Stage.allCases.filter { $0 != .review && r.isDone($0) }.count)/6 ขั้น | ความคืบหน้ารวม \(Int((r.completion * 100).rounded()))%")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer()
             }
@@ -132,8 +132,8 @@ extension IECTestScreen {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(ink)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text(detail).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
             Spacer(minLength: 8)
             action()

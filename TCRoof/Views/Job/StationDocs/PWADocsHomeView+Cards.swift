@@ -16,14 +16,14 @@ extension PWADocsHomeView {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .bottom, spacing: 8) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("อนุมัติแล้ว").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("อนุมัติแล้ว").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text("\(s.approved)").font(.sarabunFixed(28, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                        Text("/ \(s.total) ฉบับ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("\(s.approved)").font(.sarabun(28, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                        Text("/ \(s.total) ฉบับ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     }
                 }
                 Spacer(minLength: 0)
-                Text("\(s.percent)%").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.successText)
+                Text("\(s.percent)%").font(.sarabun(13, .bold)).foregroundStyle(Theme.successText)
                     .padding(.horizontal, 10).padding(.vertical, 2).background(Theme.successSoft, in: Capsule())
             }
             .accessibilityElement(children: .combine)
@@ -63,9 +63,9 @@ extension PWADocsHomeView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 5) {
                     Circle().fill(dot).frame(width: 7, height: 7)
-                    Text(title).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(title).font(.sarabun(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
-                Text("\(count)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit().padding(.leading, 12)
+                Text("\(count)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit().padding(.leading, 12)
             }
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
             .contentShape(Rectangle())
@@ -92,7 +92,7 @@ extension PWADocsHomeView {
                     }
                     .fixedSize()
                 }
-                .font(.sarabunFixed(13)).frame(maxWidth: .infinity, alignment: .leading)
+                .font(.sarabun(13)).frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
             }
             .foregroundStyle(Theme.warningText)
@@ -121,11 +121,11 @@ extension PWADocsHomeView {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(r.station.shortName).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                        Text(stationLine(r.station)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Text(r.station.shortName).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(stationLine(r.station)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    Text(r.tag).font(.sarabunFixed(11, .bold)).foregroundStyle(r.state.ink).lineLimit(1)
+                    Text(r.tag).font(.sarabun(11, .bold)).foregroundStyle(r.state.ink).lineLimit(1)
                         .padding(.horizontal, 9).frame(height: 20).background(r.state.fill, in: Capsule()).padding(.top, 1)
                 }
                 PWADocsStepper(steps: r.steps).padding(.horizontal, 4)
@@ -151,15 +151,15 @@ extension PWADocsHomeView {
     private func nextRow(_ r: PWADocs.StationRow) -> some View {
         HStack(spacing: 8) {
             if let next = r.next {
-                Text("ถัดไป").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
-                Text(next.name).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text("ถัดไป").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
+                Text(next.name).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
             } else {
                 Text(r.state == .ready && r.steps.contains { $0.state == .current } ? "เอกสารครบ พร้อมยื่นชุดนี้" : "ยื่นครบทุกชุดแล้ว")
-                    .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.successText).lineLimit(1)
+                    .font(.sarabun(13, .bold)).foregroundStyle(Theme.successText).lineLimit(1)
             }
             Spacer(minLength: 0)
             if let handover = r.handover {
-                Text("ส่งมอบ " + PWAPlanFormat.numeric.string(from: handover)).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                Text("ส่งมอบ " + PWAPlanFormat.numeric.string(from: handover)).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                     .lineLimit(1).fixedSize()
             }
             Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
@@ -177,9 +177,9 @@ extension PWADocsHomeView {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Circle().fill(g.origin.dot).frame(width: 8, height: 8)
-                    Text(g.origin.groupTitle).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                    Text(g.origin.groupTitle).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
                     Spacer(minLength: 8)
-                    Text(groupSub(g)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(groupSub(g)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .padding(.horizontal, 12).frame(minHeight: 40)
                 .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
@@ -202,14 +202,14 @@ extension PWADocsHomeView {
             HStack(spacing: 10) {
                 Circle().strokeBorder(item.ring, lineWidth: 2).frame(width: 18, height: 18)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(item.kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(item.kind.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     (Text([item.place, item.who].filter { !$0.isEmpty }.joined(separator: " | ") + " | ").foregroundColor(Theme.inkMuted)
                      + Text(item.statusWord).bold().foregroundColor(item.statusInk))
-                        .font(.sarabunFixed(12)).lineLimit(1)
+                        .font(.sarabun(12)).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if let due = dueText(item) {
-                    Text(due.text).font(.sarabunFixed(12, .bold)).foregroundStyle(due.late ? Theme.dangerText : Theme.inkMuted)
+                    Text(due.text).font(.sarabun(12, .bold)).foregroundStyle(due.late ? Theme.dangerText : Theme.inkMuted)
                         .lineLimit(1).fixedSize()
                 }
             }
@@ -231,7 +231,7 @@ extension PWADocsHomeView {
     // MARK: library
 
     @ViewBuilder func libraryList(_ rows: [PWADocs.LibraryRow]) -> some View {
-        Text("อัปโหลดครั้งเดียว ใช้ได้ทุกสถานี | แอปเช็กวันหมดอายุให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        Text("อัปโหลดครั้งเดียว ใช้ได้ทุกสถานี | แอปเช็กวันหมดอายุให้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             .padding(.horizontal, 2)
         if rows.isEmpty {
             empty("ไม่พบเอกสารที่ค้นหา")
@@ -246,14 +246,14 @@ extension PWADocsHomeView {
     private func libraryRow(_ r: PWADocs.LibraryRow, divider: Bool) -> some View {
         Button { open(r.kind, station: nil) } label: {
             HStack(spacing: 10) {
-                Text(r.kind.scope.badge).font(.sarabunFixed(10, .heavy)).foregroundStyle(r.kind.scope.badgeInk).lineLimit(1)
+                Text(r.kind.scope.badge).font(.sarabun(10, .heavy)).foregroundStyle(r.kind.scope.badgeInk).lineLimit(1)
                     .frame(width: 46, height: 34).background(r.kind.scope.badgeFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(r.kind.name).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(librarySub(r)).font(.sarabunFixed(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(r.kind.name).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(librarySub(r)).font(.sarabun(11.5)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(r.pill.title).font(.sarabunFixed(11, .bold)).foregroundStyle(r.pill.ink).lineLimit(1).fixedSize()
+                Text(r.pill.title).font(.sarabun(11, .bold)).foregroundStyle(r.pill.ink).lineLimit(1).fixedSize()
                     .padding(.horizontal, 8).padding(.vertical, 1).background(r.pill.fill, in: Capsule())
             }
             .padding(.horizontal, 12).padding(.vertical, 6).frame(minHeight: 54)
@@ -271,7 +271,7 @@ extension PWADocsHomeView {
     }
 
     private func empty(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        Text(text).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             .frame(maxWidth: .infinity, minHeight: 80).docsCard()
     }
 }
@@ -305,10 +305,10 @@ struct PWADocsStepper: View {
                 dot(i, s)
             }
             .frame(height: 29)
-            Text(s.title).font(.sarabunFixed(12, s.state == .current ? .heavy : .semibold)).lineLimit(1)
+            Text(s.title).font(.sarabun(12, s.state == .current ? .heavy : .semibold)).lineLimit(1)
                 .foregroundStyle(s.state == .current ? Theme.primary : s.state == .done ? Theme.navy : Theme.muted)
             if showsValues {
-                Text(value(s)).font(.sarabunFixed(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
+                Text(value(s)).font(.sarabun(10.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
             }
         }
         .frame(maxWidth: .infinity, minHeight: showsValues ? 48 : 0, alignment: .top)
@@ -331,15 +331,15 @@ struct PWADocsStepper: View {
             Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 22, height: 22).background(Theme.success, in: Circle())
         case .current:
-            Text("\(i + 1)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.onPrimary)
+            Text("\(i + 1)").font(.sarabun(11.5, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26).background(Theme.primary, in: Circle())
                 .background(Circle().fill(Theme.primary.opacity(0.18)).padding(-4))
         case .later:
-            Text("\(i + 1)").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.muted)
+            Text("\(i + 1)").font(.sarabun(11.5, .heavy)).foregroundStyle(Theme.muted)
                 .frame(width: 22, height: 22).background(Theme.surface, in: Circle())
                 .overlay(Circle().strokeBorder(Theme.inkFaint, lineWidth: 1.5))
         case .skip:
-            Text("–").font(.sarabunFixed(11.5, .heavy)).foregroundStyle(Theme.inkFaint)
+            Text("–").font(.sarabun(11.5, .heavy)).foregroundStyle(Theme.inkFaint)
                 .frame(width: 22, height: 22).background(Theme.surface, in: Circle())
                 .overlay(Circle().strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5])))
         }

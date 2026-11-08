@@ -28,7 +28,7 @@ extension MonitoringPage {
                     if rows.isEmpty {
                         Divider()
                         Text(f.rows.isEmpty ? "ยังไม่มีสถานีที่ส่งมอบแล้ว" : "ไม่มีสถานีในตัวกรองนี้")
-                            .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 88)
+                            .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 88)
                     }
                     Divider()
                     totalsRow(f)
@@ -41,10 +41,10 @@ extension MonitoringPage {
 
     private func stationsBar(_ f: Monitoring.Fleet) -> some View {
         HStack(spacing: 12) {
-            Text("สถานี").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+            Text("สถานี").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
             MonSwitch(options: Monitoring.Filter.allCases.map { ($0, Self.filterTitle($0) + " \(f.count($0))") }, selection: $filter)
             Spacer(minLength: 8)
-            Text("เรียงตาม").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("เรียงตาม").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             MonSwitch(options: [(.loss, "สูญเสียมากสุด"), (.specificYield, "kWh/kWp ต่ำสุด"), (.mp, "MP")], selection: $sort)
             MonSwitch(options: [(false, "ตาราง"), (true, "การ์ด")], selection: $asCards)
         }
@@ -72,7 +72,7 @@ extension MonitoringPage {
             head("ข้อมูล", Col.data)
             Text("แจ้งเตือน").frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .font(.sarabunFixed(12, .semibold)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12, .semibold)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 16).frame(height: 34)
         .background(Theme.phonePage)
     }
@@ -86,9 +86,9 @@ extension MonitoringPage {
         return Button { opened = s } label: {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(s.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(s.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     Text([s.mpNumber.map { "MP \($0)" }, MonFormat.number(s.kWp) + " kWp"].compactMap { $0 }.joined(separator: " · "))
-                        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 .frame(width: Col.station, alignment: .leading)
                 MonChip(r.health.title, r.health == .normal ? .ok : r.health == .alarm ? .bad : .muted)
@@ -97,7 +97,7 @@ extension MonitoringPage {
                 energyCell(s).frame(width: Col.energy, alignment: .leading).padding(.trailing, 12)
                 yieldCell(r).frame(width: Col.yield, alignment: .trailing).padding(.trailing, 12)
                 Text(r.loss.map(Self.rowLoss) ?? MonFormat.dash)
-                    .font(.sarabunFixed(14, .bold)).foregroundStyle(r.loss == nil ? Theme.inkMuted : Theme.warningInk)
+                    .font(.sarabun(14, .bold)).foregroundStyle(r.loss == nil ? Theme.inkMuted : Theme.warningInk)
                     .frame(width: Col.loss, alignment: .trailing).padding(.trailing, 12)
                 invertersCell(r).frame(width: Col.inverters, alignment: .leading)
                 dataCell(r).frame(width: Col.data, alignment: .leading)
@@ -106,7 +106,7 @@ extension MonitoringPage {
                     if s.alarms.isEmpty {
                         Text(MonFormat.dash).foregroundStyle(Theme.inkMuted)
                     } else {
-                        Text("\(s.alarms.count)").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.dangerText)
+                        Text("\(s.alarms.count)").font(.sarabun(12, .bold)).foregroundStyle(Theme.dangerText)
                             .frame(width: 24, height: 24).background(Theme.dangerSoft, in: Circle())
                     }
                     Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkMuted)
@@ -135,12 +135,12 @@ extension MonitoringPage {
         VStack(alignment: .leading, spacing: 3) {
             if let p = s.powerNow {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(MonFormat.number(p, 1)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                    Text("kW · " + MonFormat.percent(s.powerShare)).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                    Text(MonFormat.number(p, 1)).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                    Text("kW · " + MonFormat.percent(s.powerShare)).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                 }
                 bar(s.powerShare ?? 0, Theme.primary)
             } else {
-                Text("— ไม่มีข้อมูล").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("— ไม่มีข้อมูล").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
         }
         .padding(.trailing, 14)
@@ -151,10 +151,10 @@ extension MonitoringPage {
         let color: Color = (share ?? 1) * 100 < Double(store.settings.belowExpectedPercent) ? Theme.warning : Theme.success
         return VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(MonFormat.number(s.energyToday)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                Text("/ " + MonFormat.number(s.expectedSoFar) + " kWh").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                Text(MonFormat.number(s.energyToday)).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                Text("/ " + MonFormat.number(s.expectedSoFar) + " kWh").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 4)
-                Text(MonFormat.percent(share)).font(.sarabunFixed(12, .bold)).foregroundStyle(share == nil ? Theme.inkMuted : color == Theme.warning ? Theme.warningInk : Theme.successInk)
+                Text(MonFormat.percent(share)).font(.sarabun(12, .bold)).foregroundStyle(share == nil ? Theme.inkMuted : color == Theme.warning ? Theme.warningInk : Theme.successInk)
             }
             bar(share ?? 0, color)
         }
@@ -163,10 +163,10 @@ extension MonitoringPage {
     private func yieldCell(_ r: Monitoring.Row) -> some View {
         let offline = r.health == .offline
         return VStack(alignment: .trailing, spacing: 1) {
-            Text(offline ? MonFormat.dash : MonFormat.number(r.station.specificYield, 2)).font(.sarabunFixed(14, .bold))
+            Text(offline ? MonFormat.dash : MonFormat.number(r.station.specificYield, 2)).font(.sarabun(14, .bold))
                 .foregroundStyle((r.yieldVsMedian ?? 0) < -0.1 ? Theme.dangerText : Theme.navy)
             Text(r.yieldVsMedian.map { MonFormat.percent($0, signed: true) + " จากค่ากลาง" } ?? "ไม่มีข้อมูล")
-                .font(.sarabunFixed(10)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                .font(.sarabun(10)).foregroundStyle(Theme.inkMuted).lineLimit(1)
         }
     }
 
@@ -179,7 +179,7 @@ extension MonitoringPage {
                     .fill(r.health == .offline ? Theme.track : i < online ? Theme.success : Theme.danger)
                     .frame(width: 14, height: 14)
             }
-            Text("\(online)/\(s.inverters)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 2)
+            Text("\(online)/\(s.inverters)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 2)
         }
     }
 
@@ -187,7 +187,7 @@ extension MonitoringPage {
         HStack(spacing: 5) {
             Circle().fill(r.health == .offline ? Theme.danger : Theme.success).frame(width: 7, height: 7)
             Text(r.station.paired ? MonFormat.time(r.station.lastReading) : "ยังไม่จับคู่")
-                .font(.sarabunFixed(13, r.health == .offline ? .bold : .regular))
+                .font(.sarabun(13, r.health == .offline ? .bold : .regular))
                 .foregroundStyle(r.health == .offline ? Theme.dangerText : Theme.navy)
         }
     }
@@ -214,7 +214,7 @@ extension MonitoringPage {
             Text("\(f.online)/\(f.stations.count) ออนไลน์").frame(width: Col.data, alignment: .leading)
             Text("\(f.alarmCount)").frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 22)
         }
-        .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
+        .font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
         .padding(.horizontal, 16).frame(height: 46)
         .background(Theme.phonePage)
         .accessibilityElement(children: .combine)
@@ -267,9 +267,9 @@ struct MonitoringStationCard: View {
             }
             .frame(height: 120).clipped()
             VStack(alignment: .leading, spacing: 6) {
-                Text(s.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(s.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text([s.mpNumber.map { "MP \($0)" }, MonFormat.number(s.kWp) + " kWp"].compactMap { $0 }.joined(separator: " · "))
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 HStack {
                     figure("ตอนนี้", MonFormat.number(s.powerNow, 1), "kW")
                     figure("วันนี้", MonFormat.number(s.energyToday), "kWh")
@@ -287,10 +287,10 @@ struct MonitoringStationCard: View {
 
     private func figure(_ title: String, _ value: String, _ unit: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                if !unit.isEmpty { Text(unit).font(.sarabunFixed(10)).foregroundStyle(Theme.inkMuted) }
+                Text(value).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                if !unit.isEmpty { Text(unit).font(.sarabun(10)).foregroundStyle(Theme.inkMuted) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -16,19 +16,19 @@ struct RequestSignSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 14) {
-                Text("ลายเซ็นผู้ส่งคำขอ | SITE ENGINEER").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("ลายเซ็นผู้ส่งคำขอ | SITE ENGINEER").font(.sarabun(14, .bold)).foregroundStyle(Theme.inkMuted)
                 AccountSignatureCanvas(signature: $signature)
                     .frame(height: 220)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy.opacity(0.45)))
                     .overlay(alignment: .bottomLeading) {
                         if signature == nil {
-                            Text("เซ็นชื่อด้วย Apple Pencil หรือนิ้ว").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).padding(12).allowsHitTesting(false)
+                            Text("เซ็นชื่อด้วย Apple Pencil หรือนิ้ว").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(12).allowsHitTesting(false)
                         }
                     }
                     .accessibilityIdentifier("signaturePad")
                 MySignatureActions(signature: $signature)
-                TextField("ชื่อผู้ส่งคำขอ", text: $name).font(.sarabunFixed(16)).textFieldStyle(OutlinedFieldStyle())
+                TextField("ชื่อผู้ส่งคำขอ", text: $name).font(.sarabun(16)).textFieldStyle(OutlinedFieldStyle())
                 Spacer(minLength: 0)
             }
             .padding(20)

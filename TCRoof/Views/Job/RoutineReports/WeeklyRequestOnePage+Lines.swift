@@ -48,8 +48,8 @@ extension WeeklyRequestOnePage {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "house").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkMuted)
-                Text(place.isEmpty ? "ไม่ระบุตำแหน่ง" : place).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text("\(lines.count) งาน รวม \(days) วัน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(place.isEmpty ? "ไม่ระบุตำแหน่ง" : place).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text("\(lines.count) งาน รวม \(days) วัน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Rectangle().fill(Theme.hairline).frame(height: 1)
             }
             .padding(.horizontal, 4).padding(.top, 4)
@@ -65,12 +65,12 @@ extension WeeklyRequestOnePage {
         let on = selected == line.id, c = color(line)
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                Text("\(number(line))").font(.sarabunFixed(14, .heavy)).foregroundStyle(Theme.onPrimary)
+                Text("\(number(line))").font(.sarabun(14, .heavy)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 28, height: 28).background(c, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
                     Text(line.description.isEmpty ? (line.task?.title ?? "งาน") : line.description)
-                        .font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(planLine(line)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        .font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(planLine(line)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 dayChips(line, color: c)
@@ -102,7 +102,7 @@ extension WeeklyRequestOnePage {
                 let picked = line.days.contains(d)
                 let date = RoutineReport.calendar.component(.day, from: request.date(ofDay: d))
                 Button { request.toggleDay(line: line.id, day: d) } label: {
-                    Text("\(Self.dayName(d)) \(date)").font(.sarabunFixed(14, .bold)).monospacedDigit()
+                    Text("\(Self.dayName(d)) \(date)").font(.sarabun(14, .bold)).monospacedDigit()
                         .foregroundStyle(Theme.navy)
                         .frame(width: 50, height: 44)
                         .background(picked ? c.opacity(0.28) : Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -122,9 +122,9 @@ extension WeeklyRequestOnePage {
     private func daysTag(_ line: RoutineReport.PlanLine, color c: Color) -> some View {
         let follows = plannedDays(line).map { $0.sorted() == line.days.sorted() }
         return VStack(alignment: .trailing, spacing: 2) {
-            Text("\(line.days.count) วัน").font(.sarabunFixed(18, .bold)).foregroundStyle(line.days.isEmpty ? Theme.warningText : c)
+            Text("\(line.days.count) วัน").font(.sarabun(18, .bold)).foregroundStyle(line.days.isEmpty ? Theme.warningText : c)
             if let follows {
-                Text(follows ? "ตาม MP" : "แก้วัน").font(.sarabunFixed(11.5, .bold))
+                Text(follows ? "ตาม MP" : "แก้วัน").font(.sarabun(11.5, .bold))
                     .foregroundStyle(follows ? Theme.primary : Theme.warningText)
                     .padding(.horizontal, 7).padding(.vertical, 1)
                     .background(follows ? Theme.primarySoft : Theme.warningSoft, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -137,10 +137,10 @@ extension WeeklyRequestOnePage {
     /// The selected line: its hazards and `เอาออก`.
     private func lineFooter(_ line: RoutineReport.PlanLine) -> some View {
         HStack(spacing: 8) {
-            Text("ความเสี่ยง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ความเสี่ยง").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             let hazards = request.hazards(of: line)
             if hazards.isEmpty {
-                Text("ไม่มีความเสี่ยงตามรายการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่มีความเสี่ยงตามรายการ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             ScrollView(.horizontal) {
                 HStack(spacing: 8) { ForEach(hazards) { hazardChip($0, line: line) } }
@@ -149,7 +149,7 @@ extension WeeklyRequestOnePage {
             Spacer(minLength: 0)
             if editable {
                 Button { remove(line) } label: {
-                    Label("เอาออก", systemImage: "xmark").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Label("เอาออก", systemImage: "xmark").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                         .padding(.horizontal, 8).frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -167,13 +167,13 @@ extension WeeklyRequestOnePage {
             riskEdit = RiskEdit(hazard: h, line: line.id, likelihood: risk?.likelihood ?? h.likelihood, severity: risk?.severity ?? h.severity)
         } label: {
             HStack(spacing: 6) {
-                Text(Self.shortName(h)).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(Self.shortName(h)).font(.sarabun(14)).foregroundStyle(Theme.navy).lineLimit(1)
                 if let band = risk?.band ?? risk.map({ Self.band(of: $0.level) }) {
-                    Text(band.title).font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.onPrimary)
+                    Text(band.title).font(.sarabun(12, .bold)).foregroundStyle(Theme.onPrimary)
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Theme.riskBands[band.rawValue], in: Capsule())
                 } else {
-                    Text("ยังไม่ประเมิน").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.warningText)
+                    Text("ยังไม่ประเมิน").font(.sarabun(12, .bold)).foregroundStyle(Theme.warningText)
                 }
             }
             .padding(.horizontal, 10).frame(height: 36)
@@ -216,16 +216,16 @@ extension WeeklyRequestOnePage {
     private var emptyWeek: some View {
         VStack(spacing: 10) {
             Image(systemName: "calendar.badge.plus").font(.system(size: 30, weight: .semibold)).foregroundStyle(Theme.primary)
-            Text("ยังไม่มีงานในคำขอสัปดาห์นี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text("ยังไม่มีงานในคำขอสัปดาห์นี้").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
             Text(planned.isEmpty ? "แผน MP ไม่มีงานในสัปดาห์นี้"
                  : "แผน MP มี \(planned.count) งานในสัปดาห์นี้ แตะ + บนผังเพื่อเพิ่มทีละงาน หรือเพิ่มทั้งหมด")
-                .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
+                .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
             if editable && !planned.isEmpty {
                 Button {
                     for p in planned { add(p) }
                     selected = request.work.first?.id
                 } label: {
-                    Label("เพิ่มงานทั้งหมดตามแผน MP", systemImage: "plus").font(.sarabunFixed(16, .bold)).padding(.horizontal, 8)
+                    Label("เพิ่มงานทั้งหมดตามแผน MP", systemImage: "plus").font(.sarabun(16, .bold)).padding(.horizontal, 8)
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card))
                 .accessibilityIdentifier("requestAddAll")

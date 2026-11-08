@@ -88,10 +88,10 @@ struct IECSetupPage: View {
 
     var banner: some View {
         HStack(spacing: 12) {
-            Text("!").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.warning, in: Circle())
+            Text("!").font(.sarabun(17, .bold)).foregroundStyle(Theme.onPrimary).frame(width: 30, height: 30).background(Theme.warning, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text("ระบบยังไม่ออน | ตั้งค่าก่อนเริ่มวัด").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningText)
-                Text("แนบแบบ SLD และตรวจรายการสตริง | เติม E5, O5, แถว 8–9").font(.sarabunFixed(12)).foregroundStyle(Theme.warningText)
+                Text("ระบบยังไม่ออน | ตั้งค่าก่อนเริ่มวัด").font(.sarabun(15, .bold)).foregroundStyle(Theme.warningText)
+                Text("แนบแบบ SLD และตรวจรายการสตริง | เติม E5, O5, แถว 8–9").font(.sarabun(12)).foregroundStyle(Theme.warningText)
             }
             Spacer(minLength: 0)
         }
@@ -103,20 +103,20 @@ struct IECSetupPage: View {
     @ViewBuilder func diagramCard(_ r: IECReport) -> some View {
         let doc = job.iecSLD, versions = job.iecSLDVersions.count
         VStack(alignment: .leading, spacing: 12) {
-            Text("Diagram").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text("Diagram").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
             Button { viewing = doc } label: { sldPreview(doc) }
                 .buttonStyle(.plain).disabled(doc == nil)
                 .accessibilityLabel(doc == nil ? "ยังไม่มีแบบ SLD" : "ดูแบบ SLD เต็มจอ")
             if let doc {
                 HStack(spacing: 8) {
-                    Text(SLDFile.isPDF(doc.data) ? "PDF" : "รูป").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.dangerText)
+                    Text(SLDFile.isPDF(doc.data) ? "PDF" : "รูป").font(.sarabun(12, .bold)).foregroundStyle(Theme.dangerText)
                         .padding(.horizontal, 6).frame(height: 20).background(Theme.dangerSoft, in: RoundedRectangle(cornerRadius: 4))
-                    Text(doc.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).truncationMode(.middle)
+                    Text(doc.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: 4)
-                    Text("v\(versions) | " + IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("v\(versions) | " + IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 if versions > 1 {
-                    Button("ประวัติ \(versions) ครั้ง") { history = true }.font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 32)
+                    Button("ประวัติ \(versions) ครั้ง") { history = true }.font(.sarabun(13, .bold)).foregroundStyle(Theme.primary).frame(minHeight: 32)
                 }
             }
             HStack(spacing: 8) {
@@ -145,7 +145,7 @@ struct IECSetupPage: View {
             } else {
                 VStack(spacing: 6) {
                     Image(systemName: "doc.badge.plus").font(.system(size: 28))
-                    Text("ยังไม่มีแบบ SLD | อัปโหลด PDF หรือรูป").font(.sarabunFixed(14))
+                    Text("ยังไม่มีแบบ SLD | อัปโหลด PDF หรือรูป").font(.sarabun(14))
                 }
                 .foregroundStyle(Theme.warningInk).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -157,7 +157,7 @@ struct IECSetupPage: View {
     }
 
     func chip(_ text: String, bold: Bool) -> some View {
-        Text(text).font(.sarabunFixed(12, bold ? .bold : .regular)).foregroundStyle(bold ? Theme.navy : Theme.inkMuted)
+        Text(text).font(.sarabun(12, bold ? .bold : .regular)).foregroundStyle(bold ? Theme.navy : Theme.inkMuted)
             .padding(.horizontal, 8).frame(height: 24).background(Theme.surface.opacity(0.95), in: Capsule())
             .overlay(Capsule().strokeBorder(Theme.borderSubtle))
     }
@@ -167,8 +167,8 @@ struct IECSetupPage: View {
             List(job.iecSLDVersions.reversed()) { doc in
                 Button { history = false; Task { try? await Task.sleep(for: .milliseconds(400)); viewing = doc } } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(doc.name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                        Text(IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        Text(doc.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                        Text(IECTestScreen.stamp(doc.addedAt, "") + " น.").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     }
                 }
             }
@@ -201,15 +201,15 @@ struct IECSetupPage: View {
     }
 
     func required(_ title: String) -> some View {
-        (Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy) + Text("  *").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.dangerText))
+        (Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy) + Text("  *").font(.sarabun(15, .bold)).foregroundStyle(Theme.dangerText))
     }
 
     func conditions(_ r: IECReport) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("สภาพการทดสอบ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("สภาพการทดสอบ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("ก่อนออน | INV 01 ลิงก์ไปทุกแผ่น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ก่อนออน | INV 01 ลิงก์ไปทุกแผ่น").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 10) {
                 IECConditionTile(label: "อากาศ | E29", unit: "°C", text: r.before.ambientC.map { IECFormat.number($0, digits: 1) } ?? "", keyboard: .decimalPad) { t in
@@ -235,9 +235,9 @@ struct IECSetupPage: View {
             ("เครื่องวัดแสง", \.irradianceMeter), ("กล้องความร้อน", \.thermalCamera)]
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("เครื่องมือวัด (S/N)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("เครื่องมือวัด (S/N)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("ฟอร์มเดิมไม่มี | แนะนำให้เก็บ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ฟอร์มเดิมไม่มี | แนะนำให้เก็บ").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { k, row in
@@ -283,7 +283,7 @@ struct IECSetupPage: View {
         return HStack(spacing: 14) {
             Image(systemName: s.ok ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 28, height: 28).background(s.ok ? Theme.success : Theme.warning, in: Circle())
-            Text(r.lockedLine ?? s.text).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(2)
+            Text(r.lockedLine ?? s.text).font(.sarabun(14)).foregroundStyle(Theme.navy).lineLimit(2)
             Spacer(minLength: 8)
             Button { try? context.save(); savedFlash = true; Task { try? await Task.sleep(for: .seconds(1.5)); savedFlash = false } } label: {
                 Text(savedFlash ? "บันทึกแล้ว ✓" : "บันทึกร่างตอนนี้").frame(minWidth: 140)
@@ -312,8 +312,8 @@ struct IECStepButton: View {
             HStack(spacing: 10) {
                 if !forward { Image(systemName: "chevron.left") }
                 VStack(alignment: forward ? .trailing : .leading, spacing: 0) {
-                    Text(small).font(.sarabunFixed(12))
-                    Text(big).font(.sarabunFixed(16, .bold)).lineLimit(1)
+                    Text(small).font(.sarabun(12))
+                    Text(big).font(.sarabun(16, .bold)).lineLimit(1)
                 }
                 if forward { Image(systemName: "chevron.right") }
             }

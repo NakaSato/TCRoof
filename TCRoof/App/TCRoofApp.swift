@@ -97,7 +97,8 @@ private struct AccountActivationView: View {
     var body: some View {
         Group {
             if ready {
-                RootView()
+                // the app's screens follow the text-size setting up to here; past it their boards no longer fit
+                RootView().dynamicTypeSize(...DynamicTypeSize.accessibility2)
             } else if failed {
                 ContentUnavailableView {
                     Label("เตรียมข้อมูลบัญชีไม่สำเร็จ", systemImage: "exclamationmark.lock")

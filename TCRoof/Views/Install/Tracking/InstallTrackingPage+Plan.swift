@@ -140,13 +140,13 @@ struct InstallPlanTabView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text("แผนก่อสร้าง").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("แผนก่อสร้าง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         if let b = p.baseline {
-                            Text(b.revision).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                            Text(b.revision).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                                 .padding(.horizontal, 8).frame(height: 22).background(Theme.primarySoft, in: Capsule())
                         }
                     }
-                    Text(sub).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(sub).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 .fixedSize()
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -221,13 +221,13 @@ struct InstallPlanTabView: View {
                         .accessibilityLabel("งานก่อนหน้า WBS")
                 }
                 Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
-                    Label("Excel", systemImage: "tablecells").font(.sarabunFixed(15, .semibold)).frame(minHeight: touchMin)
+                    Label("Excel", systemImage: "tablecells").font(.sarabun(15, .semibold)).frame(minHeight: touchMin)
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 .accessibilityLabel("ไฟล์แผน Excel")
                 Button { exportPDF(p) } label: {
                     Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
-                        .font(.sarabunFixed(15, .semibold))
+                        .font(.sarabun(15, .semibold))
                 }
                 .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 .disabled(job.scheduleInput == nil)
@@ -249,8 +249,8 @@ struct InstallPlanTabView: View {
 
     private func planChip(_ label: String, _ value: String, _ ink: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(17, .bold)).foregroundStyle(ink).monospacedDigit()
+            Text(label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(17, .bold)).foregroundStyle(ink).monospacedDigit()
         }
         .padding(.horizontal, 12).padding(.vertical, 5)
         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -380,7 +380,7 @@ struct InstallPlanTabView: View {
             if showsCrew(p) { Text("คน").frame(width: PlanCol.crew) }
             if showsLinks(p) { Text("ต่อจาก").frame(width: PlanCol.after) }
         }
-        .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
         .padding(.leading, 16)
         .frame(width: width, height: 58)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -420,11 +420,11 @@ struct InstallPlanTabView: View {
         let ink = today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted
         return VStack(spacing: 2) {
             if axis.unit == .day {
-                Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(ink)
+                Text(InstallAxis.weekday.string(from: d)).font(.sarabun(11)).foregroundStyle(ink)
             }
             // the day's number alone under its weekday, so the first column isn't wider than its 32 pt
             Text(axis.unit == .day ? "\(MasterSchedule.calendar.component(.day, from: d))" : axis.label(d))
-                .font(.sarabunFixed(month ? 13 : week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
+                .font(.sarabun(month ? 13 : week || dense ? 12 : 15, .bold)).foregroundStyle(today ? Theme.onPrimary : ink).monospacedDigit()
                 .padding(.horizontal, today ? 6 : 0).frame(height: 20)
                 .background { if today { Capsule().fill(Theme.danger) } }
         }
@@ -444,16 +444,16 @@ struct InstallPlanTabView: View {
         let open = planOpen(s, p), r = s.row
         return Button { if !s.subs.isEmpty { togglePlan(s.id) } } label: {
             HStack(spacing: 0) {
-                Text(r.code).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
+                Text(r.code).font(.sarabun(14, .bold)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
                 HStack(spacing: 8) {
                     Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(Theme.navy).frame(width: 14).opacity(s.subs.isEmpty ? 0 : 1)
-                    Text(r.title).font(.sarabunFixed(r.title.count > 34 ? 14 : 16, .bold))
+                    Text(r.title).font(.sarabun(r.title.count > 34 ? 14 : 16, .bold))
                         .lineLimit(1).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Text("\(p.workingDays(of: r))").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
-                if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
-                if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
+                Text("\(p.workingDays(of: r))").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+                if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
+                if showsLinks(p) { Text(r.after ?? "–").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
             }
             .padding(.leading, 16)
             .frame(width: width, height: max(PlanCol.stageRow, 44))
@@ -485,12 +485,12 @@ struct InstallPlanTabView: View {
 
     private func planSubLeftRow(_ r: InstallPlan.Row, _ p: InstallPlan, width: CGFloat) -> some View {
         HStack(spacing: 0) {
-            Text(r.code).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
-            Text(r.title).font(.sarabunFixed(14)).lineLimit(1).truncationMode(.tail)
+            Text(r.code).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(width: PlanCol.wbs, alignment: .leading)
+            Text(r.title).font(.sarabun(14)).lineLimit(1).truncationMode(.tail)
                 .padding(.leading, 12).frame(maxWidth: .infinity, alignment: .leading)
-            Text("\(p.workingDays(of: r))").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
-            if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
-            if showsLinks(p) { Text(r.after ?? "–").font(.sarabunFixed(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
+            Text("\(p.workingDays(of: r))").font(.sarabun(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.days)
+            if showsCrew(p) { Text(r.crew.map(String.init) ?? "–").font(.sarabun(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.crew) }
+            if showsLinks(p) { Text(r.after ?? "–").font(.sarabun(14)).foregroundStyle(Theme.navy).monospacedDigit().frame(width: PlanCol.after) }
         }
         .padding(.leading, 16)
         .frame(width: width, height: PlanCol.subRow)
@@ -510,7 +510,7 @@ struct InstallPlanTabView: View {
 
     private func milestoneLeftRow(_ p: InstallPlan, width: CGFloat) -> some View {
         HStack(spacing: 0) {
-            Text("Milestone").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("Milestone").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 .padding(.leading, 16 + PlanCol.wbs).frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(width: width, height: 44)
@@ -559,7 +559,7 @@ struct InstallPlanTabView: View {
             Spacer(minLength: 8)
             if showsLinks(p) { Text("ต่อจาก = งานก่อนหน้า (เสร็จ → เริ่ม)") }
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 16).frame(height: 40)
         .accessibilityHidden(true)
     }
@@ -581,7 +581,7 @@ struct InstallPlanTabView: View {
     private func planTable(_ p: InstallPlan) -> some View {
         VStack(spacing: 0) {
             tableRow(nil, p, stage: true)
-                .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
                 .frame(height: 44)
                 .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
                 .accessibilityHidden(true)
@@ -623,7 +623,7 @@ struct InstallPlanTabView: View {
             }
             .frame(width: TableCol.status, alignment: .leading)
         }
-        .font(r == nil ? .sarabunFixed(13, .bold) : .sarabunFixed(15, stage ? .bold : .regular))
+        .font(r == nil ? .sarabun(13, .bold) : .sarabun(15, stage ? .bold : .regular))
         .foregroundStyle(r == nil ? Theme.inkMuted : Theme.navy)
         .monospacedDigit()
         .padding(.horizontal, 10)
@@ -641,7 +641,7 @@ struct InstallPlanTabView: View {
         case .current: ("กำลังทำ", .info)
         case .waiting: ("ตามแผน", .idle)
         }
-        return Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone))
+        return Text(title).font(.sarabun(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone))
             .padding(.horizontal, 10).frame(height: 24).background(InstallTrackingPage.fill(tone), in: Capsule())
     }
 }

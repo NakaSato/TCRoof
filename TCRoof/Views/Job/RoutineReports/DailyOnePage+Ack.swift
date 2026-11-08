@@ -21,7 +21,7 @@ struct DailyAckCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ลงนามรับทราบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text("ลงนามรับทราบ").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
             reporterRow
             Group {
                 if let at = page.ackAt { signedBox(at) } else { idleBox }
@@ -38,9 +38,9 @@ struct DailyAckCard: View {
             Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 26, height: 26).background(Theme.success, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text("ผู้รายงาน " + engineer).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text("ผู้รายงาน " + engineer).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text("SITE ENGINEER ผู้รับเหมา ลงนามและส่งแล้ว " + (page.signedAt.map { ThaiFormat.time.string(from: $0) } ?? ""))
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.successText).lineLimit(1).minimumScaleFactor(0.8)
+                    .font(.sarabun(12)).foregroundStyle(Theme.successText).lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
         }
@@ -71,8 +71,8 @@ struct DailyAckCard: View {
                 signLine(Theme.borderOutdoor)
                 VStack(spacing: 2) {
                     Image(systemName: "signature").font(.system(size: 20, weight: .semibold))
-                    Text("แตะเพื่อเซ็นรับทราบ").font(.sarabunFixed(15, .bold))
-                    Text("ตรวจงานในหน้านี้และ PDF ก่อนเซ็น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("แตะเพื่อเซ็นรับทราบ").font(.sarabun(15, .bold))
+                    Text("ตรวจงานในหน้านี้และ PDF ก่อนเซ็น").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 .foregroundStyle(Theme.planInspect)
                 .padding(.bottom, 36)
@@ -95,7 +95,7 @@ struct DailyAckCard: View {
         }
         .overlay(alignment: .topLeading) {
             Label("รับทราบแล้ว " + ThaiFormat.time.string(from: at), systemImage: "checkmark")
-                .font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.planInspect)
+                .font(.sarabun(12, .bold)).foregroundStyle(Theme.planInspect)
                 .padding(.horizontal, 10).padding(.vertical, 3)
                 .background(Theme.planInspectSoft, in: Capsule())
                 .padding(10)
@@ -120,16 +120,16 @@ struct DailyAckCard: View {
                 .accessibilityLabel("ลายเซ็นรับทราบ " + name)
         } else {
             Text(name.isEmpty ? "รับทราบแล้ว" : name)
-                .font(.sarabunFixed(22, .bold)).italic().foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.6)
+                .font(.sarabun(22, .bold)).italic().foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.6)
                 .padding(.horizontal, 24)
         }
     }
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("ชื่อผู้ตรวจงาน").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+            Text("ชื่อผู้ตรวจงาน").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
             TextField("ชื่อผู้ตรวจงาน ทีม TC", text: inspectorName)
-                .font(.sarabunFixed(17)).multilineTextAlignment(.center)
+                .font(.sarabun(17)).multilineTextAlignment(.center)
                 .textFieldStyle(OutlinedFieldStyle(dense: true))
                 .frame(minHeight: 48)
         }
@@ -162,7 +162,7 @@ struct DailyAckBar: View {
             if let next = otherPending.first {
                 Button { page.actions.open(next.date) } label: {
                     Text("วันรอรับทราบถัดไป (\(otherPending.count))")
-                        .font(.sarabunFixed(15, .bold))
+                        .font(.sarabun(15, .bold))
                         .foregroundStyle(Theme.pending)
                         .padding(.horizontal, 14).frame(height: 44)
                 }
@@ -185,7 +185,7 @@ struct DailyAckBar: View {
                 .background(acked ? Theme.planInspect : Theme.warning, in: Circle())
             Text(acked ? "เซ็นรับทราบแล้ว | ส่งกลับไปยังผู้รับเหมาและลงใน PDF หน้า 3"
                        : "ผู้รับเหมาส่งรายงานแล้ว \(sent) | รอทีม TC ตรวจและเซ็นรับทราบ")
-                .font(.sarabunFixed(14)).foregroundStyle(acked ? Theme.planInspect : Theme.navy)
+                .font(.sarabun(14)).foregroundStyle(acked ? Theme.planInspect : Theme.navy)
                 .lineLimit(2).minimumScaleFactor(0.85)
         }
         .accessibilityElement(children: .combine)
@@ -193,7 +193,7 @@ struct DailyAckBar: View {
 
     private var sendBackButton: some View {
         Button { page.askSendBack = true } label: {
-            Text("ส่งกลับให้แก้").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.pending).frame(width: 150, height: 44)
+            Text("ส่งกลับให้แก้").font(.sarabun(16, .bold)).foregroundStyle(Theme.pending).frame(width: 150, height: 44)
         }
         .buttonStyle(TCButtonStyle(.secondary, size: .card))
         .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).strokeBorder(Theme.pending.opacity(0.6)))
@@ -203,8 +203,8 @@ struct DailyAckBar: View {
     private var previewButton: some View {
         Button(action: page.actions.preview) {
             VStack(spacing: 0) {
-                Text("PDF 3 หน้า").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text("ดูตัวอย่างรายงาน").font(.sarabunFixed(16, .bold))
+                Text("PDF 3 หน้า").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                Text("ดูตัวอย่างรายงาน").font(.sarabun(16, .bold))
             }
             .frame(width: 190, height: 44)
         }
@@ -214,7 +214,7 @@ struct DailyAckBar: View {
     private var confirmButton: some View {
         Button(action: page.confirmAck) {
             HStack(spacing: 8) {
-                Text("อนุมัติรายงาน").font(.sarabunFixed(16, .bold))
+                Text("อนุมัติรายงาน").font(.sarabun(16, .bold))
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
             }
             .frame(width: 170, height: 44)

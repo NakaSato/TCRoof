@@ -154,9 +154,9 @@ struct InstallWeeklyRequestTabView: View {
 
     func numbered(_ n: Int, _ title: String) -> some View {
         HStack(spacing: 10) {
-            Text("\(n)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
+            Text("\(n)").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 30, height: 30).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            Text(title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
         }
     }
 
@@ -193,14 +193,14 @@ struct InstallWeeklyRequestTabView: View {
         return reqCard {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("คำขอปฏิบัติงานรายสัปดาห์").font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text("ส่งก่อนเริ่มสัปดาห์").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("คำขอปฏิบัติงานรายสัปดาห์").font(.sarabun(19, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("ส่งก่อนเริ่มสัปดาห์").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 HStack(spacing: 6) {
                     weekButton("chevron.left", "สัปดาห์ก่อน") { requestWeek -= 1 }
                     VStack(spacing: 0) {
-                        Text("สัปดาห์ที่ \(Self.weekNumber(r))").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                        Text("\(cal.component(.day, from: r.date(ofDay: 0)))–" + RoutineReport.thaiDate(sat)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        Text("สัปดาห์ที่ \(Self.weekNumber(r))").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                        Text("\(cal.component(.day, from: r.date(ofDay: 0)))–" + RoutineReport.thaiDate(sat)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     }
                     .frame(minWidth: 180).accessibilityElement(children: .combine).accessibilityIdentifier("requestWeek")
                     weekButton("chevron.right", "สัปดาห์ถัดไป") { requestWeek += 1 }.disabled(requestWeek >= 0)
@@ -243,8 +243,8 @@ struct InstallWeeklyRequestTabView: View {
                                   left < 0 ? Theme.dangerText : Theme.warningInk)
         }
         return VStack(alignment: .trailing, spacing: 0) {
-            Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text(text).font(.sarabunFixed(14, .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
+            Text(label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            Text(text).font(.sarabun(14, .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
         }
         .accessibilityElement(children: .combine)
     }
@@ -276,23 +276,23 @@ struct InstallWeeklyRequestTabView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 12) {
                     numbered(1, "กำลังคน")
-                    if editable { Text("แตะช่องวันเพื่อให้ตำแหน่งนั้นหยุด").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
+                    if editable { Text("แตะช่องวันเพื่อให้ตำแหน่งนั้นหยุด").font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
                     Spacer(minLength: 8)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("ต่อวัน").foregroundStyle(Theme.inkMuted)
-                        Text("\(r.perDay) คน").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                        Text("\(r.perDay) คน").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                         if let d = delta, d != 0 { Text((d > 0 ? "+" : "") + "\(d) จากสัปดาห์ก่อน").bold().foregroundStyle(Theme.primary) }
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("ทั้งสัปดาห์").foregroundStyle(Theme.inkMuted)
-                        Text("\(r.manDays(days: days))").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityIdentifier("crewManDays")
+                        Text("\(r.manDays(days: days))").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityIdentifier("crewManDays")
                         Text("คน·วัน").foregroundStyle(Theme.inkMuted)
                     }
                 }
-                .font(.sarabunFixed(13))
+                .font(.sarabun(13))
                 VStack(spacing: 0) {
                     crewRow { Text("ตำแหน่ง") } days: { d in Text(Self.dayTitle(r, d)) } total: { Text("คน·วัน") } tail: { Text("จำนวน") }
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(height: 40)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(minHeight: 40)
                     ForEach(Array(r.crew.enumerated()), id: \.element.id) { i, c in
                         Rectangle().fill(Theme.hairline).frame(height: 1)
                         crewRow {
@@ -300,7 +300,7 @@ struct InstallWeeklyRequestTabView: View {
                         } days: { d in
                             crewCell(r, role: i, day: d, editable: editable)
                         } total: {
-                            Text("\(r.manDays(role: i, days: days))").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                            Text("\(r.manDays(role: i, days: days))").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                         } tail: {
                             if editable {
                                 stepperPair(c.name, minus: c.count > 0, plus: true, id: "crew\(i)") { d in
@@ -315,7 +315,7 @@ struct InstallWeeklyRequestTabView: View {
                         Text(r.hasWork(d) ? "\(r.people(on: d))" : "–").bold().foregroundStyle(r.hasWork(d) ? Theme.navy : Theme.inkFaint)
                             .accessibilityIdentifier("crewDay\(d)")
                     } total: { Text("\(r.manDays(days: days))").bold().foregroundStyle(Theme.navy) } tail: { EmptyView() }
-                        .font(.sarabunFixed(15)).frame(height: 48)
+                        .font(.sarabun(15)).frame(minHeight: 48)
                 }
                 .padding(.horizontal, 12)
                 .background(Theme.phonePage.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -341,10 +341,10 @@ struct InstallWeeklyRequestTabView: View {
             Image(systemName: symbols[i % symbols.count]).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.navy)
                 .frame(width: 34, height: 34).background(Self.roleFills[i % Self.roleFills.count], in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             VStack(alignment: .leading, spacing: 0) {
-                Text(c.name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(c.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 if let b = before {
                     Text(b == c.count ? "เท่าสัปดาห์ก่อน" : "สัปดาห์ก่อน \(b) (\(c.count > b ? "+" : "")\(c.count - b))")
-                        .font(.sarabunFixed(12.5)).foregroundStyle(b == c.count ? Theme.inkMuted : Theme.primary)
+                        .font(.sarabun(12.5)).foregroundStyle(b == c.count ? Theme.inkMuted : Theme.primary)
                 }
             }
         }
@@ -358,11 +358,11 @@ struct InstallWeeklyRequestTabView: View {
         } label: {
             Group {
                 if let n, !off {
-                    Text("\(n)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                    Text("\(n)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(Self.roleFills[i % Self.roleFills.count], in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 } else if off {
-                    Text("หยุด").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.dangerText)
+                    Text("หยุด").font(.sarabun(14, .bold)).foregroundStyle(Theme.dangerText)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Theme.dangerText.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                 } else {
@@ -393,11 +393,11 @@ struct InstallWeeklyRequestTabView: View {
                 HStack {
                     numbered(2, "เครื่องมือ")
                     Spacer()
-                    Text("รวม \(r.tools.reduce(0) { $0 + $1.count }) ชิ้น | \(r.tools.count) รายการ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text("รวม \(r.tools.reduce(0) { $0 + $1.count }) ชิ้น | \(r.tools.count) รายการ").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 }
                 HStack(spacing: 6) {
                     Circle().fill(Theme.success).frame(width: 8, height: 8)
-                    Text("เครื่องวัดสอบเทียบแล้ว | ดึงจากทะเบียนเครื่องมือ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("เครื่องวัดสอบเทียบแล้ว | ดึงจากทะเบียนเครื่องมือ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 12)], spacing: 12) {
                     ForEach(Array(r.tools.enumerated()), id: \.element.id) { i, t in toolCard(t, index: i, editable: editable) }
@@ -415,13 +415,13 @@ struct InstallWeeklyRequestTabView: View {
                 Image(systemName: "wrench.and.screwdriver").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.primary)
                     .frame(width: 34, height: 34).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(t.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
-                    if let cal { Text(cal.text).font(.sarabunFixed(12.5)).foregroundStyle(cal.ink).lineLimit(1).minimumScaleFactor(0.8) }
+                    Text(t.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.8)
+                    if let cal { Text(cal.text).font(.sarabun(12.5)).foregroundStyle(cal.ink).lineLimit(1).minimumScaleFactor(0.8) }
                 }
             }
             HStack(alignment: .firstTextBaseline) {
-                Text("\(t.count)").font(.sarabunFixed(26, .bold)).foregroundStyle(Theme.navy)
-                Text("ชิ้น").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("\(t.count)").font(.sarabun(26, .bold)).foregroundStyle(Theme.navy)
+                Text("ชิ้น").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 4)
                 if editable {
                     stepperPair(t.name, minus: t.count > 0, plus: true, id: "tool\(i)") { d in reqChange { $0.tools[i].count = max(0, $0.tools[i].count + d) } }

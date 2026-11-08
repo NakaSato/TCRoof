@@ -355,7 +355,7 @@ struct SiteICLReport: View {
     static func renderPDF(job: Job, model: ICLSheet) -> URL? {
         let name = "ICL \(job.code) \(model.sheet.id.replacingOccurrences(of: "/", with: " ")).pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        let renderer = ImageRenderer(content: SiteICLReport(job: job, model: model).background(Theme.paper))
+        let renderer = ImageRenderer(content: SiteICLReport(job: job, model: model).background(Theme.paper).dynamicTypeSize(.large))
         var ok = false
         renderer.render { size, draw in
             var box = CGRect(origin: .zero, size: size)

@@ -10,13 +10,13 @@ extension IECSetupPage {
         let i = min(inverter, max(r.inverters.count - 1, 0))
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("รายการสตริง (String list)").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("รายการสตริง (String list)").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 // the board has no field for the panel; its W is in every string's Wp
                 Button { module = true } label: {
                     Label((r.module.brand.isEmpty ? "แผง" : r.module.brand) + " | " + (r.module.powerW > 0 ? IECFormat.number(r.module.powerW, digits: 0) + " W" : "ยังไม่ระบุ W"),
                           systemImage: "square.grid.3x3")
-                        .font(.sarabunFixed(13, .bold)).foregroundStyle(r.module.powerW > 0 ? Theme.primary : Theme.warningInk).frame(minHeight: 44)
+                        .font(.sarabun(13, .bold)).foregroundStyle(r.module.powerW > 0 ? Theme.primary : Theme.warningInk).frame(minHeight: 44)
                 }
                 .accessibilityLabel("แผงโซลาร์ แก้ไข")
             }
@@ -39,10 +39,10 @@ extension IECSetupPage {
                 let t = r.setupTotals(inv), on = k == i
                 Button { inverter = k } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("Inverter \(k + 1)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                        Text(IECFormat.kW(inv.ratedKW)).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("Inverter \(k + 1)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                        Text(IECFormat.kW(inv.ratedKW)).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                         Spacer(minLength: 4)
-                        Text("\(t.used)/\(t.slots) สตริง").font(.sarabunFixed(13, .bold)).foregroundStyle(on ? Theme.primary : Theme.inkMuted)
+                        Text("\(t.used)/\(t.slots) สตริง").font(.sarabun(13, .bold)).foregroundStyle(on ? Theme.primary : Theme.inkMuted)
                     }
                     .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 54)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -52,7 +52,7 @@ extension IECSetupPage {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
             Button { adding = true } label: {
-                Text("+ เพิ่มอินเวอร์เตอร์").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
+                Text("+ เพิ่มอินเวอร์เตอร์").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary)
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
             }
@@ -73,8 +73,8 @@ extension IECSetupPage {
             }
             .frame(width: 64, height: 52).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 0) {
-                Text("รุ่นอินเวอร์เตอร์").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text(inv.model ?? "ไม่ระบุรุ่น | \(inv.mpptCount) MPPT").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text("รุ่นอินเวอร์เตอร์").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                Text(inv.model ?? "ไม่ระบุรุ่น | \(inv.mpptCount) MPPT").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
             }
             Spacer(minLength: 8)
             IECSerialField(serial: inv.serial, editing: $editingSerial) { s in job.updateIEC(context) { $0.inverters[i].serial = s } }
@@ -82,7 +82,7 @@ extension IECSetupPage {
             Button { scan = .serial(i); scanning = true } label: {
                 VStack(spacing: 0) {
                     Image(systemName: "camera")
-                    Text("สแกนป้าย").font(.sarabunFixed(13, .bold))
+                    Text("สแกนป้าย").font(.sarabun(13, .bold))
                 }
                 .foregroundStyle(Theme.onPrimary).frame(width: 96, height: 52)
                 .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -110,7 +110,7 @@ extension IECSetupPage {
 
     func mpptGroup(_ r: IECReport, _ inv: IECReport.Inverter, _ i: Int, _ m: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("MPPT \(m)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+            Text("MPPT \(m)").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
             stringRow(r, inv, i, (m - 1) * 2 + 1)
             stringRow(r, inv, i, (m - 1) * 2 + 2)
         }
@@ -121,17 +121,17 @@ extension IECSetupPage {
         let s = inv.slots[slot - 1]
         let common = Dictionary(grouping: inv.strings.map(\.value.modules), by: { $0 }).max { $0.value.count < $1.value.count }?.key ?? 16
         return HStack(spacing: 10) {
-            Text("String \(slot)").font(.sarabunFixed(16, .bold)).foregroundStyle(s == nil ? Theme.disabledText : Theme.navy).frame(width: 82, alignment: .leading)
+            Text("String \(slot)").font(.sarabun(16, .bold)).foregroundStyle(s == nil ? Theme.disabledText : Theme.navy).frame(width: 82, alignment: .leading)
             if let s {
                 IECModuleStepper(value: s.modules) { v in job.updateIEC(context) { $0.setModules(v, slot: slot, inverter: i) } }
                 Spacer(minLength: 4)
-                Text(IECFormat.number(Double(s.modules) * r.module.powerW, digits: 0, grouping: true) + " Wp").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text(IECFormat.number(Double(s.modules) * r.module.powerW, digits: 0, grouping: true) + " Wp").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                     .monospacedDigit().lineLimit(1).fixedSize()
             } else {
-                Text("SPARE").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("SPARE").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
                     .padding(.horizontal, 10).frame(height: 24).background(Theme.track, in: Capsule())
                 Spacer(minLength: 4)
-                Text("ไม่มีสตริง").font(.sarabunFixed(13)).foregroundStyle(Theme.disabledText)
+                Text("ไม่มีสตริง").font(.sarabun(13)).foregroundStyle(Theme.disabledText)
             }
             Toggle("String \(slot)", isOn: Binding(get: { s != nil }, set: { on in
                 job.updateIEC(context) { $0.setSlot(slot, used: on, modules: common, inverter: i) }
@@ -154,8 +154,8 @@ extension IECSetupPage {
 
     func totalCell(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text(label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
         }
         .padding(.horizontal, 14).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -172,7 +172,7 @@ struct IECModuleStepper: View {
     var body: some View {
         HStack(spacing: 4) {
             round("minus", "ลดจำนวนแผง") { set(value - 1) }.disabled(value <= 1)
-            Text("\(value)").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).frame(minWidth: 34).monospacedDigit()
+            Text("\(value)").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).frame(minWidth: 34).monospacedDigit()
             round("plus", "เพิ่มจำนวนแผง") { set(value + 1) }
         }
         .padding(3).background(Theme.surface, in: Capsule())
@@ -199,8 +199,8 @@ struct IECSerialField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("S/N").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            TextField("แตะเพื่อพิมพ์", text: $text).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text("S/N").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            TextField("แตะเพื่อพิมพ์", text: $text).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 .textInputAutocapitalization(.characters).autocorrectionDisabled().focused($focused)
                 .accessibilityLabel("S/N อินเวอร์เตอร์")
                 .onSubmit(commit)
@@ -226,7 +226,7 @@ struct IECDateField: View {
 
     var body: some View {
         Button { picking = true } label: {
-            Text(date.map { ThaiFormat.numericDate.string(from: $0) } ?? "แตะเพื่อเลือก").font(.sarabunFixed(17, date == nil ? .regular : .bold))
+            Text(date.map { ThaiFormat.numericDate.string(from: $0) } ?? "แตะเพื่อเลือก").font(.sarabun(17, date == nil ? .regular : .bold))
                 .foregroundStyle(date == nil ? Theme.disabledText : Theme.navy)
                 .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -252,7 +252,7 @@ struct IECDashedTextField: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        TextField(placeholder, text: $draft).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).focused($focused)
+        TextField(placeholder, text: $draft).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).focused($focused)
             .padding(.horizontal, 14).frame(minHeight: 52)
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(focused ? Theme.primary : draft.isEmpty ? Theme.disabledText : Theme.borderControl,
@@ -278,11 +278,11 @@ struct IECConditionTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(label).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                TextField("—", text: $draft).font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy).keyboardType(keyboard).focused($focused)
+                TextField("—", text: $draft).font(.sarabun(22, .bold)).foregroundStyle(Theme.navy).keyboardType(keyboard).focused($focused)
                     .accessibilityLabel(label)
-                Text(unit).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text(unit).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
@@ -307,7 +307,7 @@ struct IECInstrumentRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
             Spacer()
             Menu {
                 Button { draft = serial; typing = true } label: { Label("พิมพ์ S/N", systemImage: "keyboard") }
@@ -321,12 +321,12 @@ struct IECInstrumentRow: View {
                 }
                 if !serial.isEmpty { Button("ล้าง", role: .destructive) { set("") } }
             } label: {
-                Text(serial.isEmpty ? "ยังไม่ระบุ" : serial).font(.sarabunFixed(15, serial.isEmpty ? .regular : .bold))
+                Text(serial.isEmpty ? "ยังไม่ระบุ" : serial).font(.sarabun(15, serial.isEmpty ? .regular : .bold))
                     .foregroundStyle(serial.isEmpty ? Theme.disabledText : Theme.navy).frame(minHeight: 44)
             }
             .accessibilityLabel(title + " S/N")
             .accessibilityValue(serial.isEmpty ? "ยังไม่ระบุ" : serial)
-            Button("สแกน", action: scan).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
+            Button("สแกน", action: scan).font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
                 .accessibilityLabel("สแกน " + title)
         }
         .padding(.horizontal, 16).frame(minHeight: 56)

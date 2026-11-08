@@ -133,7 +133,7 @@ struct InstallPhonePlanTabView: View {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text("แผนก่อสร้าง").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("แผนก่อสร้าง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         if planEditing {
                             revChip("ร่าง " + Self.rev(revisions + 1), ink: Theme.warningInk, fill: Theme.warningSoft)
                         } else if let b = p.baseline {
@@ -149,7 +149,7 @@ struct InstallPhonePlanTabView: View {
                                 .foregroundStyle(slip > 0 ? Theme.dangerText : Theme.successInk)
                         }
                     }
-                    .font(.sarabunFixed(13)).lineLimit(1).minimumScaleFactor(0.8)
+                    .font(.sarabun(13)).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 HStack(spacing: 6) {
                     factTile("ระยะเวลา", "\(p.days.count) วัน")
@@ -191,7 +191,7 @@ struct InstallPhonePlanTabView: View {
                             .disabled(job.scheduleWorkbook == nil || job.scheduleInput == nil)
                             Button { route = .plan } label: { Label("แผนงาน MP ทั้งหมด", systemImage: "calendar") }
                         } label: {
-                            Label("Excel", systemImage: "tablecells").font(.sarabunFixed(15, .semibold))
+                            Label("Excel", systemImage: "tablecells").font(.sarabun(15, .semibold))
                                 .frame(maxWidth: .infinity, minHeight: touchMin)
                         }
                         .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: true))
@@ -207,7 +207,7 @@ struct InstallPhonePlanTabView: View {
     }
 
     private func revChip(_ text: String, ink: Color, fill: Color) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(ink)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(ink)
             .padding(.horizontal, 10).frame(height: 24).background(fill, in: Capsule())
     }
 
@@ -265,11 +265,11 @@ struct InstallPhonePlanTabView: View {
                 .frame(width: 40, height: 40).background(Theme.warning, in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
-                Text("กำลังแก้ไข | ร่าง " + Self.rev(revisions + 1)).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.warningInk)
+                Text("กำลังแก้ไข | ร่าง " + Self.rev(revisions + 1)).font(.sarabun(17, .bold)).foregroundStyle(Theme.warningInk)
                 Text("‹ › เลื่อนวันเริ่ม | − + จำนวนวัน | งานที่เสร็จแล้วแก้ไม่ได้ | แก้แล้ว \(planDraft.count) งาน")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.warningInk)
+                    .font(.sarabun(13)).foregroundStyle(Theme.warningInk)
                 TextField("เหตุผลที่แก้แผน (ต้องระบุ)", text: $planReason)
-                    .font(.sarabunFixed(16))
+                    .font(.sarabun(16))
                     .padding(12).frame(minHeight: 52)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.warning.opacity(0.45)))
@@ -311,7 +311,7 @@ struct InstallPhonePlanTabView: View {
         return VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
                 VStack(spacing: 0) {
-                    Text("WBS | งาน").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text("WBS | งาน").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
                         .padding(.leading, 12).padding(.bottom, 6)
                         .frame(maxWidth: .infinity, minHeight: InstallAxis.headerHeight, maxHeight: InstallAxis.headerHeight, alignment: .bottomLeading)
                         .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -321,7 +321,7 @@ struct InstallPhonePlanTabView: View {
                         if planOpen(s, p) { ForEach(s.subs) { planSubName($0) } }
                     }
                     if !p.milestones.isEmpty {
-                        Text("Milestone").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                        Text("Milestone").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
                             .padding(.leading, 12)
                             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .leading)
                             .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -390,9 +390,9 @@ struct InstallPhonePlanTabView: View {
                 let today = week ? axis.contains(axis.today, week: d) : MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today)
                 let sunday = !week && InstallPlan.isSunday(d)
                 VStack(spacing: 2) {
-                    if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted) }
+                    if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabun(11)).foregroundStyle(today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted) }
                     Text(week ? ThaiFormat.dayMonth.string(from: d) : "\(MasterSchedule.calendar.component(.day, from: d))")
-                        .font(.sarabunFixed(week ? 11 : 14, .bold)).monospacedDigit()
+                        .font(.sarabun(week ? 11 : 14, .bold)).monospacedDigit()
                         .foregroundStyle(today ? Theme.onPrimary : sunday ? Theme.survey : Theme.navy)
                         .padding(.horizontal, today ? 4 : 0).frame(height: 20)
                         .background { if today { Capsule().fill(Theme.danger) } }
@@ -417,8 +417,8 @@ struct InstallPhonePlanTabView: View {
             HStack(spacing: 6) {
                 Image(systemName: open ? "chevron.down" : "chevron.right").font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Theme.navy).frame(width: 10).opacity(s.subs.isEmpty ? 0 : 1)
-                Text(r.code).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(width: 24, alignment: .leading)
-                Text(r.title).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(2).lineSpacing(-2)
+                Text(r.code).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(width: 24, alignment: .leading)
+                Text(r.title).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(2).lineSpacing(-2)
                 Spacer(minLength: 0)
             }
             .padding(.leading, 8).padding(.trailing, 4)
@@ -434,8 +434,8 @@ struct InstallPhonePlanTabView: View {
 
     private func planSubName(_ r: InstallPlan.Row) -> some View {
         HStack(spacing: 6) {
-            Text(r.code).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(width: 30, alignment: .leading)
-            Text(r.title).font(.sarabunFixed(13)).foregroundStyle(Theme.navy).lineLimit(1)
+            Text(r.code).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(width: 30, alignment: .leading)
+            Text(r.title).font(.sarabun(13)).foregroundStyle(Theme.navy).lineLimit(1)
             Spacer(minLength: 0)
         }
         .padding(.leading, 26).padding(.trailing, 4)
@@ -461,7 +461,7 @@ struct InstallPhonePlanTabView: View {
             }
             Text("แตะขั้นเพื่อแสดง / ซ่อนงานย่อย")
         }
-        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 14).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityHidden(true)

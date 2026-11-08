@@ -69,8 +69,8 @@ extension ToolLogPadScreen {
             Image(systemName: symbol).font(.system(size: 19, weight: .semibold)).foregroundStyle(tint)
                 .frame(width: 44, height: 44).background(fill, in: RoundedRectangle(cornerRadius: Radius.md))
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.sarabunFixed(19, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(title).font(.sarabun(19, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text(subtitle).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 8)
             trailing()
@@ -79,8 +79,8 @@ extension ToolLogPadScreen {
 
     private func kpi(_ title: String, _ value: Int, _ color: Color, id: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
-            Text("\(value)").font(.sarabunFixed(22, .bold)).foregroundStyle(color).monospacedDigit()
+            Text(title).font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.75)
+            Text("\(value)").font(.sarabun(22, .bold)).foregroundStyle(color).monospacedDigit()
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -93,7 +93,7 @@ extension ToolLogPadScreen {
     /// At most three, the most overdue first: a late tool asks before `ทวงคืน`, an instrument opens its form.
     @ViewBuilder private func chaseList(_ chase: [Chase], now: Date) -> some View {
         if chase.isEmpty {
-            Text("ไม่มีรายการที่ต้องตาม").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            Text("ไม่มีรายการที่ต้องตาม").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(Theme.background, in: RoundedRectangle(cornerRadius: Radius.md))
         } else {
@@ -124,8 +124,8 @@ extension ToolLogPadScreen {
         } label: {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                    Text(subtitle).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(subtitle).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 .lineLimit(1)
                 Spacer(minLength: 8)
@@ -214,16 +214,16 @@ extension ToolLogPadScreen {
         return Button { selectedVehicle = v.id } label: {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    Text(v.name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(v.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     if !v.plate.isEmpty {
-                        Text(v.plate).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.navy)
+                        Text(v.plate).font(.sarabun(12.5, .bold)).foregroundStyle(Theme.navy)
                             .padding(.horizontal, 6).padding(.vertical, 1)
                             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.navy.opacity(0.7)))
                     }
                     Spacer(minLength: 4)
                     TCStatusChip(out != nil ? "ออกใช้งาน" : "ว่าง", kind: out != nil ? .active : .ok)
                 }
-                Text(line).font(.sarabunFixed(14)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(line).font(.sarabun(14)).foregroundStyle(Theme.navy).lineLimit(1)
                 readings(v, last: last, events: events)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
@@ -249,11 +249,11 @@ extension ToolLogPadScreen {
         let warn = left.map { $0 <= ToolLog.serviceWarningKm } ?? false
         return HStack(spacing: 12) {
             (Text("ไมล์ ").foregroundStyle(Theme.inkMuted)
-             + Text(last.odometer.map { $0.formatted() } ?? "—").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary))
-                .font(.sarabunFixed(14))
+             + Text(last.odometer.map { $0.formatted() } ?? "—").font(.sarabun(14, .bold)).foregroundStyle(Theme.primary))
+                .font(.sarabun(14))
             if let f = last.fuel {
                 HStack(spacing: 6) {
-                    Text("น้ำมัน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("น้ำมัน").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     Capsule().fill(Theme.track).frame(width: 56, height: 6)
                         .overlay(alignment: .leading) {
                             Capsule().fill(f < 0.35 ? Theme.danger : Theme.success).frame(width: 56 * min(max(f, 0), 1), height: 6)
@@ -264,7 +264,7 @@ extension ToolLogPadScreen {
             Spacer(minLength: 0)
             if let left {
                 Text(left < 0 ? "เลยรอบเช็กระยะ \((-left).formatted()) กม." : warn ? "ถึงรอบเช็กระยะ \(left.formatted()) กม." : "เช็กระยะอีก \(left.formatted()) กม.")
-                    .font(.sarabunFixed(13.5, warn ? .bold : .regular))
+                    .font(.sarabun(13.5, warn ? .bold : .regular))
                     .foregroundStyle(warn ? Theme.pending : Theme.inkMuted)
                     .lineLimit(1)
             }

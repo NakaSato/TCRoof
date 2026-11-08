@@ -126,7 +126,7 @@ struct NewPostsPill: View {
     var body: some View {
         Button(action: action) {
             Label("มีโพสต์ใหม่ \(count)", systemImage: "arrow.up")
-                .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.onPrimary)
+                .font(.sarabun(14, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 16).frame(minHeight: 44)
                 .background(Theme.primary, in: Capsule())
                 .shadow(color: Theme.navy.opacity(0.25), radius: 8, y: 4)

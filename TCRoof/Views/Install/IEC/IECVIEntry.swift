@@ -130,17 +130,17 @@ struct IECVIEntry: View {
 
     private var header: some View {
         HStack(spacing: 14) {
-            Text(label).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
+            Text(label).font(.sarabun(17, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 12).frame(height: 36).background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
-                Text(target.kind.cardTitle + " | " + phaseName).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text(target.kind.cardTitle + " | " + phaseName).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 Text("รูป \(target.kind == .voltage ? 1 : 2)/2 | \(slot.modules) แผง | เติม \(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase)) | INV \(String(format: "%02d", inverter + 1))-\(sheetSide) | รูปไปที่รายงาน \(phase == .before ? 6 : 7) หน้า \(report.reportPage(inverter: inverter, seq: seq, phase))")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             if let c = target.continuous {
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("โหมดต่อเนื่อง | \(c.done)/\(c.total) สตริง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                    Text("โหมดต่อเนื่อง | \(c.done)/\(c.total) สตริง").font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Theme.track)
@@ -169,13 +169,13 @@ struct IECVIEntry: View {
                     // decoded once, not on every keypad press (the dialog's `typed` redraws this view)
                     PhotoImage(data: a.data, maxPixel: 1200).clipped()
                 } else {
-                    Theme.phonePage.overlay { Text("ยังไม่มีรูป").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted) }
+                    Theme.phonePage.overlay { Text("ยังไม่มีรูป").font(.sarabun(15)).foregroundStyle(Theme.inkMuted) }
                 }
             }
             .frame(height: 350)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(alignment: .bottomTrailing) {
-                if sample { Text("รูปตัวอย่าง").font(.sarabunFixed(13)).foregroundStyle(Theme.onPrimary).padding(10) }
+                if sample { Text("รูปตัวอย่าง").font(.sarabun(13)).foregroundStyle(Theme.onPrimary).padding(10) }
             }
             locationStrip
             HStack(spacing: 10) {
@@ -192,13 +192,13 @@ struct IECVIEntry: View {
     private var locationStrip: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("ตำแหน่งในตู้ DC").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                Text("MPPT \(IECReport.mppt(slot: target.slot)) | ฟิวส์ F\(target.slot) (+/−)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                Text("ตำแหน่งในตู้ DC").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                Text("MPPT \(IECReport.mppt(slot: target.slot)) | ฟิวส์ F\(target.slot) (+/−)").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
             }
             HStack(spacing: 3) {
                 ForEach(1...inv.mpptCount, id: \.self) { m in
                     VStack(spacing: 3) {
-                        Text("\(m)").font(.sarabunFixed(9, IECReport.mppt(slot: target.slot) == m ? .bold : .regular)).foregroundStyle(Theme.inkMuted)
+                        Text("\(m)").font(.sarabun(9, IECReport.mppt(slot: target.slot) == m ? .bold : .regular)).foregroundStyle(Theme.inkMuted)
                         boxCell((m - 1) * 2 + 1)
                         boxCell((m - 1) * 2 + 2)
                     }
@@ -266,17 +266,17 @@ struct IECVIEntry: View {
         }
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(target.kind.fieldTitle(phase)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text(target.kind.fieldTitle(phase)).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("\(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase))").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(IECReport.excelColumn(slot: target.slot))\(target.kind.row(phase))").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(text.isEmpty ? "—" : text).font(.sarabunFixed(40, .bold)).foregroundStyle(text.isEmpty ? Theme.disabledText : Theme.navy).monospacedDigit()
+                Text(text.isEmpty ? "—" : text).font(.sarabun(40, .bold)).foregroundStyle(text.isEmpty ? Theme.disabledText : Theme.navy).monospacedDigit()
                 Rectangle().fill(Theme.primary).frame(width: 2, height: 34)
-                Text(target.kind.unit).font(.sarabunFixed(17)).foregroundStyle(Theme.inkMuted)
+                Text(target.kind.unit).font(.sarabun(17)).foregroundStyle(Theme.inkMuted)
             }
             if let hint {
-                Text(hint.text).font(.sarabunFixed(13, .bold))
+                Text(hint.text).font(.sarabun(13, .bold))
                     .foregroundStyle(hint.tone == .warn ? Theme.warningInk : hint.tone == .bad ? Theme.dangerText : Theme.okText)
             }
         }
@@ -293,10 +293,10 @@ struct IECVIEntry: View {
         let ok = slot.polarityOK
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
-                Text("ขั้วสาย ").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                    + Text("\(IECReport.excelColumn(slot: target.slot))12").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ขั้วสาย ").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                    + Text("\(IECReport.excelColumn(slot: target.slot))12").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 Text(slot.polarityByHand == true ? "ตั้งเองแล้ว | แตะเพื่อเปลี่ยน" : "อัตโนมัติจากเครื่องหมาย Voc (บวก = ถูกต้อง) | แตะเพื่อเปลี่ยน")
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 6)
             HStack(spacing: 2) {
@@ -309,7 +309,7 @@ struct IECVIEntry: View {
 
     private func polaritySegment(_ title: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
+            Text(title).font(.sarabun(14, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                 .padding(.horizontal, 12).frame(minHeight: 40)
                 .background(on ? Theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
@@ -327,10 +327,10 @@ struct IECVIEntry: View {
         if let reading {
             Button { typed = target.kind.format(reading); fromPhoto = true } label: {
                 HStack {
-                    Text("อ่านจากรูป").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
-                    Text("\(target.kind.short(phase)) \(target.kind.format(reading)) \(target.kind.unit)").font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
+                    Text("อ่านจากรูป").font(.sarabun(14, .bold)).foregroundStyle(Theme.primary)
+                    Text("\(target.kind.short(phase)) \(target.kind.format(reading)) \(target.kind.unit)").font(.sarabun(14)).foregroundStyle(Theme.navy)
                     Spacer()
-                    Text("ใช้ค่านี้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                    Text("ใช้ค่านี้").font(.sarabun(14, .bold)).foregroundStyle(Theme.primary)
                 }
                 .padding(.horizontal, 14).frame(minHeight: 46)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.primary, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
@@ -368,7 +368,7 @@ struct IECVIEntry: View {
             Group {
                 if k == "⌫" { Image(systemName: "delete.left") } else { Text(k) }
             }
-            .font(.sarabunFixed(k.count > 1 ? 16 : 24, .bold)).foregroundStyle(Theme.navy)
+            .font(.sarabun(k.count > 1 ? 16 : 24, .bold)).foregroundStyle(Theme.navy)
             .frame(maxWidth: .infinity, minHeight: 54)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderControl))
@@ -381,8 +381,8 @@ struct IECVIEntry: View {
     private var saveKey: some View {
         Button { if let v = value { save(v) } } label: {
             VStack(spacing: 2) {
-                Text("บันทึก").font(.sarabunFixed(20, .bold))
-                Text(nextLabel).font(.sarabunFixed(12))
+                Text("บันทึก").font(.sarabun(20, .bold))
+                Text(nextLabel).font(.sarabun(12))
             }
             .foregroundStyle(Theme.onPrimary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

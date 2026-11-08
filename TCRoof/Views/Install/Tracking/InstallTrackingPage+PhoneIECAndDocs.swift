@@ -19,9 +19,9 @@ extension InstallTrackingPage {
                         Image(systemName: "bolt").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.warningInk)
                             .frame(width: 44, height: 44).background(Theme.warningSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("ทดสอบ IEC 62446-1").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                            Text("ทดสอบ IEC 62446-1").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                             Text(r.map { InstallPageData.iecDetail($0, drive: ProjectDriveUpload.iecPhotoUpload(job)) } ?? "ยังไม่ได้ตั้งค่า inverter และสตริง")
-                                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                                .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                         }
                         Spacer(minLength: 4)
                         toneChip(chipText, tone)
@@ -71,13 +71,13 @@ extension InstallTrackingPage {
                 if done {
                     Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 } else {
-                    Text("\(s.rawValue)").font(.sarabunFixed(14, .bold)).foregroundStyle(isCurrent ? Theme.onPrimary : Theme.inkMuted)
+                    Text("\(s.rawValue)").font(.sarabun(14, .bold)).foregroundStyle(isCurrent ? Theme.onPrimary : Theme.inkMuted)
                 }
             }
             .frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 0) {
-                Text(s.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text(note).font(.sarabunFixed(13)).foregroundStyle(isCurrent && !done ? Theme.warningInk : Theme.inkMuted).lineLimit(1)
+                Text(s.title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(note).font(.sarabun(13)).foregroundStyle(isCurrent && !done ? Theme.warningInk : Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 4)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
@@ -123,8 +123,8 @@ struct InstallPhoneDocsTabView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     cardHeading("เอกสารโครงการ", note: "ขออนุญาตของสถานีนี้")
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(ready)").font(.sarabunFixed(30, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                        Text("/ \(states.count) ฉบับเรียบร้อย").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                        Text("\(ready)").font(.sarabun(30, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                        Text("/ \(states.count) ฉบับเรียบร้อย").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
                     }
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
@@ -138,14 +138,14 @@ struct InstallPhoneDocsTabView: View {
                         legendDot(Theme.aiPurple, "รอผู้อื่น \(waiting)")
                         legendDot(Theme.success, "ครบ / อนุมัติ \(ready)")
                     }
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     Button("เปิดเอกสารสถานี | อัปโหลด") { phoneRoute = .docs(selected, nil) }
                         .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))
                 }
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("เส้นทางขออนุญาต").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text("ยื่นตามลำดับ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("เส้นทางขออนุญาต").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("ยื่นตามลำดับ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             ForEach(Array(route.enumerated()), id: \.offset) { i, stage in
                 permitStageCard(i + 1, stage, applies: applies.contains(stage.0), selected: selected == stage.0,
@@ -187,13 +187,13 @@ struct InstallPhoneDocsTabView: View {
                     Circle().stroke(Theme.track, lineWidth: 5)
                     Circle().trim(from: 0, to: share).stroke(p.isComplete ? Theme.success : Theme.primary, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                    Text(applies ? "\(p.ready)/\(p.total)" : "–").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                    Text(applies ? "\(p.ready)/\(p.total)" : "–").font(.sarabun(12, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 }
                 .frame(width: 50, height: 50)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ขั้น \(n) | \(stage.1)").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                    Text(stage.2).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("ขั้น \(n) | \(stage.1)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                    Text(stage.2).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 4)
                 toneChip(chipText, tone)
@@ -215,9 +215,9 @@ struct InstallPhoneDocsTabView: View {
         let kinds = StationDocs.papers(in: package, ctx)
         return VStack(spacing: 0) {
             HStack {
-                Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Spacer(minLength: 6)
-                Text("ร่าง → ยื่น → อนุมัติ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ร่าง → ยื่น → อนุมัติ").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(minHeight: 48)
             ForEach(kinds) { k in
@@ -227,7 +227,7 @@ struct InstallPhoneDocsTabView: View {
                     .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
             }
             if kinds.isEmpty {
-                Text("ไม่มีเอกสารในชุดนี้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 56)
+                Text("ไม่มีเอกสารในชุดนี้").font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 56)
             }
         }
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -239,13 +239,13 @@ struct InstallPhoneDocsTabView: View {
         let tone: InstallPageData.Tone = s == .approved ? .ok : s.isReady ? .info : s == .notNeeded ? .idle : s == .requested ? .info : .warn
         let level = switch s { case .approved: 3; case .submitted: 2; case .draft, .signed: 1; default: 0 }
         return HStack(spacing: 12) {
-            Text("PDF").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onPrimary)
+            Text("PDF").font(.sarabun(11, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 40, height: 46, alignment: .bottom).padding(.bottom, 4)
                 .background(s == .missing || s == .notNeeded ? Theme.inkFaint : InstallTrackingPage.ink(tone), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text(k.name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
-                Text(k.origin.title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(k.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(k.origin.title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 4) {

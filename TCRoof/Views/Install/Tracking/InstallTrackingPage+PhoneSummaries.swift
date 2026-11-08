@@ -24,8 +24,8 @@ extension InstallTrackingPage {
                 .foregroundStyle(ok ? Theme.successInk : Theme.warningInk)
                 .frame(width: 24, height: 24).background(ok ? Theme.successSoft : Theme.warningSoft, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
-                if !note.isEmpty { Text(note).font(.sarabunFixed(13)).foregroundStyle(ok ? Theme.inkMuted : Theme.warningInk) }
+                Text(title).font(.sarabun(15)).foregroundStyle(Theme.navy)
+                if !note.isEmpty { Text(note).font(.sarabun(13)).foregroundStyle(ok ? Theme.inkMuted : Theme.warningInk) }
             }
             Spacer(minLength: 0)
         }
@@ -79,15 +79,15 @@ struct InstallPhoneWeeklyTabView: View {
                         Image(systemName: "calendar").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.primary)
                             .frame(width: 44, height: 44).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("Weekly Report").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                            Text("สรุปประจำสัปดาห์ (R3) | จากรายงานประจำวัน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text("Weekly Report").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                            Text("สรุปประจำสัปดาห์ (R3) | จากรายงานประจำวัน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                     }
                     weekSwitcher(w.lowerBound) { reportWeek += $0 }
                     stepLine(["รอข้อมูล", "พร้อมส่ง", "ส่งแล้ว"], current: step)
                     if !filed {
                         Text("ครบสัปดาห์ " + RoutineReport.thaiDate(w.upperBound) + (today > w.upperBound ? " | ยังไม่ได้เก็บเข้าเอกสาร" : ""))
-                            .font(.sarabunFixed(14)).foregroundStyle(Theme.warningInk)
+                            .font(.sarabun(14)).foregroundStyle(Theme.warningInk)
                     }
                 }
             }
@@ -95,9 +95,9 @@ struct InstallPhoneWeeklyTabView: View {
             phoneCard {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("ความพร้อมก่อนส่ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                        Text("ความพร้อมก่อนส่ง").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         Spacer()
-                        Text("\(ready)/\(checks.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
+                        Text("\(ready)/\(checks.count)").font(.sarabun(15, .bold)).foregroundStyle(ready == checks.count ? Theme.successInk : Theme.warningInk)
                     }
                     ForEach(checks, id: \.title) { c in
                         HStack(spacing: 8) {
@@ -141,7 +141,7 @@ struct InstallPhoneWeeklyTabView: View {
         return phoneCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    Text("สไลด์ \(slides.count) หน้า").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                    Text("สไลด์ \(slides.count) หน้า").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                     toneChip(slides.allSatisfy(\.1) ? "ข้อมูลครบ" : "รอข้อมูล \(slides.filter { !$0.1 }.count)", slides.allSatisfy(\.1) ? .ok : .warn)
                 }
                 ScrollView(.horizontal) {
@@ -152,7 +152,7 @@ struct InstallPhoneWeeklyTabView: View {
                                     RoundedRectangle(cornerRadius: 3).fill(Theme.primary).frame(height: 6)
                                     Spacer(minLength: 0)
                                     HStack(spacing: 4) {
-                                        Text("\(i + 1) \(s.0)").font(.sarabunFixed(12)).foregroundStyle(Theme.navy).lineLimit(1)
+                                        Text("\(i + 1) \(s.0)").font(.sarabun(12)).foregroundStyle(Theme.navy).lineLimit(1)
                                         Spacer(minLength: 0)
                                         Circle().fill(s.1 ? Theme.success : Theme.warning).frame(width: 7, height: 7)
                                     }
@@ -232,8 +232,8 @@ struct InstallPhoneRequestTabView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("คำขอปฏิบัติงานรายสัปดาห์").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                            Text("ส่งก่อนเริ่มสัปดาห์").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text("คำขอปฏิบัติงานรายสัปดาห์").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                            Text("ส่งก่อนเริ่มสัปดาห์").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
                         toneChip(chipText, tone)
@@ -242,7 +242,7 @@ struct InstallPhoneRequestTabView: View {
                     if r.status == .draft {
                         Label("ส่งก่อน " + RoutineReport.thaiDate(week) + (left > 0 ? " | อีก \(left) วัน" : left == 0 ? " | วันนี้" : " | เลยกำหนด"),
                               systemImage: "clock")
-                            .font(.sarabunFixed(14)).foregroundStyle(left < 0 ? Theme.dangerText : Theme.warningInk)
+                            .font(.sarabun(14)).foregroundStyle(left < 0 ? Theme.dangerText : Theme.warningInk)
                     }
                     stepLine(["ร่างคำขอ", "ส่งขออนุมัติ", "อนุมัติ"], current: r.status == .approved ? 3 : r.status == .sent ? 1 : 0)
                     HStack(spacing: 10) {
@@ -273,11 +273,11 @@ struct InstallPhoneRequestTabView: View {
 
     private func numbered(_ n: Int, _ title: String, trailing: String) -> some View {
         HStack(spacing: 8) {
-            Text("\(n)").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+            Text("\(n)").font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                 .frame(width: 24, height: 24).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            Text(title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text(title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 6)
-            Text(trailing).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(trailing).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
         }
     }
@@ -292,12 +292,12 @@ struct InstallPhoneRequestTabView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     numbered(1, "แผนงาน", trailing: "\(r.work.count) งาน")
                     if r.work.isEmpty {
-                        Text("ไม่มีงานตามแผนในสัปดาห์นี้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text("ไม่มีงานตามแผนในสัปดาห์นี้").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     } else {
                         HStack(spacing: 4) {
                             ForEach(days, id: \.self) { d in
                                 Text(InstallTrackingPage.dayLabel(d).replacingOccurrences(of: "/\(cal.component(.month, from: d))", with: ""))
-                                    .font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity)
+                                    .font(.sarabun(11)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity)
                             }
                         }
                         .accessibilityHidden(true)
@@ -324,12 +324,12 @@ struct InstallPhoneRequestTabView: View {
             : start == nil ? ("ยังไม่มีวัน", .warn) : carried ? ("ยกมา", .danger) : ("จากแผน MP", .info)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(line.task?.code ?? "–").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(width: 30, alignment: .leading)
-                Text(line.description.isEmpty ? (line.task?.title ?? "งาน") : line.description).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(line.task?.code ?? "–").font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).frame(width: 30, alignment: .leading)
+                Text(line.description.isEmpty ? (line.task?.title ?? "งาน") : line.description).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
             }
             HStack(spacing: 6) {
                 toneChip(tag, tone)
-                if !line.location.isEmpty { Text(line.location).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+                if !line.location.isEmpty { Text(line.location).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             }
             .padding(.leading, 40)
             HStack(spacing: 4) {
@@ -360,15 +360,15 @@ struct InstallPhoneRequestTabView: View {
                     numbered(n, title, trailing: "รวม \(sum) \(unit)")
                     ForEach(counts.filter { $0.count > 0 }, id: \.name) { c in
                         HStack {
-                            Text(c.name).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+                            Text(c.name).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
                             Spacer(minLength: 6)
-                            Text("\(c.count)").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                            Text("\(c.count)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                         }
                         .frame(minHeight: 36)
                         .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
                         .accessibilityElement(children: .combine)
                     }
-                    if sum == 0 { Text("ยังไม่ได้ระบุ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
+                    if sum == 0 { Text("ยังไม่ได้ระบุ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted) }
                 }
             }
         }
@@ -395,7 +395,7 @@ struct InstallPhoneRequestTabView: View {
         ]
         return phoneCard {
             VStack(alignment: .leading, spacing: 8) {
-                Text("ตรวจก่อนส่ง").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("ตรวจก่อนส่ง").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(items, id: \.0) { item in checkRow(item.0, ok: item.1, note: item.2) }
                 Button(r.status == .draft ? "เปิดคำขอเพื่อลงนามและส่ง" : "เปิดคำขอ") { phoneRoute = .request(week) }
                     .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: true))

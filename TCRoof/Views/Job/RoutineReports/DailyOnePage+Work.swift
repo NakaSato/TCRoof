@@ -48,8 +48,8 @@ extension DailyOnePage {
         let gain = lines.reduce(0) { $0 + max($1.percent - before($1), 0) }
         return HStack(spacing: 6) {
             Image(systemName: "building.2").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.inkMuted)
-            Text(location.isEmpty ? "ไม่ระบุตำแหน่ง" : location).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
-            Text("\(lines.count) งาน | +\(RoutineReport.percent(gain)) วันนี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+            Text(location.isEmpty ? "ไม่ระบุตำแหน่ง" : location).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
+            Text("\(lines.count) งาน | +\(RoutineReport.percent(gain)) วันนี้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             Rectangle().fill(Theme.borderSubtle).frame(height: 1)
         }
         .padding(.top, 6).padding(.horizontal, 4)
@@ -59,7 +59,7 @@ extension DailyOnePage {
 
     private var emptyWork: some View {
         VStack(spacing: 8) {
-            Text("ยังไม่มีงานวันนี้ | แตะ + บนผังเพื่อเพิ่มงานตามแผน MP").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("ยังไม่มีงานวันนี้ | แตะ + บนผังเพื่อเพิ่มงานตามแผน MP").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
             TextField("ถ้าวันนี้หยุดงาน ระบุเหตุผล เช่น ฝนตกทั้งวัน", text: $report.stopReason)
                 .textFieldStyle(OutlinedFieldStyle()).frame(maxWidth: 480)
         }
@@ -124,7 +124,7 @@ struct DailyTaskRow: View {
     }
 
     private var pin: some View {
-        Text("\(page.number(line))").font(.sarabunFixed(13, .heavy)).foregroundStyle(Theme.onPrimary)
+        Text("\(page.number(line))").font(.sarabun(13, .heavy)).foregroundStyle(Theme.onPrimary)
             .frame(width: 26, height: 26).background(c, in: Circle())
             .accessibilityHidden(true)
     }
@@ -133,9 +133,9 @@ struct DailyTaskRow: View {
     private var title: some View {
         Button { page.shoot(lineID) } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Text(DailyOnePage.what(line)).font(.sarabunFixed(14.5, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(DailyOnePage.what(line)).font(.sarabun(14.5, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 Text((line.task.map { "MP \($0.code)" } ?? "งานอื่น") + " | ก่อนวันนี้ " + RoutineReport.percent(before))
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
         }
@@ -156,11 +156,11 @@ struct DailyTaskRow: View {
             bar
             stepButton("plus", "เพิ่ม 5%", 5)
             VStack(alignment: .leading, spacing: 0) {
-                Text(RoutineReport.percent(line.percent)).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text(RoutineReport.percent(line.percent)).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                 if today > 1e-9 {
-                    Text("+" + RoutineReport.percent(today) + " วันนี้").font(.sarabunFixed(11.5, .bold)).foregroundStyle(c).monospacedDigit()
+                    Text("+" + RoutineReport.percent(today) + " วันนี้").font(.sarabun(11.5, .bold)).foregroundStyle(c).monospacedDigit()
                 } else {
-                    Text("ยังไม่กรอก").font(.sarabunFixed(11.5, .bold)).foregroundStyle(Theme.pending)
+                    Text("ยังไม่กรอก").font(.sarabun(11.5, .bold)).foregroundStyle(Theme.pending)
                 }
             }
             .lineLimit(1).frame(width: 74, alignment: .leading)
@@ -217,7 +217,7 @@ struct DailyTaskRow: View {
         return Button { set(done ? 0 : left) } label: {
             HStack(spacing: 4) {
                 Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy))
-                Text("เสร็จ").font(.sarabunFixed(14, .bold))
+                Text("เสร็จ").font(.sarabun(14, .bold))
             }
                 .fixedSize()
                 .foregroundStyle(done ? Theme.onPrimary : Theme.success)
@@ -247,7 +247,7 @@ struct DailyTaskRow: View {
                 }
                 .overlay(alignment: .topTrailing) {
                     if count > 0 {
-                        Text("\(count)").font(.sarabunFixed(10, .heavy)).foregroundStyle(Theme.onPrimary)
+                        Text("\(count)").font(.sarabun(10, .heavy)).foregroundStyle(Theme.onPrimary)
                             .frame(minWidth: 16, minHeight: 16).background(c, in: Circle()).offset(x: 5, y: -5)
                     }
                 }
@@ -296,11 +296,11 @@ struct DailyLineFooter: View {
 
     private var summary: some View {
         HStack(spacing: 10) {
-            Text("\(page.number(line))").font(.sarabunFixed(15, .heavy)).foregroundStyle(Theme.onPrimary)
+            Text("\(page.number(line))").font(.sarabun(15, .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 32, height: 32).background(c, in: Circle())
             VStack(alignment: .leading, spacing: 0) {
-                Text(DailyOnePage.what(line)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                standing.font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
+                Text(DailyOnePage.what(line)).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                standing.font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).monospacedDigit()
             }
         }
         .frame(minWidth: 150, maxWidth: 260, alignment: .leading)
@@ -330,7 +330,7 @@ struct DailyLineFooter: View {
                     Thumbnail(data: p.photo.data).frame(width: 48, height: 48)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .overlay(alignment: .topLeading) {
-                            Text("\(p.index)").font(.sarabunFixed(10, .heavy)).foregroundStyle(Theme.onPrimary)
+                            Text("\(p.index)").font(.sarabun(10, .heavy)).foregroundStyle(Theme.onPrimary)
                                 .frame(width: 16, height: 16).background(c, in: Circle()).padding(3)
                         }
                 }
@@ -344,7 +344,7 @@ struct DailyLineFooter: View {
             }
             if !page.readOnly { addShot }
             Text(shots.isEmpty ? "ถ่ายอย่างน้อย 1 รูป" : "\(shots.count) รูป | ใช้ในรายงาน")
-                .font(.sarabunFixed(12)).foregroundStyle(shots.isEmpty ? Theme.pending : Theme.inkMuted).lineLimit(1).fixedSize()
+                .font(.sarabun(12)).foregroundStyle(shots.isEmpty ? Theme.pending : Theme.inkMuted).lineLimit(1).fixedSize()
         }
     }
 
@@ -352,7 +352,7 @@ struct DailyLineFooter: View {
             Button { page.shoot(lineID) } label: {
                 VStack(spacing: 0) {
                     Image(systemName: "camera").font(.system(size: 14, weight: .semibold))
-                    Text("ถ่าย").font(.sarabunFixed(10.5))
+                    Text("ถ่าย").font(.sarabun(10.5))
                 }
                 .foregroundStyle(Theme.inkMuted)
                 .frame(width: 48, height: 48)
@@ -376,7 +376,7 @@ struct DailyLineFooter: View {
                 page.report.problems.append(.init(since: page.date, lineKey: line.key))
             }
             Button { remove() } label: {
-                Text("เอาออก").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).fixedSize().frame(minWidth: 44, minHeight: 44)
+                Text("เอาออก").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted).fixedSize().frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("เอางานนี้ออกจากวันนี้")
@@ -385,7 +385,7 @@ struct DailyLineFooter: View {
 
     private func pill(_ title: String, ink: Color, fill: Color, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).fixedSize()
+            Text(title).font(.sarabun(13, .bold)).foregroundStyle(ink).fixedSize()
                 .padding(.horizontal, 12).frame(height: 40)
                 .background(fill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .frame(height: 44).contentShape(Rectangle())
@@ -440,7 +440,7 @@ struct DailyLineFooter: View {
     }
 
     private func rowLabel(_ text: String, _ ink: Color) -> some View {
-        Text(text).font(.sarabunFixed(12.5, .bold)).foregroundStyle(ink).frame(width: 44, alignment: .leading)
+        Text(text).font(.sarabun(12.5, .bold)).foregroundStyle(ink).frame(width: 44, alignment: .leading)
     }
 
     private func removeButton(_ label: String, _ action: @escaping () -> Void) -> some View {

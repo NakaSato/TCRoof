@@ -10,7 +10,7 @@ extension InstallWeeklyRequestTabView {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("สัปดาห์ที่ \(Self.weekNumber(r))").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("สัปดาห์ที่ \(Self.weekNumber(r))").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 requestStatusChip(r)
             }
@@ -47,11 +47,11 @@ extension InstallWeeklyRequestTabView {
                     ZStack {
                         Circle().fill(s.2 ? Theme.success : i == current ? Theme.primary : Theme.track).frame(width: 26, height: 26)
                         if s.2 { Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary) }
-                        else { Text("\(i + 1)").font(.sarabunFixed(13, .bold)).foregroundStyle(i == current ? Theme.onPrimary : Theme.inkMuted) }
+                        else { Text("\(i + 1)").font(.sarabun(13, .bold)).foregroundStyle(i == current ? Theme.onPrimary : Theme.inkMuted) }
                     }
-                    Text(s.0).font(.sarabunFixed(12.5, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.center)
+                    Text(s.0).font(.sarabun(12.5, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(s.1).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
+                    Text(s.1).font(.sarabun(11)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity)
@@ -91,7 +91,7 @@ extension InstallWeeklyRequestTabView {
 
     private func checksList(_ r: RoutineReport.WeeklyRequest) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("ตรวจก่อนส่ง").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("ตรวจก่อนส่ง").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
             ForEach(Array(requestChecks(r).enumerated()), id: \.offset) { _, c in
                 HStack(alignment: .top, spacing: 10) {
                     ZStack {
@@ -100,8 +100,8 @@ extension InstallWeeklyRequestTabView {
                             .foregroundStyle(c.ok ? Theme.successInk : Theme.warningInk)
                     }
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(c.title).font(.sarabunFixed(14)).foregroundStyle(Theme.navy)
-                        if let w = c.why { Text(w).font(.sarabunFixed(13)).foregroundStyle(Theme.warningInk) }
+                        Text(c.title).font(.sarabun(14)).foregroundStyle(Theme.navy)
+                        if let w = c.why { Text(w).font(.sarabun(13)).foregroundStyle(Theme.warningInk) }
                     }
                 }
                 .accessibilityElement(children: .combine)
@@ -118,14 +118,14 @@ extension InstallWeeklyRequestTabView {
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 let star = Text("*").foregroundStyle(Theme.danger)
-                Text("ลายเซ็นผู้ส่งคำขอ \(star)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text("ลายเซ็นผู้ส่งคำขอ \(star)").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("SITE ENGINEER").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("SITE ENGINEER").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
             }
             if let png = reqSignature, let img = UIImage(data: png) {
                 VStack(alignment: .leading, spacing: 2) {
                     Image(uiImage: img).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: 46)
-                    Text("ลงนาม " + Self.signedLine(reqSignedAt ?? .now)).font(.sarabunFixed(12)).foregroundStyle(Theme.successInk)
+                    Text("ลงนาม " + Self.signedLine(reqSignedAt ?? .now)).font(.sarabun(12)).foregroundStyle(Theme.successInk)
                 }
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .frame(maxWidth: .infinity, minHeight: 84)
@@ -139,12 +139,12 @@ extension InstallWeeklyRequestTabView {
                 }
                 .accessibilityElement(children: .combine).accessibilityIdentifier("requestSigned")
             } else if !draft, let at = r.engineerSignedAt ?? r.sentAt {
-                Text("ลงนาม " + Self.signedLine(at)).font(.sarabunFixed(13)).foregroundStyle(Theme.successInk)
+                Text("ลงนาม " + Self.signedLine(at)).font(.sarabun(13)).foregroundStyle(Theme.successInk)
                     .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.horizontal, 12)
                     .background(Theme.successSoft.opacity(0.5), in: frame)
             } else {
                 Button { reqSheet = .sign } label: {
-                    Label("เซ็นชื่อ", systemImage: "signature").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.warningInk)
+                    Label("เซ็นชื่อ", systemImage: "signature").font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(Theme.warningSoft.opacity(0.4), in: frame)
                         .overlay(frame.strokeBorder(Theme.warning, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
@@ -152,11 +152,11 @@ extension InstallWeeklyRequestTabView {
                 .buttonStyle(.plain).disabled(!editable).accessibilityIdentifier("requestSign")
             }
             if draft && editable {
-                TextField("ชื่อผู้ส่งคำขอ", text: $reqName).font(.sarabunFixed(15)).textFieldStyle(OutlinedFieldStyle())
+                TextField("ชื่อผู้ส่งคำขอ", text: $reqName).font(.sarabun(15)).textFieldStyle(OutlinedFieldStyle())
                     .accessibilityIdentifier("requestName")
             } else {
                 let name = r.sentBy.isEmpty ? reqName : (TeamDirectory.shared.person(r.sentBy)?.name ?? reqName)
-                if !name.isEmpty { Text(name).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy) }
+                if !name.isEmpty { Text(name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy) }
             }
         }
     }
@@ -190,7 +190,7 @@ extension InstallWeeklyRequestTabView {
                 }
             case .approved:
                 VStack(spacing: 8) {
-                    Label("อนุมัติแล้ว", systemImage: "checkmark.circle.fill").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.successInk)
+                    Label("อนุมัติแล้ว", systemImage: "checkmark.circle.fill").font(.sarabun(16, .bold)).foregroundStyle(Theme.successInk)
                         .frame(maxWidth: .infinity, minHeight: 50).background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     if !reqExternal {
                         Button { reqChange { $0.reopen() } } label: { Text("เปิดแก้อีกครั้ง").frame(maxWidth: .infinity) }
@@ -213,7 +213,7 @@ extension InstallWeeklyRequestTabView {
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 50)
+        Text(text).font(.sarabun(15, .bold)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 50)
             .accessibilityIdentifier("requestNote")
     }
 

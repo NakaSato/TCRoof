@@ -56,7 +56,7 @@ extension InstallTrackingPage {
         VStack(alignment: .leading, spacing: 14) {
             if let c = settingsCategory {
                 Button { withAnimation(.snappy) { settingsCategory = nil } } label: {
-                    Label("หมวดทั้งหมด", systemImage: "chevron.left").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.primary)
+                    Label("หมวดทั้งหมด", systemImage: "chevron.left").font(.sarabun(17, .bold)).foregroundStyle(Theme.primary)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -80,12 +80,12 @@ extension InstallTrackingPage {
     private func stationCard(_ data: InstallPageData) -> some View {
         phoneCard {
             HStack(spacing: 14) {
-                Text(String(job.stationName.prefix(2))).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
+                Text(String(job.stationName.prefix(2))).font(.sarabun(18, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 48, height: 48).background(Theme.navy, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(data.title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(data.title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -95,7 +95,7 @@ extension InstallTrackingPage {
     @ViewBuilder private func group(_ title: String?, _ cats: [SettingsCategory]) -> some View {
         if !cats.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                if let title { Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
+                if let title { Text(title).font(.sarabun(14, .bold)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
                 listCard {
                     ForEach(Array(cats.enumerated()), id: \.offset) { i, c in
                         let r = row(c)
@@ -126,11 +126,11 @@ extension InstallTrackingPage {
         HStack(spacing: 12) {
             iconTile(r.symbol, r.tint)
             VStack(alignment: .leading, spacing: 0) {
-                Text(r.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text(r.note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                Text(r.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                Text(r.note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
             }
             Spacer(minLength: 4)
-            if !r.trailing.isEmpty { Text(r.trailing).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize() }
+            if !r.trailing.isEmpty { Text(r.trailing).font(.sarabun(15, .bold)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize() }
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
         }
         .padding(.horizontal, 14).frame(minHeight: 64)
@@ -143,8 +143,8 @@ extension InstallTrackingPage {
             HStack(spacing: 14) {
                 iconTile(r.symbol, r.tint)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(r.title).font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text(r.note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(r.title).font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text(r.note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -153,17 +153,17 @@ extension InstallTrackingPage {
 
     private func section<C: View>(_ title: String, footer: String? = nil, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.inkMuted).padding(.leading, 4)
+            Text(title).font(.sarabun(14, .bold)).foregroundStyle(Theme.inkMuted).padding(.leading, 4)
             listCard(content)
-            if let footer { Text(footer).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
+            if let footer { Text(footer).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
         }
     }
 
     private func valueRow(_ title: String, _ value: String, first: Bool = false) -> some View {
         HStack(spacing: 8) {
-            Text(title).font(.sarabunFixed(16)).foregroundStyle(Theme.navy)
+            Text(title).font(.sarabun(16)).foregroundStyle(Theme.navy)
             Spacer(minLength: 8)
-            Text(value.isEmpty ? "–" : value).font(.sarabunFixed(16, .bold)).foregroundStyle(value.isEmpty ? Theme.inkFaint : Theme.inkMuted)
+            Text(value.isEmpty ? "–" : value).font(.sarabun(16, .bold)).foregroundStyle(value.isEmpty ? Theme.inkFaint : Theme.inkMuted)
                 .multilineTextAlignment(.trailing).lineLimit(2)
         }
         .padding(.horizontal, 14).frame(minHeight: 52)
@@ -174,7 +174,7 @@ extension InstallTrackingPage {
     private func actionRow(_ title: String, first: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
-                Text(title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.primary)
+                Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.primary)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
             }
@@ -190,12 +190,12 @@ extension InstallTrackingPage {
     private func personRow(_ email: String, role: String, tone: InstallPageData.Tone, first: Bool) -> some View {
         let name = TeamDirectory.shared.person(email)?.name ?? ""
         return HStack(spacing: 12) {
-            Text(String((name.isEmpty ? email : name).prefix(1)).uppercased()).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
+            Text(String((name.isEmpty ? email : name).prefix(1)).uppercased()).font(.sarabun(18, .bold)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 40, height: 40).background(Self.ink(tone), in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
-                Text(name.isEmpty ? email : name).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                if !name.isEmpty { Text(email).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+                Text(name.isEmpty ? email : name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                if !name.isEmpty { Text(email).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
             }
             Spacer(minLength: 4)
             toneChip(role, tone)

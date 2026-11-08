@@ -33,14 +33,14 @@ extension InstallPlanTabView {
         return sideCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("กำลังคนตามแผน").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("กำลังคนตามแผน").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 6)
-                    Text(cap.map { "เส้นประ = ทีม \($0) คน" } ?? "จากคำขอรายสัปดาห์").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(cap.map { "เส้นประ = ทีม \($0) คน" } ?? "จากคำขอรายสัปดาห์").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 HStack(alignment: .bottom, spacing: 2) {
                     ForEach(days, id: \.date) { d in
                         VStack(spacing: 2) {
-                            Text(d.count > 0 ? "\(d.count)" : "").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).frame(height: 13)
+                            Text(d.count > 0 ? "\(d.count)" : "").font(.sarabun(11)).foregroundStyle(Theme.inkMuted).frame(minHeight: 13)
                             RoundedRectangle(cornerRadius: 2).fill(crewInk(d.date, d.count, p))
                                 .frame(height: chart * CGFloat(d.count) / top)
                         }
@@ -57,7 +57,7 @@ extension InstallPlanTabView {
                 if days.count <= 31 {
                     HStack(spacing: 2) {
                         ForEach(days, id: \.date) { d in
-                            Text("\(MasterSchedule.calendar.component(.day, from: d.date))").font(.sarabunFixed(11))
+                            Text("\(MasterSchedule.calendar.component(.day, from: d.date))").font(.sarabun(11))
                                 .foregroundStyle(d.date == p.today ? Theme.dangerText : InstallPlan.isSunday(d.date) ? Theme.survey : Theme.inkMuted)
                                 .lineLimit(1).minimumScaleFactor(0.6).frame(maxWidth: .infinity)
                         }
@@ -66,7 +66,7 @@ extension InstallPlanTabView {
                 if cap != nil {
                     Text(over.isEmpty ? "ไม่มีวันที่เกินกำลังทีม"
                          : "เกินกำลัง " + over.map(ThaiFormat.dayMonth.string(from:)).joined(separator: ", ") + " | ขยับงานที่มีเวลาเผื่อ หรือเพิ่มคน")
-                        .font(.sarabunFixed(13, .bold)).foregroundStyle(over.isEmpty ? Theme.successInk : Theme.dangerText)
+                        .font(.sarabun(13, .bold)).foregroundStyle(over.isEmpty ? Theme.successInk : Theme.dangerText)
                 }
             }
         }
@@ -82,15 +82,15 @@ extension InstallPlanTabView {
     private func milestonesCard(_ p: InstallPlan) -> some View {
         sideCard {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text("Milestone").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(p.milestones) { m in
                     let state = m.state(today: p.today)
                     HStack(spacing: 12) {
                         MilestoneDiamond(state: state)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                            Text(m.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                                 .lineLimit(2).minimumScaleFactor(0.85)
-                            Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
                         InstallTrackingPage.chip(Self.milestoneText(state), Self.milestoneTone(state))
@@ -125,9 +125,9 @@ extension InstallPlanTabView {
         sideCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("ความพร้อมขั้นถัดไป").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text("ความพร้อมขั้นถัดไป").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 6)
-                    Text(r.stage).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(r.stage).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 ForEach(r.items, id: \.label) { item in
                     HStack(spacing: 12) {
@@ -135,8 +135,8 @@ extension InstallPlanTabView {
                             .foregroundStyle(item.ok ? Theme.successInk : Theme.warningInk)
                             .frame(width: 28, height: 28).background(item.ok ? Theme.successSoft : Theme.warningSoft, in: Circle())
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(item.label).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                            Text(item.note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                            Text(item.label).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                            Text(item.note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                     }
                     .padding(.vertical, 3)
@@ -184,7 +184,7 @@ struct PlanStageBar: View {
             (row.status == .done ? Theme.success : row.status == .current ? Theme.primary : Theme.installPlanned).frame(width: w * share)
             // the label needs room: none on a 1-day bar or a narrow week-axis bar
             if row.days > 1, row.percent > 0, w >= 40 {
-                Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(11, .bold))
+                Text("\(Int(row.percent.rounded()))%").font(.sarabun(11, .bold))
                     .foregroundStyle(share >= 0.5 ? Theme.onPrimary : Theme.navy).padding(.leading, 5).fixedSize()
             }
         }
@@ -193,7 +193,7 @@ struct PlanStageBar: View {
         .overlay { if row.critical { shape.strokeBorder(Theme.installCritical, lineWidth: 2) } }
         .overlay(alignment: .trailing) {
             if row.percent > 0, w < 40 {
-                Text("\(Int(row.percent.rounded()))%").font(.sarabunFixed(11, .bold))
+                Text("\(Int(row.percent.rounded()))%").font(.sarabun(11, .bold))
                     .foregroundStyle(Theme.navy).offset(x: 28).fixedSize()
             }
         }

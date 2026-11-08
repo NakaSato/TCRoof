@@ -12,9 +12,9 @@ struct IECStepProgress: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("\(current.rawValue)/\(IECReport.Stage.allCases.count)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("\(current.rawValue)/\(IECReport.Stage.allCases.count)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text(current.title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy)
+                Text(current.title).font(.sarabun(15)).foregroundStyle(Theme.navy)
             }
             HStack(spacing: 8) {
                 ForEach(IECReport.Stage.allCases) { s in
@@ -44,17 +44,17 @@ struct IECDCInputMap: View {
         let inv = report.inverters[inverter], mppts = inv.mpptCount
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("ช่อง DC input | MPPT 1–\(mppts)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                Text("ช่อง DC input | MPPT 1–\(mppts)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 Button(inv.slots[selected - 1] == nil ? "+ มีสตริงในช่อง \(selected)" : "ตั้งช่อง \(selected) เป็นว่าง") { toggleEmpty(selected) }
-                    .font(.sarabunFixed(13, .bold)).underline().foregroundStyle(Theme.primary).frame(minHeight: 44)
+                    .font(.sarabun(13, .bold)).underline().foregroundStyle(Theme.primary).frame(minHeight: 44)
             }
             HStack(spacing: 4) {
                 ForEach(1...mppts, id: \.self) { m in
                     // the selected slot's MPPT column is yellow, as the dialog's DC box strip
                     let on = IECReport.mppt(slot: selected) == m
                     VStack(spacing: 6) {
-                        Text("\(m)").font(.sarabunFixed(11, on ? .bold : .regular)).foregroundStyle(on ? Theme.slotColumnInk : Theme.inkMuted)
+                        Text("\(m)").font(.sarabun(11, on ? .bold : .regular)).foregroundStyle(on ? Theme.slotColumnInk : Theme.inkMuted)
                         dot(inv, (m - 1) * 2 + 1)
                         dot(inv, (m - 1) * 2 + 2)
                     }
@@ -81,7 +81,7 @@ struct IECDCInputMap: View {
         case .empty: (Color.clear, Theme.disabledText)
         }
         return Button { select(slot) } label: {
-            Text(text).font(.sarabunFixed(text.count > 4 ? 10 : 12, .bold)).foregroundStyle(ink).minimumScaleFactor(0.7)
+            Text(text).font(.sarabun(text.count > 4 ? 10 : 12, .bold)).foregroundStyle(ink).minimumScaleFactor(0.7)
                 .frame(width: 32, height: 32)
                 .background(fill, in: Circle())
                 .overlay {
@@ -115,7 +115,7 @@ struct IECDCInputMap: View {
             legendItem(Color.clear, "ว่าง", ring: true, dashed: true)
             Spacer()
         }
-        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
     }
 
     private func legendItem(_ fill: Color, _ title: String, ring: Bool = false, dashed: Bool = false) -> some View {
@@ -143,7 +143,7 @@ struct IECVITable: View {
         let statuses = (1...inv.slotsInUse).map { report.viStatus(inv, slot: $0, phase) }
         VStack(spacing: 0) {
             HStack {
-                Text("ตารางค่าวัด | INV\(inverter + 1) \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ")").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("ตารางค่าวัด | INV\(inverter + 1) \(phase == .before ? "ก่อนออนระบบ" : "หลังออนระบบ")").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
                 filterSwitch(slots: inv.slotsInUse, todo: statuses.filter { $0 == .todo }.count, failed: statuses.filter { $0 == .fail }.count)
             }
@@ -184,7 +184,7 @@ struct IECVITable: View {
 
     private func segment(_ title: String, _ f: IECVIPage.Filter) -> some View {
         Button { filter = f } label: {
-            Text(title).font(.sarabunFixed(14, filter == f ? .bold : .regular)).foregroundStyle(filter == f ? Theme.navy : Theme.inkMuted)
+            Text(title).font(.sarabun(14, filter == f ? .bold : .regular)).foregroundStyle(filter == f ? Theme.navy : Theme.inkMuted)
                 .padding(.horizontal, 12).frame(minHeight: 38)
                 .background(filter == f ? Theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
@@ -204,7 +204,7 @@ struct IECVITable: View {
             if phase == .before { cell("ขั้ว", 6, .center) }
             Text("ผล").frame(width: 100)
         }
-        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 16).frame(height: 32)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
     }
@@ -233,7 +233,7 @@ struct IECVITable: View {
             cell("\(IECReport.mppt(slot: slot)) | \(slot)", 1, .leading)
             Text("ไม่มีสตริงต่อเข้าช่องนี้").frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.sarabunFixed(14)).foregroundStyle(Theme.disabledText)
+        .font(.sarabun(14)).foregroundStyle(Theme.disabledText)
         .accessibilityElement(children: .combine)
     }
 
@@ -246,7 +246,7 @@ struct IECVITable: View {
         let dev = volts == nil ? nil : report.voltageDeviation(inv, slot: slot, phase)
         return HStack(spacing: 0) {
             // the board's `String n` (the chip, the dialog and the map keep `INV1ST1` / `ST1`)
-            Text("String \(seq)").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+            Text("String \(seq)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: Self.widths[0], alignment: .leading)
             cell("\(IECReport.mppt(slot: slot)) | \(slot)", 1, .leading)
             cell("\(s.modules)", 2, .leading)
@@ -256,7 +256,7 @@ struct IECVITable: View {
             if phase == .before { polarity(s.polarityOK).frame(width: Self.widths[6]) }
             resultPill(status).frame(width: 100)
         }
-        .font(.sarabunFixed(15)).foregroundStyle(Theme.navy).monospacedDigit()
+        .font(.sarabun(15)).foregroundStyle(Theme.navy).monospacedDigit()
         .accessibilityElement(children: .combine)
     }
 
@@ -279,7 +279,7 @@ struct IECVITable: View {
         case .fail: ("ไม่ผ่าน", Theme.dangerText, Theme.dangerSoft)
         default: ("ยังไม่ครบ", Theme.inkMuted, Theme.phonePage)
         }
-        return Text(t).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).frame(width: 80, height: 22).background(fill, in: Capsule())
+        return Text(t).font(.sarabun(13, .bold)).foregroundStyle(ink).frame(width: 80, height: 22).background(fill, in: Capsule())
     }
 
     /// `วัดแล้ว` | the median of each module-count group (or one median and V per module) | polarity.
@@ -308,8 +308,8 @@ struct IECVITable: View {
         return HStack(spacing: 0) {
             ForEach(Array(cells.enumerated()), id: \.offset) { k, c in
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(c.0).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                    Text(c.1).font(.sarabunFixed(16, .bold)).foregroundStyle(k == cells.count - 1 && reversed > 0 ? Theme.dangerText : Theme.navy)
+                    Text(c.0).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                    Text(c.1).font(.sarabun(16, .bold)).foregroundStyle(k == cells.count - 1 && reversed > 0 ? Theme.dangerText : Theme.navy)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .leading) { if k > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
@@ -373,12 +373,12 @@ struct IECValuePhotoCard: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(kind.cardTitle).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                Text(kind.cardTitle).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text(cell).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(cell).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             valueLine
-            Text(asset == nil ? "ยังไม่มีรูป" : hint?.text ?? "ถ่ายแล้ว | ② ป้อนค่าจากรูป").font(.sarabunFixed(12))
+            Text(asset == nil ? "ยังไม่มีรูป" : hint?.text ?? "ถ่ายแล้ว | ② ป้อนค่าจากรูป").font(.sarabun(12))
                 .foregroundStyle(hintColor).lineLimit(1)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
@@ -387,11 +387,11 @@ struct IECValuePhotoCard: View {
     @ViewBuilder private var valueLine: some View {
         if let value {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(kind.format(value)).font(.sarabunFixed(24, .bold)).foregroundStyle(ok ? Theme.navy : Theme.dangerText)
-                Text(kind.unit).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text(kind.format(value)).font(.sarabun(24, .bold)).foregroundStyle(ok ? Theme.navy : Theme.dangerText)
+                Text(kind.unit).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             }
         } else {
-            Text(asset == nil ? "—" : "แตะเพื่อป้อนค่า").font(.sarabunFixed(20, .bold))
+            Text(asset == nil ? "—" : "แตะเพื่อป้อนค่า").font(.sarabun(20, .bold))
                 .foregroundStyle(asset == nil ? Theme.disabledText : Theme.primary)
         }
     }
@@ -402,14 +402,14 @@ struct IECValuePhotoCard: View {
                 .overlay { PhotoImage(data: asset.data, maxPixel: 800) }
                 .clipped()
                 .overlay(alignment: .topLeading) {
-                    Label("ถ่ายแล้ว", systemImage: "checkmark").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.okText)
+                    Label("ถ่ายแล้ว", systemImage: "checkmark").font(.sarabun(12, .bold)).foregroundStyle(Theme.okText)
                         .padding(.horizontal, 8).frame(height: 24).background(Theme.surface, in: Capsule()).padding(8)
                 }
         } else {
             VStack(spacing: 8) {
                 Image(systemName: "camera").font(.system(size: 30, weight: .semibold))
-                Text("① ถ่ายรูป" + kind.cardTitle).font(.sarabunFixed(16, .bold))
-                Text("ให้เห็นหน้าจอและจุดที่วัด").font(.sarabunFixed(12))
+                Text("① ถ่ายรูป" + kind.cardTitle).font(.sarabun(16, .bold))
+                Text("ให้เห็นหน้าจอและจุดที่วัด").font(.sarabun(12))
             }
             .foregroundStyle(Theme.warningInk)
             .frame(maxWidth: .infinity).frame(height: 168)

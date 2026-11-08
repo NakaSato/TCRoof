@@ -303,7 +303,7 @@ struct InstallPadSettingsTabView: View {
     func syncChip(_ dirty: Bool) -> some View {
         Label(dirty ? "ยังไม่บันทึก" : "ซิงก์แล้ว", systemImage: dirty ? "pencil" : "checkmark")
             .labelStyle(.titleAndIcon)
-            .font(.sarabunFixed(13, .bold))
+            .font(.sarabun(13, .bold))
             .foregroundStyle(dirty ? Theme.warningInk : Theme.successInk)
             .padding(.horizontal, 9).frame(height: 26)
             .background(dirty ? Theme.warningSoft : Theme.successSoft, in: Capsule())
@@ -315,12 +315,12 @@ struct InstallPadSettingsTabView: View {
         let name = padDemoOn ? data.title : job.stationName
         return InstallTrackingPage.phoneCard(padding: 14) {
             HStack(spacing: 12) {
-                Text(String(name.prefix(2))).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.onPrimary)
+                Text(String(name.prefix(2))).font(.sarabun(18, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 48, height: 48).background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(2).minimumScaleFactor(0.85)
-                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(name).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(2).minimumScaleFactor(0.85)
+                    Text("ตั้งค่าเฉพาะโครงการนี้").font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 4)
                 syncChip(!settingsChanges.isEmpty)
@@ -353,11 +353,11 @@ struct InstallPadSettingsTabView: View {
     private func padCategoryRow(_ c: PadSettingsCategory, on: Bool, dirty: Bool) -> some View {
         HStack(spacing: 12) {
             padIconTile(c.symbol, c.tint, size: 34)
-            Text(c.title).font(.sarabunFixed(16, on ? .bold : .regular)).foregroundStyle(Theme.navy).lineLimit(1).fixedSize()
+            Text(c.title).font(.sarabun(16, on ? .bold : .regular)).foregroundStyle(Theme.navy).lineLimit(1).fixedSize()
                 .layoutPriority(1)
             Spacer(minLength: 4)
             let t = trailing(c)
-            if !t.isEmpty { Text(t).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).lineLimit(1).minimumScaleFactor(0.75) }
+            if !t.isEmpty { Text(t).font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).lineLimit(1).minimumScaleFactor(0.75) }
             if dirty { Circle().fill(Theme.warning).frame(width: 8, height: 8).accessibilityLabel("ยังไม่บันทึก") }
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
         }
@@ -374,8 +374,8 @@ struct InstallPadSettingsTabView: View {
             HStack(spacing: 14) {
                 padIconTile(c.symbol, c.tint, size: 46)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(c.title).font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                    Text(c.note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(c.title).font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text(c.note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 syncChip(!settingsChanges.isEmpty)
@@ -410,19 +410,19 @@ struct InstallPadSettingsTabView: View {
         VStack(alignment: .leading, spacing: 8) {
             padListCard {
                 if let title {
-                    Text(title).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                         .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading).padding(.horizontal, 20)
                 }
                 content()
             }
-            if let footer { Text(footer).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
+            if let footer { Text(footer).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).padding(.leading, 4) }
         }
     }
 
     private func rowLabel(_ title: String, _ hint: String?) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(17)).foregroundStyle(Theme.navy)
-            if let hint { Text(hint).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+            Text(title).font(.sarabun(17)).foregroundStyle(Theme.navy)
+            if let hint { Text(hint).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -438,7 +438,7 @@ struct InstallPadSettingsTabView: View {
             rowLabel(title, hint)
             HStack(spacing: 6) {
                 if locked { Image(systemName: "lock").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkMuted) }
-                Text(value.isEmpty ? "–" : value).font(.sarabunFixed(17, .bold))
+                Text(value.isEmpty ? "–" : value).font(.sarabun(17, .bold))
                     .foregroundStyle(value.isEmpty ? Theme.inkFaint : Theme.navy).lineLimit(1).truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -469,7 +469,7 @@ struct InstallPadSettingsTabView: View {
                     if editable {
                         ForEach(Array(options.enumerated()), id: \.offset) { i, o in segment(o, on: i == selected) { pick(i) } }
                     } else {
-                        Text(selected.map { options[$0] } ?? "–").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                        Text(selected.map { options[$0] } ?? "–").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -481,7 +481,7 @@ struct InstallPadSettingsTabView: View {
     private func segment(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         return Button(action: action) {
-            Text(title).font(.sarabunFixed(17, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkStrong)
+            Text(title).font(.sarabun(17, on ? .bold : .regular)).foregroundStyle(on ? Theme.navy : Theme.inkStrong)
                 .lineLimit(1).fixedSize()
                 .padding(.horizontal, 16).frame(minWidth: 96, minHeight: 46)
                 .background(on ? Theme.optionSelected : Theme.surface, in: shape)
@@ -499,13 +499,13 @@ struct InstallPadSettingsTabView: View {
             rowDivider(first)
             Button { padSheet = .person(email, role) } label: {
                 HStack(spacing: 14) {
-                    Text(Self.avatarLetters(name.isEmpty ? email : name, count: 1)).font(.sarabunFixed(18, .bold))
+                    Text(Self.avatarLetters(name.isEmpty ? email : name, count: 1)).font(.sarabun(18, .bold))
                         .foregroundStyle(Theme.onPrimary)
                         .frame(width: 44, height: 44).background(InstallTrackingPage.ink(role.tone), in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(name.isEmpty ? email : name).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                        if !name.isEmpty { Text(email).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
+                        Text(name.isEmpty ? email : name).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        if !name.isEmpty { Text(email).font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(1) }
                     }
                     Spacer(minLength: 4)
                     InstallTrackingPage.toneChip(role.chip, role.tone)
@@ -535,7 +535,7 @@ struct InstallPadSettingsTabView: View {
         VStack(spacing: 0) {
             rowDivider(first)
             HStack {
-                Button(action: action) { Label(title, systemImage: "plus").font(.sarabunFixed(16, .bold)) }
+                Button(action: action) { Label(title, systemImage: "plus").font(.sarabun(16, .bold)) }
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                 Spacer(minLength: 0)
             }
@@ -546,7 +546,7 @@ struct InstallPadSettingsTabView: View {
     func padNoteRow(_ text: String, first: Bool) -> some View {
         VStack(spacing: 0) {
             rowDivider(first)
-            Text(text).font(.sarabunFixed(16)).foregroundStyle(Theme.inkMuted)
+            Text(text).font(.sarabun(16)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading).padding(.horizontal, 20)
         }
     }

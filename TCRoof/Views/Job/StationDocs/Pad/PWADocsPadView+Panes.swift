@@ -19,23 +19,23 @@ extension PWADocsPadView {
         return VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Circle().fill(g.origin.dot).frame(width: 8, height: 8)
-                Text(g.origin.groupTitle).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(g.origin.groupTitle).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                 if late > 0 {
-                    Text("เลย \(late)").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.dangerText)
+                    Text("เลย \(late)").font(.sarabun(11, .bold)).foregroundStyle(Theme.dangerText)
                         .padding(.horizontal, 7).frame(height: 18).background(Theme.dangerSoft, in: Capsule())
                 }
                 Spacer(minLength: 4)
-                Text("\(g.items.count) รายการ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(g.items.count) รายการ").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .padding(.horizontal, 14).frame(height: 46)
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
-            Text(subBar(g)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Text(subBar(g)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
                 .background(Theme.background)
                 .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
                 .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
             if g.items.isEmpty {
-                Text("ไม่มีรายการค้าง").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่มีรายการค้าง").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
@@ -74,19 +74,19 @@ extension PWADocsPadView {
                 HStack(alignment: .top, spacing: 10) {
                     Circle().strokeBorder(item.status.ring(item.kind.origin), lineWidth: 2).frame(width: 18, height: 18).padding(.top, 2)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(PWADocs.title(item)).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
+                        Text(PWADocs.title(item)).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                             .multilineTextAlignment(.leading).lineLimit(2)
-                        Text(cardPlace(item, state: state)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Text(cardPlace(item, state: state)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     }
                 }
                 HStack(spacing: 8) {
                     PWADocsPill(status: item.status, origin: item.kind.origin)
                     if draftable { PWADocsPill(text: "แอปสร้างได้", ink: Theme.successText, fill: Theme.successSoft) }
                     if let due = dueText(item) {
-                        Text(due.text).font(.sarabunFixed(12, .bold)).foregroundStyle(due.ink).lineLimit(1).fixedSize()
+                        Text(due.text).font(.sarabun(12, .bold)).foregroundStyle(due.ink).lineLimit(1).fixedSize()
                     }
                     Spacer(minLength: 4)
-                    Text(action(item)).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
+                    Text(action(item)).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 12).frame(height: 36)
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderSubtle))
                 }
@@ -151,8 +151,8 @@ extension PWADocsPadView {
     private func expiryCard(_ marks: [PWADocs.ExpiryMark]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("หมดอายุใน 12 เดือน").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text("แอปเตือนก่อน 60 วัน | ใช้แทนในทุกสถานีเมื่ออัปโหลดฉบับใหม่").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("หมดอายุใน 12 เดือน").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text("แอปเตือนก่อน 60 วัน | ใช้แทนในทุกสถานีเมื่ออัปโหลดฉบับใหม่").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             PWADocsExpiryTrack(marks: marks) { libraryPaper = .init(stationID: nil, kindID: $0.id) }
         }
@@ -163,8 +163,8 @@ extension PWADocsPadView {
     private func libraryGroup(_ scope: StationDocs.Scope, rows: [PWADocs.LibraryRow], data: PageData) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(scope.groupTitle).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                Text(scope.groupSub).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(scope.groupTitle).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                Text(scope.groupSub).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
@@ -176,16 +176,16 @@ extension PWADocsPadView {
     private func libraryCard(_ r: PWADocs.LibraryRow, used: Int) -> some View {
         Button { libraryPaper = .init(stationID: nil, kindID: r.kind.id) } label: {
             HStack(spacing: 12) {
-                Text(r.kind.scope.padBadge).font(.sarabunFixed(12, .heavy)).foregroundStyle(r.kind.scope.padBadgeInk).lineLimit(1)
+                Text(r.kind.scope.padBadge).font(.sarabun(12, .heavy)).foregroundStyle(r.kind.scope.padBadgeInk).lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .frame(width: 46, height: 46).background(r.kind.scope.padBadgeFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(r.kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(librarySub(r)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                    Text("ใช้ใน \(used) สถานี").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.primary)
+                    Text(r.kind.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(librarySub(r)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text("ใช้ใน \(used) สถานี").font(.sarabun(12, .bold)).foregroundStyle(Theme.primary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(r.pill.padTitle).font(.sarabunFixed(11.5, .bold)).foregroundStyle(r.pill.ink).lineLimit(1).fixedSize()
+                Text(r.pill.padTitle).font(.sarabun(11.5, .bold)).foregroundStyle(r.pill.ink).lineLimit(1).fixedSize()
                     .padding(.horizontal, 8).frame(height: 22).background(r.pill.fill, in: Capsule())
             }
             .padding(14).frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
@@ -211,10 +211,10 @@ extension PWADocsPadView {
             if search.trimmingCharacters(in: .whitespaces).isEmpty {
                 searchHint(data)
             } else if hits.isEmpty {
-                Text("ไม่พบ \"\(search)\" | ลองเลข MP หรือชื่อสถานี").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                Text("ไม่พบ \"\(search)\" | ลองเลข MP หรือชื่อสถานี").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                     .padding(16)
             } else {
-                Text("\(hits.count) ผลลัพธ์").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.inkMuted)
+                Text("\(hits.count) ผลลัพธ์").font(.sarabun(12, .bold)).foregroundStyle(Theme.inkMuted)
                     .padding(.horizontal, 16).frame(height: 36)
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -235,11 +235,11 @@ extension PWADocsPadView {
 
     private func searchHint(_ data: PageData) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ค้นได้ทั้งสถานี ชื่อเอกสาร และเลขที่หนังสือ").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            Text("ค้นได้ทั้งสถานี ชื่อเอกสาร และเลขที่หนังสือ").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             HStack(spacing: 8) {
                 ForEach(suggestions(data), id: \.self) { s in
                     Button { search = s } label: {
-                        Text(s).font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(s).font(.sarabun(13, .semibold)).foregroundStyle(Theme.navy).lineLimit(1)
                             .padding(.horizontal, 12).frame(height: 34).background(Theme.segmentTrack, in: Capsule())
                             .frame(minHeight: touchMin).contentShape(Capsule())
                     }
@@ -261,11 +261,11 @@ extension PWADocsPadView {
     private func hitRow(_ h: PWADocs.Hit) -> some View {
         Button { openHit(h) } label: {
             HStack(spacing: 12) {
-                Text(h.tag).font(.sarabunFixed(11, .bold)).foregroundStyle(h.tagInk).lineLimit(1)
+                Text(h.tag).font(.sarabun(11, .bold)).foregroundStyle(h.tagInk).lineLimit(1)
                     .frame(width: 58, height: 22).background(h.tagFill, in: Capsule())
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(h.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    Text(hitContext(h)).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(h.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(hitContext(h)).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.inkFaint)
@@ -329,7 +329,7 @@ struct PWADocsExpiryTrack: View {
                     Button { open(m.kind) } label: {
                         VStack(alignment: left ? .leading : .trailing, spacing: 4) {
                             Text(m.kind.name + " | " + (m.expired ? "หมดอายุ" : "\(m.days) วัน"))
-                                .font(.sarabunFixed(12, .bold)).foregroundStyle(m.ink).lineLimit(1).fixedSize()
+                                .font(.sarabun(12, .bold)).foregroundStyle(m.ink).lineLimit(1).fixedSize()
                             ZStack {
                                 Circle().fill(Theme.surface).frame(width: 18, height: 18)
                                 Circle().strokeBorder(m.ink, lineWidth: 2).frame(width: 18, height: 18)
@@ -344,10 +344,10 @@ struct PWADocsExpiryTrack: View {
                     .offset(y: 6)
                     .accessibilityLabel(m.kind.name + " หมดอายุ" + (m.expired ? "แล้ว" : "ในอีก \(m.days) วัน"))
                 }
-                Text("วันนี้").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).offset(y: 56)
-                Text("60 วัน").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.dangerText)
+                Text("วันนี้").font(.sarabun(11)).foregroundStyle(Theme.inkMuted).offset(y: 56)
+                Text("60 วัน").font(.sarabun(11, .bold)).foregroundStyle(Theme.dangerText)
                     .alignmentGuide(.leading) { d in d.width / 2 - w * 60 / 365 }.offset(y: 56)
-                Text("12 เดือน").font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+                Text("12 เดือน").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
                     .alignmentGuide(.leading) { d in d.width - w }.offset(y: 56)
             }
         }

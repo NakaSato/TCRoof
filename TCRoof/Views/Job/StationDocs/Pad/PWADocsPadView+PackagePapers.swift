@@ -15,7 +15,7 @@ struct PWADocsPackagePapers: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button { withAnimation(.snappy) { page.package = nil } } label: {
-                Label("ทุกชุดเอกสาร", systemImage: "chevron.left").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                Label("ทุกชุดเอกสาร", systemImage: "chevron.left").font(.sarabun(14, .bold)).foregroundStyle(Theme.primary)
                     .frame(minHeight: touchMin).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -49,13 +49,13 @@ struct PWADocsPackagePapers: View {
         let c = count
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(package.padTitle).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
+                Text(package.padTitle).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
                 Spacer()
-                Text("\(c.done)/\(c.total)").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text("\(c.done)/\(c.total)").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
             }
             ProgressBar(value: c.total == 0 ? 1 : Double(c.done) / Double(c.total), color: c.done == c.total ? Theme.success : Theme.primary)
             Text(package == .pk2 ? "Check list ของ กกพ. 23 ข้อ | ข้อที่ไม่เข้าเงื่อนไขนับว่าครบ" : package.padNote)
-                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         }
         .accessibilityElement(children: .combine)
     }
@@ -63,7 +63,7 @@ struct PWADocsPackagePapers: View {
     private var ercLink: some View {
         Button { page.ercJob = page.job(station.id) } label: {
             HStack {
-                Text("ลำดับ กกพ. | ยื่น พค.1 → ตรวจสถานที่ → พค.2").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.outside)
+                Text("ลำดับ กกพ. | ยื่น พค.1 → ตรวจสถานที่ → พค.2").font(.sarabun(14, .bold)).foregroundStyle(Theme.outside)
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.outside)
             }
@@ -99,10 +99,10 @@ struct PWADocsPackagePapers: View {
             HStack(alignment: .top, spacing: 10) {
                 checkMark(check).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("\(item.number). " + item.text).font(.sarabunFixed(14, .bold)).foregroundStyle(na ? Theme.inkFaint : Theme.navy)
+                    Text("\(item.number). " + item.text).font(.sarabun(14, .bold)).foregroundStyle(na ? Theme.inkFaint : Theme.navy)
                         .multilineTextAlignment(.leading)
                     Text(na ? "ไม่เข้าเงื่อนไขของสถานีนี้" : target.map(PWADocsPaperRow.origin) ?? "ทีมติ๊กบนแบบฟอร์มเอง")
-                        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 4)
                 checkPill(check, kinds: kinds)
@@ -120,7 +120,7 @@ struct PWADocsPackagePapers: View {
             Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary)
                 .frame(width: 22, height: 22).background(Theme.success, in: Circle())
         case .notApplicable:
-            Text("–").font(.sarabunFixed(12, .heavy)).foregroundStyle(Theme.inkFaint).frame(width: 22, height: 22)
+            Text("–").font(.sarabun(12, .heavy)).foregroundStyle(Theme.inkFaint).frame(width: 22, height: 22)
                 .overlay(Circle().strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5])))
         default:
             Circle().strokeBorder(Theme.inkFaint, lineWidth: 2).frame(width: 22, height: 22)
@@ -150,13 +150,13 @@ struct PWADocsPaperRow: View {
             HStack(alignment: .top, spacing: 10) {
                 PWADocsStatusMark(status: state.status, origin: kind.origin).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(kind.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.leading)
+                    Text(kind.name).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).multilineTextAlignment(.leading)
                     Text(Self.origin(kind) + (PWADocs.isIDCard(kind) ? " | ต้องปิดข้อมูลบนบัตร" : ""))
-                        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     let others = kind.packages.filter { $0 != package }
                     if !others.isEmpty {
                         Text("⇄ " + others.map { PWADocs.stepTitle($0) }.joined(separator: " | "))
-                            .font(.sarabunFixed(12, .semibold)).foregroundStyle(Theme.dockTeal)
+                            .font(.sarabun(12, .semibold)).foregroundStyle(Theme.dockTeal)
                     }
                 }
                 Spacer(minLength: 4)
@@ -192,7 +192,7 @@ struct PWADocsStatusMark: View {
         case .submitted, .signed:
             Circle().fill(Theme.outside).frame(width: 10, height: 10).frame(width: 22, height: 22)
         case .notNeeded:
-            Text("–").font(.sarabunFixed(12, .heavy)).foregroundStyle(Theme.inkFaint).frame(width: 22, height: 22)
+            Text("–").font(.sarabun(12, .heavy)).foregroundStyle(Theme.inkFaint).frame(width: 22, height: 22)
                 .overlay(Circle().strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5])))
         default:
             Circle().strokeBorder(status.ring(origin), lineWidth: 2).frame(width: 20, height: 20).frame(width: 22, height: 22)
@@ -213,7 +213,7 @@ struct PWADocsPill: View {
     }
 
     var body: some View {
-        Text(text).font(.sarabunFixed(11.5, .bold)).foregroundStyle(ink).lineLimit(1).fixedSize()
+        Text(text).font(.sarabun(11.5, .bold)).foregroundStyle(ink).lineLimit(1).fixedSize()
             .padding(.horizontal, 8).frame(height: 22).background(fill, in: Capsule())
     }
 }

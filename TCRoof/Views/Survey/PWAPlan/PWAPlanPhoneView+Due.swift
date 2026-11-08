@@ -26,7 +26,7 @@ extension PWAPlanPhoneView {
         }
         if thisWeek.isEmpty && nextWeek.isEmpty {
             Text(due.all.isEmpty ? "ไม่มีกำหนดส่งใน 2 สัปดาห์นี้" : "ไม่มีกำหนดส่งในตัวกรองนี้")
-                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .padding(.horizontal, 12).padding(.vertical, 18)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -49,8 +49,8 @@ extension PWAPlanPhoneView {
     private func dueGroup(_ title: String, _ range: String, _ rows: [PWAPlan.Deadline]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
-                Text(range).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                Text(range).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             .lineLimit(1)
             .padding(.horizontal, 2).padding(.top, 2)
@@ -78,18 +78,18 @@ extension PWAPlanPhoneView {
         return Button { open(d.opens, station: d.station) } label: {
             HStack(spacing: 10) {
                 VStack(spacing: 0) {
-                    Text("\(PWAPlan.calendar.component(.day, from: d.date))").font(.sarabunFixed(16, .bold)).monospacedDigit().frame(height: 17)
-                    Text(PWAPlanFormat.month.string(from: d.date)).font(.sarabunFixed(10)).frame(height: 13)
+                    Text("\(PWAPlan.calendar.component(.day, from: d.date))").font(.sarabun(16, .bold)).monospacedDigit().frame(minHeight: 17)
+                    Text(PWAPlanFormat.month.string(from: d.date)).font(.sarabun(10)).frame(minHeight: 13)
                 }
                 .foregroundStyle(tile.ink)
                 .frame(width: 46).padding(.vertical, 4)
                 .background(tile.fill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(d.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).frame(height: 18)
-                    Text(d.subtitle).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(height: 18)
+                    Text(d.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 18)
+                    Text(d.subtitle).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(minHeight: 18)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(d.chip).font(.sarabunFixed(11, .bold)).foregroundStyle(chip.ink)
+                Text(d.chip).font(.sarabun(11, .bold)).foregroundStyle(chip.ink)
                     .padding(.horizontal, 8).frame(height: 18)
                     .background(chip.fill, in: Capsule())
                     .fixedSize()
@@ -131,9 +131,9 @@ extension PWAPlanPhoneView {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.primary)
                                 .opacity(on ? 1 : 0).frame(width: 20)
-                            Text(f.title).font(.sarabunFixed(14, on ? .bold : .regular)).foregroundStyle(Theme.navy)
+                            Text(f.title).font(.sarabun(14, on ? .bold : .regular)).foregroundStyle(Theme.navy)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("\(shown(due.all, kind: f.kind).count) รายการ").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                            Text("\(shown(due.all, kind: f.kind).count) รายการ").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).monospacedDigit()
                         }
                         .lineLimit(1)
                         .padding(.horizontal, 12).frame(minHeight: 44)

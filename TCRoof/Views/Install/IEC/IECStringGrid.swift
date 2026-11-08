@@ -129,7 +129,7 @@ struct IECStringGrid: View {
 
     private func lockedNotice(_ r: IECReport) -> some View {
         Label((r.lockedLine ?? "") + (r.result != nil ? " กด แก้ไข ที่หน้าภาพรวมเพื่อเปิดให้แก้" : ""), systemImage: "lock.fill")
-            .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.successInk)
+            .font(.sarabun(14, .bold)).foregroundStyle(Theme.successInk)
             .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Theme.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
@@ -137,7 +137,7 @@ struct IECStringGrid: View {
     /// `Inverter 2 ›` to the next inverter's performance.
     private func performanceBar(_ r: IECReport, _ index: Int) -> some View {
         HStack(spacing: 12) {
-            Text("กรอกพลังงาน 7 วันและค่าแสง แอปคำนวณ Yf, PR และประสิทธิภาพให้").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            Text("กรอกพลังงาน 7 วันและค่าแสง แอปคำนวณ Yf, PR และประสิทธิภาพให้").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             Spacer()
             if index + 1 < r.inverters.count {
                 Button("Inverter \(index + 2) ›") { inverter = index + 1 }.buttonStyle(TCButtonStyle(.primary, size: .card))
@@ -159,13 +159,13 @@ struct IECStringGrid: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(r.inverters.enumerated()), id: \.offset) { i, inv in
-                    Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                    Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
                         .padding(.top, i == 0 ? 0 : 12).padding(.horizontal, 8)
                     sideItem(i, .before, "ตารางสตริง ก่อนเชื่อมต่อ", r.tally(inv, .vocAndCurrent), r.tally(inv, .insulation))
                     sideItem(i, .after, "ตารางสตริง หลังเชื่อมต่อ", r.tally(inv, .vmpAndImp), nil)
                     performanceItem(r, i, inv)
                 }
-                Text("ทั้งสถานี").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted).padding(.top, 12).padding(.horizontal, 8)
+                Text("ทั้งสถานี").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted).padding(.top, 12).padding(.horizontal, 8)
                 stationItem(.conditions, "สภาพ", "สภาพการทดสอบ เครื่องมือ", done: conditionsDone(r), total: 7)
                 stationItem(.photos, "รูป", "ความเข้มแสง ภาพความร้อน",
                             done: (r.irradiancePhoto == nil ? 0 : 1) + (r.thermalPhotos.isEmpty ? 0 : 1), total: 2)
@@ -185,10 +185,10 @@ struct IECStringGrid: View {
         return Button { inverter = i; phase = p; selected = nil; page = .table } label: {
             HStack(spacing: 10) {
                 IECRing(fraction: total > 0 ? Double(done) / Double(total) : 0)
-                Text(p == .before ? "ก่อน" : "หลัง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).frame(width: 34, alignment: .leading)
-                Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(p == .before ? "ก่อน" : "หลัง").font(.sarabun(13)).foregroundStyle(Theme.inkMuted).frame(width: 34, alignment: .leading)
+                Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                 Spacer(minLength: 4)
-                Text("\(done)/\(total)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text("\(done)/\(total)").font(.sarabun(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             .padding(.horizontal, 10).frame(minHeight: 56)
             .background(on ? Theme.primarySoft.opacity(0.6) : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -220,10 +220,10 @@ struct IECStringGrid: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 IECRing(fraction: total > 0 ? Double(done) / Double(total) : 0)
-                Text(short).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8).frame(width: 34, alignment: .leading)
-                Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
+                Text(short).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8).frame(width: 34, alignment: .leading)
+                Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(2)
                 Spacer(minLength: 4)
-                Text("\(done)/\(total)").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
+                Text("\(done)/\(total)").font(.sarabun(13)).foregroundStyle(Theme.inkMuted).monospacedDigit()
             }
             .padding(.horizontal, 10).frame(minHeight: 56)
             .background(on ? Theme.primarySoft.opacity(0.6) : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -261,7 +261,7 @@ struct IECStringGrid: View {
                 pill(t.isComplete ? "✓ Vmp / Imp ครบ \(t.done)/\(t.total)" : "● Vmp / Imp ยังขาด \(t.total - t.done)", t.isComplete ? .ok : .warn)
             }
             Spacer(minLength: 8)
-            if !conditions.isEmpty { Text(conditions.joined(separator: " | ")).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
+            if !conditions.isEmpty { Text(conditions.joined(separator: " | ")).font(.sarabun(14)).foregroundStyle(Theme.inkMuted) }
         }
     }
 
@@ -273,6 +273,6 @@ struct IECStringGrid: View {
         case .warn: (Theme.warningInk, Theme.pendingSoft)
         case .danger: (Theme.dangerText, Theme.dangerSoft)
         }
-        return Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(ink).padding(.horizontal, 10).frame(height: 28).background(fill, in: Capsule())
+        return Text(text).font(.sarabun(13, .bold)).foregroundStyle(ink).padding(.horizontal, 10).frame(minHeight: 28).background(fill, in: Capsule())
     }
 }

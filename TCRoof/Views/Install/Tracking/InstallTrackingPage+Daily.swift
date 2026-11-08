@@ -46,7 +46,7 @@ struct InstallDailyTabView: View {
     }
 
     private func chip(_ text: String, _ tone: InstallPageData.Tone) -> some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone)).lineLimit(1)
             .padding(.horizontal, 9).frame(height: 24)
             .background(InstallTrackingPage.fill(tone), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
@@ -60,13 +60,13 @@ struct InstallDailyTabView: View {
             ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(c.label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                        Text(c.label).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                             .minimumScaleFactor(0.85)
                         Spacer(minLength: 4)
-                        Text(c.value).font(.sarabunFixed(20, .bold)).foregroundStyle(c.ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                        Text(c.value).font(.sarabun(20, .bold)).foregroundStyle(c.ink).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
                             .layoutPriority(1)
                     }
-                    Text(c.note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).truncationMode(.tail)
+                    Text(c.note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(1).truncationMode(.tail)
                 }
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -131,7 +131,7 @@ struct InstallDailyTabView: View {
                             LazyVStack(spacing: 0) {
                                 if rows.isEmpty {
                                     Text(d.rows.isEmpty ? "ยังไม่ถึงช่วงติดตั้ง" : "ไม่มีรายงานในหมวดนี้")
-                                        .font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+                                        .font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
                                         .frame(maxWidth: .infinity, minHeight: 64)
                                 }
                                 ForEach(rows) { r in
@@ -156,7 +156,7 @@ struct InstallDailyTabView: View {
     /// `compact` adapts for narrower screen widths like iPad portrait.
     private func reportsBar(_ d: InstallDailyData, short: Bool, compact: Bool = false) -> some View {
         HStack(spacing: compact ? 8 : 14) {
-            Text("ทุกรายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            Text("ทุกรายงาน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
             TCCountSegments([.init("ทั้งหมด", count: d.rows.count), .init("ต้องทำ", count: d.rows.filter(rowNeedsWork).count),
                              .init("มีปัญหา", count: d.rows.filter(\.hasProblem).count)],
                             selection: $dailyFilter, equalWidths: false, fontSize: compact ? 13.5 : 15)
@@ -198,7 +198,7 @@ struct InstallDailyTabView: View {
             Text("ปัญหา").frame(width: col.problem, alignment: .leading)
             Color.clear.frame(width: col.action, height: 1)
         }
-        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 12).frame(height: 40)
         .background(Theme.phonePage)
         .accessibilityHidden(true)
@@ -207,20 +207,20 @@ struct InstallDailyTabView: View {
     private func reportRow(_ r: InstallDailyData.Row, today: Date, col: Col) -> some View {
         let urgent = r.state == .today
         return HStack(spacing: col.spacing) {
-            Text(InstallTrackingPage.dayLabel(r.date)).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+            Text(InstallTrackingPage.dayLabel(r.date)).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 .frame(width: col.date, alignment: .leading)
             stateChip(r.state).frame(width: col.status, alignment: .leading)
             weatherCell(r).frame(width: col.weather, alignment: .leading)
-            Text(r.crew.map(String.init) ?? "—").font(.sarabunFixed(15)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text(r.crew.map(String.init) ?? "—").font(.sarabun(15)).foregroundStyle(Theme.navy).monospacedDigit()
                 .frame(width: col.crew, alignment: .leading)
-            Text(r.work.isEmpty ? "—" : r.work).font(.sarabunFixed(14.5)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy)
+            Text(r.work.isEmpty ? "—" : r.work).font(.sarabun(14.5)).foregroundStyle(r.state == .missing ? Theme.dangerText : Theme.navy)
                 .lineLimit(2)
                 .frame(width: col.work, alignment: .leading)
             progressCell(r).frame(width: col.progress, alignment: .leading)
-            Text("\(r.photos)").font(.sarabunFixed(15)).foregroundStyle(r.photos > 0 ? Theme.navy : Theme.inkMuted).monospacedDigit()
+            Text("\(r.photos)").font(.sarabun(15)).foregroundStyle(r.photos > 0 ? Theme.navy : Theme.inkMuted).monospacedDigit()
                 .frame(width: col.photos, alignment: .leading)
             signCell(r, today: today).frame(width: col.sign, alignment: .leading)
-            Text(r.problem.isEmpty ? "—" : r.problem).font(.sarabunFixed(14)).foregroundStyle(r.problem.isEmpty ? Theme.inkMuted : Theme.warningInk)
+            Text(r.problem.isEmpty ? "—" : r.problem).font(.sarabun(14)).foregroundStyle(r.problem.isEmpty ? Theme.inkMuted : Theme.warningInk)
                 .lineLimit(2).frame(width: col.problem, alignment: .leading)
             actionButton(r).frame(width: col.action)
         }
@@ -246,12 +246,12 @@ struct InstallDailyTabView: View {
             HStack(spacing: 4) {
                 Image(systemName: w == .fine ? "sun.max" : w == .cloudy ? "cloud.sun" : "cloud.rain")
                     .foregroundStyle(w == .rain ? Theme.primary : Theme.pending)
-                if r.rainHours > 0 { Text("ฝน").font(.sarabunFixed(14)).foregroundStyle(Theme.navy) }
+                if r.rainHours > 0 { Text("ฝน").font(.sarabun(14)).foregroundStyle(Theme.navy) }
             }
             .font(.system(size: 16))
             .accessibilityLabel(w.title)
         } else {
-            Text("—").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("—").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -261,7 +261,7 @@ struct InstallDailyTabView: View {
         if let p = r.planned {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
-                    Text(r.actual.map { "\(Int($0.rounded()))%" } ?? "—").font(.sarabunFixed(15, .bold))
+                    Text(r.actual.map { "\(Int($0.rounded()))%" } ?? "—").font(.sarabun(15, .bold))
                         .foregroundStyle(r.actual == nil ? Theme.inkMuted : Theme.navy).monospacedDigit().lineLimit(1)
                     if let d = r.delta {
                         chip(d > 0 ? "+\(d) เร็วกว่า" : d == 0 ? "ตามแผน" : "\(d) ช้ากว่า", d >= 0 ? .ok : .danger)
@@ -277,7 +277,7 @@ struct InstallDailyTabView: View {
             .accessibilityLabel("สะสม \(r.actual.map { "\(Int($0.rounded()))" } ?? "ไม่มี") เปอร์เซ็นต์ แผน \(Int(p.rounded())) เปอร์เซ็นต์"
                                 + (r.delta.map { $0 > 0 ? " | เร็วกว่าแผน \($0)" : $0 < 0 ? " | ช้ากว่าแผน \(-$0)" : " | ตามแผน" } ?? ""))
         } else {
-            Text("—").font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted)
+            Text("—").font(.sarabun(15)).foregroundStyle(Theme.inkMuted)
         }
     }
 

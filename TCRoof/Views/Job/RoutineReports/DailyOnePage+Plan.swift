@@ -38,8 +38,8 @@ extension DailyOnePage {
     var fullPlan: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("ผังสถานี | งานวันนี้ | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabunFixed(18, .bold))
-                Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อกรอก").font(.sarabunFixed(14)).opacity(0.85)
+                Text("ผังสถานี | งานวันนี้ | " + RoutineReport.thaiWeekdayDate(date)).font(.sarabun(18, .bold))
+                Text("แตะหมุดเพื่อเลือกงาน แล้วปิดเพื่อกรอก").font(.sarabun(14)).opacity(0.85)
                 Spacer()
                 Button { mapFull = false } label: {
                     Image(systemName: "xmark").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
@@ -78,10 +78,10 @@ extension DailyOnePage {
     /// `KEY PLAN | หน้า 2`: it prints on the DAILY REPORT's page 2.
     private var planBadge: some View {
         HStack(spacing: 6) {
-            Text("KEY PLAN").font(.sarabunFixed(12, .bold)).tracking(1).foregroundStyle(Theme.onPrimary)
+            Text("KEY PLAN").font(.sarabun(12, .bold)).tracking(1).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(Theme.navySolid, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            Text("หน้า 2").font(.sarabunFixed(12, .bold)).foregroundStyle(Theme.navy)
+            Text("หน้า 2").font(.sarabun(12, .bold)).foregroundStyle(Theme.navy)
         }
         .padding(4).padding(.trailing, 4)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -105,7 +105,7 @@ extension DailyOnePage {
             legendItem(Theme.primary, "ทำวันนี้")
             legendItem(Theme.success, "เสร็จแล้ว")
             legendItem(Theme.inkFaint, "ยังไม่เริ่ม")
-            Text("+ = งานตามแผน MP").font(.sarabunFixed(11)).foregroundStyle(Theme.navy)
+            Text("+ = งานตามแผน MP").font(.sarabun(11)).foregroundStyle(Theme.navy)
         }
         .padding(.horizontal, 10).padding(.vertical, 5)
         .background(Theme.surface, in: Capsule())
@@ -116,7 +116,7 @@ extension DailyOnePage {
     private func legendItem(_ c: Color, _ t: String) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2).strokeBorder(c, lineWidth: 2).frame(width: 14, height: 10)
-            Text(t).font(.sarabunFixed(11)).foregroundStyle(Theme.navy)
+            Text(t).font(.sarabun(11)).foregroundStyle(Theme.navy)
         }
     }
 
@@ -156,7 +156,7 @@ extension DailyOnePage {
         case .notStarted: (Theme.inkFaint, Theme.surface, true)
         }
         return Text(place)
-            .font(.sarabunFixed(11, .bold))
+            .font(.sarabun(11, .bold))
             .lineLimit(1)
             .truncationMode(.tail)
             .minimumScaleFactor(0.8)
@@ -174,12 +174,12 @@ extension DailyOnePage {
         let size: CGFloat = (on ? 40 : 32) * (large ? 1.2 : 1)
         return Button { selected = line.id } label: {
             VStack(spacing: 2) {
-                Text("\(number(line))").font(.sarabunFixed(on ? 17 : 14, .heavy)).foregroundStyle(Theme.onPrimary)
+                Text("\(number(line))").font(.sarabun(on ? 17 : 14, .heavy)).foregroundStyle(Theme.onPrimary)
                     .frame(width: size, height: size).background(c, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.paper, lineWidth: 2.5))
                     .shadow(color: Theme.navySolid.opacity(0.3), radius: 3, y: 1)
                 Text(on ? "\(line.location) | \(RoutineReport.percent(line.percent))" : RoutineReport.percent(line.percent))
-                    .font(.sarabunFixed(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
+                    .font(.sarabun(11, .bold)).foregroundStyle(on ? Theme.onPrimary : Theme.navy)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.8)
@@ -215,7 +215,7 @@ extension DailyOnePage {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Text("ยังไม่มีผังของสถานีนี้ (อัปโหลดผัง หรือภาพ A2 จากแบบสำรวจ) | แสดงตำแหน่งเป็นรายการ")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
                 if !readOnly { uploadButton }
             }

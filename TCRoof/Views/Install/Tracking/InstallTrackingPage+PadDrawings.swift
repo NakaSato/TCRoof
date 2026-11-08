@@ -45,14 +45,14 @@ extension InstallPadSettingsTabView {
     static func fileTile(_ ext: String, size: CGFloat = 44) -> some View {
         let shape = UnevenRoundedRectangle(topLeadingRadius: 4, bottomLeadingRadius: 4, bottomTrailingRadius: 4, topTrailingRadius: size * 0.3,
                                            style: .continuous)
-        return Text(ext.uppercased().prefix(4)).font(.sarabunFixed(size * 0.24, .bold)).foregroundStyle(Theme.onPrimary)
+        return Text(ext.uppercased().prefix(4)).font(.sarabun(size * 0.24, .bold)).foregroundStyle(Theme.onPrimary)
             .frame(width: size, height: size * 1.1, alignment: .bottom).padding(.bottom, size * 0.1)
             .background(fileTint(ext), in: shape)
             .accessibilityHidden(true)
     }
 
     static func revChip(_ rev: String, latest: Bool = true) -> some View {
-        Text("REV " + rev).font(.sarabunFixed(13, .bold)).foregroundStyle(latest ? Theme.onPrimary : Theme.inkMuted)
+        Text("REV " + rev).font(.sarabun(13, .bold)).foregroundStyle(latest ? Theme.onPrimary : Theme.inkMuted)
             .padding(.horizontal, 8).frame(height: 24)
             .background(latest ? Theme.navySolid : Theme.surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay { if !latest { RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.borderSubtle) } }
@@ -79,17 +79,17 @@ extension InstallPadSettingsTabView {
                 HStack(spacing: 16) {
                     Self.fileTile(d.ext)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(d.id).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.primary)
-                        Text(d.title).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(d.id).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
+                        Text(d.title).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                         if let r = d.latest {
                             Text("แก้ล่าสุด " + ThaiFormat.numericDate.string(from: r.date) + (r.reason.isEmpty ? "" : " | " + r.reason))
-                                .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                                .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                     }
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 4) {
                         if let r = d.latest { Self.revChip(r.rev) }
-                        Text("\(d.revisions.count) revision").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                        Text("\(d.revisions.count) revision").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     }
                     Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.chevron)
                 }
@@ -107,13 +107,13 @@ extension InstallPadSettingsTabView {
             HStack(spacing: 14) {
                 if uploadsDrawings {
                     Button { padSheet = .upload(nil) } label: {
-                        Label("อัปโหลดแบบ / Revision ใหม่", systemImage: "arrow.up.to.line").font(.sarabunFixed(16, .bold))
+                        Label("อัปโหลดแบบ / Revision ใหม่", systemImage: "arrow.up.to.line").font(.sarabun(16, .bold))
                     }
                     .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
                     .accessibilityIdentifier("padSettings.upload")
                 }
                 Text(uploadsDrawings ? "PDF | DWG | รูป | แบบเดิมเก็บไว้ในประวัติทุก REV" : "ทีมงานเป็นผู้อัปโหลดแบบ | เปิดดูได้ทุก REV")
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 20).padding(.vertical, 14)

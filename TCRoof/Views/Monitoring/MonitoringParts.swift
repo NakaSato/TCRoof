@@ -104,7 +104,7 @@ struct MonChip: View {
     init(_ text: String, _ tone: MonTone) { self.text = text; self.tone = tone }
 
     var body: some View {
-        Text(text).font(.sarabunFixed(13, .bold)).foregroundStyle(tone.ink)
+        Text(text).font(.sarabun(13, .bold)).foregroundStyle(tone.ink)
             .padding(.horizontal, 8).frame(height: 22)
             .background(tone.fill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .lineLimit(1).fixedSize()
@@ -136,7 +136,7 @@ struct MonSwitch<Value: Hashable>: View {
             ForEach(options, id: \.0) { value, title in
                 let on = value == selection
                 Button { selection = value } label: {
-                    Text(verbatim: title).font(.sarabunFixed(14, on ? .bold : .regular))
+                    Text(verbatim: title).font(.sarabun(14, on ? .bold : .regular))
                         .foregroundStyle(on ? Theme.navy : Theme.inkMuted)
                         .lineLimit(1).fixedSize()
                         .padding(.horizontal, 14).frame(minHeight: 44)

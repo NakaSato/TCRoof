@@ -20,7 +20,7 @@ extension InstallTrackingPage {
         return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
-                    Text("ความคืบหน้าเทียบแผน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                    Text("ความคืบหน้าเทียบแผน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                         .lineLimit(1).minimumScaleFactor(0.8).accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 4)
                     TCCountSegments([.init("Gantt"), .init("S-Curve")],
@@ -31,7 +31,7 @@ extension InstallTrackingPage {
                         .accessibilityIdentifier("install.progressView")
                 }
                 HStack(spacing: 8) {
-                    Text(range).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                    Text(range).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     if let t = data.tracking { forecastChip(t) }
                 }
             }
@@ -75,7 +75,7 @@ extension InstallTrackingPage {
         return HStack(alignment: .top, spacing: 0) {
             // the pinned column
             VStack(spacing: 0) {
-                Text("ขั้นตอน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ขั้นตอน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     .padding(.leading, 12).padding(.bottom, 6)
                     .frame(maxWidth: .infinity, minHeight: InstallAxis.headerHeight, maxHeight: InstallAxis.headerHeight, alignment: .bottomLeading)
                     .overlay(alignment: .bottom) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -85,7 +85,7 @@ extension InstallTrackingPage {
                     if phoneExpanded(row) { ForEach(row.subs) { subName($0, parent: row) } }
                 }
                 if !milestones.isEmpty {
-                    Text("เหตุการณ์สำคัญ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text("เหตุการณ์สำคัญ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         .padding(.leading, 12)
                         .frame(maxWidth: .infinity, minHeight: Self.phoneMilestoneHeight, maxHeight: Self.phoneMilestoneHeight, alignment: .leading)
                         .overlay(alignment: .top) { Rectangle().fill(Theme.borderSubtle).frame(height: 1) }
@@ -142,9 +142,9 @@ extension InstallTrackingPage {
                 let today = week ? axis.contains(axis.today, week: d) : MasterSchedule.calendar.isDate(d, inSameDayAs: axis.today)
                 let sunday = !week && InstallPlan.isSunday(d)
                 VStack(spacing: 2) {
-                    if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabunFixed(11)).foregroundStyle(today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted) }
+                    if !week { Text(InstallAxis.weekday.string(from: d)).font(.sarabun(11)).foregroundStyle(today ? Theme.dangerText : sunday ? Theme.survey : Theme.inkMuted) }
                     Text(week ? ThaiFormat.dayMonth.string(from: d) : "\(MasterSchedule.calendar.component(.day, from: d))")
-                        .font(.sarabunFixed(week ? 11 : 14, .bold)).monospacedDigit()
+                        .font(.sarabun(week ? 11 : 14, .bold)).monospacedDigit()
                         .foregroundStyle(today ? Theme.onPrimary : sunday ? Theme.survey : Theme.navy)
                         .padding(.horizontal, today ? 4 : 0).frame(height: 20)
                         .background { if today { Capsule().fill(Theme.danger) } }
@@ -167,9 +167,9 @@ extension InstallTrackingPage {
             HStack(spacing: 8) {
                 phoneDisc(row)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(row.title).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(row.title).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                     Text(row.subs.isEmpty ? pct : "งานย่อย \(done)/\(row.subs.count) | " + pct)
-                        .font(.sarabunFixed(12)).foregroundStyle(row.overrunDays > 0 && row.status != .done ? Theme.dangerText : Theme.inkMuted)
+                        .font(.sarabun(12)).foregroundStyle(row.overrunDays > 0 && row.status != .done ? Theme.dangerText : Theme.inkMuted)
                         .lineLimit(1).minimumScaleFactor(0.75).monospacedDigit()
                 }
                 Spacer(minLength: 0)
@@ -193,8 +193,8 @@ extension InstallTrackingPage {
         return HStack(alignment: .top, spacing: 7) {
             Circle().fill(ink).frame(width: 7, height: 7).padding(.top, 6)
             VStack(alignment: .leading, spacing: 0) {
-                Text(s.title).font(.sarabunFixed(13)).foregroundStyle(Theme.navy).lineLimit(1)
-                Text("\(Int(s.percent.rounded()))%").font(.sarabunFixed(11, .bold)).monospacedDigit()
+                Text(s.title).font(.sarabun(13)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text("\(Int(s.percent.rounded()))%").font(.sarabun(11, .bold)).monospacedDigit()
                     .foregroundStyle(s.percent >= 99.95 ? Theme.successInk : Theme.inkFaint)
             }
             Spacer(minLength: 0)
@@ -213,10 +213,10 @@ extension InstallTrackingPage {
                 Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(Theme.onPrimary)
             case .current:
                 Circle().fill(Theme.primary)
-                Text(row.code).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.onPrimary).minimumScaleFactor(0.6)
+                Text(row.code).font(.sarabun(11, .bold)).foregroundStyle(Theme.onPrimary).minimumScaleFactor(0.6)
             case .waiting:
                 Circle().fill(Theme.segmentTrack)
-                Text(row.code).font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.6)
+                Text(row.code).font(.sarabun(11, .bold)).foregroundStyle(Theme.inkMuted).minimumScaleFactor(0.6)
             }
         }
         .frame(width: 26, height: 26)
@@ -233,7 +233,7 @@ extension InstallTrackingPage {
                     MilestoneDiamond(state: m.state(today: today))
                         .position(x: x, y: 16)
                     Text(m.title)
-                        .font(.sarabunFixed(10, .semibold))
+                        .font(.sarabun(10, .semibold))
                         .foregroundStyle(Theme.inkMuted)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -268,7 +268,7 @@ extension InstallTrackingPage {
             }
             Text("แตะขั้นเพื่อดูงานย่อย | กดค้างเพื่อดูรายละเอียด")
         }
-        .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+        .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
         .padding(.horizontal, 16).padding(.vertical, 10)
         .accessibilityHidden(true)
     }
@@ -286,7 +286,7 @@ extension InstallTrackingPage {
                         Text("วันนี้").foregroundStyle(Theme.dangerText)
                     }
                 }
-                .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 .accessibilityHidden(true)
                 InstallCurveChart(days: data.curveDays, today: data.gantt?.today ?? .now, forecastEnd: data.tracking?.forecastEnd(),
                                   nonWorking: data.nonWorking, waitLabel: nil, compact: true)
@@ -296,12 +296,12 @@ extension InstallTrackingPage {
                     .accessibilityValue(data.tracking.map { "แผน \(Int($0.planned.rounded()))% จริง \(Int($0.actual.rounded()))%" } ?? "")
                     .accessibilityIdentifier("install.curve")
                 Text("แท่ง = งานต่อวัน (แผน | จริง) | เส้นแดงที่วันนี้ = ห่างจากแผน")
-                    .font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                     .accessibilityHidden(true)
             }
             .padding(16)
         } else {
-            Text("ยังไม่มีแผน MP").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 200)
+            Text("ยังไม่มีแผน MP").font(.sarabun(14)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, minHeight: 200)
         }
     }
 

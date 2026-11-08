@@ -156,19 +156,19 @@ struct IECTestScreen: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("ภาพรวมการทดสอบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                    Text("ภาพรวมการทดสอบ").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                         .accessibilityAddTraits(.isHeader)
                     Text(report.stationLine.isEmpty ? job.stationName : report.stationLine)
-                        .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                        .font(.sarabun(14)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                     Text("\(report.inverters.count) Inverter · \(report.stringCount) สตริง · \(IECFormat.number(report.installedKWp)) kWp")
-                        .font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.primary)
+                        .font(.sarabun(13, .semibold)).foregroundStyle(Theme.primary)
                 }
                 Spacer(minLength: 8)
                 TCProgressRing(.percent(report.completion), size: 58)
             }
             HStack(spacing: 10) {
                 TCStatusChip(status, kind: kind)
-                Text("ครบ \(complete)/6 ขั้น").font(.sarabunFixed(13, .semibold)).foregroundStyle(Theme.inkMuted)
+                Text("ครบ \(complete)/6 ขั้น").font(.sarabun(13, .semibold)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 8)
                 if !report.isLocked {
                     Button { showSetup() } label: { Label("ตั้งค่า", systemImage: "slider.horizontal.3") }
@@ -193,11 +193,11 @@ struct IECTestScreen: View {
                     .foregroundStyle(report.result != nil ? Theme.successInk : Theme.primary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(report.result != nil ? "ผลทดสอบสรุปแล้ว" : report.isAwaitingClose ? "ส่งผลให้ทีมแล้ว" : "บันทึกอัตโนมัติ")
-                        .font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                        .font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     Text(report.result.map { Self.stamp($0.completedAt, $0.by) }
                          ?? report.submission.map { Self.stamp($0.submittedAt, $0.by) }
                          ?? "ความคืบหน้า \(Int((report.completion * 100).rounded()))%")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 8)
                 if let result = report.result {
@@ -235,9 +235,9 @@ struct IECTestScreen: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "bolt.badge.checkmark").font(.system(size: 44)).foregroundStyle(Theme.primary)
-            Text("ยังไม่ได้ตั้งค่า inverter และสตริง").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
+            Text("ยังไม่ได้ตั้งค่า inverter และสตริง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
             Text("ใส่ inverter แต่ละเครื่อง และจำนวนแผงของแต่ละช่องสตริง ตามแผ่น Excel ของ กปภ.")
-                .font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
+                .font(.sarabun(15)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.center)
             Button { showSetup() } label: { Label("ตั้งค่าการทดสอบ", systemImage: "slider.horizontal.3") }
                 .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
         }
@@ -260,12 +260,12 @@ struct IECTestScreen: View {
 
     private func stat(_ label: String, _ value: String, unit: String?, note: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(label).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value).font(.sarabunFixed(26, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                if let unit { Text(unit).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy) }
+                Text(value).font(.sarabun(26, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                if let unit { Text(unit).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy) }
             }
-            Text(note).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -291,13 +291,13 @@ struct IECTestScreen: View {
     private func inverterCard(_ r: IECReport, _ i: Int, _ inv: IECReport.Inverter) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                if !inv.serial.isEmpty { Text("S/N " + inv.serial).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted) }
+                Text("Inverter \(i + 1) | \(IECFormat.kW(inv.ratedKW))").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
+                if !inv.serial.isEmpty { Text("S/N " + inv.serial).font(.sarabun(14)).foregroundStyle(Theme.inkMuted) }
                 Spacer(minLength: 6)
-                Text("\(IECFormat.number(r.installedKWp(inv))) kWp").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy)
+                Text("\(IECFormat.number(r.installedKWp(inv))) kWp").font(.sarabun(13, .bold)).foregroundStyle(Theme.navy)
                     .padding(.horizontal, 10).frame(height: 26).background(Theme.primarySoft, in: Capsule())
             }
-            Text(Self.stringSummary(inv)).font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+            Text(Self.stringSummary(inv)).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
             phaseBand("ก่อนการเชื่อมต่อระบบ", target: .init(inverter: i, phase: .before)) {
                 IECBar(title: "Voc / กระแส", tally: r.tally(inv, .vocAndCurrent))
                 IECBar(title: "IR (MΩ)", tally: r.tally(inv, .insulation))
@@ -317,7 +317,7 @@ struct IECTestScreen: View {
         Button { show(target) } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.primary)
                 }
@@ -338,8 +338,8 @@ struct IECTestScreen: View {
         let open = IECReport.Stage.allCases.filter { $0 != .review && !r.isDone($0) }.count
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Text("ขั้นตอนการทดสอบ").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text(open == 0 ? "ครบ 6/6" : "● ยังขาด \(open) ขั้น").font(.sarabunFixed(13, .bold))
+                Text("ขั้นตอนการทดสอบ").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                Text(open == 0 ? "ครบ 6/6" : "● ยังขาด \(open) ขั้น").font(.sarabun(13, .bold))
                     .foregroundStyle(open == 0 ? Theme.successInk : Theme.warningInk)
                     .padding(.horizontal, 10).frame(height: 26).background(open == 0 ? Theme.successSoft : Theme.pendingSoft, in: Capsule())
             }
@@ -450,12 +450,12 @@ struct IECTestScreen: View {
         return HStack(spacing: 12) {
             // ✓ once confirmed (or the closed step 7); a done step still waiting keeps its number in green
             let sealed = confirmed != nil || (stage == .review && r.isLocked)
-            Text(sealed ? "✓" : "\(stage.rawValue)").font(.sarabunFixed(15, .bold))
+            Text(sealed ? "✓" : "\(stage.rawValue)").font(.sarabun(15, .bold))
                 .foregroundStyle(sealed ? Theme.onPrimary : done ? Theme.successInk : Theme.warningInk)
                 .frame(width: 32, height: 32).background(sealed ? Theme.success : done ? Theme.successSoft : Theme.pendingSoft, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text(stage.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
-                Text(detail).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                Text(stage.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
             }
             Spacer(minLength: 8)
             if stage == .review, sizeClass == .regular {
@@ -467,7 +467,7 @@ struct IECTestScreen: View {
                     .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
                     .accessibilityLabel("ยืนยันขั้น \(stage.title)")
             } else if let action, !r.isLocked {
-                Button("แก้ ›", action: action).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
+                Button("แก้ ›", action: action).font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
                     .accessibilityLabel("ไปกรอก \(stage.title)")
             }
         }

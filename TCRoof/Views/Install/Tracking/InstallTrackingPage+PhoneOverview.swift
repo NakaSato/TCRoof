@@ -16,11 +16,11 @@ extension InstallTrackingPage {
             Button { if !open.isEmpty { sheet = .actions } } label: {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("ต้องดำเนินการ").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        Text("ต้องดำเนินการ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง").font(.sarabunFixed(22, .bold))
+                            Text(open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง").font(.sarabun(22, .bold))
                                 .foregroundStyle(open.isEmpty ? Theme.successInk : Theme.pending).fixedSize()
-                            Text(open.prefix(3).map(\.title).joined(separator: " | ")).font(.sarabunFixed(13))
+                            Text(open.prefix(3).map(\.title).joined(separator: " | ")).font(.sarabun(13))
                                 .foregroundStyle(Theme.inkMuted).lineLimit(1)
                         }
                     }
@@ -63,7 +63,7 @@ extension InstallTrackingPage {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 8) {
                                     Circle().fill(Self.ink(t.tone)).frame(width: 8, height: 8)
-                                    Text(t.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.75)
+                                    Text(t.title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1).minimumScaleFactor(0.75)
                                 }
                                 chip(t.chip, t.tone).padding(.leading, 16)
                             }
@@ -91,7 +91,7 @@ extension InstallTrackingPage {
     static func swatch(_ color: Color, _ title: String) -> some View {
         HStack(spacing: 5) {
             RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 14, height: 12)
-            Text(title).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
     }
 
@@ -122,7 +122,7 @@ struct InstallPhoneSitePanel: View {
                 } else {
                     InstallTrackingPage.cardHeading("ข้อมูลหน้างาน")
                 }
-                Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ณ " + ThaiFormat.numericDate.string(from: site.asOf)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 switch current {
                 case .info: phoneSiteInfo(site)
@@ -136,13 +136,13 @@ struct InstallPhoneSitePanel: View {
     private func phoneSiteInfo(_ s: InstallPageData.Site) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             if !s.tasks.isEmpty {
-                Text("ความคืบหน้าตามงาน MP").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("ความคืบหน้าตามงาน MP").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 ForEach(Array(s.tasks.enumerated()), id: \.offset) { _, t in
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
-                            Text(t.title).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+                            Text(t.title).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
                             Spacer(minLength: 6)
-                            Text("\(Int(t.percent.rounded()))%").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                            Text("\(Int(t.percent.rounded()))%").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
                         }
                         Capsule().fill(Theme.track).frame(height: 6)
                             .overlay(alignment: .leading) {
@@ -173,9 +173,9 @@ struct InstallPhoneSitePanel: View {
 
     private func siteTile(_ label: String, _ value: String, _ ink: Color, _ note: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(20, .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.7)
-            Text(note).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+            Text(label).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(20, .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.7)
+            Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
@@ -189,9 +189,9 @@ struct InstallPhoneSitePanel: View {
                 HStack(alignment: .top, spacing: 12) {
                     InstallTrackingPage.priorityChip(r.level == .high ? .danger : r.level == .medium ? .warn : .idle, r.level.title)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(r.title).font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                        Text(r.title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                         if !r.prevention.isEmpty {
-                            Text("รับมือ: " + r.prevention).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text("รับมือ: " + r.prevention).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                     }
                     Spacer(minLength: 0)
@@ -201,7 +201,7 @@ struct InstallPhoneSitePanel: View {
                 .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .accessibilityElement(children: .combine)
             }
-            Text("จากคำขอรายสัปดาห์นี้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
+            Text("จากคำขอรายสัปดาห์นี้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -215,12 +215,12 @@ struct InstallPhoneSitePanel: View {
                 swatch(Theme.primary, "จริง")
                 Spacer(minLength: 6)
                 Text("สะสม \(s.manDays) man-day" + (s.plannedManDays.map { " | แผน \($0)" } ?? ""))
-                    .font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
+                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).minimumScaleFactor(0.8)
             }
             HStack(alignment: .bottom, spacing: 4) {
                 ForEach(s.labour) { d in
                     VStack(spacing: 3) {
-                        Text((d.actual ?? d.plan).map(String.init) ?? "").font(.sarabunFixed(11, .bold)).foregroundStyle(Theme.navy).frame(height: 14)
+                        Text((d.actual ?? d.plan).map(String.init) ?? "").font(.sarabun(11, .bold)).foregroundStyle(Theme.navy).frame(minHeight: 14)
                         ZStack(alignment: .bottom) {
                             if let p = d.plan { RoundedRectangle(cornerRadius: 3).fill(Theme.track).frame(height: chart * CGFloat(p) / CGFloat(top)) }
                             if let a = d.actual {
@@ -229,7 +229,7 @@ struct InstallPhoneSitePanel: View {
                             }
                         }
                         .frame(height: chart, alignment: .bottom)
-                        Text("\(RoutineReport.calendar.component(.day, from: d.date))").font(.sarabunFixed(11))
+                        Text("\(RoutineReport.calendar.component(.day, from: d.date))").font(.sarabun(11))
                             .foregroundStyle(d.date == today ? Theme.dangerText : InstallPlan.isSunday(d.date) ? Theme.survey : Theme.inkMuted)
                             .lineLimit(1).minimumScaleFactor(0.6)
                     }

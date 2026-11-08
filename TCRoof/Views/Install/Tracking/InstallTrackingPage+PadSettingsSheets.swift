@@ -207,11 +207,11 @@ struct PadWorkTimeSheet: View {
                 Divider()
                 DatePicker("เลิกงาน", selection: $end, displayedComponents: .hourAndMinute).frame(minHeight: 56)
             }
-            .font(.sarabunFixed(17))
+            .font(.sarabun(17))
             .environment(\.timeZone, RoutineReport.calendar.timeZone)
             .padding(.horizontal, 16)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Text("ใช้เป็นค่าเริ่มของรายงานแต่ละวัน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+            Text("ใช้เป็นค่าเริ่มของรายงานแต่ละวัน").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
         }
     }
 }
@@ -231,13 +231,13 @@ struct PadPersonSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
-                    Text(InstallTrackingPage.avatarLetters(name.isEmpty ? email : name, count: 2)).font(.sarabunFixed(30, .bold))
+                    Text(InstallTrackingPage.avatarLetters(name.isEmpty ? email : name, count: 2)).font(.sarabun(30, .bold))
                         .foregroundStyle(Theme.onPrimary)
                         .frame(width: 84, height: 84).background(InstallTrackingPage.ink(role.tone), in: Circle())
                         .accessibilityHidden(true)
                     VStack(spacing: 2) {
-                        Text(name.isEmpty ? email : name).font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                        if !name.isEmpty { Text(email).font(.sarabunFixed(15)).foregroundStyle(Theme.inkMuted) }
+                        Text(name.isEmpty ? email : name).font(.sarabun(22, .bold)).foregroundStyle(Theme.navy)
+                        if !name.isEmpty { Text(email).font(.sarabun(15)).foregroundStyle(Theme.inkMuted) }
                     }
                     card {
                         HStack {
@@ -245,7 +245,7 @@ struct PadPersonSheet: View {
                             Spacer()
                             Text(role.chip).foregroundStyle(Theme.inkMuted)
                         }
-                        .font(.sarabunFixed(17)).padding(.horizontal, 20).frame(minHeight: 56)
+                        .font(.sarabun(17)).padding(.horizontal, 20).frame(minHeight: 56)
                     }
                     card {
                         Button { if let url = URL(string: "mailto:\(email)") { openURL(url) } } label: {

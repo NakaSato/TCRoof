@@ -28,10 +28,10 @@ extension IECSetupPage {
         return VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
                 Image(systemName: "trash").font(.system(size: 22)).foregroundStyle(Theme.dangerText).frame(width: 56, height: 56).background(Theme.dangerSoft, in: Circle())
-                Text("ลบ INV\(i + 1) ?").font(.sarabunFixed(24, .bold)).foregroundStyle(Theme.navy)
+                Text("ลบ INV\(i + 1) ?").font(.sarabun(24, .bold)).foregroundStyle(Theme.navy)
             }
             Text(["INV\(i + 1)", inv.model, inv.serial.isEmpty ? nil : "S/N \(inv.serial)"].compactMap { $0 }.joined(separator: " | ") + " จะถูกนำออกจากงานนี้")
-                .font(.sarabunFixed(16)).foregroundStyle(Theme.navy)
+                .font(.sarabun(16)).foregroundStyle(Theme.navy)
             VStack(alignment: .leading, spacing: 6) {
                 bullet("รายการสตริง \(inv.strings.count) ช่อง และค่าที่วัดแล้ว \(measured) สตริง (รวมรูป) ของ INV\(i + 1) จะถูกลบ")
                 bullet("Excel จะไม่มีแผ่น INV \(String(format: "%02d", i + 1))-ก่อน / -หลัง | อินเวอร์เตอร์ที่เหลือเรียงเลขแผ่นใหม่")
@@ -42,7 +42,7 @@ extension IECSetupPage {
                 Spacer()
                 Button("ยกเลิก") { deleting = nil }.buttonStyle(TCButtonStyle(.secondary, size: .bar, fullWidth: true)).frame(width: 200)
                 Button("ลบ INV\(i + 1)") { delete(i) }
-                    .font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.onPrimary)
+                    .font(.sarabun(17, .bold)).foregroundStyle(Theme.onPrimary)
                     .frame(width: 290, height: 53).background(last ? Theme.disabledText : Theme.danger, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .buttonStyle(.plain).disabled(last)
             }
@@ -55,7 +55,7 @@ extension IECSetupPage {
     func bullet(_ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text("•").foregroundStyle(Theme.navy)
-            Text(text).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
+            Text(text).font(.sarabun(15)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -134,11 +134,11 @@ struct IECAddInverterSheet: View {
 
     private var header: some View {
         HStack(spacing: 14) {
-            Text("INV\(number)").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.onPrimary)
+            Text("INV\(number)").font(.sarabun(20, .bold)).foregroundStyle(Theme.onPrimary)
                 .padding(.horizontal, 14).frame(height: 44).background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 0) {
-                Text("เพิ่มอินเวอร์เตอร์").font(.sarabunFixed(20, .bold)).foregroundStyle(Theme.navy)
-                Text("ข้อมูลจากป้ายพิกัด").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                Text("เพิ่มอินเวอร์เตอร์").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy)
+                Text("ข้อมูลจากป้ายพิกัด").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
             }
             Spacer()
             Button(action: close) {
@@ -152,10 +152,10 @@ struct IECAddInverterSheet: View {
     private var models: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("รุ่นอินเวอร์เตอร์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                    + Text("  *").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+                Text("รุ่นอินเวอร์เตอร์").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                    + Text("  *").font(.sarabun(16, .bold)).foregroundStyle(Theme.dangerText)
                 Spacer()
-                Text("จากแคตตาล็อกอุปกรณ์ | รุ่นกำหนด kW และ MPPT ให้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("จากแคตตาล็อกอุปกรณ์ | รุ่นกำหนด kW และ MPPT ให้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 10) {
                 ForEach(catalog, id: \.self) { m in modelCard(m) }
@@ -171,8 +171,8 @@ struct IECAddInverterSheet: View {
                 Image(systemName: "bolt.horizontal").font(.system(size: 18)).foregroundStyle(Theme.inkMuted)
                     .frame(width: 56, height: 40).background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 6))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(m.brand + " " + m.model).font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy)
-                    Text("\(m.kw) kW | \(m.mppt) MPPT | \(m.mppt * 2) ช่อง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                    Text(m.brand + " " + m.model).font(.sarabun(17, .bold)).foregroundStyle(Theme.navy)
+                    Text("\(m.kw) kW | \(m.mppt) MPPT | \(m.mppt * 2) ช่อง").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
                 Spacer(minLength: 0)
             }
@@ -187,41 +187,41 @@ struct IECAddInverterSheet: View {
     private var fields: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                HStack { Text("S/N").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy); Spacer()
-                    Text("O5 | แผ่น INV \(String(format: "%02d", number))").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                HStack { Text("S/N").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy); Spacer()
+                    Text("O5 | แผ่น INV \(String(format: "%02d", number))").font(.sarabun(12)).foregroundStyle(Theme.inkMuted) }
                 HStack(spacing: 0) {
-                    TextField("แตะเพื่อพิมพ์ หรือสแกนป้าย", text: $serial).font(.sarabunFixed(16)).textInputAutocapitalization(.characters)
+                    TextField("แตะเพื่อพิมพ์ หรือสแกนป้าย", text: $serial).font(.sarabun(16)).textInputAutocapitalization(.characters)
                         .autocorrectionDisabled().padding(.horizontal, 14).accessibilityLabel("S/N ใหม่")
                     Divider()
-                    Button("สแกนป้าย", action: scan).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary).padding(.horizontal, 14).frame(minHeight: 52)
+                    Button("สแกนป้าย", action: scan).font(.sarabun(15, .bold)).foregroundStyle(Theme.primary).padding(.horizontal, 14).frame(minHeight: 52)
                         .accessibilityLabel("สแกนป้าย S/N ใหม่")
                 }
                 .frame(height: 52)
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.warning, style: StrokeStyle(lineWidth: 1.2, dash: serial.isEmpty ? [5, 4] : [])))
-                Text("ใส่ภายหลังได้").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("ใส่ภายหลังได้").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 6) {
-                HStack { Text("MPPT").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy); Spacer()
-                    Text("จากรุ่น").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+                HStack { Text("MPPT").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy); Spacer()
+                    Text("จากรุ่น").font(.sarabun(12)).foregroundStyle(Theme.inkMuted) }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(model?.mppt ?? 0)").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
-                    Text("MPPT | \((model?.mppt ?? 0) * 2) ช่อง DC input").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                    Text("\(model?.mppt ?? 0)").font(.sarabun(22, .bold)).foregroundStyle(Theme.navy)
+                    Text("MPPT | \((model?.mppt ?? 0) * 2) ช่อง DC input").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                Text("\(model?.kw ?? 0) kW | 2 สตริงต่อ MPPT").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(model?.kw ?? 0) kW | 2 สตริงต่อ MPPT").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text("แผงต่อสตริง").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
+                Text("แผงต่อสตริง").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
                 HStack {
                     Button { modules = max(1, modules - 1) } label: { Image(systemName: "minus").frame(width: 44, height: 44) }.accessibilityLabel("ลดจำนวนแผง")
                     Spacer()
-                    Text("\(modules)").font(.sarabunFixed(22, .bold)).foregroundStyle(Theme.navy)
+                    Text("\(modules)").font(.sarabun(22, .bold)).foregroundStyle(Theme.navy)
                     Spacer()
                     Button { modules = min(60, modules + 1) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("เพิ่มจำนวนแผง")
                 }
                 .foregroundStyle(Theme.primary).padding(.horizontal, 6).frame(height: 52)
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.primary, lineWidth: 1.5))
-                Text(IECFormat.number(Double(modules) * report.module.powerW, digits: 0, grouping: true) + " Wp ต่อสตริง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text(IECFormat.number(Double(modules) * report.module.powerW, digits: 0, grouping: true) + " Wp ต่อสตริง").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
             }
         }
     }
@@ -229,14 +229,14 @@ struct IECAddInverterSheet: View {
     private var info: some View {
         let nn = String(format: "%02d", number)
         return Text("เพิ่มแท็บ INV\(number) ในรายการสตริง (ทุกช่องเริ่มเป็นสตริง \(modules) แผง แล้วตั้ง SPARE ช่องที่ไม่ได้ใช้) | Excel เพิ่มแผ่น INV \(nn)-ก่อน และ INV \(nn)-หลัง ที่ลิงก์หัวเรื่องจาก INV 01")
-            .font(.sarabunFixed(14)).foregroundStyle(Theme.navy).padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .font(.sarabun(14)).foregroundStyle(Theme.navy).padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var photoSlots: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("รูปอินเวอร์เตอร์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                + Text("  *").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.dangerText)
+            Text("รูปอินเวอร์เตอร์").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                + Text("  *").font(.sarabun(16, .bold)).foregroundStyle(Theme.dangerText)
             HStack(spacing: 12) {
                 ForEach(IECReport.InverterPhoto.allCases, id: \.self) { k in
                     VStack(alignment: .leading, spacing: 4) {
@@ -245,8 +245,8 @@ struct IECAddInverterSheet: View {
                         } remove: {
                             job.removeIECPhoto(photos[k.rawValue], context: context); photos[k.rawValue] = nil
                         }
-                        Text(k.title).font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                        Text(k.required ? "จำเป็น" : "ไม่บังคับ").font(.sarabunFixed(12)).foregroundStyle(k.required && photos[k.rawValue] == nil ? Theme.dangerText : Theme.inkMuted)
+                        Text(k.title).font(.sarabun(13, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                        Text(k.required ? "จำเป็น" : "ไม่บังคับ").font(.sarabun(12)).foregroundStyle(k.required && photos[k.rawValue] == nil ? Theme.dangerText : Theme.inkMuted)
                     }
                 }
             }
@@ -258,7 +258,7 @@ struct IECAddInverterSheet: View {
             Spacer()
             Button("ยกเลิก", action: close).buttonStyle(TCButtonStyle(.secondary, size: .bar, fullWidth: true)).frame(width: 200)
             Button(ready ? "เพิ่ม INV\(number)" : "ถ่ายรูปด้านหน้าและป้าย S/N ก่อน") { commit() }
-                .font(.sarabunFixed(17, .bold)).foregroundStyle(ready ? Theme.onPrimary : Theme.disabledText)
+                .font(.sarabun(17, .bold)).foregroundStyle(ready ? Theme.onPrimary : Theme.disabledText)
                 .frame(width: 350, height: 53).background(ready ? Theme.primary : Theme.disabledFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .buttonStyle(.plain).disabled(!ready)
         }

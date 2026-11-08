@@ -152,8 +152,8 @@ struct DailyOnePage: View {
             }
             .accessibilityLabel("ย้อนกลับ")
             VStack(alignment: .leading, spacing: 0) {
-                Text("รายงานประจำวันที่ " + RoutineReport.thaiDateFullWeekday(date)).font(.sarabunFixed(20, .bold)).lineLimit(1)
-                Text(job.stationName).font(.sarabunFixed(14)).opacity(0.9).lineLimit(1)
+                Text("รายงานประจำวันที่ " + RoutineReport.thaiDateFullWeekday(date)).font(.sarabun(20, .bold)).lineLimit(1)
+                Text(job.stationName).font(.sarabun(14)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
             Button(action: actions.settings) {
@@ -247,21 +247,21 @@ struct DailyOnePage: View {
                 .foregroundStyle(Theme.onPrimary).frame(width: 28, height: 28)
                 .background(why == nil ? Theme.success : Theme.warning, in: Circle())
             Text(why.map { "ยังส่งไม่ได้ | " + $0 } ?? "ครบทุกส่วนแล้ว | พร้อมส่ง PDF 3 หน้า")
-                .font(.sarabunFixed(14)).foregroundStyle(why == nil ? Theme.successText : Theme.navy).lineLimit(1)
+                .font(.sarabun(14)).foregroundStyle(why == nil ? Theme.successText : Theme.navy).lineLimit(1)
             Spacer(minLength: 12)
             TCSaveButton.pad(width: 190, save: { actions.saveDraft(); return .now }, version: editVersion,
                              shouldSave: { !actions.mustAsk() }, savedTime: true, start: Debug.savePhase)
             Button(action: actions.preview) {
                 VStack(spacing: 0) {
-                    Text("PDF 3 หน้า").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-                    Text("ดูตัวอย่างรายงาน").font(.sarabunFixed(16, .bold))
+                    Text("PDF 3 หน้า").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                    Text("ดูตัวอย่างรายงาน").font(.sarabun(16, .bold))
                 }
                 .frame(width: 210, height: 44)
             }
             .buttonStyle(TCButtonStyle(.secondary, size: .card))
             Button(action: actions.send) {
                 HStack(spacing: 8) {
-                    Text("ส่งรายงาน").font(.sarabunFixed(16, .bold))
+                    Text("ส่งรายงาน").font(.sarabun(16, .bold))
                     Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold))
                 }
                 .frame(width: 170, height: 44)
@@ -415,7 +415,7 @@ extension DailyOnePage {
         let labour = RoutineReport.labour(report)
         return VStack(alignment: .leading, spacing: 12) {
             // the tiles and the tabs carry the counts (v2 §7)
-            Text("ทีมงานวันนี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+            Text("ทีมงานวันนี้").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
             HStack(spacing: 8) {
                 labourTile("แรงงานวันนี้", labour.total, "\(labour.people) คน × \(labour.hours) ชม.")
                 labourTile("ทำงานได้จริง", labour.working, labour.rainHours > 0 ? "หักฝน \(labour.rainHours) ชม." : "ไม่มีฝนในเวลางาน")
@@ -425,7 +425,7 @@ extension DailyOnePage {
             if teamTab == 0 && !report.crewConfirmed && !readOnly {
                 Button { report.crewConfirmed = true } label: {
                     Label("ใช้ค่าเมื่อวาน | แตะยืนยันกำลังคนวันนี้", systemImage: "exclamationmark.circle")
-                        .font(.sarabunFixed(13)).foregroundStyle(Theme.warningText)
+                        .font(.sarabun(13)).foregroundStyle(Theme.warningText)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -448,9 +448,9 @@ extension DailyOnePage {
 
     private func labourTile(_ title: String, _ value: Int, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text("\(value) คน-ชม.").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-            Text(sub).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted)
+            Text(title).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            Text("\(value) คน-ชม.").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text(sub).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -472,7 +472,7 @@ struct DailyCountRows: View {
         VStack(spacing: 0) {
             ForEach(Array(counts.enumerated()), id: \.element.id) { i, c in
                 HStack(spacing: 8) {
-                    Text(c.name).font(.sarabunFixed(15)).foregroundStyle(Theme.navy).lineLimit(1)
+                    Text(c.name).font(.sarabun(15)).foregroundStyle(Theme.navy).lineLimit(1)
                     Spacer(minLength: 8)
                     countMenu(c)
                 }
@@ -485,7 +485,7 @@ struct DailyCountRows: View {
                     ForEach(missing, id: \.self) { n in Button(n) { counts.append(.init(name: n, count: 1)); onChange() } }
                 } label: {
                     Label(addTitle, systemImage: "chevron.down").labelStyle(TrailingIconLabel())
-                        .font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.primary)
+                        .font(.sarabun(14, .bold)).foregroundStyle(Theme.primary)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .strokeBorder(Theme.borderOutdoor, style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])))
@@ -507,8 +507,8 @@ struct DailyCountRows: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text("\(c.count)").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-                Text(unit).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                Text("\(c.count)").font(.sarabun(17, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+                Text(unit).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.primary)
             }

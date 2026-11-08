@@ -59,7 +59,7 @@ extension WeeklyRequestOnePage {
         let open = pop == .weeks
         return Button { pop = open ? nil : .weeks } label: {
             HStack(spacing: 6) {
-                Text("สัปดาห์ที่ \(weekNumber)").font(.sarabunFixed(17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                Text("สัปดาห์ที่ \(weekNumber)").font(.sarabun(17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                 Image(systemName: "arrowtriangle.down.fill").font(.system(size: 8))
             }
             .foregroundStyle(open ? Theme.onPrimary : Theme.navy)
@@ -84,11 +84,11 @@ extension WeeklyRequestOnePage {
         return Button { pop = open ? nil : .time } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 4) {
-                    Text("เวลาทำงาน").font(.sarabunFixed(11))
+                    Text("เวลาทำงาน").font(.sarabun(11))
                     Image(systemName: "arrowtriangle.down.fill").font(.system(size: 6))
                 }
                 .foregroundStyle(open ? Theme.onPrimary.opacity(0.85) : Theme.inkMuted)
-                Text(time).font(.sarabunFixed(15, .bold)).monospacedDigit()
+                Text(time).font(.sarabun(15, .bold)).monospacedDigit()
                     .foregroundStyle(open ? Theme.onPrimary : Theme.navy)
             }
             .padding(.horizontal, 12).frame(height: 48)
@@ -118,15 +118,15 @@ extension WeeklyRequestOnePage {
     /// Next week and the two before, each with its request's state.
     private var weekList: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("เลือกสัปดาห์").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy).padding(.horizontal, 6).padding(.bottom, 4)
+            Text("เลือกสัปดาห์").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).padding(.horizontal, 6).padding(.bottom, 4)
             ForEach(weeks) { w in
                 let r = RoutineReport.WeeklyRequest(weekStart: w.start)
                 let on = r.id == request.id
                 Button { pop = nil; actions.openWeek(w.start) } label: {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("สัปดาห์ที่ \(WeeklyRequestScreen.weekNumber(r))").font(.sarabunFixed(16, .bold)).foregroundStyle(Theme.navy)
-                            Text(Self.rangeText(r)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                            Text("สัปดาห์ที่ \(WeeklyRequestScreen.weekNumber(r))").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                            Text(Self.rangeText(r)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 8)
                         weekChip(w.status)
@@ -151,7 +151,7 @@ extension WeeklyRequestOnePage {
         case .draft: ("ร่าง", Theme.primary, Theme.primarySoft)
         case nil: ("ยังไม่เริ่ม", Theme.inkMuted, Theme.segmentTrack)
         }
-        return Text(text).font(.sarabunFixed(12.5, .bold)).foregroundStyle(ink)
+        return Text(text).font(.sarabun(12.5, .bold)).foregroundStyle(ink)
             .padding(.horizontal, 9).padding(.vertical, 3)
             .background(fill, in: Capsule())
     }
@@ -164,9 +164,9 @@ extension WeeklyRequestOnePage {
         let tools = request.tools.reduce(0) { $0 + $1.count }
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("ทีมงานสัปดาห์นี้").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
+                Text("ทีมงานสัปดาห์นี้").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                 Spacer(minLength: 8)
-                Text("\(request.perDay) คน เครื่องมือ \(request.tools.count) รายการ").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("\(request.perDay) คน เครื่องมือ \(request.tools.count) รายการ").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
             }
             HStack(spacing: 8) {
                 labourTile("แรงงานทั้งสัปดาห์", "\(request.manDays(days: workingDays)) คน·วัน", "\(request.perDay) คน × \(activeDays.count) วัน")
@@ -202,9 +202,9 @@ extension WeeklyRequestOnePage {
 
     private func labourTile(_ title: String, _ value: String, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-            Text(sub).font(.sarabunFixed(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+            Text(title).font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+            Text(value).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
+            Text(sub).font(.sarabun(11)).foregroundStyle(Theme.inkMuted).lineLimit(1)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.primarySoft.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -216,10 +216,10 @@ extension WeeklyRequestOnePage {
     private var signCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 4) {
-                Text("ลงนามผู้รายงาน").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.navy)
-                Text("*").font(.sarabunFixed(18, .bold)).foregroundStyle(Theme.danger)
+                Text("ลงนามผู้รายงาน").font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
+                Text("*").font(.sarabun(18, .bold)).foregroundStyle(Theme.danger)
                 Spacer(minLength: 8)
-                Text("SITE ENGINEER").font(.sarabunFixed(11.5, .bold)).tracking(0.8).foregroundStyle(Theme.primary)
+                Text("SITE ENGINEER").font(.sarabun(11.5, .bold)).tracking(0.8).foregroundStyle(Theme.primary)
                     .padding(.horizontal, 10).padding(.vertical, 4)
                     .background(Theme.primarySoft, in: Capsule())
             }
@@ -228,9 +228,9 @@ extension WeeklyRequestOnePage {
             }
             .frame(height: 160)
             VStack(alignment: .leading, spacing: 4) {
-                Text("ชื่อผู้ลงนาม").font(.sarabunFixed(12.5)).foregroundStyle(Theme.inkMuted)
+                Text("ชื่อผู้ลงนาม").font(.sarabun(12.5)).foregroundStyle(Theme.inkMuted)
                 TextField("ชื่อ Site Engineer ผู้รับเหมา", text: engineerName)
-                    .font(.sarabunFixed(17)).multilineTextAlignment(.center)
+                    .font(.sarabun(17)).multilineTextAlignment(.center)
                     .textFieldStyle(OutlinedFieldStyle(dense: true))
                     .frame(minHeight: 48)
                     .disabled(!editable || demo)
@@ -268,8 +268,8 @@ extension WeeklyRequestOnePage {
                 signLine(Theme.borderOutdoor)
                 VStack(spacing: 2) {
                     Image(systemName: "signature").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.primary)
-                    Text("แตะเพื่อเซ็น").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
-                    Text("เซ็นบนเส้นด้านล่าง").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted)
+                    Text("แตะเพื่อเซ็น").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary)
+                    Text("เซ็นบนเส้นด้านล่าง").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                 }
                 .padding(.bottom, 30)
             }
@@ -290,7 +290,7 @@ extension WeeklyRequestOnePage {
                 if let image = UIImage(data: s.png) {
                     Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: 240, maxHeight: 80)
                 } else {
-                    Text(settings.siteEngineer).font(.sarabunFixed(22, .bold)).italic().foregroundStyle(Theme.navy)
+                    Text(settings.siteEngineer).font(.sarabun(22, .bold)).italic().foregroundStyle(Theme.navy)
                 }
             }
             .padding(.bottom, 40)
@@ -299,7 +299,7 @@ extension WeeklyRequestOnePage {
         }
         .overlay(alignment: .topLeading) {
             Label("เซ็นแล้ว " + ThaiFormat.time.string(from: s.at), systemImage: "checkmark")
-                .font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.successText)
+                .font(.sarabun(13, .bold)).foregroundStyle(Theme.successText)
                 .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(Theme.success.opacity(0.14), in: Capsule())
                 .padding(10)

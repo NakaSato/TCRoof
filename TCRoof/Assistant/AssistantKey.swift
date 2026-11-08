@@ -5,7 +5,9 @@ import TCRoofCore
 /// The AI keys on this device (docs/specs/project-assistant-qwen.md §7): one per provider (`Assistant.Provider`), in
 /// the Keychain, this device only (never synced, never in a backup), entered by a manager in ตั้งค่า › ผู้ช่วยโครงการ
 /// (AI). The provider in use, and each provider's model and endpoint, are plain defaults. Qwen keeps the Keychain item
-/// and defaults it had before there were others, so a key saved then still works.
+/// and defaults it had before there were others, so a key saved then still works. The keys belong to the device, not
+/// to an account: on a shared iPad everyone who signs in uses them within their own permissions (`assistant.use`), and
+/// they stay through sign-out and account switches, as the settings page says (CHA-58).
 enum AssistantKey {
     private static let account = "apiKey"
     private static func service(_ p: Assistant.Provider) -> String { "com.tcroof.assistant." + p.rawValue }

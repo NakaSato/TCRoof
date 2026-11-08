@@ -114,7 +114,7 @@ struct MonitoringSettingsDialog: View {
             .buttonStyle(.plain)
             .disabled(adding)
             Divider()
-            settingRow("Token", "เก็บในพวงกุญแจของ iPad เครื่องนี้ · แสดงแค่ 4 ตัวท้าย") {
+            settingRow("Token", "เก็บในพวงกุญแจของ iPad เครื่องนี้ · ใช้ร่วมกันทุกบัญชี · แสดงแค่ 4 ตัวท้าย") {
                 Text("ซ่อนไว้").font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy)
             }
             Divider()

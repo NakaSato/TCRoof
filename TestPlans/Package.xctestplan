@@ -1,0 +1,71 @@
+{
+  "configurations": [
+    {
+      "id": "2DDF02EA-4384-4D93-A2CD-6C92F0B028D0",
+      "name": "Default",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "testTimeoutsEnabled": false
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "TCRoofCoreTests",
+        "name": "TCRoofCoreTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "ModuleRulesTests",
+        "name": "ModuleRulesTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "PVYieldTests",
+        "name": "PVYieldTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "PDFReportTests",
+        "name": "PDFReportTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "DriveSyncTests",
+        "name": "DriveSyncTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "DriveAuthTests",
+        "name": "DriveAuthTests"
+      },
+      "parallelizable": true
+    },
+    {
+      "target": {
+        "containerPath": "container:TCRoofKit",
+        "identifier": "ExcelExportTests",
+        "name": "ExcelExportTests"
+      },
+      "parallelizable": true
+    }
+  ],
+  "version": 1
+}

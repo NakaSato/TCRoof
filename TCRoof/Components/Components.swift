@@ -84,10 +84,10 @@ struct QueueFilterBar: View {
                     } label: {
                         Text(option.label(prefix))
                             .font(.sarabun(15, .semibold, relativeTo: .subheadline))
-                            .foregroundStyle(Theme.onPrimary)
+                            .foregroundStyle(window == option ? Theme.onPrimary : Theme.navy)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(window == option ? Theme.primary : Theme.chip.opacity(0.75), in: Capsule())
+                            .background(window == option ? Theme.primary : Theme.primarySoft, in: Capsule())
                             .fixedSize()
                     }
                     .buttonStyle(.plain)

@@ -57,7 +57,8 @@ public enum Theme {
     public static let navySolid = Color(hex: 0x16325C)
     public static let primaryLight = Color(hex: 0x2E8FDB)
     public static let primarySoft = Color(light: 0xE3EEF8, dark: 0x16273A)
-    public static let teal = Color(hex: 0x27A99A)
+    // text-bearing fills and inks reach WCAG AA, 4.5:1 for normal text, against white and `background` (CHA-49)
+    public static let teal = Color(hex: 0x1B7D71)
     /// End of `tealGradient`.
     public static let tealLight = Color(hex: 0x4DB6E0)
     /// Calculated values, selected chips.
@@ -71,7 +72,7 @@ public enum Theme {
     public static let paper = Color.white
     /// Text and icons over the camera, photos and the full-screen viewer: white in both modes.
     public static let onMedia = Color.white
-    public static let muted = Color(hex: 0x7A8BA3)
+    public static let muted = Color(hex: 0x5F6F86)
     public static let inkMuted = Color(light: 0x5B6B82, dark: 0x9DB0C7)
     public static let borderControl = Color(light: 0x77889E, dark: 0x6B7D93)
     public static let borderSubtle = Color(light: 0xDDE4ED, dark: 0x243142)
@@ -92,12 +93,12 @@ public enum Theme {
     /// Background of the ok chip (same as `paperBand`).
     public static let okSoft = Color(light: 0xE2EFDA, dark: 0x1E2A22)
     /// Text of the ok chip "พร้อมใช้".
-    public static let okText = Color(light: 0x2E7D32, dark: 0x8FD16A)
+    public static let okText = Color(light: 0x2A732E, dark: 0x8FD16A)
     /// Fill of the save button for 1.35 s after a save (`TCSaveButton`).
     public static let okFlash = Color(light: 0xF1F8EC, dark: 0x1E2A22)
     public static let pending = Color(light: 0xB45309, dark: 0xF5B35C)
     public static let pendingSoft = Color(light: 0xFFF4E5, dark: 0x2E2213)
-    public static let danger = Color(light: 0xD9453B, dark: 0xFF8A7F)
+    public static let danger = Color(light: 0xC93A30, dark: 0xFF8A7F)
     public static let dangerText = Color(light: 0xB42318, dark: 0xFF8A7F)
     /// Light red of a missing section in the editor sidebar.
     public static let dangerLine = Color(light: 0xF2A09A, dark: 0x7A3A35)
@@ -119,9 +120,9 @@ public enum Theme {
     /// Quiet fill of round icon buttons, and row separators.
     public static let hairline = Color(light: 0xEEF2F7, dark: 0x1C2734)
     public static let chevron = Color(light: 0xAAB6C5, dark: 0x5E6E83)
-    public static let success = Color(hex: 0x2E9E5B)
+    public static let success = Color(hex: 0x23824A)
     public static let successInk = Color(light: 0x3B7420, dark: 0x8FD16A)
-    public static let warning = Color(hex: 0xF08C00)
+    public static let warning = Color(hex: 0xB45309)
     public static let warningSoft = Color(light: 0xFFF1DE, dark: 0x2E2213)
     // iPhone home v3 project feed (docs/ui/tcroof-home-iphone-v3): the green and orange badge pairs
     public static let successSoft = Color(light: 0xE8F5EE, dark: 0x16271D)
@@ -323,7 +324,7 @@ public enum Theme {
     /// The ring that lifts a badge off `headerGradient`.
     public static let headerBadgeRing = Color(hex: 0x2A84CF)
     public static let headerGradient = LinearGradient(colors: [Color(hex: 0x1F6FB5), primaryLight], startPoint: .leading, endPoint: .trailing)
-    /// #27A99A → #4DB6E0: the survey module's call to action.
+    /// #1B7D71 → #4DB6E0: the survey module's call to action.
     public static let tealGradient = LinearGradient(colors: [teal, tealLight], startPoint: .leading, endPoint: .trailing)
     /// Sign-in page, top to bottom.
     public static let loginGradient = LinearGradient(colors: [Color(hex: 0x0E2344), navy, primary], startPoint: .top, endPoint: .bottom)

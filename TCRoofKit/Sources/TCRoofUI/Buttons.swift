@@ -8,7 +8,7 @@ public enum TCButtonKind: CaseIterable, Sendable {
     case primary
     /// #1F6FB5 → #2E8FDB.
     case primaryGradient
-    /// #27A99A → #4DB6E0, the survey module.
+    /// #1B7D71 → #4DB6E0, the survey module.
     case tealGradient
     /// White, navy outline.
     case secondary

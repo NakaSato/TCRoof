@@ -12,6 +12,13 @@ final class GoogleSession {
     private(set) var email: String?
     /// Why the app signed out by itself (removed from the member list), for the login page.
     var notice: String?
+    /// The Drive access this account's role needs and its token doesn't hold (CHA-41), asked on the home
+    /// (`DriveAccessAlert`): full Drive for a TC engineer, the narrower contractor access in place of full Drive.
+    var driveAccessNeeded: GoogleAuth.DriveAccess?
+    /// Why asking for it failed, shown once.
+    var driveAccessError: String?
+    /// "ภายหลัง" this launch: not asked again until the next one.
+    private var driveAccessPostponed = false
 
     /// Sign-in refused: only accounts the developer lists under `members/` in Firebase may use the app.
     enum Denied: Error, LocalizedError {
@@ -57,6 +64,8 @@ final class GoogleSession {
             self.signOut()
             self.notice = (suspended ? Denied.suspended : Denied.notMember(email)).localizedDescription
         }
+        // a contractor still holding full Drive from before (or a member made external) is asked to narrow it
+        MemberRole.shared.onConfirmed = { [weak self] in self?.checkDriveAccess(afterSignIn: false) }
         #if DEBUG
         // `-screen <name>` skips sign-in for simulator checks; `-screen login` shows the login page.
         if let screen = UserDefaults.standard.string(forKey: "screen") {
@@ -107,6 +116,7 @@ final class GoogleSession {
             MySignature.shared.account = mail
             MemberRole.shared.signedIn(mail)
             Self.fillUserName()
+            checkDriveAccess(afterSignIn: true)
         } catch {
             // An older request must never clear a newer account's credentials.
             if Self.operations.generation == ticket {
@@ -154,11 +164,50 @@ final class GoogleSession {
         })
     }
 
+    /// Whether the token's Drive access matches the role (CHA-41). Sign-in asks for the contractor's access; a TC
+    /// engineer is asked for full Drive right after (later from the job screen, `askFullDrive`), and a contractor
+    /// holding full Drive from an older sign-in is asked to give it up whenever the role is confirmed.
+    func checkDriveAccess(afterSignIn: Bool) {
+        guard isSignedIn, survey.google.isSignedIn, !driveAccessPostponed || afterSignIn else { return }
+        let google = survey.google
+        if MemberRole.shared.permissions.role == .external {
+            driveAccessNeeded = google.hasContractorDrive ? nil : .contractor
+        } else if afterSignIn, !google.hasFullDrive {
+            driveAccessNeeded = .full
+        }
+    }
+
+    /// The job screen's `อนุญาต Drive กลาง`, for a TC engineer still on their own Drive.
+    func askFullDrive() { driveAccessNeeded = .full }
+
+    func postponeDriveAccess() {
+        driveAccessNeeded = nil
+        driveAccessPostponed = true
+    }
+
+    /// Asks Google again for the needed access, for the same account. Cancelled, it keeps the token it had.
+    func grantDriveAccess() async {
+        guard let access = driveAccessNeeded else { return }
+        driveAccessNeeded = nil
+        let account = email
+        do {
+            try await survey.google.requestDrive(access)
+        } catch GoogleAuth.Failure.cancelled {
+            driveAccessPostponed = true
+        } catch is CancellationError {
+        } catch {
+            guard account == email else { return }
+            driveAccessError = error.localizedDescription
+        }
+    }
+
     func signOut() {
         Self.operations.invalidate()
         CloudSync.shared.stop()
         survey.google.signOut()
         email = nil
+        driveAccessNeeded = nil
+        driveAccessPostponed = false
         MySignature.shared.account = nil
         MemberRole.shared.signedOut()
         // the display name belongs to the account; the next person signs in with their own

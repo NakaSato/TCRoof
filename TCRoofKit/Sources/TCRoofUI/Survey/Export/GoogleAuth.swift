@@ -17,17 +17,37 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
             tokens.clientID = newValue
         }
     }
-    /// Full Drive (not `drive.file`): a TC engineer writes into the company account's center folder, which `drive.file`
-    /// can't see since another account made it. Accounts signed in before ask again (`hasFullDrive`).
-    public static let scope = "openid email profile https://www.googleapis.com/auth/drive"
+    /// The Drive access an account asks for, by role (CHA-41). The role is known only after sign-in, so sign-in asks
+    /// for `.contractor` and a TC engineer is asked once more for `.full` (`requestDrive`).
+    public enum DriveAccess: Sendable {
+        /// A TC engineer: full Drive, since `drive.file` can't see the center folder another account made.
+        case full
+        /// A contractor: read only (the team's photos shared with them) and the files the app makes in their Drive
+        /// (`TCRoof Projects`), so the app can't change or delete anything else there.
+        case contractor
+
+        var scope: String {
+            switch self {
+            case .full: "openid email profile \(GoogleAuth.fullDrive)"
+            case .contractor: "openid email profile \(GoogleAuth.readOnlyDrive) \(GoogleAuth.appFiles)"
+            }
+        }
+    }
+
     static let fullDrive = "https://www.googleapis.com/auth/drive"
+    static let readOnlyDrive = "https://www.googleapis.com/auth/drive.readonly"
+    static let appFiles = "https://www.googleapis.com/auth/drive.file"
     private static let grantedKey = "solarSurvey.googleScope"
 
+    private var granted: [Substring] { (UserDefaults.standard.string(forKey: Self.grantedKey) ?? "").split(separator: " ") }
+
     /// Google granted full Drive to the signed-in account (from the last token's `scope`). False for an account
-    /// signed in under `drive.file`: it uploads to its own Drive until it signs in again.
-    public var hasFullDrive: Bool {
-        (UserDefaults.standard.string(forKey: Self.grantedKey) ?? "").split(separator: " ").contains { $0 == Self.fullDrive }
-    }
+    /// signed in with `.contractor` access, or under `drive.file` before: it uploads to its own Drive until it allows
+    /// full Drive.
+    public var hasFullDrive: Bool { granted.contains { $0 == Self.fullDrive } }
+
+    /// The token holds exactly what a contractor needs: no full Drive.
+    public var hasContractorDrive: Bool { !hasFullDrive && granted.contains { $0 == Self.readOnlyDrive } }
 
     private let tokens: OAuthTokenSession
     private var authorization: OAuthBrowserAuthorization?
@@ -57,9 +77,10 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
     var redirectURI: String { redirectScheme + ":/oauth2redirect" }
 
     public enum Failure: Error, LocalizedError {
-        case noClientID, cancelled, badResponse(String)
+        case noClientID, cancelled, badResponse(String), otherAccount(String)
         public var errorDescription: String? {
             switch self {
+            case .otherAccount(let email): return "เลือกบัญชีอื่น | ใช้ \(email) เพื่อปรับสิทธิ์ Google Drive"
             case .noClientID: return "ยังไม่ได้ใส่ Google OAuth Client ID (iOS) ในหน้าตั้งค่า"
             case .cancelled: return "ยกเลิกการลงชื่อเข้าใช้"
             case .badResponse(let s): return "ลงชื่อเข้าใช้ Google ไม่สำเร็จ: \(s)"
@@ -67,7 +88,17 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
         }
     }
 
-    public func signIn() async throws {
+    /// Signs in with the account picked, asking for `.contractor` access (the team asks for more afterwards).
+    public func signIn() async throws { try await authorize(.contractor, account: nil) }
+
+    /// Asks the signed-in account again for `access`: full Drive for a TC engineer, or the contractor's narrower
+    /// access in place of full Drive. Another account picked in the browser changes nothing.
+    public func requestDrive(_ access: DriveAccess) async throws {
+        guard let email, isSignedIn else { throw DriveError.notSignedIn }
+        try await authorize(access, account: email)
+    }
+
+    private func authorize(_ access: DriveAccess, account: String?) async throws {
         guard clientID.hasSuffix(".apps.googleusercontent.com") else { throw Failure.noClientID }
         let ticket = tokens.beginSignIn()
         authorization?.cancel()
@@ -75,9 +106,11 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
         let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URL
         var c = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         c.queryItems = [.init(name: "client_id", value: clientID), .init(name: "redirect_uri", value: redirectURI),
-                        .init(name: "response_type", value: "code"), .init(name: "scope", value: Self.scope),
+                        .init(name: "response_type", value: "code"), .init(name: "scope", value: access.scope),
                         .init(name: "code_challenge", value: challenge), .init(name: "code_challenge_method", value: "S256"),
-                        .init(name: "prompt", value: "select_account consent"), .init(name: "access_type", value: "offline")]
+                        .init(name: "prompt", value: account == nil ? "select_account consent" : "consent"),
+                        .init(name: "access_type", value: "offline")]
+        if let account { c.queryItems?.append(.init(name: "login_hint", value: account)) }
         let browser = OAuthBrowserAuthorization { [weak self] completion in
             let s = ASWebAuthenticationSession(url: c.url!, callbackURLScheme: self?.redirectScheme) { url, err in
                 if let url { completion(.success(url)) }
@@ -99,7 +132,11 @@ public final class GoogleAuth: NSObject, DriveTokenProvider {
         guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else {
             throw Failure.badResponse("ไม่มีรหัสยืนยัน")
         }
-        try await tokens.exchangeCode(code, verifier: verifier, redirectURI: redirectURI, ticket: ticket)
+        try await tokens.exchangeCode(code, verifier: verifier, redirectURI: redirectURI, ticket: ticket, check: { new in
+            guard let account else { return }
+            let picked = new.id_token.flatMap(Self.email(fromIDToken:)) ?? ""
+            guard picked.lowercased() == account.lowercased() else { throw Failure.otherAccount(account) }
+        })
     }
 
     /// Keeps the email and name from an OpenID token.

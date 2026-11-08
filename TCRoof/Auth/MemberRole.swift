@@ -54,6 +54,10 @@ final class MemberRole {
     /// สมาชิกทีม), or was suspended by a Maintainer (`true`).
     var onRemoved: ((_ suspended: Bool) -> Void)?
 
+    /// Called when the server has confirmed the signed-in account's role (at each sync start), so the Drive access can
+    /// follow it (`GoogleSession.checkDriveAccess`).
+    var onConfirmed: (() -> Void)?
+
     private static func confirmedKey(_ email: String) -> String { "member.confirmed.\(email)" }
 
     /// The server once listed this account here, so it may open the app offline.
@@ -96,6 +100,7 @@ final class MemberRole {
             guard permissions.email == email else { return }
             let field = UserDefaults.standard.string(forKey: Self.key(email))
             permissions = Permissions(role: Self.override ?? UserRole(field: field), email: email, overrides: overrides)
+            onConfirmed?()
         case .notMember:
             guard permissions.email == email else { return }
             onRemoved?(false)

@@ -168,6 +168,8 @@ struct RootView: View {
             #endif
         }
         .systemNotifications(survey: session.survey)
+        // the Drive access the role needs: full Drive for the team, the narrower one for contractors (CHA-41)
+        .modifier(DriveAccessAlert())
         // Drive work left when the person leaves: iOS starts it later, even after the app is closed
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { DriveBackgroundWork.scheduleIfNeeded(context) }

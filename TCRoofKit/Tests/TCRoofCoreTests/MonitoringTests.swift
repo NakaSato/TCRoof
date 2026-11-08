@@ -48,6 +48,9 @@ final class MonitoringTests: XCTestCase {
         let kWp44 = try XCTUnwrap(rows[44]?.station.kWp)
         XCTAssertEqual(try XCTUnwrap(rows[44]?.shortfall), median * kWp44, accuracy: 1e-6)
         XCTAssertEqual(try XCTUnwrap(rows[25]?.loss?.kWh), median * 220 - 410, accuracy: 0.01)
+        // the offline station's Lost line in ต้องดำเนินการ gives the same figure
+        let lostLine = try XCTUnwrap(rows[44]?.station.alarms.first { $0.source == .lost })
+        XCTAssertEqual(lostLine.loss, rows[44]?.loss)
         XCTAssertNil(rows[12]?.loss)
         XCTAssertEqual(f.lossStations, 2)
         let lost = try XCTUnwrap(f.lossToday)
@@ -193,6 +196,12 @@ final class MonitoringTests: XCTestCase {
         let old = try JSONDecoder().decode(Monitoring.Settings.self, from: Data(#"{"pollMinutes":10}"#.utf8))
         XCTAssertEqual(old.pollMinutes, 10)
         XCTAssertEqual(old.rate, Monitoring.Settings.defaultRate)
+        // a rate a manager cleared stays cleared through a save and a reload
+        var cleared = Monitoring.Settings()
+        cleared.rate = nil
+        let back = try JSONDecoder().decode(Monitoring.Settings.self, from: JSONEncoder().encode(cleared))
+        XCTAssertNil(back.rate)
+        XCTAssertEqual(back, cleared)
         XCTAssertEqual(old.belowExpectedPercent, 85)
     }
 

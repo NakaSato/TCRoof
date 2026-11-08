@@ -204,6 +204,10 @@ final class MonitoringWebDemoTests: XCTestCase {
         XCTAssertEqual(GrowattWebDemo.plantWatts(4), 4000)
         XCTAssertEqual(GrowattWebDemo.plantWatts(10_000), 10_000)
         XCTAssertEqual(GrowattWebDemo.plantWatts(0), 0)
+        // beside the inverters: 150 is kW next to 150 kW of inverters, W next to 200 W
+        XCTAssertEqual(GrowattWebDemo.plantWatts(150, devices: 150_000), 150_000)
+        XCTAssertEqual(GrowattWebDemo.plantWatts(4, devices: 3_600), 4_000)
+        XCTAssertEqual(GrowattWebDemo.plantWatts(10_000, devices: 10_000), 10_000)
     }
 
     /// The plant's own `timezone` wins over the guess, even when its last reading would suggest another zone.

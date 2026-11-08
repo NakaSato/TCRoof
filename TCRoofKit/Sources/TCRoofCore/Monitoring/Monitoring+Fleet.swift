@@ -87,6 +87,13 @@ extension Monitoring {
                 var s = s
                 s.alarms.removeAll { $0.id == Fleet.belowID(s.id) }
                 var row = Row(station: s, health: h, yieldVsMedian: delta, reference: reference)
+                // a lost logger's line is priced as the row's loss is (against the median when there is one), so the
+                // action list and `สูญเสียวันนี้` give the same figure for it
+                if reference != nil, let short = row.shortfall {
+                    for i in row.station.alarms.indices where row.station.alarms[i].source == .lost {
+                        if case .atMost = row.station.alarms[i].loss { row.station.alarms[i].loss = .atMost(short) }
+                    }
+                }
                 if h == .normal, let a = Fleet.belowAlarm(row, percent: settings.belowExpectedPercent,
                                                           since: belowSince[s.id] ?? now) {
                     row.station.alarms.append(a)

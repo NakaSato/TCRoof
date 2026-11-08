@@ -204,9 +204,9 @@ struct SingleLinePage: View {
 
     var zoomControl: some View {
         HStack(spacing: 6) {
-            zoomButton("minus", "ย่อ") { step(-1) }
+            ZoomStepButton("minus", "ย่อ") { step(-1) }
             Text("\(Int((scale * 100).rounded()))%").font(.sarabunFixed(16, .bold)).frame(minWidth: phone ? 46 : 52).monospacedDigit()
-            zoomButton("plus", "ขยาย") { step(1) }
+            ZoomStepButton("plus", "ขยาย") { step(1) }
             Button { withAnimation { fit() } } label: {
                 Group {
                     if phone { Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 16, weight: .bold)) }
@@ -219,16 +219,8 @@ struct SingleLinePage: View {
         .padding(4).background(Theme.surface, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.borderSubtle))
     }
 
-    func zoomButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary).frame(width: 44, height: 44)
-        }
-        .buttonStyle(.plain).accessibilityLabel(label)
-    }
-
     func step(_ d: Int) {
-        let l = Self.levels
-        let next = d > 0 ? l.first { $0 > scale + 0.005 } ?? l.last! : l.last { $0 < scale - 0.005 } ?? l.first!
+        let next = ZoomStep.next(scale, levels: Self.levels, by: d)
         withAnimation { scale = next }
     }
 

@@ -244,10 +244,7 @@ struct CardImportSheet: View {
         guard (try? FileManager.default.copyItem(at: url, to: copy)) != nil,
               let src = CGImageSourceCreateWithURL(copy as CFURL, nil) else { return nil }
         let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any] ?? [:]
-        let thumb = CGImageSourceCreateThumbnailAtIndex(src, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true,
-                                                                  kCGImageSourceThumbnailMaxPixelSize: 200,
-                                                                  kCGImageSourceCreateThumbnailWithTransform: true] as CFDictionary)
-        return Item(shot: shot(props), url: copy, thumb: thumb.map { UIImage(cgImage: $0) })
+        return Item(shot: shot(props), url: copy, thumb: ImageThumb.make(source: src, maxPixel: 200))
     }
 
     nonisolated static func shot(_ props: [CFString: Any]) -> CardImport.Shot {

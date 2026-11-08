@@ -3,40 +3,6 @@ import TCRoofUI
 import SwiftData
 import TCRoofCore
 
-struct PlanJobRow: View {
-    let job: Job
-    let date: Date
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                TeamTag(team: job.team)
-                Text(job.code).font(.sarabun(15, .bold, relativeTo: .subheadline))
-                Spacer()
-                if !job.pendingAckLogs.isEmpty {
-                    TCStatusChip("รอรับทราบ \(job.pendingAckLogs.count) วัน",
-                                 fill: Theme.pending.opacity(0.14), text: Theme.pending)
-                }
-                if let day = job.installDay(on: date) {
-                    Text("Day \(day)/\(job.installDays)").font(.sarabun(12, .bold, relativeTo: .caption))
-                }
-            }
-            Text("\(job.capacityKW.kw) | \(job.province)").font(.sarabun(12, relativeTo: .caption))
-            Label(job.customerName, systemImage: "person").font(.sarabun(12, relativeTo: .caption))
-            Text("โครงการ : \(job.projectName)").font(.sarabun(12, relativeTo: .caption))
-        }
-        .foregroundStyle(Theme.navy)
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.mint.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(alignment: .leading) {
-            UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 12)
-                .fill(job.team.color)
-                .frame(width: 5)
-        }
-    }
-}
-
 struct PlanListView: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var search = ""

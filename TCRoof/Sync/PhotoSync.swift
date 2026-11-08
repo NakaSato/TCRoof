@@ -76,7 +76,7 @@ final class PhotoSync {
             try await workbooks(context, survey, pass)
             return true
         } catch {
-            print("PhotoSync: background pass: \(error.localizedDescription)")
+            SyncLog.photos.error("background pass: \(error.localizedDescription)")
             return false
         }
     }
@@ -101,9 +101,9 @@ final class PhotoSync {
         running = Task { [weak self] in
             defer { time.end() }
             var failed = false
-            do { try await self?.download(context, survey, pass) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
-            do { try await self?.upload(context, survey, pass) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
-            do { try await self?.workbooks(context, survey, pass) } catch { failed = true; print("PhotoSync: workbooks: \(error.localizedDescription)") }
+            do { try await self?.download(context, survey, pass) } catch { failed = true; SyncLog.photos.error("download: \(error.localizedDescription)") }
+            do { try await self?.upload(context, survey, pass) } catch { failed = true; SyncLog.photos.error("upload: \(error.localizedDescription)") }
+            do { try await self?.workbooks(context, survey, pass) } catch { failed = true; SyncLog.photos.error("workbooks: \(error.localizedDescription)") }
             await self?.shareFolders(context, survey, pass)
             // stopped (signed out) meanwhile: the next session's pass is its own, so leave it be
             guard let self, self.session == pass else { return }
@@ -217,7 +217,7 @@ final class PhotoSync {
         for job in jobs where keepsGoing(pass) {
             do { try await workbook(job, context, survey) } catch {
                 failure = failure ?? error
-                print("PhotoSync: workbook of \(job.code): \(error.localizedDescription)")
+                SyncLog.photos.error("workbook of \(job.code): \(error.localizedDescription)")
             }
         }
         if let failure { throw failure }

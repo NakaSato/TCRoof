@@ -241,10 +241,7 @@ struct Thumbnail: View {
     }
 
     nonisolated static func thumbnail(_ url: URL) -> UIImage? {
-        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 300,
-                                     kCGImageSourceCreateThumbnailWithTransform: true]
-        return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
+        ImageThumb.make(url: url, maxPixel: 300)
     }
 }
 #endif

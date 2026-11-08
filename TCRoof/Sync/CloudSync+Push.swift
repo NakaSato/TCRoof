@@ -24,7 +24,7 @@ extension CloudSync {
         do {
             try context.save()
         } catch {
-            print("CloudSync: local save: \(error.localizedDescription)")
+            SyncLog.sync.error("local save: \(error.localizedDescription)")
         }
     }
 
@@ -126,7 +126,7 @@ extension CloudSync {
         }
         if context.hasChanges { try? context.save() }   // syncIDs given to older records
 #if DEBUG
-        print("CloudSync: upload scan \(scanned.sorted().joined(separator: ", ")); \(deleted.count) deletions")
+        SyncLog.sync.debug("upload scan \(scanned.sorted().joined(separator: ", ")); \(deleted.count) deletions")
 #endif
         defer { refreshSurveyPending() }
         commitSeparately(revisions, "REV upload")
@@ -175,7 +175,7 @@ extension CloudSync {
                         self.saveKnown()
                         let refused = (error as NSError).code == FirestoreErrorCode.permissionDenied.rawValue
                         if self.external != nil, refused {
-                            print("CloudSync: refused \(previous.keys.joined(separator: ", ")): \(error.localizedDescription)")
+                            SyncLog.sync.error("refused \(previous.keys.joined(separator: ", ")): \(error.localizedDescription)")
                         } else if refused, sent.count > 1 {
                             // One write the rules refuse fails the whole batch, and every later push with it: a delete
                             // made here would never leave this device. Send the batch's writes one by one instead, so
@@ -236,7 +236,7 @@ extension CloudSync {
                     self.uploadScans.retry(keys: Set(previous.keys))
                     self.restoreSent(previous)
                     self.saveKnown()
-                    print("CloudSync: \(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
+                    SyncLog.sync.error("\(label) refused \(previous.keys.sorted().joined(separator: ", ")): \(error.localizedDescription)")
                 }
             }
         }

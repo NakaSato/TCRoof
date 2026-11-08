@@ -322,7 +322,7 @@ struct HomeWorkView: View {
                             .background(on ? Theme.primarySoft : Color.clear, in: Capsule())
                             .overlay(alignment: .topTrailing) {
                                 if left > 0 {
-                                    Text("\(left)").font(.sarabun(10, .heavy, relativeTo: .caption2)).foregroundStyle(Color.white)
+                                    Text("\(left)").font(.sarabun(10, .heavy, relativeTo: .caption2)).foregroundStyle(Theme.onPrimary)
                                         .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
                                         .background(Theme.danger, in: Capsule())
                                         .offset(x: 2, y: -4)

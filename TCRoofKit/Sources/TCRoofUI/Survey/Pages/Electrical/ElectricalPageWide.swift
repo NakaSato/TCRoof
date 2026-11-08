@@ -208,9 +208,9 @@ struct ElectricalPageWide: View {
         HStack(spacing: 10) {
             if !narrow { Text("หนีบ 2 นิ้วเพื่อซูม | ลากเพื่อเลื่อน").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted) }
             HStack(spacing: 6) {
-                zoomButton("minus", "ย่อ") { step(-1) }
+                ZoomStepButton("minus", "ย่อ") { step(-1) }
                 Text("\(Int((scale * 100).rounded()))%").font(.sarabunFixed(16, .bold)).frame(minWidth: 52)
-                zoomButton("plus", "ขยาย") { step(1) }
+                ZoomStepButton("plus", "ขยาย") { step(1) }
                 Button { withAnimation { fit() } } label: {
                     Text("พอดีจอ").font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 12).frame(minHeight: 44)
@@ -224,17 +224,8 @@ struct ElectricalPageWide: View {
         }
     }
 
-    func zoomButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .bold)).foregroundStyle(Theme.primary)
-                .frame(width: 44, height: 44)
-        }
-        .buttonStyle(.plain).accessibilityLabel(label)
-    }
-
     func step(_ d: Int) {
-        let l = Self.levels
-        let next = d > 0 ? l.first { $0 > scale + 0.005 } ?? l.last! : l.last { $0 < scale - 0.005 } ?? l.first!
+        let next = ZoomStep.next(scale, levels: Self.levels, by: d)
         withAnimation { scale = next }
     }
 

@@ -39,7 +39,7 @@ enum DriveBackgroundWork {
         for request in [refresh, processing] as [BGTaskRequest] {
             do { try BGTaskScheduler.shared.submit(request) } catch {
                 // the simulator refuses them; a device without background refresh too
-                print("Drive: background task \(request.identifier): \(error.localizedDescription)")
+                SyncLog.drive.error("background task \(request.identifier): \(error.localizedDescription)")
             }
         }
     }

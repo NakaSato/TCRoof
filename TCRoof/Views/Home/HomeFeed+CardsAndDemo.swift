@@ -105,10 +105,7 @@ struct FeedPhoto: View {
     }
 
     private nonisolated static func scaled(_ data: Data) -> UIImage? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 1000,
-                                     kCGImageSourceCreateThumbnailWithTransform: true]
-        return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
+        ImageThumb.make(data: data, maxPixel: 1000)
     }
 }
 

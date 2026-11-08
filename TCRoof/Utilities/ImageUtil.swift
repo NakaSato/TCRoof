@@ -1,5 +1,6 @@
 import UIKit
 import ImageIO
+import TCRoofUI
 import Vision
 import AVFoundation
 
@@ -12,11 +13,8 @@ enum ImageUtil {
            let w = props[kCGImagePropertyPixelWidth] as? Int, let h = props[kCGImagePropertyPixelHeight] as? Int {
             // never larger than the photo itself, as the resize below
             let side = min(CGFloat(max(w, h)), maxDimension)
-            let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
-                                         kCGImageSourceThumbnailMaxPixelSize: Int(side.rounded()),
-                                         kCGImageSourceCreateThumbnailWithTransform: true]
-            if let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary),
-               let jpeg = UIImage(cgImage: cg).jpegData(compressionQuality: 0.7) {
+            if let thumb = ImageThumb.make(source: src, maxPixel: Int(side.rounded())),
+               let jpeg = thumb.jpegData(compressionQuality: 0.7) {
                 return jpeg
             }
         }

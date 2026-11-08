@@ -114,7 +114,7 @@ extension CloudSync {
         }
         refreshSurveyPending()
 #if DEBUG
-        print("CloudSync: surveys \(preparedCount), local \(survey.jobs.count), total \(Int(Date().timeIntervalSince(started) * 1000)) ms, max apply chunk \(Int(longestChunk * 1000)) ms")
+        SyncLog.sync.debug("surveys \(preparedCount), local \(survey.jobs.count), total \(Int(Date().timeIntervalSince(started) * 1000)) ms, max apply chunk \(Int(longestChunk * 1000)) ms")
 #endif
     }
 
@@ -134,7 +134,7 @@ extension CloudSync {
             MainActor.assumeIsolated {
                 guard let self, let survey = self.survey else { return }
                 // never fail the whole sync over REVs (rules not deployed yet): the jobs still sync
-                if let error { return print("CloudSync: REV listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("REV listener: \(error.localizedDescription)") }
                 for change in snapshot?.documentChanges ?? [] {
                     let key = "\(Self.revisionCollection)/\(change.document.documentID)"
                     if change.type == .removed { self.known[key] = nil; continue }
@@ -163,7 +163,7 @@ extension CloudSync {
             let json = String(decoding: d.exported(), as: UTF8.self)
             collection.document(d.id).setData(["json": json, "revision": d.revision, "savedBy": d.savedBy ?? "",
                                                "updatedAt": FieldValue.serverTimestamp()]) { error in
-                if let error { print("CloudSync: design upload: \(error.localizedDescription)") }
+                if let error { SyncLog.sync.error("design upload: \(error.localizedDescription)") }
             }
             // its scanned sheet: each page once, as a JPEG in its own document
             let sent = Set(UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? [])
@@ -172,7 +172,7 @@ extension CloudSync {
                 self.db.collection("standardDesignSheets").document(p.id.uuidString)
                     .setData(["design": d.id, "data": data.base64EncodedString(), "width": p.width, "height": p.height]) { [weak self] error in
                         guard MainActor.assumeIsolated({ self?.snapshotSession == session }) else { return }
-                        if let error { return print("CloudSync: design sheet upload: \(error.localizedDescription)") }
+                        if let error { return SyncLog.sync.error("design sheet upload: \(error.localizedDescription)") }
                         let done = (UserDefaults.standard.stringArray(forKey: "cloudSync.designSheetsSent") ?? []) + [p.id.uuidString]
                         UserDefaults.standard.set(done, forKey: "cloudSync.designSheetsSent")
                     }
@@ -183,12 +183,12 @@ extension CloudSync {
             guard let self, self.snapshotSession == session, self.external == nil else { return }
             collection.document(d.id).setData(["json": String(decoding: d.exported(), as: UTF8.self), "kind": "roof", "revision": d.revision,
                                                "savedBy": d.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
-                if let error { print("CloudSync: roof design upload: \(error.localizedDescription)") }
+                if let error { SyncLog.sync.error("roof design upload: \(error.localizedDescription)") }
             }
         }
         listenStartupQuery(collection, barrier: barrier) { snapshot, error in
             // never fail the whole sync over designs (rules not deployed yet): the jobs still sync
-            if let error { return print("CloudSync: design listener: \(error.localizedDescription)") }
+            if let error { return SyncLog.sync.error("design listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
                 let data = change.document.data()
                 guard let json = data["json"] as? String else { continue }
@@ -203,7 +203,7 @@ extension CloudSync {
 
     func listenDesignSheets(barrier: StartupLoadBarrier? = nil) {
         listenStartupQuery(db.collection("standardDesignSheets"), barrier: barrier) { snapshot, error in
-            if let error { return print("CloudSync: design sheet listener: \(error.localizedDescription)") }
+            if let error { return SyncLog.sync.error("design sheet listener: \(error.localizedDescription)") }
             for change in snapshot?.documentChanges ?? [] where change.type != .removed {
                 let data = change.document.data()
                 guard let id = UUID(uuidString: change.document.documentID), let b64 = data["data"] as? String,
@@ -224,12 +224,12 @@ extension CloudSync {
         TankStandard.Store.shared.onChange = { [weak self] s in
             guard self?.snapshotSession == session, MemberRole.shared.permissions.can(.tankStandard) else { return }
             ref.setData(["json": s.json, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
-                if let error { print("CloudSync: tank standard refused: \(error.localizedDescription)") }
+                if let error { SyncLog.sync.error("tank standard refused: \(error.localizedDescription)") }
             }
         }
         listenStartupDocument(ref, barrier: barrier) { snapshot, error in
             // never fail the whole sync over the standard (rules not deployed yet): the jobs still sync
-            if let error { return print("CloudSync: tank standard listener: \(error.localizedDescription)") }
+            if let error { return SyncLog.sync.error("tank standard listener: \(error.localizedDescription)") }
             guard let json = snapshot?.data()?["json"] as? String, let s = TankStandard.decode(json) else { return }
             TankStandard.Store.shared.receive(s)
         }
@@ -243,7 +243,7 @@ extension CloudSync {
             self.db.document(Self.ackKey(post)).setData(
                 ["post": post, "members": on ? FieldValue.arrayUnion([member]) : FieldValue.arrayRemove([member])], merge: true
             ) { error in
-                if let error { print("CloudSync: acknowledgement refused: \(error.localizedDescription)") }
+                if let error { SyncLog.sync.error("acknowledgement refused: \(error.localizedDescription)") }
             }
         }
         let uploaded = "feed.acks.uploaded.\(uid ?? "")"
@@ -254,7 +254,7 @@ extension CloudSync {
         listenStartupQuery(db.collection(Self.ackCollection), barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
                 // never fail the whole sync over acknowledgements (rule not deployed yet): the jobs still sync
-                if let error { return print("CloudSync: acknowledgement listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("acknowledgement listener: \(error.localizedDescription)") }
                 for change in snapshot?.documentChanges ?? [] {
                     let data = change.document.data()
                     guard let post = data["post"] as? String else { continue }
@@ -270,7 +270,7 @@ extension CloudSync {
         let q = db.collection(ClaimReviews.collection).whereField("ownerEmail", isEqualTo: Permissions.normalized(email))
         listenStartupQuery(q, barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
-                if let error { return print("CloudSync: claimReviews listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("claimReviews listener: \(error.localizedDescription)") }
                 if let snapshot { ClaimReviews.shared.receive(snapshot.documents) }
             }
         }
@@ -282,13 +282,13 @@ extension CloudSync {
         if !me.isEmpty {
             let name = UserDefaults.standard.string(forKey: GoogleSession.userNameKey)
             db.document("\(TeamDirectory.collection)/\(me)").setData(TeamDirectory.entry(email: me, name: name), merge: true) { error in
-                if let error { print("CloudSync: directory entry refused: \(error.localizedDescription)") }
+                if let error { SyncLog.sync.error("directory entry refused: \(error.localizedDescription)") }
             }
         }
         listenStartupQuery(db.collection(TeamDirectory.collection), barrier: barrier) { snapshot, error in
             MainActor.assumeIsolated {
                 // never fail the whole sync over the directory (rule not deployed yet): the jobs still sync
-                if let error { return print("CloudSync: directory listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("directory listener: \(error.localizedDescription)") }
                 TeamDirectory.shared.receive(snapshot?.documents ?? [])
             }
         }
@@ -301,7 +301,7 @@ extension CloudSync {
             MainActor.assumeIsolated {
                 guard let self, let context = self.context else { return }
                 // never fail the whole sync over contacts (rule not deployed yet): the jobs still sync
-                if let error { return print("CloudSync: contact listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("contact listener: \(error.localizedDescription)") }
                 for change in snapshot?.documentChanges ?? [] {
                     let id = change.document.documentID
                     let key = "\(Self.contactCollection)/\(id)"
@@ -332,7 +332,7 @@ extension CloudSync {
         listenStartupDocument(db.document(Self.publicConfigDocument), barrier: team ? nil : barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if let error { return print("CloudSync: public config listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("public config listener: \(error.localizedDescription)") }
                 self.configPublic = snapshot?.data() ?? [:]
                 self.applyConfig()
             }
@@ -342,7 +342,7 @@ extension CloudSync {
         listenStartupDocument(db.document(Self.configDocument), barrier: barrier) { [weak self] snapshot, error in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if let error { return print("CloudSync: config listener: \(error.localizedDescription)") }
+                if let error { return SyncLog.sync.error("config listener: \(error.localizedDescription)") }
                 self.configApp = snapshot?.data() ?? [:]
                 self.applyConfig()
             }

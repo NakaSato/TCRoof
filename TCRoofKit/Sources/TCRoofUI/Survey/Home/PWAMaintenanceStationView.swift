@@ -32,7 +32,7 @@ public struct PWAMaintenanceStationView: View {
                     .padding(.bottom, detail.contractorPhone.isEmpty ? 24 : 104)
             }
         }
-        .background(Color(hex: 0xF5F8FB).ignoresSafeArea())
+        .background(Theme.phonePage.ignoresSafeArea())
         .overlay(alignment: .bottom) {
             if !detail.contractorPhone.isEmpty { bottomBar }
         }
@@ -342,9 +342,9 @@ public struct PWAMaintenanceStationView: View {
         .padding(.bottom, 24)
         .background {
             LinearGradient(colors: [
-                Color(hex: 0xF5F8FB).opacity(0),
-                Color(hex: 0xF5F8FB).opacity(0.9),
-                Color(hex: 0xF5F8FB)
+                Theme.phonePage.opacity(0),
+                Theme.phonePage.opacity(0.9),
+                Theme.phonePage
             ], startPoint: .top, endPoint: .bottom)
             .frame(height: 120)
             .allowsHitTesting(false)
@@ -366,8 +366,8 @@ public struct PWAMaintenanceStationView: View {
             .foregroundStyle(Theme.navy)
             .padding(.horizontal, 18)
             .frame(minHeight: 52)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: 0xC9D3E0)))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderOutdoor))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("stationDetail.call")

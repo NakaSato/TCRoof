@@ -287,7 +287,7 @@ final class CloudSync {
         let started = Date()
         CrashReporting.startupStage(label, state: "begin")
 #if DEBUG
-        print("CloudSync: startup begin \(label)")
+        SyncLog.sync.debug("startup begin \(label, privacy: .public)")
 #endif
         register(barrier)
         let timeout = Task { @MainActor in
@@ -305,7 +305,7 @@ final class CloudSync {
         CrashReporting.startupStage(label, state: String(describing: result),
                                     elapsedMilliseconds: Int(Date().timeIntervalSince(started) * 1000))
 #if DEBUG
-        print("CloudSync: startup end \(label): \(result), \(Int(Date().timeIntervalSince(started) * 1000)) ms")
+        SyncLog.sync.debug("startup end \(label, privacy: .public): \(String(describing: result), privacy: .public), \(Int(Date().timeIntervalSince(started) * 1000)) ms")
 #endif
         guard result != .cancelled, snapshotIsCurrent(session) else { return false }
         return await pauseSnapshotApplication(session)
@@ -374,7 +374,7 @@ final class CloudSync {
             guard await pauseSnapshotApplication(session) else { break }
         }
 #if DEBUG
-        print("CloudSync: restored \(restored.count) missing projects from Firestore cache")
+        SyncLog.sync.debug("restored \(restored.count) missing projects from Firestore cache")
 #endif
         return restored
     }
@@ -432,7 +432,7 @@ final class CloudSync {
             }
             received += page.documents.count
 #if DEBUG
-            print("CloudSync: project request \(page.documents.count)/10, loaded \(received), cache \(page.metadata.isFromCache)")
+            SyncLog.sync.debug("project request \(page.documents.count)/10, loaded \(received), cache \(page.metadata.isFromCache)")
 #endif
             if page.documents.count < 10 {
                 let tail = cursor.map { ordered.start(afterDocument: $0) } ?? ordered

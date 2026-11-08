@@ -169,13 +169,13 @@ public struct TCCompass: View {
 
     public var body: some View {
         ZStack {
-            Circle().fill(Color.white).shadow(color: Theme.navy.opacity(0.18), radius: 6, y: 2)
+            Circle().fill(Theme.paper).shadow(color: Theme.navy.opacity(0.18), radius: 6, y: 2)
             ZStack {
                 Text("N").font(.system(size: size * 0.16, weight: .heavy)).foregroundStyle(Theme.navy)
                     .offset(y: -size * 0.36)
                 Needle(north: true).fill(Theme.danger)
                 Needle(north: false).fill(Theme.muted)
-                Circle().fill(Color.white).frame(width: size * 0.06, height: size * 0.06)
+                Circle().fill(Theme.paper).frame(width: size * 0.06, height: size * 0.06)
             }
             .rotationEffect(.degrees(heading))
         }

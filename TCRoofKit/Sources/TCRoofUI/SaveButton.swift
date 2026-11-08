@@ -115,7 +115,7 @@ public struct TCSaveButton: View {
             Group {
                 if circle {
                     Tick().trim(from: 0, to: drawn || reduceMotion ? 1 : 0)
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: d * 0.14, lineCap: .round, lineJoin: .round))
+                        .stroke(Theme.onPrimary, style: StrokeStyle(lineWidth: d * 0.14, lineCap: .round, lineJoin: .round))
                         .frame(width: d * 0.6, height: d * 0.6)
                         .frame(width: d, height: d)
                         .background(Theme.stepDone, in: Circle())

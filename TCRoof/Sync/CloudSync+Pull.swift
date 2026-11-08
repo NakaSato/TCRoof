@@ -28,7 +28,7 @@ extension CloudSync {
                         guard let self, self.snapshotIsCurrent(session) else { return }
                         onServerSnapshot?(nil)
                         onFirstSnapshot?()
-                        if optional { print("CloudSync: \(M.collection) listener: \(error.localizedDescription)") }
+                        if optional { SyncLog.sync.error("\(M.collection) listener: \(error.localizedDescription)") }
                         else { self.failed(error) }
                     }
                     return
@@ -124,7 +124,7 @@ extension CloudSync {
         var chunks = 0
         defer {
             let elapsedMS = Int(Date().timeIntervalSince(applyStartedAt) * 1_000)
-            print("CloudSync: applied \(changes.count) \(M.collection) changes in \(elapsedMS) ms; active \(Int(activeTime * 1000)) ms, max chunk \(Int(longestChunk * 1000)) ms, \(chunks) chunks")
+            SyncLog.sync.debug("applied \(changes.count) \(M.collection) changes in \(elapsedMS) ms; active \(Int(activeTime * 1000)) ms, max chunk \(Int(longestChunk * 1000)) ms, \(chunks) chunks")
         }
 #endif
         var index = 0
@@ -183,7 +183,7 @@ extension CloudSync {
             if merged { schedulePush(collections: [M.collection]) }
 #if DEBUG
             let duration = Date().timeIntervalSince(started)
-            print("CloudSync: \(M.collection) lookup \(Int(lookupFinished.timeIntervalSince(started) * 1000)) ms, save \(Int(Date().timeIntervalSince(saveStarted) * 1000)) ms")
+            SyncLog.sync.debug("\(M.collection) lookup \(Int(lookupFinished.timeIntervalSince(started) * 1000)) ms, save \(Int(Date().timeIntervalSince(saveStarted) * 1000)) ms")
             activeTime += duration
             longestChunk = max(longestChunk, duration)
             chunks += 1
@@ -277,14 +277,14 @@ extension CloudSync {
         guard recordFingerprintCache(M.self).fingerprint(id: key, record: local, compute: { self.fingerprint($0) }) != last else { return false }
         if let base = syncedRecords[key] as? M.Record, let result = RecordMerge.merge(base: base, local: local, remote: remote) {
             if result.merged != local, !existing.applyMerged(result.merged, jobs: jobs) {
-                print("CloudSync: \(key): the other device's change didn't apply; this device's edit stands")
+                SyncLog.sync.notice("\(key): the other device's change didn't apply; this device's edit stands")
             }
             if !result.conflicts.isEmpty {
-                print("CloudSync: \(key): both devices changed \(result.conflicts.joined(separator: ", ")); this device's edit stands")
+                SyncLog.sync.notice("\(key): both devices changed \(result.conflicts.joined(separator: ", ")); this device's edit stands")
             }
         } else {
             // the server's earlier copy isn't known in this launch, so the fields can't be told apart: ours stands whole
-            print("CloudSync: \(key): another device's change met an edit not sent yet; this device's edit stands")
+            SyncLog.sync.notice("\(key): another device's change met an edit not sent yet; this device's edit stands")
         }
         // the server has the other device's record; ours differs from it now, so the next push sends it
         known[key] = fingerprint
@@ -401,7 +401,7 @@ extension CloudSync {
                 try context.save()
             } catch {
                 remoteSavePushSuppressions.remove(contextID)
-                print("CloudSync: remote save: \(error.localizedDescription)")
+                SyncLog.sync.error("remote save: \(error.localizedDescription)")
             }
         }
         applyingRemoteSnapshots = false

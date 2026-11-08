@@ -1,5 +1,6 @@
 #if canImport(UIKit)
 import Foundation
+import os
 import DriveSync
 import TCRoofCore
 
@@ -57,6 +58,7 @@ public extension SurveyModel {
 
     /// Shares Drive refused this run ("<folder> <email>").
     @MainActor static var refusedShares: Set<String> = []
+    private static let shareLog = Logger(subsystem: "com.tcroof.internal", category: "drive")
 
     /// Lets everyone who can open a job read its Drive folder, so their devices download the photos its report prints:
     /// each address once per folder (remembered on this device), never this account's own. An address Google refuses
@@ -74,7 +76,7 @@ public extension SurveyModel {
             catch {
                 // another account's folder, or an address Google doesn't know: not again until the app starts again
                 Self.refusedShares.insert(folderID + " " + email)
-                print("Drive: share \(folderID) with \(email): \(error.localizedDescription)")
+                Self.shareLog.error("share \(folderID, privacy: .private) with \(email, privacy: .private): \(error.localizedDescription)")
             }
         }
         UserDefaults.standard.set(done.sorted(), forKey: key)

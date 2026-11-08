@@ -324,21 +324,6 @@ public struct TCPageColumns<Content: View>: View {
     }
 }
 
-/// Card grid: 3 columns on iPad, 1 on iPhone (gap 16 / 12).
-public struct TCCardGrid<Content: View>: View {
-    var columns: Int
-    @ViewBuilder var content: Content
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
-    public init(columns: Int = 3, @ViewBuilder content: () -> Content) { self.columns = columns; self.content = content() }
-
-    public var body: some View {
-        let compact = sizeClass == .compact
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: compact ? Space.m : Space.l, alignment: .top), count: compact ? 1 : columns),
-                  spacing: compact ? Space.m : Space.l) { content }
-    }
-}
-
 /// iPhone screen header (docs/ui/tcroof-survey-list-iphone): `headerGradient` under the status bar, bottom radius 15,
 /// a 19 pt title over a 13 pt subtitle, and trailing 44 pt buttons (`TCHeaderIcon`). The back chevron shows only when
 /// the screen is pushed; a tab root has `หน้าหลัก` in the tab bar instead. A sheet passes `onClose` for a leading ✕

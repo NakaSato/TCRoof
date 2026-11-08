@@ -167,10 +167,7 @@ struct PhotoImage: View {
     }
 
     private nonisolated static func thumbnail(_ data: Data, maxPixel: Int) -> UIImage? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: maxPixel,
-                                     kCGImageSourceCreateThumbnailWithTransform: true]
-        return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary).map { UIImage(cgImage: $0) }
+        ImageThumb.make(data: data, maxPixel: maxPixel)
     }
 }
 

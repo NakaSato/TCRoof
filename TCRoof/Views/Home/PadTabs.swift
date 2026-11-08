@@ -6,7 +6,7 @@ import TCRoofCore
 /// Root tabs of the iPad (regular width) behind the floating dock (docs/ui/tcroof-home-ipad-v2).
 enum PadTab: String, CaseIterable {
     /// `settings` is only the dock's button for the settings sheet, never a selected tab.
-    case home, pwa, survey, docs, tools, scan, settings
+    case home, pwa, survey, docs, monitor, tools, scan, settings
 
     static let stacks = allCases.filter { $0 != .settings }
     /// Space the root screens keep above the dock: with the dock's 72 pt and its 18 pt below, content ends 100 pt up.
@@ -15,7 +15,7 @@ enum PadTab: String, CaseIterable {
     var module: AppModule? { AppModule(rawValue: rawValue) }
 
     /// The page colour its content fades into behind the dock.
-    var fade: Color { self == .home || self == .pwa || self == .tools || self == .docs ? Theme.phonePage : Theme.background }
+    var fade: Color { self == .home || self == .pwa || self == .tools || self == .docs || self == .monitor ? Theme.phonePage : Theme.background }
 }
 
 /// The dock's state, for the screens under it: the home sends `ดูทั้งหมด` to the `งานบ้าน` tab, and it and the PWA home
@@ -50,7 +50,8 @@ struct PadTabs<HomeRoot: View>: View {
     @State private var notificationService = NotificationService.shared
 
     private var availableTabs: [PadTab] {
-        PadTab.stacks.filter { $0 != .docs || permissions.role != .external }
+        // the papers and Monitoring are the team's (a contractor has neither)
+        PadTab.stacks.filter { ($0 != .docs && $0 != .monitor) || permissions.role != .external }
     }
 
     var body: some View {
@@ -92,6 +93,8 @@ struct PadTabs<HomeRoot: View>: View {
                 // every PWA station's papers (docs/ui/pwa-docs-ipad); the residential library is the settings sheet's
                 // `เอกสารงานบ้าน` row, as on the iPhone
                 case .docs: AnyView(PWADocsPadView(isActive: dock.tab == .docs))
+                // every handed-over station's output from Growatt (issue #259)
+                case .monitor: AnyView(MonitoringPage())
                 // the plan calendar and the install records left the dock: they are rows over the register for now
                 // (docs/ui/pwa-solar-survey-ipad-v3, open question 1)
                 case .tools: AnyView(ToolsView(modules: [.plan, .travel]))
@@ -139,6 +142,8 @@ private struct PadDockBarContent: View {
     let permissions: Permissions
     let today: Date
     @Query private var jobsToday: [Job]
+    /// The badge of `Monitor`: the lines of its `ต้องดำเนินการ`.
+    @State private var monitoring = MonitoringStore.shared
 
     init(dock: PadDock, permissions: Permissions, today: Date) {
         self.dock = dock
@@ -152,6 +157,8 @@ private struct PadDockBarContent: View {
 
     var body: some View {
         TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
+            // the demo's fleet counts from launch; real stations once the page has read them
+            .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
     }
 
     private func items(_ dock: PadDock) -> [TCTabItem<PadTab>] {
@@ -162,11 +169,13 @@ private struct PadDockBarContent: View {
             TCTabItem(.pwa, title: "โครงการ", asset: "tab-project", badge: pwa, accessibilityLabel: pwa > 0 ? "โครงการ | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.survey, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
+            TCTabItem(.monitor, title: "Monitor", symbol: "waveform.path.ecg.rectangle", badge: monitoring.actionCount,
+                      accessibilityLabel: monitoring.actionCount > 0 ? "Monitor | ต้องดำเนินการ \(monitoring.actionCount)" : "Monitor"),
             TCTabItem(.tools, title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem(.scan, title: "สแกน", asset: "tab-scan"),
             // not a tab: settings stays a sheet, as on the iPhone
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape", accessibilityLabel: "ตั้งค่าและบัญชี") { dock.showSettings = true },
-        ].filter { $0.id != .docs || permissions.role != .external }
+        ].filter { ($0.id != .docs && $0.id != .monitor) || permissions.role != .external }
     }
 }
 

@@ -4,7 +4,7 @@ import TCRoofCore
 
 /// A job edited here and not pushed yet, meeting another device's change (`CloudSync.mergeUnpushed`).
 final class CloudMergeTests: XCTestCase {
-    private func makeJob() -> Job {
+    private func makeJob() -> TCRoof.Job {
         Job(code: "MP-189", projectName: "สถานีผลิตน้ำบางไทร", customerName: "กปภ. สาขาบางไทร", province: "พระนครศรีอยุธยา",
             capacityKW: 100, team: .t1, status: .installing, surveyDate: Date(millis: 1_730_000_000_000),
             installStart: Date(millis: 1_730_100_000_000), installDays: 30)

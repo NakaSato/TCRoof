@@ -22,6 +22,10 @@ final class PhotoSync {
     private var paused = 0
     private var projectBrowsing = BackgroundFileDeferral()
     private var canRunAutomatically: Bool { paused == 0 && !projectBrowsing.isDeferred }
+    /// Bumped by `start` and `stop`: a pass belongs to the session it began in and stops between files once that ends,
+    /// so a pass begun before sign-out never reaches Drive with the next account's token.
+    private var session = 0
+    private func keepsGoing(_ pass: Int) -> Bool { canRunAutomatically && session == pass && !Task.isCancelled }
 
     func setProjectListVisible(_ visible: Bool, owner: UUID) {
         if visible {
@@ -33,6 +37,7 @@ final class PhotoSync {
     }
 
     func start(context: ModelContext, survey: SurveyModel) {
+        session += 1
         self.context = context
         self.survey = survey
         schedule(after: 2)
@@ -41,7 +46,10 @@ final class PhotoSync {
     }
 
     func stop() {
+        session += 1
         wait?.cancel(); wait = nil
+        running?.cancel(); running = nil
+        again = false
         context = nil; survey = nil
     }
 
@@ -62,9 +70,10 @@ final class PhotoSync {
     func uploadNow(context: ModelContext, survey: SurveyModel) async -> Bool {
         await running?.value
         guard canRunAutomatically, survey.google.isSignedIn, survey.settings.autoUploadPhotos else { return true }
+        let pass = session
         do {
-            try await upload(context, survey)
-            try await workbooks(context, survey)
+            try await upload(context, survey, pass)
+            try await workbooks(context, survey, pass)
             return true
         } catch {
             print("PhotoSync: background pass: \(error.localizedDescription)")
@@ -88,14 +97,16 @@ final class PhotoSync {
         guard canRunAutomatically, let context, let survey, survey.google.isSignedIn, survey.settings.autoUploadPhotos else { return }
         // time to hand the photos over if the person leaves the app mid-pass; iOS sends them from there
         let time = BackgroundTime("Drive photos")
+        let pass = session
         running = Task { [weak self] in
             defer { time.end() }
             var failed = false
-            do { try await self?.download(context, survey) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
-            do { try await self?.upload(context, survey) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
-            do { try await self?.workbooks(context, survey) } catch { failed = true; print("PhotoSync: workbooks: \(error.localizedDescription)") }
-            await self?.shareFolders(context, survey)
-            guard let self else { return }
+            do { try await self?.download(context, survey, pass) } catch { failed = true; print("PhotoSync: download: \(error.localizedDescription)") }
+            do { try await self?.upload(context, survey, pass) } catch { failed = true; print("PhotoSync: upload: \(error.localizedDescription)") }
+            do { try await self?.workbooks(context, survey, pass) } catch { failed = true; print("PhotoSync: workbooks: \(error.localizedDescription)") }
+            await self?.shareFolders(context, survey, pass)
+            // stopped (signed out) meanwhile: the next session's pass is its own, so leave it be
+            guard let self, self.session == pass else { return }
             self.running = nil
             // offline or a Drive hiccup: try again in a minute
             if self.again || failed { self.again = false; self.schedule(after: failed ? 60 : 1) }
@@ -106,22 +117,22 @@ final class PhotoSync {
     /// contractor assigned later, or a folder made before this, gets access without waiting for a new photo. Each
     /// address is sent once per folder (`shareJobFolder` remembers), so an up-to-date pass makes no request; a folder
     /// this account doesn't own is refused by Drive and tried again on a later pass.
-    private func shareFolders(_ context: ModelContext, _ survey: SurveyModel) async {
-        guard canRunAutomatically else { return }
+    private func shareFolders(_ context: ModelContext, _ survey: SurveyModel, _ pass: Int) async {
+        guard keepsGoing(pass) else { return }
         let jobs = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.driveFolderURL != nil }))) ?? []
-        for job in jobs where canRunAutomatically {
+        for job in jobs where keepsGoing(pass) {
             guard let url = job.driveFolderURL, let id = DriveConfig.folderID(from: url) else { continue }
             await survey.shareJobFolder(id, with: DriveReaders.team() + job.externals + (job.supervisorEmail.map { [$0] } ?? []))
         }
-        for report in survey.jobs where canRunAutomatically {
+        for report in survey.jobs where keepsGoing(pass) {
             guard let id = report.drive?.folderID, let readers = survey.driveReaders?(report) else { continue }
             await survey.shareJobFolder(id, with: readers)
         }
     }
 
     /// The photos other devices took, four at a time; each shows as soon as it lands.
-    private func download(_ context: ModelContext, _ survey: SurveyModel) async throws {
-        guard canRunAutomatically else { return }
+    private func download(_ context: ModelContext, _ survey: SurveyModel, _ pass: Int) async throws {
+        guard keepsGoing(pass) else { return }
         let todo = (try? context.fetch(FetchDescriptor<PhotoAsset>(predicate: #Predicate { $0.needsDownload }))) ?? []
         let files = todo.compactMap { p in p.driveFileID.map { (p.persistentModelID, $0) } }
         guard !files.isEmpty else { return }
@@ -135,33 +146,34 @@ final class PhotoSync {
                     do { return (modelID, .success(try await survey.driveDownload(id))) } catch { return (modelID, .failure(error)) }
                 }
             }
-            for _ in 0..<4 { start(allowed: canRunAutomatically) }
+            for _ in 0..<4 { start(allowed: keepsGoing(pass)) }
             for await (modelID, result) in group {
                 switch result {
                 case .success(let data):
-                    if let photo = context.model(for: modelID) as? PhotoAsset, !photo.isDeleted {
+                    // signed out while it downloaded: the record may be gone with the account's data
+                    if session == pass, let photo = context.model(for: modelID) as? PhotoAsset, !photo.isDeleted {
                         photo.data = data
                         photo.needsDownload = false
                         context.saveOrReport("photo download")
                     }
                 case .failure(let error): failure = error
                 }
-                start(allowed: canRunAutomatically)
+                start(allowed: keepsGoing(pass))
             }
         }
         if let failure { throw failure }
     }
 
     /// The photos taken here that Drive doesn't have yet, job by job, into the job's Drive folder.
-    private func upload(_ context: ModelContext, _ survey: SurveyModel) async throws {
-        guard canRunAutomatically else { return }
+    private func upload(_ context: ModelContext, _ survey: SurveyModel, _ pass: Int) async throws {
+        guard keepsGoing(pass) else { return }
         let waiting = (try? context.fetch(FetchDescriptor<PhotoAsset>(predicate: #Predicate { $0.driveFileID == nil && !$0.needsDownload }))) ?? []
         var jobs: [Job] = []
         for p in waiting {
             guard let job = p.ownerJob, !jobs.contains(where: { $0 === job }) else { continue }
             jobs.append(job)
         }
-        for job in jobs where canRunAutomatically {
+        for job in jobs where keepsGoing(pass) {
             let photos = ProjectDriveUpload.pendingPhotos(job)
             guard !photos.isEmpty else { continue }
             let route = DriveRoute(survey: survey)
@@ -173,7 +185,7 @@ final class PhotoSync {
             var waits: [(photo: PhotoAsset, wait: Task<String, Error>)] = []
             var failure: Error?
             do {
-                for p in photos where canRunAutomatically && !p.photo.isDeleted && p.photo.driveFileID == nil {
+                for p in photos where keepsGoing(pass) && !p.photo.isDeleted && p.photo.driveFileID == nil {
                     let place = route.construction(p.folder)
                     let path = place.joined(separator: "/")
                     if subfolders[path] == nil { subfolders[path] = try await survey.driveSubfolder(place, under: folder.id) }
@@ -198,11 +210,11 @@ final class PhotoSync {
 
     /// MP plan workbooks: one imported here goes up into the job's `แผนงาน MP` folder, one imported elsewhere comes down.
     /// Each job on its own: one that fails (offline, or a file this account can't read) doesn't hold back the others.
-    private func workbooks(_ context: ModelContext, _ survey: SurveyModel) async throws {
-        guard canRunAutomatically else { return }
+    private func workbooks(_ context: ModelContext, _ survey: SurveyModel, _ pass: Int) async throws {
+        guard keepsGoing(pass) else { return }
         let jobs = (try? context.fetch(FetchDescriptor<Job>(predicate: #Predicate { $0.scheduleWorkbookName != nil }))) ?? []
         var failure: Error?
-        for job in jobs where canRunAutomatically {
+        for job in jobs where keepsGoing(pass) {
             do { try await workbook(job, context, survey) } catch {
                 failure = failure ?? error
                 print("PhotoSync: workbook of \(job.code): \(error.localizedDescription)")

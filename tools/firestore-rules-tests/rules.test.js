@@ -233,6 +233,41 @@ test('photos of their records', async () => {
   await assertSucceeds(setDoc(doc(db(TEAM), 'photos', 'p8'), { tag: 'x', drive: 'id', inspection: 'icl1', externals: [CON] }));
 });
 
+test('a contractor changes or deletes only the photos and scans they added', async () => {
+  const d = db(CON);
+  // the team's photo on the contractor's own report and scan on their job, and ones from before `addedBy`
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const a = ctx.firestore();
+    await setDoc(doc(a, 'photos', 'team'), { tag: 'x', drive: 'id', log: 'log1', externals: [CON], addedBy: TEAM });
+    await setDoc(doc(a, 'photos', 'old'), { tag: 'x', drive: 'id', log: 'log1', externals: [CON] });
+    await setDoc(doc(a, 'devices', 'team'), { kind: 'panel', serial: 'S1', jobID: 'mine', externals: [CON], addedBy: TEAM });
+    await setDoc(doc(a, 'devices', 'old'), { kind: 'panel', serial: 'S2', jobID: 'mine', externals: [CON] });
+  });
+  await assertFails(deleteDoc(doc(d, 'photos', 'team')));
+  await assertFails(updateDoc(doc(d, 'photos', 'team'), { tag: 'y' }));
+  await assertFails(updateDoc(doc(d, 'photos', 'team'), { addedBy: CON }));
+  await assertFails(deleteDoc(doc(d, 'photos', 'old')));
+  await assertFails(updateDoc(doc(d, 'photos', 'old'), { tag: 'y' }));
+  await assertFails(deleteDoc(doc(d, 'devices', 'team')));
+  await assertFails(updateDoc(doc(d, 'devices', 'team'), { serial: 'S9' }));
+  await assertFails(deleteDoc(doc(d, 'devices', 'old')));
+  // their own: added as themselves, then changed and deleted, but never handed to someone else
+  await assertSucceeds(setDoc(doc(d, 'photos', 'own'), { tag: 'x', drive: 'id', log: 'log1', externals: [CON], addedBy: CON }));
+  await assertSucceeds(updateDoc(doc(d, 'photos', 'own'), { tag: 'y' }));
+  await assertFails(updateDoc(doc(d, 'photos', 'own'), { addedBy: TEAM }));
+  await assertSucceeds(deleteDoc(doc(d, 'photos', 'own')));
+  await assertSucceeds(setDoc(doc(d, 'devices', 'own'), { kind: 'panel', serial: 'S3', jobID: 'mine', externals: [CON], addedBy: CON }));
+  await assertSucceeds(updateDoc(doc(d, 'devices', 'own'), { serial: 'S4' }));
+  await assertSucceeds(deleteDoc(doc(d, 'devices', 'own')));
+  // never added as someone else; an older app build leaves it out
+  await assertFails(setDoc(doc(d, 'photos', 'fake'), { tag: 'x', drive: 'id', log: 'log1', externals: [CON], addedBy: TEAM }));
+  await assertFails(setDoc(doc(d, 'devices', 'fake'), { kind: 'panel', serial: 'S5', jobID: 'mine', externals: [CON], addedBy: OTHER }));
+  await assertSucceeds(setDoc(doc(d, 'devices', 'older'), { kind: 'panel', serial: 'S6', jobID: 'mine', externals: [CON] }));
+  // the team still changes and deletes any of them
+  await assertSucceeds(deleteDoc(doc(db(TEAM), 'photos', 'old')));
+  await assertSucceeds(updateDoc(doc(db(TEAM), 'devices', 'team'), { serial: 'S7' }));
+});
+
 test('a manager invites, changes the role of and removes members, never themselves', async () => {
   const d = db(BOSS);
   await assertSucceeds(getDocs(collection(d, 'members')));

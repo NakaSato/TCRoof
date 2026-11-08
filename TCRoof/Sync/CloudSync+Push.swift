@@ -268,6 +268,8 @@ extension CloudSync {
             if let owned = model as? OwnedRecord, Permissions.normalized(owned.ownerEmail) != me { continue }
             // an external member's record outside their jobs stays on the device: the rules would refuse it
             if let external, model.ownerJob?.externals.contains(external) != true { continue }
+            // made on this device and never sent: it names this account as who added it (`AddedByRecord`)
+            if let added = model as? AddedByRecord, added.addedBy == nil, known[key] == nil, !me.isEmpty { added.addedBy = me }
             let record = model.record
             let print = cache.fingerprint(id: key, record: record) { fingerprint($0) }
             guard known[key] != print else { continue }

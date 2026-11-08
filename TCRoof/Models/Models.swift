@@ -491,6 +491,8 @@ final class ScannedDevice {
     var scannedBy: String
     var job: Job?
     var syncID: String?
+    /// Who scanned it, by email (`AddedByRecord`): firestore.rules let a contractor change or delete only their own.
+    var addedBy: String?
 
     init(kind: DeviceKind, serial: String, scannedBy: String) {
         self.kindRaw = kind.rawValue

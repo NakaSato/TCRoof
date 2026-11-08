@@ -30,7 +30,8 @@ beforeEach(async () => {
     await setDoc(doc(d, 'members', OTHER), { role: 'external' });
     await setDoc(doc(d, 'members', DEV), { role: 'maintainer' });
     await setDoc(doc(d, 'members', DEV2), { role: 'maintainer' });
-    await setDoc(doc(d, 'config', 'app'), { installLink: 'x' });
+    await setDoc(doc(d, 'config', 'app'), { centerDriveFolder: 'folder', claimShareWith: [BOSS] });
+    await setDoc(doc(d, 'config', 'public'), { installLink: 'x', minSyncVersion: 1, driveShareWith: [TEAM] });
     await setDoc(doc(d, 'config', 'devKey'), { hash: 'h', salt: 's', iterations: 100000 });
     await setDoc(doc(d, 'config', 'roleOverrides'), {});
     await setDoc(doc(d, 'jobs', 'mine'), { code: 'TC-1', externals: [CON], iecReport: null, status: 'installing' });
@@ -471,6 +472,19 @@ test('only a Maintainer suspends and reactivates, never themselves or another Ma
   await assertSucceeds(deleteDoc(doc(db(DEV), 'members', CON)));
   // a manager is suspended like anyone else
   await assertSucceeds(updateDoc(doc(db(DEV), 'members', BOSS), suspend(DEV)));
+});
+
+test('config/app is the team\'s; config/public every member\'s (CHA-59)', async () => {
+  // a contractor never sees the center Drive or the claim share list, but still reads the update gate
+  await assertFails(getDoc(doc(db(CON), 'config', 'app')));
+  await assertSucceeds(getDoc(doc(db(CON), 'config', 'public')));
+  await assertSucceeds(getDoc(doc(db(TEAM), 'config', 'app')));
+  await assertSucceeds(getDoc(doc(db(TEAM), 'config', 'public')));
+  await assertSucceeds(getDoc(doc(db(BOSS), 'config', 'app')));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'public')));
+  // set in the console only
+  await assertFails(setDoc(doc(db(BOSS), 'config', 'public'), { minSyncVersion: 0 }));
+  await assertFails(setDoc(doc(db(BOSS), 'config', 'app'), { centerDriveFolder: 'x' }));
 });
 
 test('a suspended member reads nothing but their own membership', async () => {

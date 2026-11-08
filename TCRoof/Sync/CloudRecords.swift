@@ -128,7 +128,7 @@ extension Job: CloudSynced {
 
     static let collection = "jobs"
 
-    /// Set from `config/app.contactsSplit` once every device runs a version that reads `jobContacts`: the job's own
+    /// Set from `config/public.contactsSplit` once every device runs a version that reads `jobContacts`: the job's own
     /// document then leaves out the phone and address. Before that, an older app would blank the ones it has.
     nonisolated(unsafe) static var contactsSplit = false
 

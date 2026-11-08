@@ -24,7 +24,7 @@ final class MemberDirectory {
     private(set) var loaded = false
     /// The last refusal or failure, for the page's banner.
     var error: String?
-    /// `config/app.installLink`, set in the Firebase console: where the invited person gets the app.
+    /// `config/public.installLink`, set in the Firebase console: where the invited person gets the app.
     private(set) var installLink: String?
 
     @ObservationIgnored private var registration: ListenerRegistration?
@@ -48,11 +48,8 @@ final class MemberDirectory {
                 self.loaded = true
             }
         }
-        db.document("config/app").getDocument { @Sendable [weak self] snapshot, _ in
-            Task { @MainActor in
-                self?.installLink = (snapshot?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 }
-            }
-        }
+        // `config/public` (or `config/app`) as sync last read it (`AppGate`)
+        installLink = AppGate.shared.installLink?.absoluteString
     }
 
     func stop() {

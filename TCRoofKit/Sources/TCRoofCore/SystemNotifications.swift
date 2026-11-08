@@ -10,6 +10,8 @@ public enum NotificationType: String, CaseIterable, Sendable {
     case install, mp, feed, issue, inspect
     /// A manager's decision on the person's expense claim (`ClaimNotification`).
     case claim
+    /// A paired station went into alarm or offline (`MonitoringNotification`).
+    case monitor
 
     /// The coloured word after `TCROOF |` on the board.
     public var category: String {
@@ -27,6 +29,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .issue: "ปัญหา"
         case .inspect: "รอผู้ตรวจ"
         case .claim: "เบิกจ่าย"
+        case .monitor: "Monitor"
         }
     }
 
@@ -34,7 +37,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
     public var level: Level {
         switch self {
         case .late: .timeSensitive
-        case .survey, .queue, .report, .install, .mp, .feed, .issue, .inspect, .claim: .active
+        case .survey, .queue, .report, .install, .mp, .feed, .issue, .inspect, .claim, .monitor: .active
         case .cal, .sync, .done: .passive
         }
     }
@@ -51,7 +54,7 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .sync: [.syncNow, .viewPending]
         case .done: [.openDrive, .shareLink]
         case .install: [.navigate]
-        case .report, .mp, .feed, .issue, .inspect, .claim: []
+        case .report, .mp, .feed, .issue, .inspect, .claim, .monitor: []
         }
     }
 
@@ -65,13 +68,14 @@ public enum NotificationType: String, CaseIterable, Sendable {
         case .install, .mp: .plan
         case .feed, .issue, .inspect: .feed
         case .claim: .claim
+        case .monitor: .monitor
         }
     }
 }
 
 /// A switch in Settings › การแจ้งเตือน.
 public enum NotificationGroup: String, CaseIterable, Sendable {
-    case survey, tools, calibration, syncExport, report, plan, feed, claim
+    case survey, tools, calibration, syncExport, report, plan, feed, claim, monitor
 
     public var title: String {
         switch self {
@@ -83,6 +87,7 @@ public enum NotificationGroup: String, CaseIterable, Sendable {
         case .plan: "วันติดตั้งและแผน MP"
         case .feed: "ความคืบหน้าโครงการ"
         case .claim: "ผลอนุมัติใบเบิก"
+        case .monitor: "สถานีมีปัญหาหรือออฟไลน์ (Monitor)"
         }
     }
 
@@ -408,6 +413,8 @@ public enum DeepLink: Equatable, Sendable {
     case records
     /// เดินทางและเบิกค่าใช้จ่าย on a month ("2026-10"), where a claim decision leads.
     case claims(month: String)
+    /// The iPad dock's `Monitor` tab, where a station's alarm leads.
+    case monitor
     case home
 
     /// The link for a tap (`action` nil or the system default / dismiss id) or a quick action.
@@ -427,6 +434,7 @@ public enum DeepLink: Equatable, Sendable {
             case .install, .mp: return job.isEmpty ? .home : .job(job: job)
             case .feed, .issue, .inspect: return FeedNotification.link(info)
             case .claim: return ClaimNotification.link(info)
+            case .monitor: return .monitor
             }
         }
         switch action {

@@ -494,11 +494,35 @@ public struct SurveySettings: Codable, Equatable {
         let typed = mapboxToken.trimmingCharacters(in: .whitespacesAndNewlines)
         return MapImage.Keys(mapbox: typed.isEmpty ? Self.bundledMapboxToken : typed, google: googleMapsKey)
     }
+    /// The typed API keys live in the Keychain (this device only, never in a backup), not in the settings JSON (CHA-52).
+    static let secretKeys: [(account: String, field: WritableKeyPath<SurveySettings, String>)] = [
+        ("settings.mapboxToken", \.mapboxToken), ("settings.googleMapsKey", \.googleMapsKey), ("settings.gistdaKey", \.gistdaKey),
+    ]
+
     static func load() -> SurveySettings {
-        guard let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(SurveySettings.self, from: d) else { return SurveySettings() }
+        guard let d = UserDefaults.standard.data(forKey: key), var s = try? JSONDecoder().decode(SurveySettings.self, from: d) else {
+            var s = SurveySettings(); s.readSecrets(); return s
+        }
+        // a key an older version kept in the JSON moves to the Keychain once
+        let legacy = secretKeys.contains { !s[keyPath: $0.field].isEmpty }
+        if legacy { s.save() } else { s.readSecrets() }
         return s
     }
-    func save() { if let d = try? JSONEncoder().encode(self) { UserDefaults.standard.set(d, forKey: Self.key) } }
+
+    private mutating func readSecrets() {
+        for k in Self.secretKeys { self[keyPath: k.field] = Keychain.read(k.account) ?? "" }
+    }
+
+    func save() {
+        var plain = self
+        for k in Self.secretKeys {
+            let v = self[keyPath: k.field].trimmingCharacters(in: .whitespacesAndNewlines)
+            if v.isEmpty { Keychain.delete(k.account) } else { Keychain.write(k.account, v) }
+            // keep it in the JSON only if the Keychain refused it, so a key is never lost
+            if v.isEmpty || Keychain.read(k.account) == v { plain[keyPath: k.field] = "" }
+        }
+        if let d = try? JSONEncoder().encode(plain) { UserDefaults.standard.set(d, forKey: Self.key) }
+    }
 }
 
 extension UIImage {

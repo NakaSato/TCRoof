@@ -52,7 +52,7 @@ struct SurveySettingsView: View {
                     SecureField("GISTDA API key", text: $s.gistdaKey)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                 } footer: {
-                    Text("ใช้ปุ่ม \"ดึงข้อมูลจาก GISTDA\" ในหน้า A4 เมื่อไม่ทราบประวัติน้ำท่วม key เก็บในเครื่องนี้เท่านั้น ไม่ถูกบันทึกในงานหรือส่งขึ้น Drive")
+                    Text("ใช้ปุ่ม \"ดึงข้อมูลจาก GISTDA\" ในหน้า A4 เมื่อไม่ทราบประวัติน้ำท่วม key และ token ทุกช่องเก็บใน Keychain ของเครื่องนี้เท่านั้น ไม่ถูกบันทึกในงาน ไม่อยู่ในข้อมูลสำรอง และไม่ส่งขึ้น Drive")
                 }
                 PadSection("Google Drive") {
                     TextField("xxxxxxxx.apps.googleusercontent.com", text: $s.googleClientID)

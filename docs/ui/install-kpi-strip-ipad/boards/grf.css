@@ -1,0 +1,89 @@
+/* GRoof / TCRoof wizard shell — values from InspectionView (InspectionViews.swift), Components.swift, Theme.swift */
+.g, .g * { box-sizing: border-box; }
+.g {
+  --navy: #16325C; --primary: #1F6FB5; --primary-light: #2E8FDB; --teal: #27A99A; --mint: #9EE6D6;
+  --danger: #D9453B; --background: #F3F6FA; --muted: #7A8BA3; --text-2: #5B6B82;
+  font-family: -apple-system, "SF Pro Text", Sarabun, system-ui, sans-serif; color: var(--navy); background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+.g svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* header: headerGradient, bottom corners 15 */
+.g-head { flex: none; display: flex; align-items: center; gap: 14px; padding: 18px 24px; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); border-radius: 0 0 15px 15px; color: #FFFFFF; }
+.g-close { width: 36px; height: 36px; border-radius: 8px; background: #FFFFFF; color: var(--primary); display: grid; place-items: center; border: 0; flex: none; }
+.g-close svg { stroke-width: 2.5; width: 18px; height: 18px; }
+.g-head .t { font-size: 20px; line-height: 25px; font-weight: 700; }
+.g-head .s { font-size: 15px; line-height: 20px; opacity: .92; }
+
+/* progress: "3/11" · step name · capsules (gradient = current/past, mint = complete, grey = todo) */
+.g-prog { flex: none; padding: 14px 24px; display: flex; flex-direction: column; gap: 10px; }
+.g-prog .row { display: flex; justify-content: space-between; font-size: 15px; color: var(--navy); }
+.g-prog .row b { font-weight: 700; }
+.g-caps { display: flex; gap: 6px; }
+.g-caps i { flex: 1; height: 8px; border-radius: 4px; background: rgba(142,142,147,0.25); }
+.g-caps i.cur { background: linear-gradient(90deg, #1F6FB5, #2E8FDB); }
+.g-caps i.ok { background: var(--mint); }
+
+/* step body (maxWidth 760, padding 24, spacing 20) */
+.g-body { flex-grow: 1; overflow: hidden; padding: 4px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
+.g-sec { font-size: 20px; line-height: 25px; font-weight: 600; color: var(--navy); }
+.g-hint { display: flex; gap: 6px; align-items: flex-start; font-size: 15px; line-height: 20px; color: var(--muted); }
+.g-hint svg { width: 17px; height: 17px; margin-top: 1px; }
+.g-sep { height: 1px; background: rgba(22,50,92,0.12); }
+
+/* FieldLabel: headline navy + red * */
+.g-field { display: flex; flex-direction: column; gap: 8px; }
+.g-label { display: flex; align-items: baseline; gap: 8px; font-size: 17px; line-height: 22px; font-weight: 600; color: var(--navy); }
+.g-label .req { color: var(--danger); }
+.g-label .aside { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* OutlinedFieldStyle: padding 14, radius 10, navy 45% stroke */
+.g-input { display: flex; align-items: center; min-height: 50px; padding: 14px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); border-radius: 10px; font-size: 17px; line-height: 22px; color: var(--navy); }
+.g-input.focus { border: 2px solid var(--primary); padding: 13px; }
+.g-input .ph { color: var(--muted); }
+.g-input .unit { margin-left: auto; padding-left: 10px; font-size: 20px; color: var(--muted); }
+.g-input.calc { background: rgba(158,230,214,0.3); }
+.g-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.g-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+/* ChoiceButton: minHeight 54, radius 10; selected mint (ไม่ผ่าน/ไม่ใช่: danger 25%) */
+.g-choices { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; }
+.g-choices.wrap { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.g-choice { min-height: 54px; display: grid; place-items: center; padding: 0 10px; text-align: center; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.5); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-choice.on { background: var(--mint); border-color: rgba(22,50,92,0.2); }
+.g-choice.no { background: rgba(217,69,59,0.25); border-color: rgba(22,50,92,0.2); }
+
+/* photo: อัปโหลด | กล้อง, thumbnails with x */
+.g-photobtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.g-pbtn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.45); font-size: 16px; font-weight: 600; color: var(--navy); }
+.g-pbtn svg { color: var(--primary); }
+.g-thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+.g-thumb { width: 84px; height: 84px; border-radius: 8px; background: #C9D6E3; position: relative; }
+.g-thumb .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #FFFFFF; display: grid; place-items: center; }
+.g-thumb .x svg { width: 12px; height: 12px; stroke-width: 3; }
+.g-thumb .tag { position: absolute; left: 4px; bottom: 4px; font-size: 11px; line-height: 16px; background: rgba(255,255,255,0.92); padding: 0 6px; border-radius: 4px; }
+.g-nophoto { min-height: 80px; display: grid; place-items: center; background: #FFFFFF; border: 1px dashed rgba(122,139,163,0.5); border-radius: 10px; font-size: 15px; color: var(--muted); }
+.g-hasphoto { min-height: 50px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-crit { font-size: 15px; line-height: 20px; color: var(--danger); }
+
+/* bottom bar: บันทึก (outlined) + ‹ › gradient 120×56 */
+.g-bar { flex: none; display: flex; gap: 16px; padding: 16px 24px 28px; background: #FFFFFF; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.g-save { flex-grow: 1; min-height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(22,50,92,0.6); font-size: 17px; font-weight: 600; color: var(--navy); }
+.g-nav { width: 120px; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #1F6FB5, #2E8FDB); color: #FFFFFF; display: grid; place-items: center; }
+.g-nav svg { width: 22px; height: 22px; stroke-width: 2.75; }
+.g-nav.off { background: rgba(142,142,147,0.4); }
+.g-go { flex-grow: 1; min-height: 56px; border-radius: 12px; border: 0; background: linear-gradient(90deg, #27A99A, #4DB6E0); color: #FFFFFF; font-size: 17px; font-weight: 600; }
+
+/* StepSummaryRow */
+.g-sum { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; background: #FFFFFF; border-radius: 12px; text-decoration: none; color: var(--navy); }
+.g-sum .n { flex-grow: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+.g-sum .n small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.g-sum .ok { color: #2E9E5B; }
+.g-sum .miss { color: var(--danger); }
+.g-sum .chev { color: var(--muted); }
+
+/* compact bottom bar (owner request 2 ต.ค.): applies to every step page; overrides per-page inline padding */
+.g-bar { padding: 8px 24px 12px !important; gap: 12px; }
+.g-save, .g-nav, .g-go, .g-bar button, .g-bar a { min-height: 53px !important; height: 53px !important; border-radius: 10px !important; }
+.g-nav svg { width: 18px; height: 18px; }
+/* button order (owner request 3 ต.ค.): ‹ ก่อนหน้า sits next to ถัดไป › on every page — markup order บันทึกร่าง · ‹ · › ; extra space after บันทึกร่าง groups the two nav buttons */
+.g-bar > div > button.g-save { margin-right: 12px !important; }

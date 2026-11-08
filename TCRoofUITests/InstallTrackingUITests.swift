@@ -131,6 +131,35 @@ final class InstallTrackingUITests: XCTestCase {
         XCTAssertFalse(row.exists, "the sheet should be closed after opening an item")
     }
 
+    /// The KPI strip's cells switch the progress card under it, the switched cell marked, and `SPI` explains itself.
+    func testKPICellsSwitchTheProgressCard() {
+        let app = launch([])
+        XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))
+        let progress = app.buttons["kpi.ความคืบหน้า"], forecast = app.buttons["kpi.คาดส่งมอบ"]
+        let curve = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "S-Curve")).firstMatch
+        let gantt = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Gantt")).firstMatch
+        XCTAssertTrue(progress.waitForExistence(timeout: 8))
+
+        progress.tap()
+        XCTAssertTrue(waitSelected(curve), "ความคืบหน้า should switch the card to S-Curve")
+        XCTAssertTrue(progress.isSelected, "the cell of the view showing is marked")
+        XCTAssertFalse(forecast.isSelected)
+
+        forecast.tap()
+        XCTAssertTrue(waitSelected(gantt), "คาดส่งมอบ should switch the card to Gantt")
+        XCTAssertTrue(forecast.isSelected)
+        XCTAssertFalse(progress.isSelected)
+
+        app.buttons["kpi.SPI"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["kpi.SPI.popover"].waitForExistence(timeout: 8), "SPI should explain itself")
+        XCTAssertTrue(gantt.isSelected, "SPI leaves the card's view as it was")
+    }
+
+    private func waitSelected(_ e: XCUIElement) -> Bool {
+        let done = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: e)
+        return XCTWaiter().wait(for: [done], timeout: 8) == .completed
+    }
+
     func testDocumentTileListsItsItems() {
         let app = launch()
         XCTAssertTrue(pageBack(app).waitForExistence(timeout: slow))

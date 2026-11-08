@@ -4,12 +4,6 @@
     "กรุณาใช้อีเมลองค์กรที่ได้รับอนุญาต": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Please use an authorized organization email"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -21,12 +15,6 @@
     "การเชื่อมต่อและ IEC": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grid Connection & IEC"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -38,12 +26,6 @@
     "กำลังซิงก์...": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Syncing..."
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -55,12 +37,6 @@
     "กำลังดำเนินการ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In Progress"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -72,12 +48,6 @@
     "กำลังเตรียมข้อมูลบัญชี": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Setting up account data..."
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -89,12 +59,6 @@
     "ข้อมูลอ้างอิง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reference Data"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -106,12 +70,6 @@
     "ความคืบหน้า": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Progress"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -123,12 +81,6 @@
     "ความคืบหน้าภาพรวม": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Overall Progress"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -140,12 +92,6 @@
     "คำขอรายสัปดาห์": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weekly Requests"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -157,12 +103,6 @@
     "งานติดตั้ง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Installation"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -174,12 +114,6 @@
     "งานบ้าน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Residential"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -191,12 +125,6 @@
     "งานสำรวจ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Survey"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -208,12 +136,6 @@
     "ซิงก์แล้ว": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Synced"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -225,12 +147,6 @@
     "ดาวน์โหลด": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -242,12 +158,6 @@
     "ตกลง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -259,12 +169,6 @@
     "ตรงเวลา": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On Time"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -276,12 +180,6 @@
     "ตั้งค่า": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Settings"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -293,12 +191,6 @@
     "ตั้งค่าโครงการ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project Settings"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -310,12 +202,6 @@
     "ถ่ายรูป": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Take Photo"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -327,12 +213,6 @@
     "ถ่ายใหม่": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retake"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -344,12 +224,6 @@
     "ทั้งหมด": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -361,12 +235,6 @@
     "ทีมภายใน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Internal Team"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -378,12 +246,6 @@
     "ทีมและสิทธิ์": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Team & Permissions"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -395,12 +257,6 @@
     "บันทึก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -412,12 +268,6 @@
     "ปิด": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -429,12 +279,6 @@
     "ผังติดตั้ง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Key Plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -446,12 +290,6 @@
     "ผู้ดูแลระบบ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maintainer"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -463,12 +301,6 @@
     "ผู้รับเหมา": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contractor"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -480,12 +312,6 @@
     "ผู้รับเหมาภายนอก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "External Contractor"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -497,12 +323,6 @@
     "พิมพ์รายงาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Print Report"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -514,12 +334,6 @@
     "ยกเลิก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancel"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -531,12 +345,6 @@
     "ยังเปิดข้อมูลไม่ได้ ลองอีกครั้งหรือออกจากระบบ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unable to load data. Please try again or sign out."
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -548,12 +356,6 @@
     "ยังไม่บันทึก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unsaved"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -565,12 +367,6 @@
     "ยังไม่มีผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No plan available"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -582,12 +378,6 @@
     "ยังไม่มีแผน MP": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No MP Plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -599,12 +389,6 @@
     "ยังไม่ระบุตำแหน่ง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Location not specified"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -616,12 +400,6 @@
     "ยังไม่วาง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unplaced"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -633,12 +411,6 @@
     "ยังไม่วางบนผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not placed on plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -650,12 +422,6 @@
     "ย้ายจุดบนผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Move on plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -667,12 +433,6 @@
     "รอบรายงาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Report Cycle"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -684,12 +444,6 @@
     "ระงับการใช้งาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suspended"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -701,12 +455,6 @@
     "ระบบออฟไลน์": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Offline"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -718,12 +466,6 @@
     "รายงานประจำวัน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Daily Report"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -735,12 +477,6 @@
     "ลงชื่อเข้าใช้ด้วย Google": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign in with Google"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -752,12 +488,6 @@
     "ลบ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -769,12 +499,6 @@
     "ลองอีกครั้ง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try Again"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -786,12 +510,6 @@
     "ล่าช้า": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delayed"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -803,12 +521,6 @@
     "วางครบทุกจุดแล้ว": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All points placed"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -820,12 +532,6 @@
     "วิศวกรผู้ควบคุมงาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Supervising Engineer"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -837,12 +543,6 @@
     "สมาชิกทีม": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Team Members"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -854,12 +554,6 @@
     "สแกน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Scan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -871,12 +565,6 @@
     "ส่งต่อ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Forward"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -888,12 +576,6 @@
     "ส่งมอบ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Handover"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -905,12 +587,6 @@
     "ส่งออก Excel": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Export Excel"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -922,12 +598,6 @@
     "ส่งออก PDF": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Export PDF"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -939,12 +609,6 @@
     "หน้าแรก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Home"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -956,12 +620,6 @@
     "หัวเอกสาร": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Document Header"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -973,12 +631,6 @@
     "อยู่บนผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Placed on plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -990,12 +642,6 @@
     "ออกจากระบบ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign Out"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1007,12 +653,6 @@
     "อัปโหลดผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upload Plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1024,12 +664,6 @@
     "เข้าสู่ระบบไม่สำเร็จ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign in failed"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1041,12 +675,6 @@
     "เครื่องมือ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tools"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1058,12 +686,6 @@
     "เตรียมข้อมูลบัญชีไม่สำเร็จ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Account Setup Failed"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1075,12 +697,6 @@
     "เปลี่ยนบทบาท": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change Role"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1092,12 +708,6 @@
     "เปลี่ยนวิศวกรผู้ควบคุมงาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change Supervising Engineer"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1109,12 +719,6 @@
     "เพิ่มข้อมูล": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Info"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1126,12 +730,6 @@
     "เพิ่มคนจากรายชื่อทีม": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Team Member"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1143,12 +741,6 @@
     "เพิ่มผู้รับเหมา": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Contractor"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1160,12 +752,6 @@
     "เพิ่มรูปภาพ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Photos"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1177,12 +763,6 @@
     "เพิ่มสมาชิก": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Member"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1194,12 +774,6 @@
     "เลือกจากคลังภาพ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose from Library"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1211,12 +785,6 @@
     "เสร็จสมบูรณ์": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Completed"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1228,12 +796,6 @@
     "เสร็จสิ้น": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1245,12 +807,6 @@
     "เอกสาร": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Documents"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1262,12 +818,6 @@
     "เอาออกจากผัง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove from plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1279,12 +829,6 @@
     "แก้ไข": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1296,12 +840,6 @@
     "แชร์": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1313,12 +851,6 @@
     "แตะบนผังเพื่อวาง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap on plan to place"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1330,12 +862,6 @@
     "แบบก่อสร้าง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Construction Drawings"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1347,12 +873,6 @@
     "แผนก่อสร้าง": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Construction Plan"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1364,12 +884,6 @@
     "แผนงาน": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schedule"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1381,12 +895,6 @@
     "โครงการ": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projects"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",
@@ -1398,12 +906,6 @@
     "โครงการ PWA": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PWA Projects"
-          }
-        },
         "th": {
           "stringUnit": {
             "state": "translated",

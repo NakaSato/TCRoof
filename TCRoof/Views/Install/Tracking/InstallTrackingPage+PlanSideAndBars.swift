@@ -84,16 +84,20 @@ extension InstallPlanTabView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(p.milestones) { m in
-                    let left = MasterSchedule.calendar.dateComponents([.day], from: p.today, to: MasterSchedule.calendar.startOfDay(for: m.date)).day ?? 0
+                    let state = m.state(today: p.today)
                     HStack(spacing: 12) {
-                        MilestoneDiamond(passed: left < 0)
+                        MilestoneDiamond(state: state)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy)
                                 .lineLimit(2).minimumScaleFactor(0.85)
                             Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
-                        InstallTrackingPage.chip(left < 0 ? "ผ่านแล้ว" : left == 0 ? "วันนี้" : "อีก \(left) วัน", left < 0 ? .ok : .info)
+                        switch state {
+                        case .passed: InstallTrackingPage.chip("ผ่านแล้ว", .ok)
+                        case .late(let days): InstallTrackingPage.chip("เลยกำหนด \(days) วัน", .danger)
+                        case .ahead(let days): InstallTrackingPage.chip(days == 0 ? "วันนี้" : "อีก \(days) วัน", .info)
+                        }
                     }
                     .padding(.vertical, 4)
                     .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
@@ -130,15 +134,19 @@ extension InstallPlanTabView {
     }
 }
 
-/// A milestone's diamond: green filled when passed, navy outlined when ahead.
+/// A milestone's diamond: green filled when passed, red filled when its date is gone and it isn't, navy outlined when ahead.
 struct MilestoneDiamond: View {
-    let passed: Bool
+    let state: InstallPlan.Milestone.State
+
 
     var body: some View {
         Group {
-            if passed {
+            switch state {
+            case .passed:
                 Rectangle().fill(Theme.success)
-            } else {
+            case .late:
+                Rectangle().fill(Theme.danger)
+            case .ahead:
                 Rectangle().strokeBorder(Theme.navy, lineWidth: 2).background(Theme.surface)
             }
         }

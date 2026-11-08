@@ -192,9 +192,11 @@ struct InstallPlanTabView: View {
                 Button {
                     withAnimation(.snappy) { showMilestones.toggle() }
                 } label: {
-                    Label("Milestone", systemImage: showMilestones ? "sidebar.right" : "sidebar.right")
+                    // a show / hide switch, not the page's action: secondary in both states, the box tells which
+                    Label("Milestone", systemImage: showMilestones ? "checkmark.square.fill" : "square")
                 }
-                .buttonStyle(TCButtonStyle(showMilestones ? .primary : .secondary, size: .card)).fixedSize()
+                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                .accessibilityAddTraits(showMilestones ? .isSelected : [])
                 .accessibilityLabel(showMilestones ? "ซ่อน Milestone" : "แสดง Milestone")
 
                 if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
@@ -474,7 +476,7 @@ struct InstallPlanTabView: View {
         ZStack(alignment: .leading) {
             ForEach(p.milestones) { m in
                 let x = (axis.x(m.date, width) + axis.xEnd(m.date, width)) / 2
-                MilestoneDiamond(passed: m.date < p.today).position(x: x, y: 22)
+                MilestoneDiamond(state: m.state(today: p.today)).position(x: x, y: 22)
             }
         }
         .frame(width: width, height: 44, alignment: .leading)

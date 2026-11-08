@@ -147,4 +147,16 @@ final class InstallPlanTests: XCTestCase {
         XCTAssertEqual(p.overTeam, [d(6)])
         XCTAssertTrue(plan(crew: [d(6): 20]).overTeam.isEmpty, "no team size, nothing to be over")
     }
+
+    /// A milestone is passed when its work is done, not when its date goes by: a late station's ส่งมอบ reads เลยกำหนด.
+    func testMilestoneStateFollowsTheWork() {
+        typealias M = InstallPlan.Milestone
+        let today = d(6)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(2), done: false).state(today: today), .late(days: 4))
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(2), done: true).state(today: today), .passed)
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: true).state(today: today), .passed, "done early is passed")
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(9), done: false).state(today: today), .ahead(days: 3))
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(6), done: false).state(today: today), .ahead(days: 0), "today is not late yet")
+        XCTAssertEqual(M(title: "ส่งมอบ", date: d(2)).state(today: today), .passed, "nothing says: the date decides, as before")
+    }
 }

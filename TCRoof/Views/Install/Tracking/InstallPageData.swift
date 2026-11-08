@@ -139,9 +139,15 @@ struct InstallPageData {
         self.site = Self.site(job: job, gantt: gantt, today: today)
         if let g = gantt, let input = job.scheduleInput {
             let tasks = Dictionary(MasterSchedule.plan(input).map { ($0.task, $0) }) { a, _ in a }
-            var milestones = [InstallPlan.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart)]
-            if let pre = tasks[.preCommissioning]?.start { milestones.append(.init(title: "ทดสอบระบบ (Pre-Commissioning)", date: pre)) }
-            milestones.append(.init(title: "ส่งมอบ", date: job.installEnd))
+            // a milestone is passed when its work is booked, not when its date goes by (a late station's ส่งมอบ isn't passed)
+            let actual = job.scheduleActual, booked = tracking?.actual ?? 0
+            var milestones = [InstallPlan.Milestone(title: "เริ่มงานหน้างาน", date: job.installStart, done: booked > 0)]
+            if let pre = tasks[.preCommissioning], let preStart = pre.start {
+                let preDone = actual.finished[MasterSchedule.Task.preCommissioning.rawValue] != nil
+                    || (pre.weight > 0 && actual.done(.preCommissioning, through: today) >= pre.weight - 0.001)
+                milestones.append(.init(title: "ทดสอบระบบ (Pre-Commissioning)", date: preStart, done: preDone))
+            }
+            milestones.append(.init(title: "ส่งมอบ", date: job.installEnd, done: booked >= 99.95))
             // the weekly requests' planned crew; the plan itself keeps no crew
             let crew = Dictionary((site?.labour ?? []).compactMap { l in l.plan.map { (cal.startOfDay(for: l.date), $0) } }) { a, _ in a }
             var p = InstallPlan(gantt: g, nonWorking: nonWorking, tracking: tracking, milestones: milestones, crew: crew)

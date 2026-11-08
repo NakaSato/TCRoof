@@ -12,8 +12,10 @@ extension InstallTrackingPage {
     /// The left column of names and the right column of percents, as on the board.
     static let nameWidth: CGFloat = 250
     static let percentWidth: CGFloat = 64
-    /// The page's bottom padding: the last cards end above the dock (PadDockBar height ~52 + padding 18 + safe area 21 = 91 pt).
-    static let dockClearance: CGFloat = 96
+    /// The gap under the page's last card. `padDock` already takes the dock's height out of the page (its bottom safe
+    /// area inset), so the page's `viewport` ends at the dock's top: taking the dock's 96 pt off again left a band of
+    /// that height empty under the fitted cards (แผนก่อสร้าง, the progress card, รายงานประจำวัน).
+    static let dockClearance: CGFloat = 14
     static let stageHeight: CGFloat = 46
     static let subHeight: CGFloat = 31
 

@@ -186,15 +186,19 @@ extension InstallPhonePlanTabView {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Milestone").font(.sarabunFixed(17, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 ForEach(p.milestones) { m in
-                    let left = MasterSchedule.calendar.dateComponents([.day], from: p.today, to: MasterSchedule.calendar.startOfDay(for: m.date)).day ?? 0
+                    let state = m.state(today: p.today)
                     HStack(spacing: 12) {
-                        MilestoneDiamond(passed: left < 0)
+                        MilestoneDiamond(state: state)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(m.title).font(.sarabunFixed(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
                             Text("กำหนด " + ThaiFormat.numericDate.string(from: m.date)).font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
                         }
                         Spacer(minLength: 6)
-                        toneChip(left < 0 ? "ผ่านแล้ว" : left == 0 ? "วันนี้" : "อีก \(left) วัน", left < 0 ? .ok : .info)
+                        switch state {
+                        case .passed: toneChip("ผ่านแล้ว", .ok)
+                        case .late(let days): toneChip("เลยกำหนด \(days) วัน", .danger)
+                        case .ahead(let days): toneChip(days == 0 ? "วันนี้" : "อีก \(days) วัน", .info)
+                        }
                     }
                     .padding(.vertical, 6)
                     .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }

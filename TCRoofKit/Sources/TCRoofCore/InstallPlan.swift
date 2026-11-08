@@ -36,8 +36,21 @@ public struct InstallPlan: Equatable, Sendable {
     public struct Milestone: Equatable, Sendable, Identifiable {
         public let title: String
         public let date: Date
+        /// Whether the work it marks is done (the station started, 3.1 booked, everything booked); nil when nothing says,
+        /// and then only its date tells passed from ahead.
+        public let done: Bool?
         public var id: String { title }
-        public init(title: String, date: Date) { self.title = title; self.date = date }
+        public init(title: String, date: Date, done: Bool? = nil) { self.title = title; self.date = date; self.done = done }
+
+        /// `ผ่านแล้ว` once done, `เลยกำหนด` when its date is gone and it isn't, else ahead (`วันนี้` / `อีก n วัน`).
+        public enum State: Equatable, Sendable { case passed, late(days: Int), ahead(days: Int) }
+
+        public func state(today: Date, calendar cal: Calendar = MasterSchedule.calendar) -> State {
+            let left = cal.dateComponents([.day], from: cal.startOfDay(for: today), to: cal.startOfDay(for: date)).day ?? 0
+            if done == true { return .passed }
+            if left < 0 { return done == false ? .late(days: -left) : .passed }
+            return .ahead(days: left)
+        }
     }
 
     public struct Baseline: Equatable, Sendable {

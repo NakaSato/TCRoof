@@ -84,8 +84,15 @@ final class CloudSync {
     /// Each person's travel log (`Trip`, `Expense`, `ClaimMonth`).
     static let travelCollections = [Trip.collection, Expense.collection, ClaimMonth.collection]
     static let toolCollections = [ToolEvent.collection, CompanyVehicle.collection]
-    /// `config/app`: switches set in the Firebase console (`contactsSplit`).
+    /// `config/app`: the team's settings set in the Firebase console (the center Drive, the claim share list), read by
+    /// the team only (CHA-59).
     static let configDocument = "config/app"
+    /// `config/public`: what every member's device needs, contractors' too: `minSyncVersion`, `installLink`,
+    /// `contactsSplit` and `driveShareWith`. Read before `config/app`'s copy of the same fields.
+    static let publicConfigDocument = "config/public"
+    /// The two config documents as last read, combined by `applyConfig`.
+    @ObservationIgnored var configApp: [String: Any]?
+    @ObservationIgnored var configPublic: [String: Any]?
     static let contactsSplitKey = "cloudSync.contactsSplit"
     var db: Firestore { Firestore.firestore() }
 

@@ -64,7 +64,7 @@ final class UserAdminStore {
     private var devKey: DevKey?
     /// The last refusal, for the banner.
     var error: String?
-    /// `config/app.installLink`, for the invite text.
+    /// `config/public.installLink`, for the invite text.
     private(set) var installLink: String?
 
     /// Each member's jobs: an external member's assigned jobs, a team member's jobs that name them.
@@ -158,11 +158,8 @@ final class UserAdminStore {
                 self.overrides = next
             }
         })
-        db.document("config/app").getDocument { @Sendable [weak self] snap, _ in
-            Task { @MainActor in
-                self?.installLink = (snap?.get("installLink") as? String).flatMap { $0.isEmpty ? nil : $0 }
-            }
-        }
+        // `config/public` (or `config/app`) as sync last read it (`AppGate`)
+        installLink = AppGate.shared.installLink?.absoluteString
         loadKey()
     }
 

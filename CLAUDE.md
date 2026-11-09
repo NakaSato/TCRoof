@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | `TCRoof/CLAUDE.md` | the app target (sign-in, sync, Drive, travel log) and roles in full |
 | `TCRoofKit/CLAUDE.md` | the package's layers: TCRoofUI, TCRoofCore (DXF, drawings, IEC, MP plan, assistant…), PDFReport, ExcelExport, DriveSync, PVYield, ModuleRules |
+| `GrowattAPI/CLAUDE.md` | the Growatt package: the OpenAPI and web portal clients, its rules and tests |
 | `TCRoofUITests/CLAUDE.md` | how to run UI tests and their rules |
 | `tools/master-plan-sheet/CLAUDE.md` | the Master Plan Google Sheet and its Apps Script |
 | `docs/ui/CLAUDE.md` | how to follow the design boards and specs |

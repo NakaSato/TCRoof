@@ -274,6 +274,8 @@ extension InstallTrackingPage {
         static let site = UserDefaults.standard.string(forKey: "installSite").flatMap(SiteTab.init) ?? .info
         static let scrollEnd = UserDefaults.standard.bool(forKey: "installScrollEnd")
         static let detail = UserDefaults.standard.bool(forKey: "installDetail")
+        /// `-installAssistant YES`: ผู้ช่วยโครงการ opens on arrival (the iPad's panel).
+        static let assistant = UserDefaults.standard.bool(forKey: "installAssistant")
         static let iec = UserDefaults.standard.bool(forKey: "iecOpen")
         static let docsPackage = UserDefaults.standard.string(forKey: "installDocsPackage").flatMap(StationDocs.Package.init)
         /// `-installRequestWeek 0|1|2`: next week, the week before, the one before that.

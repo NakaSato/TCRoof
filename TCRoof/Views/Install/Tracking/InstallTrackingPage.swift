@@ -71,8 +71,11 @@ struct InstallTrackingPage: View {
         }
         .overlay { if let row = stage, let g = data.gantt { stageSheet(row, g) } }
         .overlay { if let s = sheet { pageSheet(s, data) } }
+        // ผู้ช่วยโครงการ: a right-side panel on iPad (CHA-68), the sheet on iPhone
+        .overlay { if assistant, sizeClass != .compact { assistantPanel() } }
+        .animation(.easeOut(duration: 0.2), value: assistant)
         .sheet(item: $shared) { ActivitySheet(items: [$0.url]) }
-        .sheet(isPresented: $assistant) { AssistantChatView(focus: job) }
+        .sheet(isPresented: phoneAssistant) { AssistantChatView(focus: job) }
         .sheet(isPresented: $showWBSDependencies) { WBSDependenciesSheet(job: job) }
         .mpWorkbook(workbook, job: job)
         .onAppear(perform: enforceRoleTabAccess)
@@ -85,6 +88,8 @@ struct InstallTrackingPage: View {
             debugApplied = true
             // `-installDetail YES` opens รายละเอียดงาน
             if Debug.detail { route = .detail }
+            // `-installAssistant YES` opens ผู้ช่วยโครงการ
+            if Debug.assistant, permissions.can(.assistantUse), job.scheduleInput != nil { assistant = true }
             // `-iecOpen YES` opens ทดสอบ IEC 62446
             if Debug.iec {
                 if sizeClass == .compact { route = .iec } else { tab = .iec }

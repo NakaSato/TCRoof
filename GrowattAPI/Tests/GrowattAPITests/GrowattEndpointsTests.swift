@@ -183,6 +183,19 @@ final class GrowattEndpointsTests: XCTestCase {
         XCTAssertEqual(GrowattStub.bodies.first, "inverters=%5B%222033022963%22%2C%22TL15300005%22%5D&pageNum=1")
     }
 
+    /// The string and MPPT currents by the names the live portal answered for a MAX (`currentString1…`, `ipv1…`; not
+    /// yet seen in an OpenAPI answer): numbers or text, up to the last one sent, a gap nil, none sent empty.
+    func testStringAndMPPTCurrents() throws {
+        let l = try GrowattAPI.parseLatestBatch(json(#"""
+        {"data":{"MAX1":{"dataloggerSn":"DL","MAX1":{"currentString1":9.8,"currentString2":"9.6","currentString4":0,
+        "ipv1":19.4,"ipv2":"0","pac":120000}},"MAX2":{"dataloggerSn":"DL","MAX2":{"pac":0}}},"error_code":0}
+        """#))
+        XCTAssertEqual(l["MAX1"]?.stringCurrents, [9.8, 9.6, nil, 0])
+        XCTAssertEqual(l["MAX1"]?.mpptCurrents, [19.4, 0])
+        XCTAssertEqual(l["MAX2"]?.stringCurrents, [])
+        XCTAssertEqual(l["MAX2"]?.mpptCurrents, [])
+    }
+
     func testInverterInfo() async throws {
         GrowattStub.replies = [json(#"{"device_sn":"2033022963","dataloggerSn":"GT25290025","data":{"model":33079,"fwVersion":"G.2.0","lost":true,"nominalPower":2870},"error_code":0}"#)]
         let i = try await GrowattStub.api().info(deviceSN: "2033022963")

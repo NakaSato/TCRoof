@@ -156,7 +156,8 @@ export function failureMessage(code: string, msg = ''): string {
   return `Growatt ตอบกลับผิดพลาด (${code}${msg ? ' ' + msg : ''})`;
 }
 
-type Fetch = (url: string, init: { headers: Record<string, string>; signal?: AbortSignal }) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
+type Init = { method?: 'POST'; body?: string; headers: Record<string, string>; signal?: AbortSignal };
+type Fetch = (url: string, init: Init) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
 
 export class GrowattClient {
   /** Retries after 10012, waiting `retryDelayMs` × the attempt, as the app's client does. */
@@ -168,15 +169,29 @@ export class GrowattClient {
   constructor(readonly base: URL, private readonly token: string, private readonly fetcher: Fetch = fetch,
               private readonly sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))) {}
 
-  /** The answer's text when `error_code` is 0; a `GrowattFailure` otherwise. GET only: nothing here writes. */
+  /** The answer's text when `error_code` is 0; a `GrowattFailure` otherwise. Reads only: nothing here writes. */
   async get(path: string, query: Record<string, string>): Promise<string> {
     const u = new URL(path, this.base);
     for (const k of Object.keys(query).sort()) u.searchParams.set(k, query[k]);
+    return this.send(u, { headers: { token: this.token } });
+  }
+
+  /** A read the guide makes a POST (`invs_data`): `form` as `application/x-www-form-urlencoded`, as the app sends it. */
+  async postRead(path: string, form: Record<string, string>): Promise<string> {
+    const body = new URLSearchParams();
+    for (const k of Object.keys(form).sort()) body.set(k, form[k]);
+    return this.send(new URL(path, this.base), {
+      method: 'POST', body: body.toString(),
+      headers: { token: this.token, 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+  }
+
+  private async send(u: URL, init: Init): Promise<string> {
     for (let attempt = 1; ; attempt++) {
       this.calls++;
       let text: string;
       try {
-        const res = await this.fetcher(u.toString(), { headers: { token: this.token }, signal: AbortSignal.timeout(20_000) });
+        const res = await this.fetcher(u.toString(), { ...init, signal: AbortSignal.timeout(20_000) });
         if (!res.ok) throw new GrowattFailure(`http ${res.status}`, failureMessage(`http ${res.status}`));
         text = await res.text();
       } catch (e) {
@@ -199,8 +214,23 @@ export class GrowattClient {
   data = (plantID: number) => this.get('plant/data', { plant_id: String(plantID) });
   power = (plantID: number, date: string) => this.get('plant/power', { plant_id: String(plantID), date });
   devices = (plantID: number) => this.get('device/list', { plant_id: String(plantID), page: '1', perpage: '100' });
+  /** `device/inverter/invs_data`: up to 100 inverters' latest readings (their string currents), the serials as a JSON array. */
+  inverters = (sns: string[]) => this.postRead('device/inverter/invs_data', { pageNum: '1', inverters: JSON.stringify(sns.slice(0, 100)) });
   energy = (plantID: number, start: string, end: string, unit: 'day' | 'month') =>
     this.get('plant/energy', { plant_id: String(plantID), start_date: start, end_date: end, time_unit: unit });
+}
+
+/**
+ * The inverters' serial numbers in `device/list`'s `data` (as the app's `Device.isInverter`: any type but 2 and 3, a
+ * row without a type included), sorted, for `invs_data`.
+ */
+export function inverterSNs(devices: unknown): string[] {
+  const rows = isObject(devices) && Array.isArray(devices.devices) ? devices.devices.filter(isObject) : [];
+  return rows
+    .filter((r) => { const t = numberOf(r.type); return t !== 2 && t !== 3; })
+    .map((r) => (typeof r.device_sn === 'string' ? r.device_sn : ''))
+    .filter((sn) => sn !== '')
+    .sort();
 }
 
 /** `data` of an answer `get` returned. */

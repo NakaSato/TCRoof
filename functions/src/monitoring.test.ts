@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  bangkokDayText, bangkokMonthStart, GrowattClient, GrowattFailure, growattURL, health, joinEnergy, pairings, parseSettings,
+  bangkokDayText, bangkokMonthStart, GrowattClient, GrowattFailure, growattURL, health, inverterSNs, joinEnergy, pairings, parseSettings,
   plantTime, stationDoc, zoneOffsetMinutes,
 } from './growatt';
 import { archiveStation, checkTokenRequest, detailDue, detailMinutes, due, isManager, pickDetail, pollStation, Previous, Reader, readFleet } from './monitoring';
@@ -63,18 +63,28 @@ test('health: offline past the logger threshold, else in alarm on a faulted or l
   assert.deepEqual([h.health, h.faults], ['alarm', 3]);
 });
 
-test('the client only GETs, sends the token and waits out 10012', async () => {
-  const seen: { url: string; headers: Record<string, string> }[] = [];
+test('the client reads only (GETs, and invs_data\'s POST), sends the token and waits out 10012', async () => {
+  const seen: { url: string; method?: string; body?: string; headers: Record<string, string> }[] = [];
   const answers = [JSON.stringify({ error_code: 10012, error_msg: 'error_frequently_access' }), ok({ today_energy: 1 })];
   const waits: number[] = [];
   const c = new GrowattClient(new URL('https://openapi.growatt.com/v1/'), 'tok', async (url, init) => {
-    seen.push({ url, headers: init.headers });
+    seen.push({ url, method: init.method, body: init.body, headers: init.headers });
     return { ok: true, status: 200, text: async () => answers.shift()! };
   }, async (ms) => { waits.push(ms); });
   assert.equal(JSON.parse(await c.data(42)).data.today_energy, 1);
   assert.equal(seen[0].url, 'https://openapi.growatt.com/v1/plant/data?plant_id=42');
   assert.equal(seen[0].headers.token, 'tok');
   assert.deepEqual(waits, [6000]);
+  assert.equal(seen[0].method, undefined, 'a GET');
+
+  answers.push(ok({ A1: { A1: {} } }));
+  await c.inverters(['A1', 'B2']);
+  const post = seen[seen.length - 1];
+  assert.equal(post.url, 'https://openapi.growatt.com/v1/device/inverter/invs_data');
+  assert.equal(post.method, 'POST');
+  assert.equal(post.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  assert.equal(post.headers.token, 'tok');
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(post.body)), { inverters: '["A1","B2"]', pageNum: '1' }, 'as the app sends it');
 
   const refused = new GrowattClient(new URL('https://openapi.growatt.com/v1/'), 'bad', async () =>
     ({ ok: true, status: 200, text: async () => JSON.stringify({ error_code: 10011, error_msg: 'error_permission_denied' }) }));
@@ -93,6 +103,7 @@ function fakeGrowatt(fail: Set<string> = new Set()) {
     data: () => answer('data', { last_update_time: '2026-11-09 13:55:00', timezone: 'GMT+7', current_power: 10, today_energy: 300 }),
     power: (_, date) => answer(`power ${date}`, { powers: [{ time: `${date} 13:55`, power: 10_000 }] }),
     devices: () => answer('devices', { devices: [{ device_sn: 'INV1', type: 1, status: 1 }] }),
+    inverters: (sns) => answer(`inverters ${sns.join(',')}`, { INV1: { dataloggerSn: 'DL1', INV1: { currentString1: 9.8 } } }),
     energy: (_, start, end, unit) => answer(`energy ${unit} ${start} ${end}`, { energys: [{ date: start, energy: 100 }] }),
     plants: (page) => answer(`plants ${page}`, { plants: [{ plant_id: 7, current_power: '10' }] }),
   };
@@ -104,7 +115,7 @@ const PAIR = { stationID: 'S1', plantID: 7, server: { id: SERVER, url: 'https://
 test('a station is read once a poll, and its history once a Bangkok day', async () => {
   const g = fakeGrowatt();
   const first = await pollStation(g.api, PAIR, undefined, NOW, 30);
-  assert.deepEqual(g.calls, ['data', 'power 2026-11-09', 'devices', 'power 2026-11-08',
+  assert.deepEqual(g.calls, ['data', 'power 2026-11-09', 'devices', 'inverters INV1', 'power 2026-11-08',
     'energy day 2026-10-11 2026-10-17', 'energy day 2026-10-18 2026-10-24', 'energy day 2026-10-25 2026-10-31',
     'energy day 2026-11-01 2026-11-07', 'energy day 2026-11-08 2026-11-08', 'energy month 2025-12-01 2026-11-09']);
   const f = first.fields;
@@ -118,7 +129,7 @@ test('a station is read once a poll, and its history once a Bangkok day', async 
   const g2 = fakeGrowatt();
   const later = new Date(NOW.getTime() + 5 * 60_000);
   const second = await pollStation(g2.api, PAIR, { plantID: 7, attemptedAt: NOW, historyDay: '2026-11-09' }, later, 30);
-  assert.deepEqual(g2.calls, ['data', 'power 2026-11-09', 'devices']);
+  assert.deepEqual(g2.calls, ['data', 'power 2026-11-09', 'devices', 'inverters INV1']);
   assert.equal(second.fields.days, undefined, 'the history kept from before');
 });
 
@@ -134,6 +145,9 @@ test('a failed read keeps the last figures and says why', async () => {
   assert.equal(devicesDown.fields.devices, undefined);
   assert.ok(devicesDown.fields.data);
   assert.equal((devicesDown.fields.failure as { code: string }).code, '10011');
+
+  // no inverters to ask for without device/list
+  assert.equal(devicesDown.fields.inverters, undefined);
 
   const historyDown = await pollStation(fakeGrowatt(new Set(['energy'])).api, PAIR, undefined, NOW, 30);
   assert.equal(historyDown.fields.historyDay, undefined, 'tried again at the next poll');
@@ -233,4 +247,22 @@ test('the fleet\'s power comes from plant/list, page after page until every plan
 
   const down = { plants: () => Promise.reject(new GrowattFailure('10011', 'x')) } as unknown as Reader;
   assert.equal((await readFleet(down, new Set([1]))).size, 0, 'a refused list reads nothing');
+});
+
+test('string currents: invs_data after device/list, its answer kept as text, its failure never the station\'s', async () => {
+  const g = fakeGrowatt();
+  const r = await pollStation(g.api, PAIR, { plantID: 7, attemptedAt: NOW, historyDay: '2026-11-09' }, NOW, 30);
+  assert.equal(JSON.parse(r.fields.inverters as string).data.INV1.INV1.currentString1, 9.8);
+
+  const down = await pollStation(fakeGrowatt(new Set(['inverters'])).api, PAIR, { plantID: 7, attemptedAt: NOW, historyDay: '2026-11-09' }, NOW, 30);
+  assert.equal(down.fields.inverters, undefined, 'the iPads keep the last currents');
+  assert.equal(down.fields.failure, null, 'unconfirmed on the live server: not shown as a failure');
+  assert.equal(down.fields.health, 'normal');
+});
+
+test('the inverters asked for: every device but a meter or storage, sorted, none without a serial', () => {
+  assert.deepEqual(inverterSNs({ devices: [
+    { device_sn: 'B2', type: 1 }, { device_sn: 'A1' }, { device_sn: 'M', type: 3 }, { device_sn: 'S', type: '2' }, { type: 1 },
+  ] }), ['A1', 'B2']);
+  assert.deepEqual(inverterSNs(null), []);
 });

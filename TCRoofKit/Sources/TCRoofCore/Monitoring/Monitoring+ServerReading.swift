@@ -39,6 +39,7 @@ extension Monitoring {
             r.devices = text("devices").flatMap { try? GrowattAPI.parseDevices($0) }
             r.days = text("days").flatMap { try? GrowattAPI.parseEnergy($0) }
             r.months = text("months").flatMap { try? GrowattAPI.parseEnergy($0) }
+            r.inverters = text("inverters").flatMap { try? GrowattAPI.parseLatestBatch($0) }
             let failure = (fields["failure"] as? [String: Any])?["message"] as? String
             let listPower = GrowattAPI.number(fields["listPower"])
             if let power = listPower, power >= 0, let at = listAt, at > (readAt ?? .distantPast), r.data != nil {

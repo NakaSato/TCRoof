@@ -61,7 +61,7 @@ struct SiteMapPreview: View {
                 if let image {
                     Image(uiImage: image).resizable().scaledToFill().frame(width: size.width, height: size.height).clipped()
                 } else if loading {
-                    ProgressView()
+                    Theme.borderSubtle.tcShimmer().tcLoadingLabel().accessibilityIdentifier("siteMap.loading")
                 } else {
                     Text(failure ?? "ใส่พิกัดด้านล่างเพื่อดูแผนที่").font(.sarabun(13, relativeTo: .footnote)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding(.horizontal, 40)

@@ -52,9 +52,9 @@ struct MonitoringPage: View {
                 MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
             }
         }
-        .navigationDestination(item: $opened) { s in
-            PWAMaintenanceStationView(station: Self.summary(s, health: s.health(now: store.now, offlineAfter: store.settings.loggerOfflineMinutes)))
-        }
+        // one station's page (CHA-73); `-monitoringStation <mp>` opens it in DEBUG
+        .navigationDestination(item: $opened) { s in StationMonitorPage(station: s) }
+        .task(id: store.stations.count) { openDebugStation() }
     }
 
     private func content(_ fleet: Monitoring.Fleet) -> some View {

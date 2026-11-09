@@ -25,7 +25,7 @@ final class GrowattEndpointsTests: XCTestCase {
 
     func testInverterAlarms() async throws {
         GrowattStub.replies = [json(inverterAlarms)]
-        let page = try await GrowattStub.api().alarms(deviceSN: "INV035C003", perPage: 500)
+        let page = try await GrowattStub.api().alarms(deviceSN: "INV035C003", date: "2026-11-10", perPage: 500)
         XCTAssertEqual(page.count, 102, "a count written as text still reads")
         XCTAssertEqual(page.items, [
             .init(code: "bit1", message: "low Current", start: "2015-12-08T11:05:00Z", end: "2015-12-08T11:05:00Z", status: 0),
@@ -33,7 +33,7 @@ final class GrowattEndpointsTests: XCTestCase {
         ], "a numeric code reads as its digits")
         let r = try XCTUnwrap(GrowattStub.requests.first)
         XCTAssertEqual(r.url?.path, "/v1/device/inverter/alarm")
-        XCTAssertEqual(r.url?.query, "device_sn=INV035C003&page=1&perpage=100")
+        XCTAssertEqual(r.url?.query, "date=2026-11-10&device_sn=INV035C003&page=1&perpage=100")
         XCTAssertEqual(r.httpMethod ?? "GET", "GET")
     }
 

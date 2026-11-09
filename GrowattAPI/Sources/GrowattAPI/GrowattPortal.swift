@@ -5,14 +5,16 @@ import FoundationNetworking
 
 /// Growatt's web portal (`server.growatt.com`) for a signed-in account: the calls its own pages make, captured from a
 /// browser (docs/specs/growatt-api.md, section 3). Growatt doesn't document them and may change them; the OpenAPI
-/// (`GrowattAPI`) is the one to build on, and covers inverter faults with `alarms(deviceSN:)`.
+/// (`GrowattAPI`) is the one to build on, and covers inverter faults with `alarms(deviceSN:date:)`.
 ///
 /// The portal needs a browser session: the cookies `JSESSIONID` and `assToken` from a signed-in account, given with
 /// `useCookies(_:)`; the client sends them itself and keeps the ones the portal renews. Signing in from code (username and password) isn't ported: its request hasn't been captured. A
 /// session that is gone answers with the login page, which throws `GrowattAPI.Failure.signedOut`. Treat the cookies as
 /// the account's password: they are, until the session ends.
 ///
-/// The answers' row fields aren't confirmed yet, so each row comes back whole as `JSONValue`.
+/// Every row comes back whole as `JSONValue`; the rows read live on 10 Nov 2026 also have a typed reading
+/// (`plants(in:)`, `faults(in:)`, `compareDevices`). A chart asked for a value the device doesn't have answers HTTP 500
+/// with an HTML page that says to log in, though the session is fine: that is `.http(500)`, not `.signedOut`.
 public struct GrowattPortal: Sendable {
     /// One page of a portal list: `{ result: 1, obj: { currPage, pages, pageSize, count, datas: [...] } }` as the
     /// portal's other lists answer (`panel/getDevicesByPlantList`).
@@ -46,8 +48,9 @@ public struct GrowattPortal: Sendable {
     }
 
     public var baseURL = URL(string: "https://server.growatt.com/")!
-    /// Seconds without an answer before a call fails.
-    public var timeout: TimeInterval = 30
+    /// Seconds without an answer before a call fails. Long: the portal can take about 70 s over a device's chart it
+    /// hasn't served lately (then under a second), as it does on the guest account.
+    public var timeout: TimeInterval = 90
     public let session: URLSession
     let jar = CookieJar()
 
@@ -137,12 +140,6 @@ public struct GrowattPortal: Sendable {
         try await faultLog(period, date: period.dateText(date, timeZone: timeZone), plantID: plantID, deviceSN: deviceSN, page: page)
     }
 
-    /// `energy/compare/getNewPlantDevices`: the devices of one plant that the portal's Energy › Compare page lists to
-    /// pick from (`plantId` only). Its rows' fields aren't confirmed; they are the input of the page's chart calls
-    /// (`energy/compare/getDevicesDayChart`).
-    public func compareDevices(plantID: String) async throws -> Page {
-        try Self.parsePage(try await post("energy/compare/getNewPlantDevices", ["plantId": plantID]))
-    }
 
     /// One line the Compare page charts: a device (`type` as the portal names it: `max`, `tlx`, `mix`, …, or `plant`
     /// with the plant id as `sn`) and the value drawn (`energy`, `pac`, …).
@@ -154,7 +151,8 @@ public struct GrowattPortal: Sendable {
         public init(type: String, sn: String, params: String) { self.type = type; self.sn = sn; self.params = params }
     }
 
-    /// One answered line of a chart: its values in order, nil where the portal has none (a day not reached yet).
+    /// One answered line of a chart: its values in order. Live answers give 0 for times and days not reached yet, not
+    /// null; nil is only a value the portal sent as null.
     public struct ChartLine: Equatable, Sendable {
         public var series: ChartSeries
         /// Every value list the line came with, by name (`energy`, `pac`, …).
@@ -200,7 +198,10 @@ public struct GrowattPortal: Sendable {
         guard let entries = doc["obj"]?.array else { throw GrowattAPI.Failure.badResponse }
         return entries.enumerated().compactMap { i, e in
             guard let datas = e["datas"]?.object else { return nil }
-            let asked = i < series.count ? series[i] : ChartSeries(type: e["type"]?.text ?? "", sn: e["sn"]?.text ?? "", params: datas.keys.sorted().first ?? "")
+            // the answer names its series (`sn`, `type`, `params`); else the one asked in that place
+            let fallback = i < series.count ? series[i] : ChartSeries(type: "", sn: "", params: datas.keys.sorted().first ?? "")
+            let asked = ChartSeries(type: e["type"]?.text ?? fallback.type, sn: e["sn"]?.text ?? fallback.sn,
+                                    params: e["params"]?.text ?? fallback.params)
             let values = datas.compactMapValues { v in v.array.map { $0.map(\.number) } }
             return ChartLine(series: asked, values: values)
         }

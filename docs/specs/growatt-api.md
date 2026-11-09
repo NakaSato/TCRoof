@@ -23,7 +23,7 @@ The `GrowattAPI` Swift package at the repo root (`GrowattAPI/`) is the client. I
 | `energy` | `plant/energy` | GET | `plant_id`, `start_date`, `end_date`, `time_unit` | `energys[]`; a range too long gets 10004 |
 | `dataloggers` | `device/datalogger/list` | GET | `plant_id`, `page`, `perpage` | `dataloggers[]` |
 | `devices`, `devicePage` | `device/list` | GET | `plant_id`, `page`, `perpage` | `devices[]`: `device_sn`, `type`, `status`, `lost`, `device_id` |
-| `alarms` | `device/inverter/alarm` | GET | `device_sn`, `page`, `perpage` | `alarms[]`: `alarm_code`, `alarm_message`, `start_time`, `end_time`, `status` |
+| `alarms` | `device/inverter/alarm` | GET | `device_sn`, `date` (not in either guide, but required), `page`, `perpage` | `alarms[]`: `alarm_code`, `alarm_message`, `start_time`, `end_time`, `status` |
 | `inverterHistory` | `device/inverter/data` | GET | `device_sn`, `start_date`, `end_date` (≤7 days), `page`, `perpage` (≤1000) | `datas[]`, `next_page_start_id` |
 | `latest(deviceSN:)` | `device/inverter/last_new_data` | GET | `device_sn` | latest readings: `pac`, `powerToday`, strings, `faultType`, `warnCode` |
 | `latest(deviceSNs:)` | `device/inverter/invs_data` | POST | `pageNum`, `inverters` (≤100) | each inverter's latest readings by SN |
@@ -36,7 +36,7 @@ The `GrowattAPI` Swift package at the repo root (`GrowattAPI/`) is the client. I
 Readings with many fields (inverter and storage) come back as `Readings`, every field kept as a `JSONValue`, with the common ones named on `Latest`.
 
 Not confirmed against a live answer:
-- `device/inverter/alarm`: the protocol PDF names the parameter `device_id`, the guide's example `device_sn`; the SDK sends `device_sn`. The meaning of an alarm's `status` isn't given.
+- `device/inverter/alarm`: needs a `date` (`yyyy-MM-dd`) that neither guide names: without it the test server answers 10003 `error_dateError`; with it and `device_sn` it looks the inverter up (10005 for a serial it doesn't know), while `device_id` gets 10002 (10 Nov 2026). The meaning of an alarm's `status` isn't given.
 - Times: the guide's examples write `2015-12-08T11:05:00Z` and `2016-04-28 18:41:40.0`, while live `plant/data` writes `yyyy-MM-dd HH:mm:ss` on the plant's clock.
 - `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`).
 - `search_type`: the appendix gives `name`, the example `PlantName`.
@@ -98,3 +98,15 @@ Captured from a browser on `server.growatt.com` (10 Nov 2026), signed in to a co
 `jsonData` names the chart's series: `[{"type":"max","sn":"GKLLEXC006","params":"energy"}]` (an inverter by its portal type and serial number, or `"type":"plant"` with the plant id). `params` seen so far: `pac` (power, W) and `vString1` (string 1 voltage, V; presumably `vString2`… for the others, as in the OpenAPI's `last_new_data`) on the day chart, `energy` (kWh) on the month chart, and a meter's `positiveActiveTodayEnergy` (energy from the grid today, kWh) and `power_factor` on the day chart (`ChartParam.meter`). An environment sensor is `"type":"env"`, named the same way (`DYDCE9302Z_6`, address 6; `ChartSeries.env(datalogger:address:)`), with `env_temp` (air, °C), `panel_temp` (module, °C) and `radiant` (irradiance, W/m² presumably) `sensorSingnalGen` (Growatt's spelling; meaning and unit unknown) and `wind_angle` (wind direction, degrees presumably) seen (`ChartParam.env`). A meter is `"type":"meter"` with `sn` its data logger and its bus address (`DYDCE9302Z_36`; `ChartSeries.meter(datalogger:address:)`); the `memoryDeviceSn` cookie names the same meter `multipleBackflow%DYDCE9302Z_36@71`, the plant's zero-export meter. Its other values and their labels haven't been captured. The page's full list for a MAX / MID-X / MOD-X / MAC-X inverter is `GrowattPortal.ChartParam.maxInverter` (102 values: PAC, MPPT POWER, the phases' power and voltage, 10 MPPTs' power, voltage and current, 32 strings' voltage and current), looked up by label with `ChartParam.max(label:)`. Only `pac` and `vString1` have been seen in a request; the other names follow the OpenAPI's (`ppv`, `pacr`, `ppv1`, `vpv1`, `vacr`, `ipv1`, `currentString1`) and need checking. The answer is `{ result: 1, obj: [ { datas: { <params>: [values] } } ] }`, one entry per series (`GrowattWebDemo` reads the day chart's this way on the guest account). The page's year chart wasn't captured.
 
 For inverter faults the OpenAPI's `device/inverter/alarm` covers the same need with the company token.
+
+### Read live (10 Nov 2026)
+
+Each portal call was made once with a signed-in session of the company account; the answers settled these:
+
+- **Plant list:** the page's fields (`currPage`, `pages` 3, `pageSize` 20, `count` 43) and `datas` are at the top level, with no `result` / `obj`. A row: `id`, `plantName`, `currentPac` (power now), `eToday`, `onlineNum`, `plantType`, `accountName` (`GrowattPortal.plants(in:)`).
+- **Fault log:** `{ result: 1, obj: { pages, currPage, count, datas } }`. A row: `eventId` (`Error 125`, `Warning 203(0)`), `eventName` (`PV Isolation Low`), `eventType` (0 error, 1 warning), `deviceSn`, `deviceModelName`, `deviceType`, `alias`, `plantId`, `plantName`, `time`, `recoveryTime` (null while raised), `solution`, `readFlag` (`GrowattPortal.faults(in:)`). `plantId=-1` gives every plant's events in one call, 10 a page.
+- **Compare devices:** `obj` is a list of groups `{ deviceTypeName, devices: { <sn>: [[sn, alias, status, logger, logger, ?]] } }` (`max`, `meter`, `env`; status -1 lost) (`compareDevices`).
+- **Charts:** one call takes several series (an inverter's `pac`, the meter's `positiveActiveTodayEnergy` and the sensor's `radiant` together). Each answer entry names its series (`sn`, `type`, `params`, `selfDeviceType`). A day has 288 values, a month one a day; times and days not reached yet are 0, not null. `radiant` peaked at 982.7 (W/m²), the inverter's `pac` at 96,790 (W).
+- **Chart names that answered on a MAX:** `pac`, `ppv`, `ppv1`, `vpv1`, `ipv1`, `pacr`, `pacs`, `pact`, `vacs`, `vact` (about 240 V), `vacrs` (R to S, about 416 V), `vString1`, `vString2`, `vString32`, `currentString1`, `currentString32`. `vacr`, `vac1` and `vacR` answer HTTP 500, so which name the page's R-PHASE VOLTAGE sends isn't known.
+- **A name the device doesn't have** answers HTTP 500 with an HTML page that says to log in, though the session is fine (`.http(500)` in `GrowattPortal`).
+- **Timing:** a chart the portal hasn't served lately took 68 s; the rest under a second (`GrowattPortal.timeout` is 90 s).

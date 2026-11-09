@@ -2,9 +2,9 @@ import Foundation
 
 extension GrowattPortal {
     /// One value the Compare page charts for a device: its label on the page (`STRING VOLTAGE3`), the `params` name
-    /// the chart calls send (`vString3`) and its unit. `confirmed` is true only for names seen in a captured request
-    /// (`pac`, `vString1`); the others follow the OpenAPI's names for the same readings (`last_new_data`: `ppv1`,
-    /// `vpv1`, `ipv1`, `currentString1`, `pacr`, `vacr`), which `vString1` matches, and need checking against the portal.
+    /// the chart calls send (`vString3`) and its unit. `confirmed` is true for names that answered on the live portal
+    /// (captured from the page, or asked on a MAX inverter on 10 Nov 2026); the others follow the same pattern
+    /// (`ppv1` answered, so `ppv2`…`ppv10`) and haven't been asked. A name the device doesn't have answers HTTP 500.
     public struct ChartParam: Hashable, Sendable {
         public var label: String
         public var name: String
@@ -15,8 +15,11 @@ extension GrowattPortal {
             self.label = label; self.name = name; self.unit = unit; self.confirmed = confirmed
         }
 
-        /// The names seen in captured requests (10 Nov 2026).
-        static let seen: Set<String> = ["pac", "vString1", "positiveActiveTodayEnergy", "power_factor", "env_temp", "panel_temp", "radiant", "sensorSingnalGen", "wind_angle"]
+        /// The names that answered on the live portal (10 Nov 2026).
+        static let seen: Set<String> = ["pac", "ppv", "pacr", "pacs", "pact", "ppv1", "vpv1", "vString1", "vString2", "vString32",
+                                        "vacrs", "vacs", "vact", "ipv1", "currentString1", "currentString32",
+                                        "positiveActiveTodayEnergy", "power_factor", "env_temp", "panel_temp", "radiant",
+                                        "sensorSingnalGen", "wind_angle"]
 
         /// A meter's energy taken from the grid today, kWh (the zero-export meter's `positiveActiveTodayEnergy`, seen in a
         /// captured request). Its label on the page isn't known.
@@ -64,9 +67,11 @@ extension GrowattPortal {
             p += (1...10).map { .init(label: "MPPT\($0)POWER", name: "ppv\($0)", unit: "W") }
             p += (1...10).map { .init(label: "MPPT\($0)VOLTAGE", name: "vpv\($0)", unit: "V") }
             p += (1...32).map { .init(label: "STRING VOLTAGE\($0)", name: "vString\($0)", unit: "V") }
-            for (phase, suffix) in [("R", "r"), ("S", "s"), ("T", "t")] {
-                p.append(.init(label: "\(phase)-PHASE VOLTAGE", name: "vac\(suffix)", unit: "V"))
-            }
+            // `vacr` answers HTTP 500 on a MAX; `vacrs` (R to S, about 416 V) does, while `vacs` and `vact` are about 240 V
+            // phase voltages: which one the page's R-PHASE VOLTAGE sends isn't known
+            p.append(.init(label: "R-PHASE VOLTAGE", name: "vacrs", unit: "V"))
+            p.append(.init(label: "S-PHASE VOLTAGE", name: "vacs", unit: "V"))
+            p.append(.init(label: "T-PHASE VOLTAGE", name: "vact", unit: "V"))
             p += (1...10).map { .init(label: "MPPT\($0)CURRENT", name: "ipv\($0)", unit: "A") }
             p += (1...32).map { .init(label: "STRING CURRENT\($0)", name: "currentString\($0)", unit: "A") }
             return p.map { var q = $0; q.confirmed = seen.contains(q.name); return q }

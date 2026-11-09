@@ -149,12 +149,67 @@ final class GrowattPortalTests: XCTestCase {
         }
     }
 
-    func testCompareDevices() async throws {
-        GrowattStub.replies = [json(#"{"result":1,"obj":[{"sn":"DYDCE9302Z","alias":"INV 1","type":"max"},{"sn":"9947162","type":"plant"}]}"#)]
-        let p = try await portal().compareDevices(plantID: "9947162")
-        XCTAssertEqual(p.rows.compactMap { $0["sn"]?.text }, ["DYDCE9302Z", "9947162"])
+    func testCompareDevicesInTheLiveShape() async throws {
+        // the answer's shape on 10 Nov 2026
+        GrowattStub.replies = [json("""
+        {"result":1,"obj":[{"devices":{"DYDCE9302Z_36":[["DYDCE9302Z_36","CHNT_THREE","1","DYDCE9302Z","DYDCE9302Z","71"]]},"deviceTypeName":"meter"},
+        {"devices":{"GKLLEXC006":[["GKLLEXC006","INVERTER 2","0","DYDCE9302Z","DYDCE9302Z","4"]],"EPHNEYN00Q":[["EPHNEYN00Q","INVERTER 3","-1","DYDCE9302Z","DYDCE9302Z","0"]]},"deviceTypeName":"max"},
+        {"devices":{"DYDCE9302Z_6":[["DYDCE9302Z_6","ENV_DEVICE","1","DYDCE9302Z","DYDCE9302Z","48"]]},"deviceTypeName":"env"}]}
+        """)]
+        let d = try await portal().compareDevices(plantID: "9947162")
+        XCTAssertEqual(d.map(\.sn), ["DYDCE9302Z_36", "EPHNEYN00Q", "GKLLEXC006", "DYDCE9302Z_6"])
+        XCTAssertEqual(d.map(\.type), ["meter", "max", "max", "env"])
+        XCTAssertEqual(d[1].alias, "INVERTER 3")
+        XCTAssertEqual(d[1].status, -1)
+        XCTAssertEqual(d[0].datalogger, "DYDCE9302Z")
+        XCTAssertEqual(d[2].series(.max(label: "PAC")!), .init(type: "max", sn: "GKLLEXC006", params: "pac"))
         XCTAssertEqual(GrowattStub.requests.first?.url?.path, "/energy/compare/getNewPlantDevices")
         XCTAssertEqual(GrowattStub.bodies.first, "plantId=9947162")
+    }
+
+    func testThePlantListInTheLiveShape() throws {
+        // no result / obj around it, unlike the other calls
+        let page = try GrowattPortal.parsePage(json("""
+        {"currPage":1,"pages":3,"pageSize":20,"count":43,"ind":1,"datas":[{"eToday":"512.4","accountName":"PWA_solar","id":"9947162",
+        "onlineNum":"2","plantName":"P1_33 สถานี","plantType":"0","currentPac":"61.2"}],"notPager":false,"maxCount":0}
+        """))
+        XCTAssertEqual(page.pages, 3)
+        XCTAssertEqual(page.count, 43)
+        let p = GrowattPortal.plants(in: page)
+        XCTAssertEqual(p, [.init(id: "9947162", name: "P1_33 สถานี", currentPac: 61.2, eToday: 512.4, online: 2, plantType: 0, account: "PWA_solar")])
+    }
+
+    func testTheFaultLogInTheLiveShape() throws {
+        let page = try GrowattPortal.parsePage(json("""
+        {"result":1,"msg":null,"obj":{"pages":3,"currPage":1,"count":25,"datas":[
+        {"deviceType":"MAX/MID/MAC","recoveryTime":null,"eventId":"Error 125","readFlag":"1","deviceModelName":"MAX 80KTL3 LV","plantId":"10127973",
+         "eventType":"0","deviceSn":"MYHTF7F00P","recoveryStatus":"","solution":"1:Please disconnect DC and AC","eventName":"PV Isolation Low",
+         "time":"2026-11-09 15:36:23","id":"1","alias":"INV 1","plantName":"P","sn":"MYHTF7F00P"},
+        {"deviceType":"MAX/MID/MAC","recoveryTime":"2026-11-09 14:20:00","eventId":"Warning 203(0)","readFlag":"0","deviceModelName":"MAX 125KTL3-X LV",
+         "plantId":"10127973","eventType":"1","deviceSn":"GKLQF5G047","eventName":"PV Circuit short","time":"2026-11-09 14:11:57"}]}}
+        """))
+        XCTAssertEqual(page.pages, 3)
+        let f = GrowattPortal.faults(in: page)
+        XCTAssertEqual(f.map(\.code), ["Error 125", "Warning 203(0)"])
+        XCTAssertEqual(f.map(\.number), ["125", "203"])
+        XCTAssertEqual(f.map(\.isWarning), [false, true])
+        XCTAssertEqual(f[0].name, "PV Isolation Low")
+        XCTAssertEqual(f[0].deviceModel, "MAX 80KTL3 LV")
+        XCTAssertEqual(f[0].recovered, "", "still raised")
+        XCTAssertEqual(f[1].recovered, "2026-11-09 14:20:00")
+        XCTAssertTrue(f[0].isRead)
+        XCTAssertEqual(f[0].time, "2026-11-09 15:36:23")
+    }
+
+    func testAChartAnswerNamesItsSeries() throws {
+        // three devices in one call, as the live portal answered
+        let lines = try GrowattPortal.parseChart(json("""
+        {"result":1,"obj":[{"datas":{"pac":[0.0,96790.0]},"selfDeviceType":4,"sn":"GKLLEXC006","type":"max","params":"pac"},
+        {"datas":{"positiveActiveTodayEnergy":[0.0,3489.3333]},"sn":"DYDCE9302Z_36","type":"meter","params":"positiveActiveTodayEnergy"},
+        {"datas":{"radiant":[0.0,982.6667]},"sn":"DYDCE9302Z_6","type":"env","params":"radiant"}]}
+        """), series: [])
+        XCTAssertEqual(lines.map(\.series.type), ["max", "meter", "env"], "named by the answer, not by the order asked")
+        XCTAssertEqual(lines[2].points, [0, 982.6667])
     }
 }
 
@@ -171,8 +226,10 @@ final class GrowattPortalParamTests: XCTestCase {
         XCTAssertEqual(Set(all.map(\.label)).count, all.count, "every label once")
     }
 
-    func testOnlyCapturedNamesAreConfirmed() {
-        XCTAssertEqual(Param.maxInverter.filter(\.confirmed).map(\.name), ["pac", "vString1"])
+    func testOnlyNamesThatAnsweredAreConfirmed() {
+        XCTAssertEqual(Param.maxInverter.filter(\.confirmed).map(\.name),
+                       ["pac", "ppv", "pacr", "pacs", "pact", "ppv1", "vpv1", "vString1", "vString2", "vString32",
+                        "vacrs", "vacs", "vact", "ipv1", "currentString1", "currentString32"], "the names that answered live")
         XCTAssertEqual(Param.meter.map(\.name), ["positiveActiveTodayEnergy", "power_factor"])
         XCTAssertTrue(Param.meter.allSatisfy(\.confirmed))
     }

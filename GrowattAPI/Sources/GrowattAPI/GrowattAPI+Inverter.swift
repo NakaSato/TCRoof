@@ -46,10 +46,12 @@ extension GrowattAPI {
 
     // MARK: calls
 
-    /// `device/inverter/alarm`: an inverter's alarms by its serial number, at most 100 a page. The protocol PDF names
-    /// the parameter `device_id`, the guide's example `device_sn`; the example's is sent.
-    public func alarms(deviceSN: String, page: Int = 1, perPage: Int = 100) async throws -> Page<Alarm> {
-        let data = try await get("device/inverter/alarm", ["device_sn": deviceSN, "page": "\(max(page, 1))", "perpage": Self.perPage(perPage)])
+    /// `device/inverter/alarm`: an inverter's alarms of one day (`yyyy-MM-dd`) by its serial number, at most 100 a page.
+    /// Neither guide names `date`, but the test server refuses the call without it (10003 `error_dateError`) and
+    /// takes `device_sn` with it (10005 for a serial it doesn't know; `device_id` gets 10002), 10 Nov 2026.
+    public func alarms(deviceSN: String, date: String, page: Int = 1, perPage: Int = 100) async throws -> Page<Alarm> {
+        let data = try await get("device/inverter/alarm", ["device_sn": deviceSN, "date": date, "page": "\(max(page, 1))",
+                                                           "perpage": Self.perPage(perPage)])
         return try Self.parseAlarms(data)
     }
 

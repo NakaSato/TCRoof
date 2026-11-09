@@ -39,6 +39,8 @@ final class MonitoringStore {
     }
 
     private static let settingsKey = "monitoring.settings"
+    /// Called with each manager's save here (not with copies received), for `CloudSync` to send to `config/monitoring`.
+    @ObservationIgnored var onChange: ((Monitoring.Settings) -> Void)?
 
     private init() {
         settings = UserDefaults.standard.data(forKey: Self.settingsKey)
@@ -193,7 +195,33 @@ final class MonitoringStore {
     /// The station's inverters: its IEC test's, else one.
     private static func inverters(_ job: Job) -> Int { max(job.iecReport?.inverters.count ?? 1, 1) }
 
+    /// A manager's `บันทึก` in ตั้งค่า Monitoring: the next revision, signed with their email and sent to the team
+    /// (CHA-91). Nothing is sent when only a token changed, since tokens stay on this iPad.
     func save(_ s: Monitoring.Settings) {
+        guard s != settings else { return }
+        let signed = s.signed(after: settings, by: MemberRole.shared.permissions.email)
+        keep(signed)
+        onChange?(signed)
+    }
+
+    /// The team's copy from Firestore: taken when it is this revision or later, with this iPad's connection tests.
+    @discardableResult
+    func receive(_ remote: Monitoring.Settings) -> Bool {
+        guard settings.takes(remote) else { return false }
+        keep(remote.keepingTests(of: settings))
+        return true
+    }
+
+    /// Sends settings set up here before they synced, once Firestore is known to have none (`unsentSetup`).
+    func sendUnsentSetup() {
+        // a manager's only: the rules refuse anyone else's, and the revision would rise here for nothing
+        guard settings.unsentSetup, MemberRole.shared.permissions.role.managesTeam else { return }
+        let signed = settings.signed(after: settings, by: MemberRole.shared.permissions.email)
+        keep(signed)
+        onChange?(signed)
+    }
+
+    private func keep(_ s: Monitoring.Settings) {
         settings = s
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: Self.settingsKey) }
         // the offline threshold is a setting
@@ -216,7 +244,8 @@ final class MonitoringStore {
             s.servers[i].testedAt = Date()
             s.servers[i].testOK = (try? result.get()) != nil
             if case .success(let n) = result { s.servers[i].plants = n }
-            save(s)
+            // a test is this iPad's (its token), so it stays here and isn't sent
+            keep(s)
         }
         return result
     }

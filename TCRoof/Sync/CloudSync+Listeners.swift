@@ -235,6 +235,35 @@ extension CloudSync {
         }
     }
 
+    /// The team's ตั้งค่า Monitoring (`config/monitoring`, CHA-91): the servers, thresholds, rate and station pairings,
+    /// the same on every team iPad. A manager's save here is sent (firestore.rules refuse anyone else and an older
+    /// revision); every team device takes a copy of its revision or later (`Monitoring.Settings.takes`). Tokens never
+    /// go: each stays in its iPad's Keychain. Settings set up here before this synced go up once, when the server says
+    /// it has none. Not for contractors, who can't read it.
+    func listenMonitoringSettings(barrier: StartupLoadBarrier? = nil) {
+        let session = snapshotSession
+        let ref = db.document("config/monitoring")
+        let store = MonitoringStore.shared
+        store.onChange = { [weak self] s in
+            guard self?.snapshotSession == session, MemberRole.shared.permissions.role.managesTeam,
+                  let json = try? JSONEncoder().encode(s), let text = String(data: json, encoding: .utf8) else { return }
+            ref.setData(["json": text, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { SyncLog.sync.error("monitoring settings refused: \(error.localizedDescription)") }
+            }
+        }
+        listenStartupDocument(ref, barrier: barrier) { snapshot, error in
+            // never fail the whole sync over these settings (rule not deployed yet): the jobs still sync
+            if let error { return SyncLog.sync.error("monitoring settings listener: \(error.localizedDescription)") }
+            guard let snapshot else { return }
+            if let text = snapshot.data()?["json"] as? String {
+                guard let s = try? JSONDecoder().decode(Monitoring.Settings.self, from: Data(text.utf8)) else { return }
+                store.receive(s)
+            } else if !snapshot.exists, !snapshot.metadata.isFromCache {
+                store.sendUnsentSetup()
+            }
+        }
+    }
+
     func listenFeedAcks(barrier: StartupLoadBarrier? = nil) {
         let session = snapshotSession
         let acks = FeedAcks.shared

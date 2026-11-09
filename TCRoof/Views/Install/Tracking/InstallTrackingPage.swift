@@ -58,7 +58,7 @@ struct InstallTrackingPage: View {
     @State var phoneRoute: PhoneRoute?
     @State var phoneSheet: PhoneSheet?
     /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the edits not saved yet, and where the person was going when asked about unsaved edits.
-    @State var settingsDraft = SettingsDraft()
+    @State var settingsModel = InstallSettingsModel()
     /// `data`, kept until the job, its reports or the survey change (`ObservedCache`).
     @State private var dataCache = ObservedCache<InstallPageData>()
     @State var leaving: Leave?
@@ -176,7 +176,8 @@ struct InstallTrackingPage: View {
             Button("ทิ้ง", role: .destructive) { settingsDraft = SettingsDraft(); go(leaving) }
             Button("อยู่ต่อ", role: .cancel) { leaving = nil }
         } message: {
-            Text("แก้ไข \(settingsChanges.count) รายการในตั้งค่าโครงการ")
+            // counted only while asking: the page doesn't follow the draft as it changes
+            Text("แก้ไข \(leaving == nil ? 0 : settingsChanges.count) รายการในตั้งค่าโครงการ")
         }
     }
 

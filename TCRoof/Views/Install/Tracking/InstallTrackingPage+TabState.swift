@@ -16,6 +16,13 @@ final class InstallOverviewModel {
     init(view: InstallTrackingPage.ProgressView) { self.view = view }
 }
 
+/// iPad `ตั้งค่าโครงการ`: the edits not saved yet. The page asks about them before leaving the tab (`leave(to:)`), so it
+/// holds the model, but only `InstallPadSettingsTabView` reads it while it draws.
+@MainActor @Observable
+final class InstallSettingsModel {
+    var draft = SettingsDraft()
+}
+
 /// A tab's part of the page as a view of its own: what its content reads from a tab's model is tracked here, so a
 /// change redraws this section only. Its content lays out in the parent stack as if written there.
 struct InstallTabSection<Content: View>: View {
@@ -35,5 +42,11 @@ extension InstallTrackingPage {
     var toggled: Set<String> {
         get { overview.toggled }
         nonmutating set { overview.toggled = newValue }
+    }
+
+    /// iPad `ตั้งค่าโครงการ`'s edits not saved yet, kept in `settingsModel`.
+    var settingsDraft: SettingsDraft {
+        get { settingsModel.draft }
+        nonmutating set { settingsModel.draft = newValue }
     }
 }

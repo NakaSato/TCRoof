@@ -33,14 +33,9 @@ struct MonitoringPage: View {
     var body: some View {
         let fleet = store.fleet
         ScrollView {
-            VStack(spacing: 14) {
-                sinceStrip(fleet)
-                kpiRow(fleet)
-                HStack(alignment: .top, spacing: 14) {
-                    chartCard(fleet).frame(maxWidth: .infinity)
-                    actionsCard(fleet).frame(width: 398)
-                }
-                stationsCard(fleet)
+            Group {
+                // the first Growatt read since launch: skeletons in the page's shape, never `—` and zeros (CHA-74)
+                if store.awaitingFirstRead { loadingContent } else { content(fleet) }
             }
             .padding(.horizontal, Self.margin)
             .padding(.top, 14)
@@ -59,6 +54,18 @@ struct MonitoringPage: View {
         }
         .navigationDestination(item: $opened) { s in
             PWAMaintenanceStationView(station: Self.summary(s, health: s.health(now: store.now, offlineAfter: store.settings.loggerOfflineMinutes)))
+        }
+    }
+
+    private func content(_ fleet: Monitoring.Fleet) -> some View {
+        VStack(spacing: 14) {
+            sinceStrip(fleet)
+            kpiRow(fleet)
+            HStack(alignment: .top, spacing: 14) {
+                chartCard(fleet).frame(maxWidth: .infinity)
+                actionsCard(fleet).frame(width: 398)
+            }
+            stationsCard(fleet)
         }
     }
 

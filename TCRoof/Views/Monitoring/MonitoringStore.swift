@@ -22,6 +22,22 @@ final class MonitoringStore {
     private(set) var feedFailure: String?
     @ObservationIgnored private let feed = MonitoringFeed()
 
+    /// The first read since launch is under way and nothing has come back yet (CHA-74): the page shows skeletons in
+    /// its shape instead of `—` and zeros. Only when there is something to read (a paired station with its token on
+    /// this iPad, or the demo plants); later polls keep the last figures until the new ones come. DEBUG
+    /// `-monitoringLoading YES` holds it on for screenshots.
+    var awaitingFirstRead: Bool { readingFirst || Self.debugLoading }
+    private var readingFirst = false
+    @ObservationIgnored private var hasRead = false
+
+    static var debugLoading: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "monitoringLoading")
+        #else
+        false
+        #endif
+    }
+
     private static let settingsKey = "monitoring.settings"
 
     private init() {
@@ -109,8 +125,13 @@ final class MonitoringStore {
         }
         guard !targets.isEmpty else { return refresh(jobs: jobs) }
         let readAt = Date()
+        if !hasRead { readingFirst = true }
         let readings = await feed.read(targets, now: readAt, calendar: .current)
-        guard !Task.isCancelled else { return }
+        // cancelled (the page left): no skeleton left on; the next poll starts the wait again
+        guard !Task.isCancelled else { readingFirst = false; return }
+        // a failed first read ends the wait too: the header says why (`feedFailure`)
+        hasRead = true
+        readingFirst = false
         let byID = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
         let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         // what each station read as before this poll, for the alerts; a station never read since launch has none
@@ -139,8 +160,11 @@ final class MonitoringStore {
     /// paired station's. A plant whose figures fail keeps its last row; no alerts are posted for them.
     private func pollWebDemo() async {
         let readAt = Date()
+        if !hasRead { readingFirst = true }
         let result = await feed.readWebDemo()
-        guard !Task.isCancelled, Self.growattWebDemo else { return }
+        guard !Task.isCancelled, Self.growattWebDemo else { readingFirst = false; return }
+        hasRead = true
+        readingFirst = false
         let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         now = readAt
         stations = result.plants.compactMap { p in

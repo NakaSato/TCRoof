@@ -99,6 +99,16 @@ final class MonitoringUITests: XCTestCase {
         XCTAssertFalse(app.buttons["monitoring.settings.save"].exists)
     }
 
+    /// `-monitoringLoading YES` holds the first Growatt read open: the page shows its skeletons (CHA-74), not the rows.
+    func testFirstReadShowsSkeletons() {
+        let app = launch(["-monitoringLoading", "YES"])
+        let loading = app.descendants(matching: .any)["monitoring.loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: slow), "the skeletons stand in for the figures")
+        XCTAssertEqual(loading.label, "กำลังโหลดข้อมูลจาก Growatt")
+        XCTAssertFalse(row(app, 25).exists, "no station row before the first read")
+        XCTAssertTrue(app.buttons["monitoring.settings"].exists, "the header stays")
+    }
+
     func testARowOpensItsStation() {
         let app = launch()
         let r = row(app, 25)

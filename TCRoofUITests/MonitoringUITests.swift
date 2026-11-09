@@ -64,6 +64,18 @@ final class MonitoringUITests: XCTestCase {
         XCTAssertTrue(waitGone(save))
     }
 
+    /// The Maintainer edits the settings as a manager does: a change turns save on.
+    func testMaintainerEditsSettings() {
+        let app = launch(["-role", "maintainer"])
+        let open = app.buttons["monitoring.settings"]
+        XCTAssertTrue(open.waitForExistence(timeout: slow))
+        open.tap()
+        let save = app.buttons["monitoring.settings.save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 8), "save is there for the Maintainer")
+        app.buttons["10 นาที"].tap()
+        XCTAssertTrue(save.isEnabled)
+    }
+
     /// `จับคู่สถานีกับ Plant` on the stub list (`-monitoringPairing YES`): MP 44 takes the plant named after it, which the
     /// row and the count show and which turns save on; `เลิกจับคู่` takes it back and save goes off again.
     func testPairingAStationWithAPlant() {

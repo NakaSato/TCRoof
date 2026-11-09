@@ -2,7 +2,7 @@ import XCTest
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-@testable import TCRoofCore
+@testable import GrowattAPI
 
 /// `GrowattAPI`'s parsing, on answers copied from the test server (test.growatt.com, 7 Nov 2026).
 final class GrowattAPITests: XCTestCase {
@@ -124,24 +124,6 @@ final class GrowattAPITests: XCTestCase {
         XCTAssertThrowsError(try GrowattAPI.parseData(Data("not json".utf8))) { XCTAssertEqual($0 as? GrowattAPI.Failure, .badResponse) }
     }
 
-    func testSummary() throws {
-        let plants = try GrowattAPI.parsePlants(list)
-        let never = GrowattAPI.summary(plants[0])
-        XCTAssertEqual(never.id, "growatt-1913")
-        XCTAssertEqual(never.status, .offline)
-        XCTAssertEqual(never.kWp, 20000)
-        XCTAssertFalse(never.reportsPR)
-        // plant/data gives a plant that never reported power 0: it stays offline
-        let stillNever = GrowattAPI.summary(plants[0], data: try GrowattAPI.parseData(overview))
-        XCTAssertEqual(stillNever.status, .offline)
-        XCTAssertEqual(stillNever.note, "Growatt | ไม่มีข้อมูล ตั้งแต่ 2026-09-09 15:41")
-
-        let live = GrowattAPI.summary(plants[1], data: try GrowattAPI.parseData(overview))
-        XCTAssertEqual(live.status, .normal)
-        XCTAssertEqual(live.energy, 4.5)
-        XCTAssertEqual(live.note, "Growatt | 0 kW")
-    }
-
     func testServers() {
         XCTAssertTrue(GrowattAPI.demo.isDemo)
         let live = GrowattAPI.live(token: " t0k3n ")
@@ -199,17 +181,40 @@ final class GrowattAPITests: XCTestCase {
 }
 
 /// Answers each request with the next of `replies`, HTTP 200.
-private final class GrowattStub: URLProtocol, @unchecked Sendable {
+final class GrowattStub: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     nonisolated(unsafe) private static var queue: [Data] = []
     nonisolated(unsafe) private static var seen: [URLRequest] = []
+    nonisolated(unsafe) private static var sent: [String] = []
 
     static var replies: [Data] {
         get { lock.lock(); defer { lock.unlock() }; return queue }
         set { lock.lock(); queue = newValue; lock.unlock() }
     }
     static var requests: [URLRequest] { lock.lock(); defer { lock.unlock() }; return seen }
-    static func reset() { lock.lock(); queue = []; seen = []; lock.unlock() }
+    /// Each request's body as text ("" for a GET).
+    static var bodies: [String] { lock.lock(); defer { lock.unlock() }; return sent }
+    static func reset() { lock.lock(); queue = []; seen = []; sent = []; lock.unlock() }
+
+    /// A session that answers through this stub.
+    static func api() -> GrowattAPI {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [GrowattStub.self]
+        var a = GrowattAPI(baseURL: URL(string: "https://test.growatt.com/v1/")!, token: " abc \n")
+        a.session = URLSession(configuration: config)
+        a.retryDelay = 0.01
+        return a
+    }
+
+    /// The body, which URLSession hands a protocol as a stream.
+    private static func body(_ r: URLRequest) -> String {
+        if let d = r.httpBody { return String(decoding: d, as: UTF8.self) }
+        guard let s = r.httpBodyStream else { return "" }
+        s.open(); defer { s.close() }
+        var out = Data(), buf = [UInt8](repeating: 0, count: 4096)
+        while s.hasBytesAvailable { let n = s.read(&buf, maxLength: buf.count); if n <= 0 { break }; out.append(buf, count: n) }
+        return String(decoding: out, as: UTF8.self)
+    }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -217,6 +222,7 @@ private final class GrowattStub: URLProtocol, @unchecked Sendable {
     override func startLoading() {
         Self.lock.lock()
         Self.seen.append(request)
+        Self.sent.append(Self.body(request))
         let data = Self.queue.isEmpty ? Data() : Self.queue.removeFirst()
         Self.lock.unlock()
         if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {

@@ -182,7 +182,7 @@ final class MonitoringStore {
         var failure: String?
         for src in sources {
             guard let p = settings.pairing(of: src.base.id), let s = server[src.base.id] else { continue }
-            guard s.fresh(now: now, plantID: p.plantID, pollMinutes: settings.pollMinutes) else {
+            guard s.fresh(now: now, plantID: p.plantID, detailMinutes: settings.detailMinutes) else {
                 if MonitoringToken.token(p.server.id) == nil { failure = failure ?? s.failure }
                 continue
             }

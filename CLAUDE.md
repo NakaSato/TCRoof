@@ -43,6 +43,7 @@ To open a screen in a given state (screenshots, checks), read `docs/debug-flags.
 
 - **App target (`TCRoof/`):** Google sign-in, SwiftData models, Firestore sync (`Sync/CloudSync.swift`, limited by `firestore.rules`, project `tcroof-1564c`), Google Drive for photos and files, and the non-survey screens. Details: `TCRoof/CLAUDE.md`.
 - **`TCRoofKit` package:** all survey work and shared logic: `TCRoofUI` (design system and the survey editor), `TCRoofCore` (pure values and rules), `PDFReport`, `ExcelExport`, `DriveSync`, `PVYield`, `ModuleRules`, `TCRoofMCP`. Details: `TCRoofKit/CLAUDE.md`.
+- **`GrowattAPI` package** (`GrowattAPI/`, its own `Package.swift`): Growatt's server OpenAPI v1, read calls only, Foundation only; `TCRoofKit` depends on it by path and `TCRoofCore` re-exports it. `swift test` there. Endpoints, Growatt's web portal calls and what is unconfirmed: `docs/specs/growatt-api.md`.
 - **Master Plan sheet** (`tools/master-plan-sheet`): a Google Sheet that reads Firestore; renaming or re-encoding the fields it reads breaks it. Details: its CLAUDE.md.
 - **Roles:** `members/<email>.role` is `manager`, `internal` or `external` (`docs/reference/roles/user-roles.json`, `TCRoofCore/UserRoles.swift`, kept the same by `RoleTableTests`). Check `permissions.can(.capability, on: job.access)` before showing an action; `firestore.rules` enforces it (tests in `tools/firestore-rules-tests`), and a newly synced collection needs a rule. Raise `AppCompat.syncVersion` when a change needs every device on it before its rules go live. Details: `TCRoof/CLAUDE.md`.
 

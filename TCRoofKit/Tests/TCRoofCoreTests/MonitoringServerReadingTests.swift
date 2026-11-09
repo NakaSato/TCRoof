@@ -48,14 +48,41 @@ final class MonitoringServerReadingTests: XCTestCase {
         XCTAssertNil(Monitoring.ServerReading(fields: ["stationID": "a"], readAt: now), "no plant")
     }
 
-    func testFreshWithinTwoPollsForThePlantPairedNow() throws {
+    func testFreshWithinTwoDetailReadsForThePlantPairedNow() throws {
         let r = try XCTUnwrap(Monitoring.ServerReading(fields: fields, readAt: now))
-        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(10 * 60), plantID: 7, pollMinutes: 5))
-        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(11 * 60), plantID: 7, pollMinutes: 5), "a minute's slack")
-        XCTAssertFalse(r.fresh(now: now.addingTimeInterval(12 * 60), plantID: 7, pollMinutes: 5), "the function stopped: the iPad reads")
-        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(25 * 60), plantID: 7, pollMinutes: 15))
-        XCTAssertFalse(r.fresh(now: now, plantID: 8, pollMinutes: 5), "paired with another plant since")
+        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(10 * 60), plantID: 7, detailMinutes: 5))
+        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(11 * 60), plantID: 7, detailMinutes: 5), "a minute's slack")
+        XCTAssertFalse(r.fresh(now: now.addingTimeInterval(12 * 60), plantID: 7, detailMinutes: 5), "the function stopped: the iPad reads")
+        XCTAssertTrue(r.fresh(now: now.addingTimeInterval(31 * 60), plantID: 7, detailMinutes: 15), "a healthy station read every 15 minutes")
+        XCTAssertFalse(r.fresh(now: now.addingTimeInterval(32 * 60), plantID: 7, detailMinutes: 15))
+        XCTAssertFalse(r.fresh(now: now, plantID: 8, detailMinutes: 5), "paired with another plant since")
         let never = Monitoring.ServerReading(stationID: "a", plantID: 7, readAt: nil, reading: .init())
-        XCTAssertFalse(never.fresh(now: now, plantID: 7, pollMinutes: 5))
+        XCTAssertFalse(never.fresh(now: now, plantID: 7, detailMinutes: 5))
+    }
+
+    func testTheDetailEvery15MinutesAsTheFunctionReadsIt() {
+        XCTAssertEqual(Monitoring.Settings().detailMinutes, 15)
+        XCTAssertEqual(Monitoring.Settings(loggerOfflineMinutes: 20).detailMinutes, 10, "half the logger threshold")
+        XCTAssertEqual(Monitoring.Settings(loggerOfflineMinutes: 5).detailMinutes, 5, "never under pollMinutes")
+        XCTAssertEqual(Monitoring.Settings(pollMinutes: 30, loggerOfflineMinutes: 60).detailMinutes, 30)
+    }
+
+    func testTheFleetsPowerStandsInWhenNewer() throws {
+        var f = fields
+        f["listPower"] = 151.7
+        let later = now.addingTimeInterval(5 * 60)
+        let newer = try XCTUnwrap(Monitoring.ServerReading(fields: f, readAt: now, listAt: later))
+        XCTAssertEqual(newer.reading.data?.currentPower, 151.7, "plant/list five minutes after plant/data")
+        XCTAssertEqual(newer.reading.data?.todayEnergy, 412.5, "the rest is plant/data's")
+        XCTAssertEqual(newer.listPower, 151.7)
+        let older = try XCTUnwrap(Monitoring.ServerReading(fields: f, readAt: now, listAt: now.addingTimeInterval(-60)))
+        XCTAssertEqual(older.reading.data?.currentPower, 148.2, "plant/data is newer")
+        f["listPower"] = -1
+        let never = try XCTUnwrap(Monitoring.ServerReading(fields: f, readAt: now, listAt: later))
+        XCTAssertEqual(never.reading.data?.currentPower, 148.2, "-1 (never reported) doesn't stand in")
+        f["listPower"] = "152"
+        f["data"] = nil
+        let noData = try XCTUnwrap(Monitoring.ServerReading(fields: f, readAt: nil, listAt: later))
+        XCTAssertNil(noData.reading.data, "no plant/data: nothing to put it in")
     }
 }

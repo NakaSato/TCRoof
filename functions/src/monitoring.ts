@@ -1,7 +1,9 @@
 // The Monitoring poll's steps (CHA-93), apart from Firestore and the schedule (index.ts), so monitoring.test.ts runs
-// them against a fake Growatt. What one station's poll reads follows the app's `MonitoringFeed.read`: each poll
-// `plant/data`, today's `plant/power` and `device/list`; once a Bangkok day yesterday's `plant/power` and
-// `plant/energy` by day (30 days) and by month (12 months).
+// them against a fake Growatt. Each run (every `pollMinutes`) reads the whole fleet's power in one `plant/list` call
+// per account (`readFleet`); a station's detail (`pollStation`: `plant/data`, today's `plant/power`, `device/list`;
+// once a Bangkok day yesterday's `plant/power` and `plant/energy` by day and by month) is read every
+// `detailMinutes`, or every run while it is in alarm or offline, the stations spread over the runs (`pickDetail`).
+// docs/specs/growatt-api.md, "Polling".
 import { bangkokDayText, bangkokMonthStart, DAY_CHUNKS, failureMessage, GrowattFailure, health, joinEnergy, Pairing } from './growatt';
 
 /** The calls a station's poll makes; `GrowattClient` in the function, a fake in the tests. */
@@ -10,16 +12,77 @@ export type Reader = {
   power(plantID: number, date: string): Promise<string>;
   devices(plantID: number): Promise<string>;
   energy(plantID: number, start: string, end: string, unit: 'day' | 'month'): Promise<string>;
+  /** `plant/list`, 100 a page. */
+  plants(page: number): Promise<string>;
 };
 
 /** `monitoring/{station}` as the poll last left it (the fields it decides by). */
-export type Previous = { plantID?: number; attemptedAt?: Date; historyDay?: string } | undefined;
+export type Previous = { plantID?: number; attemptedAt?: Date; historyDay?: string; health?: string } | undefined;
 
 /** Whether the station is due: never read, paired with another plant since, or last tried a poll ago or more. */
 export function due(previous: Previous, plantID: number, now: Date, pollMinutes: number): boolean {
   if (!previous?.attemptedAt || previous.plantID !== plantID) return true;
   // a minute's slack, since the schedule's runs aren't exactly 5 minutes apart
   return now.getTime() - previous.attemptedAt.getTime() >= (pollMinutes - 1) * 60_000;
+}
+
+/** A healthy station's detail is read at most this often. */
+export const DETAIL_MINUTES = 15;
+
+/**
+ * Minutes between a healthy station's detail reads: 15, but never longer than half the logger threshold (its last
+ * reading has to stay younger than the threshold) nor shorter than `pollMinutes`. The app's
+ * `Monitoring.Settings.detailMinutes` is the same rule, and judges the server's reading fresh by it.
+ */
+export function detailMinutes(s: { pollMinutes: number; loggerOfflineMinutes: number }): number {
+  return Math.max(s.pollMinutes, Math.min(DETAIL_MINUTES, Math.floor(s.loggerOfflineMinutes / 2)));
+}
+
+/** In alarm or offline at its last read: read every run, so a fix shows soon. */
+export const troubled = (previous: Previous) => previous?.health === 'alarm' || previous?.health === 'offline';
+
+/** Whether a station's detail is due: every run while troubled, else every `detailMinutes`. */
+export function detailDue(previous: Previous, plantID: number, now: Date, s: { pollMinutes: number; loggerOfflineMinutes: number }): boolean {
+  return due(previous, plantID, now, troubled(previous) ? s.pollMinutes : detailMinutes(s));
+}
+
+/**
+ * The stations to read in detail this run, out of those due: every troubled one, and of the healthy ones the oldest
+ * read first, at most the fleet's share of a run (`total` × `pollMinutes` / `detailMinutes`), so the reads spread over
+ * the runs instead of all landing on one.
+ */
+export function pickDetail<T extends { previous: Previous }>(dueOnes: T[], total: number, s: { pollMinutes: number; loggerOfflineMinutes: number }): T[] {
+  const share = Math.max(1, Math.ceil(total * s.pollMinutes / detailMinutes(s)));
+  const urgent = dueOnes.filter((e) => troubled(e.previous));
+  const rest = dueOnes.filter((e) => !troubled(e.previous))
+    .sort((a, b) => (a.previous?.attemptedAt?.getTime() ?? 0) - (b.previous?.attemptedAt?.getTime() ?? 0));
+  return [...urgent, ...rest.slice(0, share)];
+}
+
+/**
+ * The fleet's power now: `plant/list` page after page until every plant in `wanted` is seen or a page comes back
+ * short. Plant id → its `current_power` (kW; -1 never reported), or null when the list doesn't give one. A failed
+ * page ends the read with what came before it.
+ */
+export async function readFleet(api: Reader, wanted: Set<number>, maxPages = 20): Promise<Map<number, number | null>> {
+  const out = new Map<number, number | null>();
+  for (let page = 1; page <= maxPages; page++) {
+    let rows: unknown[];
+    try {
+      const d = JSON.parse(await api.plants(page)).data;
+      rows = d && Array.isArray(d.plants) ? d.plants : [];
+    } catch { break; }
+    for (const r of rows) {
+      if (typeof r !== 'object' || r === null) continue;
+      const row = r as Record<string, unknown>;
+      const id = Number(row.plant_id);
+      if (!Number.isInteger(id)) continue;
+      const power = Number(row.current_power);
+      out.set(id, row.current_power === null || row.current_power === undefined || row.current_power === '' || !Number.isFinite(power) ? null : power);
+    }
+    if (rows.length < 100 || [...wanted].every((id) => out.has(id))) break;
+  }
+  return out;
 }
 
 export type Poll = {

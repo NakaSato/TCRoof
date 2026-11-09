@@ -68,9 +68,13 @@ extension Monitoring {
         /// on the clear-day curve, so the early morning (a few kWh against a few kWh) raises nothing.
         public static let belowMinimumShare = 0.15
 
-        /// `belowSince`: when each station's `ผลิตต่ำกว่าที่คาด` line was first raised (`belowSinceAfter`), so the line
-        /// keeps its age from one reading to the next.
-        public init(_ stations: [Station], now: Date, settings: Settings, belowSince: [String: Date] = [:]) {
+        /// The app's own lines (`TCRoof`) as raised at `now`, to pass as `raised` to the next fleet, so each line keeps
+        /// its age and today's count from one reading to the next (`Raised`).
+        public let raised: [String: Raised]
+
+        /// `raised`: the previous fleet's, so a line still raised keeps when it began and how many times it came today.
+        public init(_ stations: [Station], now: Date, settings: Settings, raised previous: [String: Raised] = [:],
+                    calendar: Calendar = .current) {
             self.now = now
             self.settings = settings
             let health = stations.map { $0.health(now: now, offlineAfter: settings.loggerOfflineMinutes) }
@@ -78,6 +82,7 @@ extension Monitoring {
             let median = Fleet.median(normal)
             let reference = normal.count >= Fleet.minimumForMedian ? median : nil
             self.reference = reference
+            var next: [String: Raised] = [:]
             rows = zip(stations, health).map { s, h in
                 let delta: Double? = {
                     // offline: today's energy isn't known, so neither is its yield against the others
@@ -85,7 +90,7 @@ extension Monitoring {
                     return y / m - 1
                 }()
                 var s = s
-                s.alarms.removeAll { $0.id == Fleet.belowID(s.id) }
+                s.alarms.removeAll { Fleet.isOwnLine($0.id, station: s.id) }
                 var row = Row(station: s, health: h, yieldVsMedian: delta, reference: reference)
                 // a lost logger's line is priced as the row's loss is (against the median when there is one), so the
                 // action list and `สูญเสียวันนี้` give the same figure for it
@@ -94,15 +99,42 @@ extension Monitoring {
                         if case .atMost = row.station.alarms[i].loss { row.station.alarms[i].loss = .atMost(short) }
                     }
                 }
-                if h == .normal, let a = Fleet.belowAlarm(row, percent: settings.belowExpectedPercent,
-                                                          since: belowSince[s.id] ?? now) {
+                // what holds now; a line shows once it has held its time, keeping its age and today's count
+                var checks: [Check] = []
+                if h == .normal, let a = Fleet.belowAlarm(row, percent: settings.belowExpectedPercent, since: now) {
+                    checks.append(Check(alarm: a))
+                }
+                if h != .offline {
+                    checks += Fleet.stringChecks(row.station, percent: settings.stringLowPercent, now: now)
+                }
+                if h == .normal, let a = Fleet.prAlarm(row.station, percent: settings.prLowPercent, since: now) {
+                    checks.append(Check(alarm: a))
+                }
+                for c in checks {
+                    let r = Raised.next(previous[c.alarm.id], holding: true, now: now, hold: c.hold, calendar: calendar)
+                    next[c.alarm.id] = r
+                    guard r.shown else { continue }
+                    var a = c.alarm
+                    a.since = r.since
+                    a.occurrences = r.occurrences
                     row.station.alarms.append(a)
+                }
+                // a line not raised now is kept for today's count until the day ends
+                for (id, p) in previous where Fleet.isOwnLine(id, station: s.id) && next[id] == nil {
+                    let r = Raised.next(p, holding: false, now: now, hold: 0, calendar: calendar)
+                    if r.occurrences > 0 || r.active { next[id] = r }
                 }
                 return row
             }
+            raised = next
         }
 
         static func belowID(_ station: String) -> String { station + "/below" }
+
+        /// The lines this fleet raises itself (`ผลิตต่ำกว่าที่คาด`, a low string, low PR), replaced at every fleet.
+        static func isOwnLine(_ id: String, station: String) -> Bool {
+            id == belowID(station) || id == prID(station) || id.hasPrefix(station + "/string/")
+        }
 
         /// `ผลิตต่ำกว่าที่คาด` (`Settings.belowExpectedPercent`) for a station running normally: a `TCRoof` line, so
         /// it stays `ปกติ` and nothing is notified, once `belowMinimumShare` of its day's forecast has passed and its
@@ -121,15 +153,6 @@ extension Monitoring {
             return Alarm(id: belowID(s.id), source: .tcroof, part: "สถานี",
                          detail: "ผลิต \(shown)% ของ\(basis) · เกณฑ์ \(percent)%", since: since,
                          loss: .measured(expected - made))
-        }
-
-        /// `belowSince` for the next fleet: the lines raised now, each keeping when it was first raised.
-        public func belowSinceAfter(_ previous: [String: Date]) -> [String: Date] {
-            var out: [String: Date] = [:]
-            for s in stations where s.alarms.contains(where: { $0.id == Fleet.belowID(s.id) }) {
-                out[s.id] = previous[s.id] ?? now
-            }
-            return out
         }
 
         public var stations: [Station] { rows.map(\.station) }
@@ -221,9 +244,15 @@ extension Monitoring {
         public var alarmCount: Int { stations.reduce(0) { $0 + $1.alarms.count } }
 
         /// Stations that need someone (the iPad dock's `Monitor` badge, issue #270, decision 1 of #267): paired with a
-        /// source and in alarm or offline. A station not paired yet has no feed to fall silent, so it doesn't count:
-        /// until stations are paired the badge is 0.
-        public var needingAttention: Int { rows.filter { $0.station.paired && $0.health != .normal }.count }
+        /// source and in alarm or offline, or `ปกติ` with a low string or low PR line (CHA-92; nothing is notified for
+        /// those). A station not paired yet has no feed to fall silent, so it doesn't count: until stations are paired
+        /// the badge is 0.
+        public var needingAttention: Int {
+            rows.filter { r in
+                guard r.station.paired else { return false }
+                return r.health != .normal || r.station.alarms.contains { Fleet.needsAttention($0.id, station: r.station.id) }
+            }.count
+        }
 
         // MARK: ต้องดำเนินการ
 

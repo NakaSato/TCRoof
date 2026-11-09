@@ -114,6 +114,9 @@ public enum Monitoring {
         /// PR is worked out only with an irradiance sensor.
         public var hasIrradianceSensor: Bool
         public var prToday: Double?
+        /// String currents, A, per inverter (`INV 1` first), then per MPPT its strings `a`, `b`; empty when the source
+        /// gives none (Growatt's OpenAPI as read today), so no string is judged.
+        public var inverterStrings: [[[Double?]]]
         public var alarms: [Alarm]
         /// Today's power, kW, one value per 5-minute slot from 00:00 (`Monitoring.slots`); nil where nothing was read.
         public var curve: [Double?]
@@ -129,7 +132,7 @@ public enum Monitoring {
                     paired: Bool = true, powerNow: Double? = nil, energyToday: Double? = nil, expectedSoFar: Double? = nil,
                     expectedToday: Double? = nil, totalEnergy: Double? = nil, lastReading: Date? = nil,
                     backfeedToday: Double? = nil, hasIrradianceSensor: Bool = false, prToday: Double? = nil,
-                    alarms: [Alarm] = [], curve: [Double?] = [], expectedCurve: [Double] = [], yesterdaySoFar: Double? = nil,
+                    inverterStrings: [[[Double?]]] = [], alarms: [Alarm] = [], curve: [Double?] = [], expectedCurve: [Double] = [], yesterdaySoFar: Double? = nil,
                     days: [Period] = [], months: [Period] = []) {
             self.id = id; self.mpNumber = mpNumber; self.name = name; self.kWp = kWp; self.inverters = inverters
             self.invertersOnline = invertersOnline; self.paired = paired; self.powerNow = powerNow
@@ -138,6 +141,7 @@ public enum Monitoring {
             self.hasIrradianceSensor = hasIrradianceSensor
             // PR needs measured irradiance (issue #259): without a sensor there is none to show
             self.prToday = hasIrradianceSensor ? prToday : nil
+            self.inverterStrings = inverterStrings
             self.alarms = alarms; self.curve = curve; self.expectedCurve = expectedCurve
             self.yesterdaySoFar = yesterdaySoFar; self.days = days; self.months = months
         }

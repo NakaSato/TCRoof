@@ -76,19 +76,19 @@ final class MonitoringStore {
     /// The line under the page's header naming where the rows come from, nil for the stations' own.
     var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
 
-    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, belowSince: belowSince) }
+    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, raised: raised) }
 
-    /// When each station's `ผลิตต่ำกว่าที่คาด` line was first raised, so its age carries from one reading to the next.
-    private var belowSince: [String: Date] = [:]
+    /// The app's own lines (`ผลิตต่ำกว่าที่คาด`, `สตริงกระแสต่ำ`, `PR ต่ำ`) as last raised, so each keeps its age and
+    /// today's count from one reading to the next (`Monitoring.Raised`).
+    private var raised: [String: Monitoring.Raised] = [:]
 
-    /// The dock's badge: the stations in alarm or offline (`Fleet.needingAttention`), worked out when the stations or the
-    /// settings change, not on each redraw of the dock.
+    /// The dock's badge: the stations in alarm or offline, or with a low string or PR (`Fleet.needingAttention`),
+    /// worked out when the stations or the settings change, not on each redraw of the dock.
     private(set) var attentionCount = 0
 
     private func recount() {
         let f = fleet
-        let since = f.belowSinceAfter(belowSince)
-        if since != belowSince { belowSince = since }
+        if f.raised != raised { raised = f.raised }
         let n = f.needingAttention
         if n != attentionCount { attentionCount = n }
     }
@@ -99,6 +99,7 @@ final class MonitoringStore {
         if Self.demo {
             now = Monitoring.demoNow()
             stations = Monitoring.demo(now: now)
+            if raised.isEmpty { raised = Monitoring.demoRaised(stations, now: now, settings: settings) }
         } else if Self.growattWebDemo {
             // the example plants come with the next poll; keep the ones read
             if !stations.allSatisfy({ $0.id.hasPrefix(Monitoring.GrowattWebMap.stationID("")) }) { stations = [] }

@@ -1,4 +1,4 @@
-// TCRoof Cloud Functions. `assistant` is the project assistant's proxy to Qwen: the app runs the tools on the device
+// TCRoof Cloud Functions (`monitoringPoll`, `monitoringArchive` and `monitoringToken` are below). `assistant` is the project assistant's proxy to Qwen: the app runs the tools on the device
 // (TCRoofCore/Assistant) and sends the conversation here; this function checks the caller is on the team, counts their
 // requests per day and forwards the conversation with the API key, which never reaches a device.
 //
@@ -9,8 +9,11 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { defineInt, defineSecret, defineString } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions/v2';
 import { bangkokDay, checkMember, checkRequest, cleanReply, isQuestion, LIMITS } from './guard';
+import { bangkokDayText, failureMessage, GrowattClient, GrowattFailure, growattURL, Pairing, pairings, parseSettings, stationDoc } from './growatt';
+import { ARCHIVE_DAYS, archiveDoc, archiveStation, checkTokenRequest, due, isManager, pollStation, Previous } from './monitoring';
 
 initializeApp();
 
@@ -92,5 +95,121 @@ export const assistant = onCall(
     }, { merge: true });
 
     return { message, remainingToday: Math.max(limit - used, 0) };
+  },
+);
+
+// MARK: Monitoring (CHA-93)
+//
+// Growatt is read here, every `pollMinutes` of ตั้งค่า Monitoring (`config/monitoring`), for every paired station,
+// whether or not an iPad is open: read-only calls, one after another, never closer than 5 minutes on a plant. Each
+// station's answers go to `monitoring/{station}` as Growatt wrote them; the team's iPads read them there and map them
+// as they would their own (`Monitoring.ServerReading`), polling Growatt themselves only while these are stale. With
+// เก็บข้อมูลถาวรทุกคืน on, `monitoringArchive` keeps each day's 5-minute power for good (Growatt keeps ~95 days).
+// The tokens are in `monitoringTokens/{server id}`, which the rules let no device read: a manager's ตั้งค่า Monitoring
+// sends one through `monitoringToken`, and the app keeps showing only its last four characters.
+
+const monitoringRegion = 'asia-southeast1';
+
+async function monitoringSetup() {
+  const db = getFirestore();
+  const json = (await db.doc('config/monitoring').get()).data()?.json;
+  const settings = typeof json === 'string' ? parseSettings(json) : null;
+  if (!settings) return null;
+  const ids = [...new Set(settings.servers.map((s) => s.id))];
+  const tokens = new Map<string, string>();
+  for (const id of ids) {
+    const t = (await db.doc(`monitoringTokens/${id}`).get()).data()?.token;
+    if (typeof t === 'string' && t) tokens.set(id, t);
+  }
+  return { db, settings, tokens };
+}
+
+function client(p: Pairing, tokens: Map<string, string>): GrowattClient | GrowattFailure {
+  const token = tokens.get(p.server.id);
+  if (!token) return new GrowattFailure('token', failureMessage('token'));
+  const url = growattURL(p.server.url);
+  if (!url) return new GrowattFailure('bad', 'ที่อยู่เซิร์ฟเวอร์ต้องเป็น https ของ growatt.com');
+  return new GrowattClient(url, token);
+}
+
+export const monitoringPoll = onSchedule(
+  { region: monitoringRegion, schedule: 'every 5 minutes', timeZone: 'Asia/Bangkok', timeoutSeconds: 540, memory: '256MiB',
+    maxInstances: 1, retryCount: 0 },
+  async () => {
+    const setup = await monitoringSetup();
+    if (!setup) return;
+    const { db, settings, tokens } = setup;
+    const now = new Date();
+    let calls = 0, read = 0;
+    for (const p of pairings(settings)) {
+      const ref = db.doc(`monitoring/${stationDoc(p.stationID)}`);
+      const prev = (await ref.get()).data();
+      const previous: Previous = prev ? { plantID: prev.plantID, attemptedAt: prev.attemptedAt?.toDate?.(), historyDay: prev.historyDay } : undefined;
+      if (!due(previous, p.plantID, now, settings.pollMinutes)) continue;
+      const api = client(p, tokens);
+      if (api instanceof GrowattFailure) {
+        await ref.set({ stationID: p.stationID, plantID: p.plantID, serverID: p.server.id, attemptedAt: now,
+          failure: { code: api.code, message: api.message } }, { merge: true });
+        continue;
+      }
+      const poll = await pollStation(api, p, previous, new Date(), settings.loggerOfflineMinutes);
+      calls += api.calls;
+      if (poll.fields.readAt) read++;
+      await ref.set(poll.fields, { merge: !poll.replace });
+    }
+    logger.info('monitoring poll', { stations: pairings(settings).length, read, calls });
+  },
+);
+
+export const monitoringArchive = onSchedule(
+  // after midnight in Bangkok, clear of the poll's minutes
+  { region: monitoringRegion, schedule: '2 1 * * *', timeZone: 'Asia/Bangkok', timeoutSeconds: 540, memory: '256MiB',
+    maxInstances: 1, retryCount: 0 },
+  async () => {
+    const setup = await monitoringSetup();
+    if (!setup || !setup.settings.archiveNightly) return;
+    const { db, settings, tokens } = setup;
+    const now = new Date();
+    let saved = 0;
+    for (const p of pairings(settings)) {
+      const api = client(p, tokens);
+      if (api instanceof GrowattFailure) continue;
+      const docID = stationDoc(p.stationID);
+      const have = new Set<string>();
+      // the days by id, so no index is needed
+      const days = Array.from({ length: ARCHIVE_DAYS }, (_, i) => bangkokDayText(now, i + 1));
+      const recent = await db.getAll(...days.map((d) => db.doc(`monitoringArchive/${archiveDoc(docID, d)}`)));
+      for (const d of recent) if (d.exists && d.data()?.plantID === p.plantID) have.add(d.data()?.date);
+      for (const day of await archiveStation(api, p, have, now)) {
+        await db.doc(`monitoringArchive/${archiveDoc(docID, day.date)}`).set({
+          stationID: p.stationID, plantID: p.plantID, date: day.date, power: day.power, archivedAt: FieldValue.serverTimestamp(),
+        });
+        saved++;
+      }
+    }
+    logger.info('monitoring archive', { stations: pairings(settings).length, saved });
+  },
+);
+
+/** A manager's token for a monitoring server, kept where no device reads it; '' removes it. */
+export const monitoringToken = onCall(
+  { region: monitoringRegion, timeoutSeconds: 30, memory: '256MiB', maxInstances: 5 },
+  async (request) => {
+    const token = request.auth?.token;
+    const email = token?.email?.toLowerCase();
+    if (!email || token?.email_verified !== true) throw new HttpsError('unauthenticated', 'ต้องเข้าสู่ระบบด้วยบัญชี Google ที่ยืนยันแล้ว');
+    const db = getFirestore();
+    const member = (await db.doc(`members/${email}`).get()).data();
+    if (!isManager(member)) throw new HttpsError('permission-denied', 'เฉพาะผู้จัดการตั้งค่า Monitoring ได้');
+    const body = checkTokenRequest(request.data);
+    if ('message' in body) throw new HttpsError('invalid-argument', body.message);
+    const ref = db.doc(`monitoringTokens/${body.serverID}`);
+    if (!body.token) {
+      await ref.delete();
+      return { suffix: '' };
+    }
+    const suffix = body.token.slice(-4);
+    await ref.set({ token: body.token, suffix, setBy: email, setAt: FieldValue.serverTimestamp() });
+    return { suffix };
   },
 );

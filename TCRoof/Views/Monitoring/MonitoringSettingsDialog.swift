@@ -163,12 +163,21 @@ struct MonitoringSettingsDialog: View {
     }
 
     private func save() {
-        for (id, token) in pendingTokens { MonitoringToken.save(token, for: id) }
-        // accounts taken out lose their token too
-        for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) { MonitoringToken.remove(old.id) }
+        for (id, token) in pendingTokens { keep(token, for: id) }
+        // accounts taken out lose their token too, here and on the server
+        for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) {
+            MonitoringToken.remove(old.id)
+            MonitoringServerToken.send("", for: old.id)
+        }
         savedTokens.formUnion(pendingTokens.keys)
         store.save(draft)
         close()
+    }
+
+    /// A token saved: in this iPad's Keychain for its own poll, and on the server for the server's (CHA-93).
+    private func keep(_ token: String, for server: UUID) {
+        MonitoringToken.save(token, for: server)
+        MonitoringServerToken.send(token, for: server)
     }
 
     /// `ยกเลิกการแก้`: the saved values back, tokens typed and forms dropped.
@@ -370,7 +379,7 @@ struct MonitoringSettingsDialog: View {
     /// naming it (else a cancel would leave the new token under the old last four).
     private func test(_ s: Monitoring.Settings.Server) async {
         if let t = pendingTokens[s.id] {
-            MonitoringToken.save(t, for: s.id)
+            keep(t, for: s.id)
             pendingTokens[s.id] = nil
             savedTokens.insert(s.id)
         }

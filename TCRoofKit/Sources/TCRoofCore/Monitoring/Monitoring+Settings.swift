@@ -65,22 +65,30 @@ extension Monitoring {
         /// Station id → the server (`Server.id`) its plant is read from; a pairing without one is read from the first
         /// server.
         public var pairingServers: [String: UUID]
+        /// The team's copy in Firestore (`config/monitoring`, CHA-91): each manager's save is the next revision, signed
+        /// with their email. 0 is a copy never sent, from before the settings synced.
+        public var revision: Int
+        public var savedBy: String?
+        public var savedAt: Date?
 
         public init(servers: [Server] = [], pollMinutes: Int = 5, archiveNightly: Bool = true, loggerOfflineMinutes: Int = 30,
                     stringLowPercent: Int = 20, belowExpectedPercent: Int = 85, prLowPercent: Int = 70,
                     notifyMaintenance: Bool = true, notifySupervisor: Bool = true, notifyContractor: Bool = false,
-                    rate: Double? = Settings.defaultRate, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:]) {
+                    rate: Double? = Settings.defaultRate, pairings: [String: String] = [:], pairingServers: [String: UUID] = [:],
+                    revision: Int = 0, savedBy: String? = nil, savedAt: Date? = nil) {
             self.servers = servers; self.pollMinutes = max(pollMinutes, Monitoring.minimumPollMinutes)
             self.archiveNightly = archiveNightly; self.loggerOfflineMinutes = loggerOfflineMinutes
             self.stringLowPercent = stringLowPercent; self.belowExpectedPercent = belowExpectedPercent
             self.prLowPercent = prLowPercent; self.notifyMaintenance = notifyMaintenance
             self.notifySupervisor = notifySupervisor; self.notifyContractor = notifyContractor
             self.rate = rate; self.pairings = pairings; self.pairingServers = pairingServers
+            self.revision = revision; self.savedBy = savedBy; self.savedAt = savedAt
         }
 
         private enum CodingKeys: String, CodingKey {
             case servers, pollMinutes, archiveNightly, loggerOfflineMinutes, stringLowPercent, belowExpectedPercent
             case prLowPercent, notifyMaintenance, notifySupervisor, notifyContractor, rate, pairings, pairingServers
+            case revision, savedBy, savedAt
         }
 
         /// Every field optional, so a settings file from an older build still reads.
@@ -100,7 +108,10 @@ extension Monitoring {
                       // no key: a file from before the default, which takes it; an explicit null: a manager cleared it
                       rate: c.contains(.rate) ? try c.decodeIfPresent(Double.self, forKey: .rate) : d.rate,
                       pairings: try c.decodeIfPresent([String: String].self, forKey: .pairings) ?? d.pairings,
-                      pairingServers: try c.decodeIfPresent([String: UUID].self, forKey: .pairingServers) ?? d.pairingServers)
+                      pairingServers: try c.decodeIfPresent([String: UUID].self, forKey: .pairingServers) ?? d.pairingServers,
+                      revision: try c.decodeIfPresent(Int.self, forKey: .revision) ?? 0,
+                      savedBy: try c.decodeIfPresent(String.self, forKey: .savedBy),
+                      savedAt: try c.decodeIfPresent(Date.self, forKey: .savedAt))
         }
 
         /// Writes `rate` even when nil (as null), so a cleared rate stays cleared and isn't read back as the default.
@@ -119,6 +130,9 @@ extension Monitoring {
             try c.encode(rate, forKey: .rate)
             try c.encode(pairings, forKey: .pairings)
             try c.encode(pairingServers, forKey: .pairingServers)
+            try c.encode(revision, forKey: .revision)
+            try c.encodeIfPresent(savedBy, forKey: .savedBy)
+            try c.encodeIfPresent(savedAt, forKey: .savedAt)
         }
 
         /// The poll interval as used: one of the choices, never under Growatt's limit.

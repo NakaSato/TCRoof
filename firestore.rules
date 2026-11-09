@@ -160,11 +160,23 @@ service cloud.firestore {
     // Settings set in the Firebase console. `config/public` (minSyncVersion, installLink, contactsSplit, driveShareWith) is
     // every member's; `config/app` (the center Drive, the claim share list) is the team's only (CHA-59).
     match /config/{doc} {
-      allow read: if isMember() && !(doc in ['devKey', 'app']);
+      allow read: if isMember() && !(doc in ['devKey', 'app', 'monitoring']);
       allow write: if false;
     }
     match /config/app {
       allow read: if isTeam();
+    }
+    // The team's ตั้งค่า Monitoring (`Monitoring.Settings`, CHA-91): servers, thresholds, rate and which Growatt plant
+    // each station reads. The team reads it, never contractors; a manager saves it, signed with their own email, and a
+    // save never goes back to an older revision. Never deleted. Tokens are never in it.
+    match /config/monitoring {
+      allow read: if isTeam();
+      allow create, update: if isManager()
+        && request.resource.data.keys().hasOnly(['json', 'revision', 'savedBy', 'updatedAt'])
+        && request.resource.data.json is string && request.resource.data.json.size() < 100000
+        && request.resource.data.revision is int
+        && request.resource.data.savedBy == signedInEmail()
+        && (resource == null || request.resource.data.revision > resource.data.revision);
     }
     // The developer key that opens จัดการผู้ใช้และสิทธิ์: a PBKDF2 hash and its salt, never the digits. A Maintainer's
     // only, to read or to set. The key only gates the page: these rules decide what its changes may do.

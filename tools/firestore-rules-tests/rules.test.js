@@ -574,6 +574,23 @@ test('tank standard: every member reads it, a manager saves a newer revision sig
   await assertFails(deleteDoc(ref(BOSS)));
 });
 
+test('monitoring settings: the team reads them, never a contractor; a manager saves a newer revision signed by themselves', async () => {
+  const ref = (who) => doc(db(who), 'config', 'monitoring');
+  const settings = (by, revision) => ({ json: '{"pollMinutes":5}', revision, savedBy: by, updatedAt: serverTimestamp() });
+  await assertFails(setDoc(ref(TEAM), settings(TEAM, 1)));
+  await assertFails(setDoc(ref(CON), settings(CON, 1)));
+  await assertFails(setDoc(ref(BOSS), settings(TEAM, 1)));
+  await assertSucceeds(setDoc(ref(BOSS), settings(BOSS, 1)));
+  for (const who of [TEAM, BOSS, DEV]) await assertSucceeds(getDoc(ref(who)));
+  await assertFails(getDoc(ref(CON)));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'monitoring')));
+  await assertFails(setDoc(ref(BOSS), settings(BOSS, 1)));
+  await assertFails(setDoc(ref(BOSS), { ...settings(BOSS, 2), token: 'abcd' }));
+  await assertSucceeds(setDoc(ref(BOSS), settings(BOSS, 2)));
+  await assertSucceeds(setDoc(ref(DEV), settings(DEV, 3)));
+  await assertFails(deleteDoc(ref(BOSS)));
+});
+
 test('standard designs: every member reads them, only the team saves, never an older revision', async () => {
   const design = { json: '{}', revision: 2, savedBy: TEAM };
   await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), design));

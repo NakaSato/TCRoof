@@ -10,6 +10,37 @@ struct TightLabel: LabelStyle {
     }
 }
 
+/// A project card's shape while the jobs load: the number, name and detail lines beside the ring, the step bar, the
+/// next-step line and the date row.
+struct JobCardSkeleton: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
+                    TCSkeletonBlock(width: 90, height: 12)
+                    TCSkeletonBlock(width: 200, height: 16, radius: 5)
+                    TCSkeletonBlock(width: 150, height: 11)
+                }
+                Spacer(minLength: 0)
+                Circle().fill(Theme.borderSubtle).frame(width: 44, height: 44)
+            }
+            TCSkeletonBlock(height: 6, radius: 3)
+            TCSkeletonBlock(width: 170, height: 13)
+            Divider()
+            HStack {
+                TCSkeletonBlock(width: 110, height: 11)
+                Spacer()
+                TCSkeletonBlock(width: 40, height: 11)
+            }
+        }
+        .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
+        .tcShimmer()
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.borderSubtle, lineWidth: 1))
+        .tcLoadingLabel()
+    }
+}
+
 /// The project card of docs/ui/pwa-solar-survey-iphone: one size, in one column on iPhone and three on iPad.
 struct JobCard: View {
     /// A survey (also once moved to installation), or the installation job itself.

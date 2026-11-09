@@ -23,6 +23,15 @@ final class InstallSettingsModel {
     var draft = SettingsDraft()
 }
 
+/// iPhone `ตั้งค่าเฉพาะโครงการ` (the header's gear): the category open and the editor sheet over it.
+@MainActor @Observable
+final class InstallPhoneSettingsModel {
+    var category: InstallTrackingPage.SettingsCategory?
+    var sheet: InstallTrackingPage.PhoneSheet?
+
+    init(category: InstallTrackingPage.SettingsCategory?) { self.category = category }
+}
+
 /// A tab's part of the page as a view of its own: what its content reads from a tab's model is tracked here, so a
 /// change redraws this section only. Its content lays out in the parent stack as if written there.
 struct InstallTabSection<Content: View>: View {
@@ -48,5 +57,17 @@ extension InstallTrackingPage {
     var settingsDraft: SettingsDraft {
         get { settingsModel.draft }
         nonmutating set { settingsModel.draft = newValue }
+    }
+
+    /// iPhone `ตั้งค่าเฉพาะโครงการ`'s open category, kept in `phoneSettingsModel`.
+    var settingsCategory: SettingsCategory? {
+        get { phoneSettingsModel.category }
+        nonmutating set { phoneSettingsModel.category = newValue }
+    }
+
+    /// iPhone `ตั้งค่าเฉพาะโครงการ`'s editor sheet, kept in `phoneSettingsModel`.
+    var phoneSheet: PhoneSheet? {
+        get { phoneSettingsModel.sheet }
+        nonmutating set { phoneSettingsModel.sheet = newValue }
     }
 }

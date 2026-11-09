@@ -50,13 +50,13 @@ struct InstallTrackingPage: View {
     // iPhone (docs/ui/install-tracking-iphone): every tab in place, and the header's gear
     @State var phoneTab = Debug.phoneTab
     @State var phoneSettings = Debug.settings
-    @State var settingsCategory: SettingsCategory? = Debug.settingsCategory
+    /// `ตั้งค่าเฉพาะโครงการ`'s own state (the category open, its editor sheet), read only inside its `InstallTabSection`.
+    @State var phoneSettingsModel = InstallPhoneSettingsModel(category: Debug.settingsCategory)
     /// The page's width: `คำขอรายสัปดาห์` takes the one-page request from 1000 pt.
     @State var pageWidth: CGFloat = 0
     @Environment(PadDock.self) var dock: PadDock?
     /// The phone page's pushed screens that the iPad routes don't cover.
     @State var phoneRoute: PhoneRoute?
-    @State var phoneSheet: PhoneSheet?
     /// iPad `ตั้งค่าโครงการ` (docs/ui/install-tracking-ipad-settings): the edits not saved yet, and where the person was going when asked about unsaved edits.
     @State var settingsModel = InstallSettingsModel()
     /// `data`, kept until the job, its reports or the survey change (`ObservedCache`).

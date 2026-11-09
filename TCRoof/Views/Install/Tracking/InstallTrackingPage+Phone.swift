@@ -36,7 +36,7 @@ extension InstallTrackingPage {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        if phoneSettings { settingsPage(data) } else { phoneContent(data) }
+                        if phoneSettings { InstallTabSection { settingsPage(data) } } else { phoneContent(data) }
                     }
                     .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 16)
                     Color.clear.frame(height: 1).id("end")
@@ -55,7 +55,7 @@ extension InstallTrackingPage {
         .background(Theme.phonePage.ignoresSafeArea())
         // the main dock stays on this page, as on iPad (docs/ui/install-tracking-iphone §4.1)
         .phoneDock(fade: Theme.phonePage, spacing: 0)
-        .sheet(item: $phoneSheet) { s in
+        .sheet(item: $phoneSettingsModel.sheet) { s in
             switch s {
             case .routine: RoutineSettingsSheet(job: job)
             case .station: StationFactsSheet(job: job)

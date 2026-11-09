@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # TCRoofCore, ExcelExport, PVYield and ModuleRules with their tests, at Bangkok time (tools/linux-swift/test.sh).
+  # TCRoofCore, ExcelExport, PVYield, ModuleRules and the GrowattAPI package with their tests, at Bangkok time (tools/linux-swift/test.sh).
   # Swift 6.2: the package's swift-tools-version, so the oldest toolchain the manifest allows.
   linux-swift:
     runs-on: ubuntu-24.04

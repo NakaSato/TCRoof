@@ -194,6 +194,8 @@ export class GrowattClient {
     }
   }
 
+  /** `plant/list`: every plant of the token with its power now, 100 a page; the poll's one call for the whole fleet. */
+  plants = (page: number) => this.get('plant/list', { page: String(page), perpage: '100' });
   data = (plantID: number) => this.get('plant/data', { plant_id: String(plantID) });
   power = (plantID: number, date: string) => this.get('plant/power', { plant_id: String(plantID), date });
   devices = (plantID: number) => this.get('device/list', { plant_id: String(plantID), page: '1', perpage: '100' });

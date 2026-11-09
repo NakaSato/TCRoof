@@ -5,7 +5,7 @@ import {
   bangkokDayText, bangkokMonthStart, GrowattClient, GrowattFailure, growattURL, health, joinEnergy, pairings, parseSettings,
   plantTime, stationDoc, zoneOffsetMinutes,
 } from './growatt';
-import { archiveStation, checkTokenRequest, due, isManager, pollStation, Reader } from './monitoring';
+import { archiveStation, checkTokenRequest, detailDue, detailMinutes, due, isManager, pickDetail, pollStation, Previous, Reader, readFleet } from './monitoring';
 
 const SERVER = '0B9D3C2E-1F4A-4E57-9C1D-2A3B4C5D6E7F';
 const OTHER = '1B9D3C2E-1F4A-4E57-9C1D-2A3B4C5D6E7F';
@@ -94,6 +94,7 @@ function fakeGrowatt(fail: Set<string> = new Set()) {
     power: (_, date) => answer(`power ${date}`, { powers: [{ time: `${date} 13:55`, power: 10_000 }] }),
     devices: () => answer('devices', { devices: [{ device_sn: 'INV1', type: 1, status: 1 }] }),
     energy: (_, start, end, unit) => answer(`energy ${unit} ${start} ${end}`, { energys: [{ date: start, energy: 100 }] }),
+    plants: (page) => answer(`plants ${page}`, { plants: [{ plant_id: 7, current_power: '10' }] }),
   };
   return { api, calls };
 }
@@ -178,4 +179,58 @@ test('a token request names a server and a token without spaces; only managers s
   assert.equal(isManager({ role: 'manager', suspended: true }), false);
   assert.equal(isManager({}), false);
   assert.equal(isManager(undefined), false);
+});
+
+// MARK: the fleet and the detail's schedule
+
+test('a healthy station\'s detail every 15 minutes, never past half the logger threshold nor under pollMinutes', () => {
+  assert.equal(detailMinutes({ pollMinutes: 5, loggerOfflineMinutes: 30 }), 15);
+  assert.equal(detailMinutes({ pollMinutes: 5, loggerOfflineMinutes: 20 }), 10);
+  assert.equal(detailMinutes({ pollMinutes: 5, loggerOfflineMinutes: 5 }), 5);
+  assert.equal(detailMinutes({ pollMinutes: 30, loggerOfflineMinutes: 60 }), 30);
+  assert.equal(detailMinutes({ pollMinutes: 10, loggerOfflineMinutes: 120 }), 15);
+});
+
+test('a troubled station is read every run, a healthy one every detailMinutes', () => {
+  const s = { pollMinutes: 5, loggerOfflineMinutes: 30 };
+  const at = (min: number) => new Date(NOW.getTime() - min * 60_000);
+  assert.equal(detailDue({ plantID: 7, attemptedAt: at(5), health: 'normal' }, 7, NOW, s), false);
+  assert.equal(detailDue({ plantID: 7, attemptedAt: at(15), health: 'normal' }, 7, NOW, s), true);
+  assert.equal(detailDue({ plantID: 7, attemptedAt: at(5), health: 'alarm' }, 7, NOW, s), true);
+  assert.equal(detailDue({ plantID: 7, attemptedAt: at(5), health: 'offline' }, 7, NOW, s), true);
+  assert.equal(detailDue(undefined, 7, NOW, s), true, 'never read');
+  assert.equal(detailDue({ plantID: 6, attemptedAt: at(1), health: 'normal' }, 7, NOW, s), true, 're-paired');
+});
+
+test('the detail reads spread over the runs: troubled ones first, then the oldest, a third of the fleet a run', () => {
+  const s = { pollMinutes: 5, loggerOfflineMinutes: 30 };
+  const st = (id: string, min: number, health = 'normal') => ({ id, previous: { plantID: 1, attemptedAt: new Date(NOW.getTime() - min * 60_000), health } });
+  const fleet = [st('a', 20), st('b', 40), st('c', 30), st('d', 25), st('e', 15), st('f', 50), st('x', 5, 'alarm')];
+  const picked = pickDetail(fleet, 9, s).map((e) => e.id);
+  assert.deepEqual(picked, ['x', 'f', 'b', 'c'], '9 stations: 3 healthy a run, oldest first, plus the troubled');
+  assert.equal(pickDetail(fleet.slice(0, 1), 1, s).length, 1, 'at least one a run');
+  // the first run after deploy: none read yet, a third of them
+  const fresh = Array.from({ length: 43 }, (_, i) => ({ id: String(i), previous: undefined as Previous }));
+  assert.equal(pickDetail(fresh, 43, s).length, 15);
+});
+
+test('the fleet\'s power comes from plant/list, page after page until every plant is seen', async () => {
+  const pages: string[] = [];
+  const rows = (from: number, n: number) => Array.from({ length: n }, (_, i) => ({ plant_id: from + i, current_power: String((from + i) / 10) }));
+  const answers = [ok({ count: 150, plants: rows(1, 100) }), ok({ count: 150, plants: [...rows(101, 48), { plant_id: 149, current_power: '-1' }, { plant_id: 150 }] })];
+  const api = { plants: (page: number) => { pages.push(String(page)); return Promise.resolve(answers[page - 1]); } } as unknown as Reader;
+  const power = await readFleet(api, new Set([3, 120, 149, 150]));
+  assert.deepEqual(pages, ['1', '2']);
+  assert.equal(power.get(3), 0.3);
+  assert.equal(power.get(120), 12);
+  assert.equal(power.get(149), -1, 'never reported, as Growatt says');
+  assert.equal(power.get(150), null, 'no power given');
+
+  const once: string[] = [];
+  const one = { plants: (page: number) => { once.push(String(page)); return Promise.resolve(answers[0]); } } as unknown as Reader;
+  await readFleet(one, new Set([3]));
+  assert.deepEqual(once, ['1'], 'every wanted plant on the first page: no second call');
+
+  const down = { plants: () => Promise.reject(new GrowattFailure('10011', 'x')) } as unknown as Reader;
+  assert.equal((await readFleet(down, new Set([1]))).size, 0, 'a refused list reads nothing');
 });

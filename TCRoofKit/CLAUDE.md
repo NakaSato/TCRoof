@@ -2,6 +2,8 @@
 
 Read with the root CLAUDE.md (build, test and data rules). Run package commands from this folder.
 
+**Local dependencies:** `../GrowattAPI` (`.package(path:)`), Growatt's OpenAPI and web portal clients, which `TCRoofCore` depends on and re-exports (`@_exported import GrowattAPI` in `TCRoofCore/GrowattAPI+Overview.swift`): code here uses `GrowattAPI` and `GrowattPortal` without importing them. Its own rules and tests: `GrowattAPI/CLAUDE.md`. A change there rebuilds this package; run both packages' tests (`swift test` in each).
+
 **`TCRoofKit` Swift package** holds all survey work, layered as follows:
 - `TCRoofUI`: all the package's UI. Its root files and `Gallery/` are the design system shared by the app and the survey module (`docs/ui/components`), and `Survey/` is the survey editor (below). `Theme` tokens (light and dark), `Space` / `Radius` / `TypeScale`, `Font.sarabun`, and `TC*` components by board section, plus the DEBUG `ComponentGallery`. The design system files import nothing from the other modules; keep it so. New screens build from these components; colours come from `Theme`, never hex literals in views. No `Color.white` either: cards and fields use `Theme.surface`, text on `Theme.primary` uses `Theme.onPrimary`, and plans and diagrams sit on `Theme.paper` (white in both modes, since their ink is dark). Buttons use `TCButtonStyle`, not `.bordered` / `.borderedProminent`: a page's `.foregroundStyle` overrides the system style's white label. The app is light only: it forces light mode for signed-in users (`TCRoofApp.swift`). `Theme` keeps its dark values, but dark mode is not shown.
 - `TCRoofCore`: pure values and rules, no UI.

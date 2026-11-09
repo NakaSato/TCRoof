@@ -1,5 +1,6 @@
 #!/bin/bash
-# Runs the supported Linux tests: TCRoofCore, ExcelExport, PVYield, ModuleRules and DriveAuth.
+# Runs the supported Linux tests: TCRoofCore, ExcelExport, PVYield, ModuleRules and DriveAuth, then the GrowattAPI
+# package's own (TCRoofCore depends on it as a package, ../GrowattAPI).
 # The rest of TCRoofKit doesn't build on Linux (CoreText, UIKit, PDFKit), so this makes a small package
 # next to the repo that links those targets (and CZlib) with their tests, plus `tools` and `Project_Plan_TCRoof`
 # links where the tests look for them, four levels above their own files. Every target line
@@ -35,6 +36,7 @@ import PackageDescription
 let package = Package(
     name: "TCRoofLinux",
     defaultLocalization: "th",
+    dependencies: [.package(path: "$repo/GrowattAPI")],
     targets: [
 $lines    ],
     swiftLanguageModes: [.v5]
@@ -51,6 +53,9 @@ export TZ="${TZ:-Asia/Bangkok}"
 
 cd "$kit"
 if [ "${1:-}" = "--build-only" ]; then
-  exec swift build --build-tests
+  swift build --build-tests
+  exec swift build --build-tests --package-path "$repo/GrowattAPI"
 fi
-exec swift test "$@"
+swift test "$@"
+# the SDK is a package of its own: its tests run from it (a filter naming none of them runs none)
+exec swift test --package-path "$repo/GrowattAPI" "$@"

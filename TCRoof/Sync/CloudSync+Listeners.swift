@@ -277,7 +277,8 @@ extension CloudSync {
             guard let snapshot else { return }
             let readings = snapshot.documents.compactMap { d -> Monitoring.ServerReading? in
                 let data = d.data()
-                return Monitoring.ServerReading(fields: data, readAt: (data["readAt"] as? Timestamp)?.dateValue())
+                return Monitoring.ServerReading(fields: data, readAt: (data["readAt"] as? Timestamp)?.dateValue(),
+                                                 listAt: (data["listAt"] as? Timestamp)?.dateValue())
             }
             MonitoringStore.shared.receive(server: readings)
         }

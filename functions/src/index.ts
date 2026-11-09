@@ -13,7 +13,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions/v2';
 import { bangkokDay, checkMember, checkRequest, cleanReply, isQuestion, LIMITS } from './guard';
 import { bangkokDayText, failureMessage, GrowattClient, GrowattFailure, growattURL, Pairing, pairings, parseSettings, stationDoc } from './growatt';
-import { ARCHIVE_DAYS, archiveDoc, archiveStation, checkTokenRequest, due, isManager, pollStation, Previous } from './monitoring';
+import { ARCHIVE_DAYS, archiveDoc, archiveStation, checkTokenRequest, detailDue, isManager, pickDetail, pollStation, Previous, readFleet } from './monitoring';
 
 initializeApp();
 
@@ -100,8 +100,10 @@ export const assistant = onCall(
 
 // MARK: Monitoring (CHA-93)
 //
-// Growatt is read here, every `pollMinutes` of ตั้งค่า Monitoring (`config/monitoring`), for every paired station,
-// whether or not an iPad is open: read-only calls, one after another, never closer than 5 minutes on a plant. Each
+// Growatt is read here for every paired station of ตั้งค่า Monitoring (`config/monitoring`), whether or not an iPad is
+// open: read-only calls, one after another. Every `pollMinutes` one `plant/list` per account gives the fleet's power
+// now (`listPower`, `listAt`); a station's detail is read every `detailMinutes` (15), or every run while it is in
+// alarm or offline, spread over the runs (monitoring.ts). Each
 // station's answers go to `monitoring/{station}` as Growatt wrote them; the team's iPads read them there and map them
 // as they would their own (`Monitoring.ServerReading`), polling Growatt themselves only while these are stale. With
 // เก็บข้อมูลถาวรทุกคืน on, `monitoringArchive` keeps each day's 5-minute power for good (Growatt keeps ~95 days).
@@ -140,12 +142,37 @@ export const monitoringPoll = onSchedule(
     if (!setup) return;
     const { db, settings, tokens } = setup;
     const now = new Date();
-    let calls = 0, read = 0;
-    for (const p of pairings(settings)) {
-      const ref = db.doc(`monitoring/${stationDoc(p.stationID)}`);
-      const prev = (await ref.get()).data();
-      const previous: Previous = prev ? { plantID: prev.plantID, attemptedAt: prev.attemptedAt?.toDate?.(), historyDay: prev.historyDay } : undefined;
-      if (!due(previous, p.plantID, now, settings.pollMinutes)) continue;
+    const list = pairings(settings);
+    if (list.length === 0) return;
+    const refs = list.map((p) => db.doc(`monitoring/${stationDoc(p.stationID)}`));
+    const docs = await db.getAll(...refs);
+    const entries = list.map((p, i) => {
+      const prev = docs[i].data();
+      const previous: Previous = prev ? { plantID: prev.plantID, attemptedAt: prev.attemptedAt?.toDate?.(), historyDay: prev.historyDay,
+        health: prev.health } : undefined;
+      return { p, ref: refs[i], previous };
+    });
+    let calls = 0, read = 0, fleet = 0;
+
+    // the fleet's power now: one plant/list read per account, every run
+    const byServer = new Map<string, typeof entries>();
+    for (const e of entries) byServer.set(e.p.server.id, [...(byServer.get(e.p.server.id) ?? []), e]);
+    for (const group of byServer.values()) {
+      const api = client(group[0].p, tokens);
+      if (api instanceof GrowattFailure) continue;
+      const power = await readFleet(api, new Set(group.map((e) => e.p.plantID)));
+      calls += api.calls;
+      for (const e of group) {
+        // only onto a document of the same plant: a re-paired station's first detail read writes it whole
+        if (e.previous?.plantID !== e.p.plantID || !power.has(e.p.plantID)) continue;
+        await e.ref.set({ listPower: power.get(e.p.plantID), listAt: now }, { merge: true });
+        fleet++;
+      }
+    }
+
+    // the detail: troubled stations every run, the rest every detailMinutes, spread over the runs
+    const dueOnes = entries.filter((e) => detailDue(e.previous, e.p.plantID, now, settings));
+    for (const { p, ref, previous } of pickDetail(dueOnes, entries.length, settings)) {
       const api = client(p, tokens);
       if (api instanceof GrowattFailure) {
         await ref.set({ stationID: p.stationID, plantID: p.plantID, serverID: p.server.id, attemptedAt: now,
@@ -157,7 +184,7 @@ export const monitoringPoll = onSchedule(
       if (poll.fields.readAt) read++;
       await ref.set(poll.fields, { merge: !poll.replace });
     }
-    logger.info('monitoring poll', { stations: pairings(settings).length, read, calls });
+    logger.info('monitoring poll', { stations: list.length, fleet, read, calls });
   },
 );
 

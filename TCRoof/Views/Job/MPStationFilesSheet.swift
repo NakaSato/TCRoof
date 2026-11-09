@@ -38,6 +38,8 @@ struct MPStationFilesSheet: View {
                             }
                         }
                         .cardStyle(padding: 0)
+                    } else if !loaded {
+                        rowsSkeleton
                     }
                 }
                 .padding(isPhone ? 16 : 24)
@@ -69,7 +71,14 @@ struct MPStationFilesSheet: View {
                     .font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
                 ProgressView(value: Double(progress), total: Double(max(picked.count, 1))).tint(Theme.primary)
             } else if !loaded {
-                ProgressView()
+                VStack(alignment: .leading, spacing: 8) {
+                    TCSkeletonBlock(width: 240, height: 17)
+                    TCSkeletonBlock(height: 12)
+                    TCSkeletonBlock(width: 280, height: 12)
+                }
+                .tcShimmer()
+                .tcLoadingLabel()
+                .accessibilityIdentifier("stationFiles.loading")
             } else {
                 Text(missing.isEmpty ? "ทุกสถานีมีในแอปแล้ว" : "ยังไม่มีในแอป \(missing.count) สถานี | เลือก \(picked.count)")
                     .font(.sarabun(17, .semibold, relativeTo: .body)).foregroundStyle(Theme.navy)
@@ -97,6 +106,17 @@ struct MPStationFilesSheet: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
+    }
+
+    /// Station rows while the plan files are read.
+    private var rowsSkeleton: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<6, id: \.self) { i in
+                MPCaseRowSkeleton().padding(.horizontal, 16).padding(.vertical, 10)
+                if i < 5 { Divider().padding(.leading, 16) }
+            }
+        }
+        .cardStyle(padding: 0)
     }
 
     private func row(_ c: MPTemplates.Case) -> some View {

@@ -49,7 +49,7 @@ struct SingleLinePage: View {
                 }
                 bottomBar(made.line)
             } else {
-                ProgressView("กำลังสร้างแผนภาพ").frame(maxWidth: .infinity, maxHeight: .infinity)
+                TCSkeletonDiagram().padding(24).accessibilityIdentifier("sld.loading")
             }
         }
         .background(Paper.page)

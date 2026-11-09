@@ -15,7 +15,7 @@ extension InstallTrackingPage {
             viewportInset: viewportInset,
             route: $route,
             showWBSDependencies: $showWBSDependencies,
-            workbook: $workbook
+            workbook: workbook
         )
     }
 
@@ -41,7 +41,8 @@ struct InstallPlanTabView: View {
     let viewportInset: CGFloat
     @Binding var route: InstallTrackingPage.Route?
     @Binding var showWBSDependencies: Bool
-    @Binding var workbook: MPWorkbookFlow
+    /// The page's plan file flow (an `@Observable` the page applies `.mpWorkbook` with): only this tab reads it.
+    let workbook: MPWorkbookFlow
 
     @State var planView = InstallTrackingPage.Debug.planView
     @State var planToggled: Set<String> = []

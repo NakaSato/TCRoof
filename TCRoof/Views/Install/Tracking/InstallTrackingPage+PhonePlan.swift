@@ -11,7 +11,7 @@ extension InstallTrackingPage {
             job: job,
             data: data,
             showWBSDependencies: $showWBSDependencies,
-            workbook: $workbook,
+            workbook: workbook,
             route: $route
         )
     }
@@ -26,7 +26,8 @@ struct InstallPhonePlanTabView: View {
     let job: Job
     let data: InstallPageData
     @Binding var showWBSDependencies: Bool
-    @Binding var workbook: MPWorkbookFlow
+    /// The page's plan file flow (an `@Observable` the page applies `.mpWorkbook` with): only this tab reads it.
+    let workbook: MPWorkbookFlow
     @Binding var route: InstallTrackingPage.Route?
 
     @State var planView: InstallTrackingPage.PlanView = InstallTrackingPage.Debug.planView

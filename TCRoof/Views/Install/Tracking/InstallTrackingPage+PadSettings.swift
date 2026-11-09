@@ -212,7 +212,8 @@ struct PadSettingsDemo {
 struct InstallPadSettingsTabView: View {
     let job: Job
     let data: InstallPageData
-    @Binding var settingsDraft: SettingsDraft
+    /// The edits not saved yet: the page keeps them (it asks before leaving the tab), this view reads them.
+    let settings: InstallSettingsModel
     var leave: ((InstallTrackingPage.Leave) -> Void)? = nil
 
     @State var padCategory = InstallTrackingPage.Debug.padCategory
@@ -225,6 +226,11 @@ struct InstallPadSettingsTabView: View {
     // MARK: data (the job's, or the demo's)
 
     var padDemoOn: Bool { InstallTrackingPage.Debug.demo }
+
+    var settingsDraft: SettingsDraft {
+        get { settings.draft }
+        nonmutating set { settings.draft = newValue }
+    }
 
     var settingsKept: RoutineReport.Settings { padDemoOn ? padDemo.settings : job.routineSettings }
     var sellsPowerKept: Bool { padDemoOn ? padDemo.sellsPower : job.stationDocs.sellsPower }
@@ -558,7 +564,7 @@ extension InstallTrackingPage {
         InstallPadSettingsTabView(
             job: job,
             data: data,
-            settingsDraft: $settingsDraft,
+            settings: settingsModel,
             leave: { [self] target in self.leave(to: target) }
         )
     }

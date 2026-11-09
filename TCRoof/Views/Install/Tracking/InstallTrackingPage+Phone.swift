@@ -66,10 +66,12 @@ extension InstallTrackingPage {
     @ViewBuilder private func phoneContent(_ data: InstallPageData) -> some View {
         switch phoneTab {
         case .overview:
-            phoneKPIs(data)
-            if let g = data.gantt { phoneProgressCard(data, g) }
-            if permissions.role != .external, !data.docs.isEmpty { phoneDocsCard(data.docs) }
-            if let s = data.site { phoneSitePanel(s) }
+            InstallTabSection {
+                phoneKPIs(data)
+                if let g = data.gantt { phoneProgressCard(data, g) }
+                if permissions.role != .external, !data.docs.isEmpty { phoneDocsCard(data.docs) }
+                if let s = data.site { phoneSitePanel(s) }
+            }
         case .daily: phoneDailyTab(dailyData)
         case .request: phoneRequestTab()
         case .weekly: phoneWeeklyTab()

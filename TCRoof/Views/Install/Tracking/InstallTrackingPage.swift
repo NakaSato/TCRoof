@@ -14,13 +14,12 @@ struct InstallTrackingPage: View {
 
     let job: Job
     @State var tab = Debug.tab
-    @State var view = Debug.view
+    /// `ภาพรวม`'s own state (the progress card's view, the rows opened), read only inside its `InstallTabSection`.
+    @State var overview = InstallOverviewModel(view: Debug.view)
     /// The scroll view's height: the Gantt card ends above the dock.
     @State var viewport: CGFloat = 0
     /// The scroll view's own bottom inset (the dock, when the scroll view runs under it), for the plan tab's fitted card.
     @State var viewportInset: CGFloat = 0
-    /// Task rows opened or closed against their default (the running task starts open).
-    @State var toggled: Set<String> = []
     /// The task whose sheet is open.
     @State var stage: InstallGantt.Row?
     @State var route: Route?
@@ -136,9 +135,11 @@ struct InstallTrackingPage: View {
                     VStack(alignment: .leading, spacing: 14) {
                         switch tab {
                         case .overview:
-                            kpiStrip(data)
-                            if let g = data.gantt { progressCard(data, g) }
-                            siteRow(data)
+                            InstallTabSection {
+                                kpiStrip(data)
+                                if let g = data.gantt { progressCard(data, g) }
+                                siteRow(data)
+                            }
                         case .daily:
                             dailyTab(dailyData)
                         case .plan:

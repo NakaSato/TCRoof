@@ -591,6 +591,28 @@ test('monitoring settings: the team reads them, never a contractor; a manager sa
   await assertFails(deleteDoc(ref(BOSS)));
 });
 
+test('monitoring readings and archive: the team reads them, only the function writes; tokens are no device\'s', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const d = ctx.firestore();
+    await setDoc(doc(d, 'monitoring', 'S1'), { stationID: 'S1', plantID: 7, data: '{}', health: 'normal' });
+    await setDoc(doc(d, 'monitoringArchive', 'S1_2026-11-08'), { stationID: 'S1', date: '2026-11-08', power: '{}' });
+    await setDoc(doc(d, 'monitoringTokens', 'A'), { token: 'secret', suffix: 'cret' });
+  });
+  for (const who of [TEAM, BOSS, DEV]) {
+    await assertSucceeds(getDoc(doc(db(who), 'monitoring', 'S1')));
+    await assertSucceeds(getDocs(collection(db(who), 'monitoring')));
+    await assertSucceeds(getDoc(doc(db(who), 'monitoringArchive', 'S1_2026-11-08')));
+    await assertFails(setDoc(doc(db(who), 'monitoring', 'S1'), { health: 'normal' }));
+    await assertFails(setDoc(doc(db(who), 'monitoringArchive', 'S1_2026-11-09'), { power: '{}' }));
+    await assertFails(getDoc(doc(db(who), 'monitoringTokens', 'A')));
+    await assertFails(setDoc(doc(db(who), 'monitoringTokens', 'A'), { token: 'x' }));
+  }
+  await assertFails(getDoc(doc(db(CON), 'monitoring', 'S1')));
+  await assertFails(getDocs(collection(db(CON), 'monitoring')));
+  await assertFails(getDoc(doc(db(CON), 'monitoringArchive', 'S1_2026-11-08')));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'monitoring', 'S1')));
+});
+
 test('standard designs: every member reads them, only the team saves, never an older revision', async () => {
   const design = { json: '{}', revision: 2, savedBy: TEAM };
   await assertSucceeds(setDoc(doc(db(TEAM), 'standardDesigns', 'team-1'), design));

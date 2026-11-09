@@ -69,6 +69,14 @@ actor MonitoringFeed {
         return (plants, failed ? .badResponse : nil)
     }
 
+    /// The site's kWh/kWp a day, worked out once per station (it runs the hourly engine).
+    func forecast(stationID: String, latitude: Double?, longitude: Double?) -> Double {
+        if let d = forecastDaily[stationID] { return d }
+        let d = Monitoring.Forecast.dailyKWhPerKWp(latitude: latitude, longitude: longitude)
+        forecastDaily[stationID] = d
+        return d
+    }
+
     func read(_ targets: [Target], now: Date, calendar: Calendar) async -> [Reading] {
         var out: [Reading] = []
         for t in targets {
@@ -85,8 +93,7 @@ actor MonitoringFeed {
             do { return try await f() } catch let e as GrowattAPI.Failure { failure = failure ?? e } catch { failure = failure ?? .badResponse }
             return nil
         }
-        let daily = forecastDaily[t.stationID] ?? Monitoring.Forecast.dailyKWhPerKWp(latitude: t.latitude, longitude: t.longitude)
-        forecastDaily[t.stationID] = daily
+        let daily = forecast(stationID: t.stationID, latitude: t.latitude, longitude: t.longitude)
 
         r.data = await call { try await t.api.data(plantID: t.plantID) }
         // a token refused or no network: the other calls would fail the same way

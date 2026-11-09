@@ -237,8 +237,9 @@ extension CloudSync {
 
     /// The team's ตั้งค่า Monitoring (`config/monitoring`, CHA-91): the servers, thresholds, rate and station pairings,
     /// the same on every team iPad. A manager's save here is sent (firestore.rules refuse anyone else and an older
-    /// revision); every team device takes a copy of its revision or later (`Monitoring.Settings.takes`). Tokens never
-    /// go: each stays in its iPad's Keychain. Settings set up here before this synced go up once, when the server says
+    /// revision); every team device takes a copy of its revision or later (`Monitoring.Settings.takes`). Tokens are never
+    /// in it: a manager sends one to the server (`MonitoringServerToken`) and keeps it in their iPad's Keychain for the
+    /// iPad's own poll. Settings set up here before this synced go up once, when the server says
     /// it has none. Not for contractors, who can't read it.
     func listenMonitoringSettings(barrier: StartupLoadBarrier? = nil) {
         let session = snapshotSession
@@ -258,9 +259,27 @@ extension CloudSync {
             if let text = snapshot.data()?["json"] as? String {
                 guard let s = try? JSONDecoder().decode(Monitoring.Settings.self, from: Data(text.utf8)) else { return }
                 store.receive(s)
+                store.sendKeptTokens()
             } else if !snapshot.exists, !snapshot.metadata.isFromCache {
                 store.sendUnsentSetup()
             }
+        }
+    }
+
+    /// What the server's Monitoring poll last read of each paired station (`monitoring/{station}`, CHA-93, written by
+    /// the `monitoringPoll` Cloud Function only). The store takes the fresh ones in place of reading Growatt itself.
+    /// Refused until the rule is deployed, and empty until the function is: the iPads then read Growatt as before.
+    /// Team only, like the settings.
+    func listenMonitoringReadings(barrier: StartupLoadBarrier? = nil) {
+        listenStartupQuery(db.collection("monitoring"), barrier: barrier) { snapshot, error in
+            // never fail the whole sync over the readings: the jobs still sync
+            if let error { return SyncLog.sync.error("monitoring readings listener: \(error.localizedDescription)") }
+            guard let snapshot else { return }
+            let readings = snapshot.documents.compactMap { d -> Monitoring.ServerReading? in
+                let data = d.data()
+                return Monitoring.ServerReading(fields: data, readAt: (data["readAt"] as? Timestamp)?.dateValue())
+            }
+            MonitoringStore.shared.receive(server: readings)
         }
     }
 

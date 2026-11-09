@@ -151,6 +151,10 @@ final class ERCFlowTests: XCTestCase {
         func at(_ day: String, _ hour: Int) -> Date { cal.date(bySettingHour: hour, minute: 0, second: 0, of: E.date(day)!)! }
         var plans = ERCNotification.plans(jobKey: "J", station: "สถานี ก", record: r, now: at("2026-10-05", 9))
         XCTAssertEqual(plans.map(\.id), ["erc-soon-J-designResult-2026-10-22", "erc-over-J-designResult-2026-10-22"])
+        // overdue is urgent (issue #315: time sensitive, first on the lock screen); a wait coming up isn't
+        XCTAssertEqual(plans.map(\.urgent), [false, true])
+        XCTAssertEqual(plans.map(\.isTimeSensitive), [false, true])
+        XCTAssertEqual(plans.map(\.relevance), [0.5, 1])
         XCTAssertEqual(plans.map(\.fire), [.at(at("2026-10-19", 8)), .at(at("2026-10-23", 8))])
         XCTAssertEqual(plans[0].title, "รอผลพิจารณาแบบและระบบไฟฟ้า เหลือ 3 วันทำการ")
         XCTAssertEqual(DeepLink.route(type: plans[0].type, action: nil, info: plans[0].info), .job(job: "J"))

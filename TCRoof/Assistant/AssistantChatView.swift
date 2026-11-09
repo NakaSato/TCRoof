@@ -6,21 +6,36 @@ import TCRoofCore
 /// ผู้ช่วยโครงการ (docs/specs/project-assistant-qwen.md §4): a chat about the PWA stations' MP plans. The model reads
 /// the plans through `Assistant.Toolbox` on this device and proposes changes as cards; a card's `ยืนยัน` saves it the way
 /// บันทึกความก้าวหน้า does. Shown only with `assistant.use`.
+///
+/// `.sheet` is the full sheet with a navigation bar; `.panel` is the iPad install tracking page's right-side panel
+/// (CHA-68, `AssistantChatView+Panel.swift`): its own blue header, the answers as bubbles with the proposal inside, the
+/// station's prompt chips always above the composer.
 struct AssistantChatView: View {
-    @Environment(\.modelContext) private var context
-    @Environment(\.permissions) private var permissions
+    enum Style { case sheet, panel }
+
+    @Environment(\.modelContext) var context
+    @Environment(\.permissions) var permissions
     @Environment(\.dismiss) private var dismiss
-    @State private var session: Assistant.Session
+    @State var session: Assistant.Session
     @State private var source = Source()
-    @State private var draft = ""
-    @State private var sending = false
-    @State private var failure: String?
-    @FocusState private var typing: Bool
+    @State var draft = ""
+    @State var sending = false
+    @State var failure: String?
+    @FocusState var typing: Bool
+    /// `.panel`: the line after a confirmed proposal (`ปรับแผนแล้ว · … · ดูในแผนก่อสร้าง`).
+    @State var toast: String?
     /// A confirmed card that books a construction task at 100 % without its install photos, held while the warning asks.
     @State private var photoCheck: [MPMissingPhotos] = []
     @State private var photoCheckAction: Assistant.PendingAction?
-    private let focus: Job?
+    let focus: Job?
     private let transport: Assistant.Transport
+    let style: Style
+    /// `.panel`: closes the panel (✕).
+    var onClose: () -> Void = {}
+    /// `.panel`: the toast's `ดูในแผนก่อสร้าง`, when the host can show the plan.
+    var openPlan: (() -> Void)?
+    /// `.panel`: station · แผน MP · รายงานประจำวันถึง <date>, worked out once.
+    let stationLine: String
 
     /// Reads the stations for each tool call; filled once the view has its model context.
     @MainActor final class Source {
@@ -29,10 +44,17 @@ struct AssistantChatView: View {
         var project: @MainActor (Assistant.Job) -> Assistant.ProjectFacts? = { _ in nil }
     }
 
-    init(focus: Job? = nil) {
+    init(focus: Job? = nil, style: Style = .sheet, onClose: @escaping () -> Void = {}, openPlan: (() -> Void)? = nil) {
         self.focus = focus
+        self.style = style
+        self.onClose = onClose
+        self.openPlan = openPlan
+        stationLine = style == .panel ? Self.stationLine(focus) : ""
         #if DEBUG
-        let t: Assistant.Transport = UserDefaults.standard.bool(forKey: "assistantDemo") ? AssistantDemoTransport() : AssistantRouter()
+        // `-assistantDemoDelay <s>` holds each demo answer that long, for the thinking bubble's screenshots
+        let wait = UserDefaults.standard.double(forKey: "assistantDemoDelay")
+        let t: Assistant.Transport = UserDefaults.standard.bool(forKey: "assistantDemo")
+            ? AssistantDemoTransport(delay: wait > 0 ? .milliseconds(Int(wait * 1000)) : .milliseconds(400)) : AssistantRouter()
         #else
         let t: Assistant.Transport = AssistantRouter()
         #endif
@@ -48,6 +70,31 @@ struct AssistantChatView: View {
     }
 
     var body: some View {
+        Group {
+            if style == .panel { panelBody } else { sheetBody }
+        }
+        .mpMissingPhotos($photoCheck) {
+            if let a = photoCheckAction { resolve(a, true) }
+            photoCheckAction = nil
+        }
+        .onAppear {
+            let context = self.context, permissions = self.permissions
+            source.read = {
+                let library = StationDocsStore.loadLibrary()
+                return context.assistantProjects().map { $0.assistantJob(permissions, library: library) }
+            }
+            source.project = { job in
+                context.assistantProjects().first { $0.overviewID == job.id }
+                    .map { $0.assistantProject(library: StationDocsStore.loadLibrary()) }
+            }
+            #if DEBUG
+            // `-assistantAsk <text>` asks it once on opening (screenshots of an answer or a proposal)
+            if let q = UserDefaults.standard.string(forKey: "assistantAsk"), !q.isEmpty, lines.isEmpty, !sending { send(q) }
+            #endif
+        }
+    }
+
+    private var sheetBody: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollViewReader { proxy in
@@ -82,27 +129,12 @@ struct AssistantChatView: View {
                         .disabled(sending || lines.isEmpty)
                 }
             }
-            .mpMissingPhotos($photoCheck) {
-                if let a = photoCheckAction { resolve(a, true) }
-                photoCheckAction = nil
-            }
-        }
-        .onAppear {
-            let context = self.context, permissions = self.permissions
-            source.read = {
-                let library = StationDocsStore.loadLibrary()
-                return context.assistantProjects().map { $0.assistantJob(permissions, library: library) }
-            }
-            source.project = { job in
-                context.assistantProjects().first { $0.overviewID == job.id }
-                    .map { $0.assistantProject(library: StationDocsStore.loadLibrary()) }
-            }
         }
     }
 
     // MARK: lines
 
-    private struct Line: Identifiable {
+    struct Line: Identifiable {
         enum Kind { case person, assistant, note(confirmed: Bool) }
         let id: Int
         let kind: Kind
@@ -110,7 +142,7 @@ struct AssistantChatView: View {
     }
 
     /// The person's messages, the model's answers in words, and the confirmations; tool calls and results stay hidden.
-    private var lines: [Line] {
+    var lines: [Line] {
         session.messages.enumerated().compactMap { i, m in
             guard let text = m.content?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
             switch m.role {
@@ -162,7 +194,7 @@ struct AssistantChatView: View {
         }
     }
 
-    private var prompts: [String] {
+    var prompts: [String] {
         var p = ["สถานีไหนช้ากว่าแผน", "จัดลำดับความสำคัญทุกสถานี", "วางแผนเร่งงานให้ทันกำหนด",
                  "แผนล่วงหน้า 3 สัปดาห์", "ร่างสรุปประชุมประจำสัปดาห์", "เอกสารและการทดสอบที่ค้าง"]
         if permissions.can(.mpProgress, on: focus?.access) { p.append("อัปเดตความก้าวหน้าจากรายงานประจำวัน") }
@@ -178,7 +210,7 @@ struct AssistantChatView: View {
         .accessibilityIdentifier("assistantThinking")
     }
 
-    private func failureLine(_ text: String) -> some View {
+    func failureLine(_ text: String) -> some View {
         Label(text, systemImage: "exclamationmark.triangle.fill")
             .font(.sarabun(15, relativeTo: .subheadline)).foregroundStyle(Theme.dangerText)
             .padding(12)
@@ -225,11 +257,11 @@ struct AssistantChatView: View {
         .overlay(alignment: .top) { Divider() }
     }
 
-    private var canSend: Bool { !sending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var canSend: Bool { !sending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     // MARK: actions
 
-    private func send(_ text: String) {
+    func send(_ text: String) {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty, !sending else { return }
         draft = ""; failure = nil; sending = true
@@ -241,7 +273,7 @@ struct AssistantChatView: View {
 
     /// `ยืนยัน`: as บันทึกความก้าวหน้า, a card bringing a construction task to 100 % while its install photos are missing
     /// asks first (`บันทึกทั้งที่ยังไม่มีรูป`).
-    private func confirm(_ action: Assistant.PendingAction) {
+    func confirm(_ action: Assistant.PendingAction) {
         if case let .progress(task, _, percent) = action.change, percent >= 99.95,
            let job = context.assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput {
             let weight = input.weight(task)
@@ -254,23 +286,24 @@ struct AssistantChatView: View {
         resolve(action, true)
     }
 
-    private func resolve(_ action: Assistant.PendingAction, _ confirmed: Bool) {
+    func resolve(_ action: Assistant.PendingAction, _ confirmed: Bool) {
         if confirmed, !context.applyAssistant(action, by: permissions.email) {
             failure = "บันทึกไม่ได้ ไม่พบแผนของ \(action.station)"
             session.resolve(action.id, confirmed: false)
             return
         }
         session.resolve(action.id, confirmed: confirmed)
+        if confirmed, style == .panel { toast = Self.savedToast(action) }
     }
 
-    private func restart() {
-        failure = nil; draft = ""
+    func restart() {
+        failure = nil; draft = ""; toast = nil
         session = Self.makeSession(transport, focus: focus, source: source)
     }
 }
 
 /// The model's answer: Markdown's inline styles and line breaks, selectable, with `คัดลอก` for drafts.
-private struct AssistantAnswer: View {
+struct AssistantAnswer: View {
     let text: String
     @State private var copied = false
 

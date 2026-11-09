@@ -2,8 +2,9 @@
  * TCRoof › Master Plan sheet (Master_Plan_ประปา_เฟส3-4_ลิงก์แผนรายโครงการ): the sheet's own script.
  *
  * - `TCRoof › ดึงข้อมูลตอนนี้` (and every 5 minutes): reads the app's jobs and daily reports from Firestore and writes
- *   the `TCRoof` tab's blue columns, which the Master Plan reads (`% MP ในแอป TCRoof`, `แก้ล่าสุดในแอป`). Read only: the
- *   sheet never writes to the app.
+ *   the `TCRoof` tab's blue columns, which the Master Plan reads (`% MP ในแอป TCRoof`, `แก้ล่าสุดในแอป`), and the `WBS`
+ *   tab. The one thing it writes back: a `Y` typed on the `WBS` tab (or taken off a row the sheet ticked) goes to the
+ *   job's `wbsTicks` first, as a `sheet` tick (`syncWBSEdits`, CHA-71).
  * - `TCRoof › บันทึกประวัติตอนนี้` (and Mondays 08:00): adds this week's rows to `ประวัติรายสัปดาห์` and one to
  *   `ประวัติสรุป`.
  * Columns are found through the `_keys` sheet, so the tabs' layout can move. Set-up: README.md beside this file.
@@ -41,7 +42,9 @@ function pullFromApp() {
     var rows = ids.map(function (id, i) { return { code: id, name: names[i], kWp: kwps[i], override: overrides[i] }; });
 
     var jobs = firestoreQuery('jobs', ['projectName', 'code', 'capacityKW', 'kind', 'status', 'stationDocs', 'scheduleInput',
-                                       'scheduleActual', 'iecState']).map(jobSummary);
+                                       'scheduleActual', 'iecState', 'scheduleWBS', 'wbsTicks', 'externals']).map(jobSummary);
+    // what was typed on the WBS tab since the last pull goes to the app before the tab is written again
+    var wbs = syncWBSEdits(book, jobs);
     var logs = firestoreQuery('installLogs', ['jobID', 'date', 'engineerSignedAt'],
                               { unaryFilter: { field: { fieldPath: 'report' }, op: 'IS_NOT_NULL' } });
     var stats = logStats(logs);
@@ -63,10 +66,12 @@ function pullFromApp() {
     block.setValues(values);
     writeUnmatched(tab, c1 + 2, first, unmatchedJobs(jobs, matches, stats));
     writeAppTab(book, appTabRows(jobs, matches, rows, stats), logs.length);
+    writeWBSTab(book, wbsTabRows(rows, matches), wbs);
 
     var found = matches.filter(function (m, i) { return m.job && String(ids[i] || '').trim(); }).length;
     var stations = ids.filter(function (id) { return String(id || '').trim(); }).length;
     var line = 'สำเร็จ: จับคู่ ' + found + ' / ' + stations + ' สถานี, งานในแอป ' + jobs.length + ', รายงานประจำวัน ' + logs.length;
+    if (wbs.written || wbs.refusals.length) line += ', WBS ส่งเข้าแอป ' + wbs.written + ' งาน' + (wbs.refusals.length ? ' ไม่รับ ' + wbs.refusals.length + ' แถว (ดูชีต WBS)' : '');
     // the app's days are Bangkok's: a sheet in another time zone shows them a day early
     var tz = book.getSpreadsheetTimeZone();
     if (tz !== 'Asia/Bangkok') line += ' | ⚠ เขตเวลาของชีตเป็น ' + tz + ' วันที่จะเลื่อน: ไฟล์ › การตั้งค่า › เขตเวลา เลือก (GMT+07:00) Bangkok';
@@ -95,6 +100,106 @@ function writeAppTab(book, list, logCount) {
   sheet.getRange(2, 3, 1, 2).setValues([['งาน ' + list.length, 'รายงานประจำวัน ' + logCount]]);
   sheet.getRange(3, 1, 1, APP_TAB_HEADER.length).setValues([APP_TAB_HEADER]);
   if (list.length) sheet.getRange(4, 1, list.length, APP_TAB_HEADER.length).setValues(list);
+}
+
+// MARK: the WBS tab (CHA-71)
+
+var WBS_FIRST_ROW = 4;
+
+/** A tab's rows from `WBS_FIRST_ROW`, `width` columns; [] for none. */
+function sheetRows(sheet, width) {
+  if (!sheet || sheet.getLastRow() < WBS_FIRST_ROW) return [];
+  return sheet.getRange(WBS_FIRST_ROW, 1, sheet.getLastRow() - WBS_FIRST_ROW + 1, width).getValues();
+}
+
+/**
+ * The `WBS` tab's changes since the last pull (against the hidden `_wbs` snapshot) written into the jobs' `wbsTicks`
+ * as `sheet` ticks, only for a team member (`members/<email>`, not external, not suspended): `wbsSheetChanges`. Each
+ * changed job gets one commit of `wbsTicks` and `wbsTicksBy` (the editor) and nothing else; `jobs` are updated in
+ * place, so the tab written after shows them. Returns { written, refusals }.
+ */
+function syncWBSEdits(book, jobs) {
+  var tab = book.getSheetByName('WBS'), snap = book.getSheetByName('_wbs');
+  if (!tab || !snap) return { written: 0, refusals: [] };
+  var current = wbsCells(sheetRows(tab, WBS_TAB_HEADER.length), true);
+  var snapshot = wbsCells(sheetRows(snap, 4), false);
+  var byId = {}, appTicks = {};
+  jobs.forEach(function (j) { byId[j.id] = j; appTicks[j.id] = parseJSON(j.doc.wbsTicks) || {}; });
+  var members = {};
+  var isTeam = function (email) {
+    if (!(email in members)) {
+      var m = firestoreGet('members/' + email);
+      members[email] = !!m && m.role !== 'external' && m.suspended !== true;
+    }
+    return members[email];
+  };
+  var editor = '';
+  try { editor = Session.getEffectiveUser().getEmail(); } catch (e) {}
+  var today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+  var r = wbsSheetChanges(snapshot, current, appTicks, editor, isTeam, today);
+  var base = 'projects/' + project() + '/databases/(default)/documents/jobs/';
+  r.writes.forEach(function (w) {
+    if (!byId[w.jobId]) return;
+    firestoreCall(':commit', { writes: [{
+      update: { name: base + w.jobId, fields: { wbsTicks: { stringValue: w.json }, wbsTicksBy: { stringValue: w.by } } },
+      updateMask: { fieldPaths: ['wbsTicks', 'wbsTicksBy'] },
+      currentDocument: { exists: true }
+    }] }, 'jobs/' + w.jobId);
+    byId[w.jobId].doc.wbsTicks = w.json;
+  });
+  return { written: r.writes.length, refusals: r.refusals };
+}
+
+/**
+ * `WBS`: every tickable sub-task of the paired PWA stations (`wbsTabRows`), rewritten every pull from the app, with
+ * the rows the last pull refused flagged in `แก้โดย`'s place; `_wbs` (hidden) keeps what it showed, so the next pull
+ * sees what was typed since. Made the first time.
+ */
+function writeWBSTab(book, list, result) {
+  var tab = book.getSheetByName('WBS');
+  if (!tab) tab = book.insertSheet('WBS', book.getNumSheets());
+  var snap = book.getSheetByName('_wbs');
+  if (!snap) { snap = book.insertSheet('_wbs', book.getNumSheets()); snap.hideSheet(); }
+  var refused = {};
+  (result.refusals || []).forEach(function (x) { refused[x.jobId + '|' + x.code] = x.why; });
+  tab.clearContents();
+  tab.getRange(1, 1).setValue('งานย่อย WBS ในแอป TCRoof: ใส่ Y (และวันที่เสร็จ) ในคอลัมน์ F / G แล้วรอดึงรอบถัดไป (ทุก 5 นาที) '
+    + 'นับเข้าแผน MP ทันทีในชื่อผู้แก้ | เอา Y ออกได้เฉพาะแถวที่ติ๊กจาก Google Sheet | แถวอื่นแก้ในแอป');
+  tab.getRange(2, 1, 1, 2).setValues([['ดึงล่าสุด', new Date()]]);
+  tab.getRange(2, 3).setValue((result.written ? 'ส่งเข้าแอป ' + result.written + ' งาน' : '')
+    + ((result.refusals || []).length ? ' ไม่รับ ' + result.refusals.length + ' แถว: ดูคอลัมน์ J' : ''));
+  tab.getRange(3, 1, 1, WBS_TAB_HEADER.length).setValues([WBS_TAB_HEADER]);
+  var values = list.map(function (r) {
+    var v = r.slice();
+    // a date as the sheet's own (Bangkok) midnight, so it reads back as the same day
+    if (v[6]) { var p = v[6].split('-'); v[6] = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])); }
+    var why = refused[r[1] + '|' + r[2]];
+    if (why) v[9] = 'ไม่รับ: ' + why;
+    return v;
+  });
+  if (values.length) {
+    tab.getRange(WBS_FIRST_ROW, 1, values.length, WBS_TAB_HEADER.length).setValues(values);
+    tab.getRange(WBS_FIRST_ROW, 7, values.length, 1).setNumberFormat('yyyy-mm-dd');
+  }
+  snap.clearContents();
+  var rows = wbsSnapshotRows(list);
+  if (rows.length) snap.getRange(WBS_FIRST_ROW, 1, rows.length, 4).setValues(rows);
+}
+
+/**
+ * The edit trigger (`installTriggers`): an edit of `เสร็จ (Y)` or `วันที่เสร็จ` on the `WBS` tab notes who made it in
+ * `แก้โดย`, so the next pull writes the tick in their name rather than the timers' account. Google gives the editor's
+ * email only when the account allows it; without one the pull uses the timers' account.
+ */
+function onWBSEdit(e) {
+  var range = e && e.range;
+  if (!range || range.getSheet().getName() !== 'WBS') return;
+  var c0 = range.getColumn(), c1 = c0 + range.getNumColumns() - 1;
+  if (c1 < 6 || c0 > 7 || range.getLastRow() < WBS_FIRST_ROW) return;
+  var email = '';
+  try { email = (e.user && e.user.getEmail()) || Session.getActiveUser().getEmail(); } catch (err) {}
+  var top = Math.max(range.getRow(), WBS_FIRST_ROW), n = range.getLastRow() - top + 1;
+  range.getSheet().getRange(top, 10, n, 1).setValues(Array.apply(null, Array(n)).map(function () { return [email]; }));
 }
 
 /** The app's jobs no station row took, as a list right of the tab's columns (rewritten every pull). */
@@ -135,6 +240,20 @@ function firestoreCall(method, body, what) {
     throw new Error('Firestore ' + (what || method) + ' (' + code + '): ' + msg);
   }
   return JSON.parse(res.getContentText());
+}
+
+/** One document's fields as plain JS (`members/<email>`), or null when there is none. */
+function firestoreGet(path) {
+  var res = UrlFetchApp.fetch('https://firestore.googleapis.com/v1/projects/' + project() + '/databases/(default)/documents/'
+    + path.split('/').map(encodeURIComponent).join('/'), {
+    method: 'get',
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'x-goog-user-project': project() },
+    muteHttpExceptions: true
+  });
+  var code = res.getResponseCode();
+  if (code === 404) return null;
+  if (code !== 200) throw new Error('Firestore ' + path + ' (' + code + '): ' + res.getContentText().slice(0, 200));
+  return fsFields(JSON.parse(res.getContentText()).fields || {});
 }
 
 // MARK: adding the stations to the app
@@ -347,14 +466,16 @@ function installTriggers() {
   removeTriggers();
   ScriptApp.newTrigger('pullFromApp').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('snapshotNow').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
+  // who typed a Y on the WBS tab, for the next pull to write the tick in their name
+  ScriptApp.newTrigger('onWBSEdit').forSpreadsheet(SpreadsheetApp.getActive()).onEdit().create();
   pullFromApp();
   SpreadsheetApp.getUi().alert('เปิดงานอัตโนมัติแล้ว: ดึงข้อมูลจากแอปทุก 5 นาที และบันทึกประวัติทุกวันจันทร์ 08:00 '
-    + '(ทำงานในชื่อบัญชีที่กดเปิด)');
+    + '(ทำงานในชื่อบัญชีที่กดเปิด) | Y ในชีต WBS ส่งเข้าแอปในชื่อผู้แก้ ถ้า Google ให้อีเมลผู้แก้ ไม่งั้นในชื่อบัญชีนี้');
 }
 
 function removeTriggers() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (['pullFromApp', 'snapshotNow'].indexOf(t.getHandlerFunction()) >= 0) ScriptApp.deleteTrigger(t);
+    if (['pullFromApp', 'snapshotNow', 'onWBSEdit'].indexOf(t.getHandlerFunction()) >= 0) ScriptApp.deleteTrigger(t);
   });
 }
 

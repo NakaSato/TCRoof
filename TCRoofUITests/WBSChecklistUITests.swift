@@ -3,7 +3,8 @@ import XCTest
 /// A task sheet's `งานย่อย WBS` (docs/specs/project-plan-wbs.md, step 2), on an iPad simulator:
 /// `xcodebuild test -project TCRoof.xcodeproj -scheme TCRoofUITests -destination 'id=<ipad udid>' -only-testing:TCRoofUITests/WBSChecklistUITests -derivedDataPath <scratch>`.
 /// `-installWBS YES` gives the first installing station the first plan file's (P3-001) rows with no ticks; `-installStage 1` opens
-/// its first task's sheet. A sub-task is ticked and taken back, so the station ends with no ticks.
+/// its first task's sheet. A sub-task is ticked and taken back, so the station ends with no ticks; a contractor sees the
+/// boxes read only; `-wbsPending YES` picks two sub-tasks on the latest signed report, and `ยืนยัน` counts one (CHA-71).
 final class WBSChecklistUITests: XCTestCase {
     let slow: TimeInterval = 90
 
@@ -25,8 +26,8 @@ final class WBSChecklistUITests: XCTestCase {
         let one = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "งานย่อย WBS 1/")).firstMatch
         XCTAssertTrue(one.waitForExistence(timeout: 5), "the tick should count")
         XCTAssertEqual(first.value as? String, "เสร็จแล้ว")
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "เสร็จ ")).firstMatch.exists,
-                      "the row should say when it was done")
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "ทีมติ๊ก")).firstMatch.exists,
+                      "the row should say the team ticked it")
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "wbs-checklist"; shot.lifetime = .keepAlways
         add(shot)
@@ -58,26 +59,40 @@ final class WBSChecklistUITests: XCTestCase {
         }
     }
 
-    func testExternalCanOpenDialogToUpdateWBS() throws {
+    /// CHA-71: a contractor no longer ticks: the boxes are read only, with no update button and no `ยืนยัน`.
+    func testExternalSeesTheBoxesReadOnly() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installWBS", "YES",
                                "-installStage", "1", "-role", "external", "-noNotificationPrompt", "YES"]
         app.launchInThai()
 
-        let updateButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.update.")).firstMatch
-        XCTAssertTrue(updateButton.waitForExistence(timeout: slow), "external role should see WBS update button")
-        updateButton.tap()
+        let box = app.buttons.matching(NSPredicate(format: "identifier MATCHES %@", "wbs\\.[0-9.]+")).firstMatch
+        XCTAssertTrue(box.waitForExistence(timeout: slow), "the contractor should see the sub-tasks")
+        XCTAssertFalse(box.isEnabled, "a contractor can't tick")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.update.")).firstMatch.exists)
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.pending.confirm.")).firstMatch.exists)
+    }
 
-        XCTAssertTrue(app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "อัปเดต WBS")).firstMatch.waitForExistence(timeout: 5),
-                      "tapping update button should open WBSTickUpdateSheet")
-        let docField = app.textFields["wbsTick.document"]
-        if docField.waitForExistence(timeout: 3) {
-            docField.tap()
-            docField.typeText("MOM-001")
-        }
-        app.buttons["wbsTick.save"].tap()
+    /// CHA-71: a daily report's picks (`-wbsPending YES` on the seeded reports) wait as `รอยืนยัน` and count once the
+    /// team taps `ยืนยัน`.
+    func testTheTeamConfirmsADailyReportsPick() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-screen", "home", "-homeTab", "pwa", "-installOpen", "YES", "-installSeed", "YES",
+                               "-installWBS", "YES", "-wbsPending", "YES", "-installStage", "1", "-role", "internal",
+                               "-noNotificationPrompt", "YES"]
+        app.launchInThai()
 
-        let count = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "งานย่อย WBS 1/")).firstMatch
-        XCTAssertTrue(count.waitForExistence(timeout: 5), "saving update should tick WBS item")
+        let confirm = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "wbs.pending.confirm.")).firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: slow), "the sheet should list the picks waiting")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "wbs-update-sheet"; shot.lifetime = .keepAlways
+        add(shot)
+        let zero = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "งานย่อย WBS 0/")).firstMatch
+        XCTAssertTrue(zero.exists)
+        confirm.tap()
+        let one = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "งานย่อย WBS 1/")).firstMatch
+        XCTAssertTrue(one.waitForExistence(timeout: 5), "the confirmed pick should count")
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "ยืนยันโดย")).firstMatch.exists,
+                      "its row should say it came from the daily report and who confirmed it")
     }
 }

@@ -123,7 +123,7 @@ struct AssistantDemoTransport: Assistant.Transport {
             if !p.moves.isEmpty { out += ["", "**ย้ายคนได้**"] + p.moves.map { "- \($0.crewGroup): \($0.from) → \($0.to) \($0.crew) คน" } }
             return say(out.joined(separator: "\n"))
         }
-        let kind = q.contains("เร่งงานให้ทัน") ? "what_if" : q.contains("ล่วงหน้า") ? "look_ahead" : q.contains("แผนใหม่") ? "suggest_replan" : nil
+        let kind = q.contains("เร่งงานให้ทัน") ? "what_if" : q.contains("ล่วงหน้า") || q.contains("สัปดาห์หน้า") ? "look_ahead" : q.contains("แผนใหม่") ? "suggest_replan" : nil
         guard let kind else { return nil }
         if results.isEmpty { return call("list_stations", #"{"filter":"all","limit":10}"#) }
         if results.count == 1 {

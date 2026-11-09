@@ -51,14 +51,14 @@ struct InstallPlanTabView: View {
     @State private var showMilestones: Bool = true
     @State private var compactTaskCol: Bool = false
     @State private var scrollPos = ScrollPosition()
-    /// The header as laid out (two rows; taller when its chips or buttons wrap).
+    /// The header as laid out (one row).
     @State private var headerHeight: CGFloat = InstallPlanTabView.planHeaderHeight
     /// The timeline's sideways position: opened at today (CHA-64).
     @State private var timelinePos = ScrollPosition()
 
     @Environment(\.permissions) var permissions
 
-    static let planHeaderHeight: CGFloat = 114
+    static let planHeaderHeight: CGFloat = 72
     static let planSideWidth: CGFloat = 280
     /// The grid's columns before the days.
     enum PlanCol {
@@ -131,120 +131,164 @@ struct InstallPlanTabView: View {
 
     // MARK: header
 
+    /// One row (the board's `iPadInstallPlan`): the title and its line, the plan's chips, then `Gantt | ตาราง`,
+    /// `แก้ไขแผน`, `ตัวเลือก`, `Excel` and `ส่งออก PDF` pushed right. The chips scroll when the row is narrow.
     private func planHeader(_ p: InstallPlan, axis: InstallAxis) -> some View {
         let frame = RoundedRectangle(cornerRadius: 16, style: .continuous)
-        let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
-        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) | \($0.by) | " + range } ?? range
-        return VStack(alignment: .leading, spacing: 10) {
-            // Row 1: Title + Info Chips
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text("แผนก่อสร้าง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                        if let b = p.baseline {
-                            Text(b.revision).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
-                                .padding(.horizontal, 8).frame(height: 22).background(Theme.primarySoft, in: Capsule())
-                        }
-                    }
-                    Text(sub).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-                }
-                .fixedSize()
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        // one schedule status, from the progress to date with its days (CHA-64)
-                        if let status = p.scheduleText {
-                            planChip("สถานะแผน", status, p.schedule == .behind ? Theme.dangerText : Theme.successInk)
-                        }
-                        planChip("ระยะเวลา", "\(p.days.count) วันปฏิทิน", Theme.navy)
-                        planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
-                        if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
-                        // the planned finish against the baseline's: a date, not a status
-                        if let slip = p.slip {
-                            planChip("วันเสร็จเทียบ Baseline", slip == 0 ? "ไม่เลื่อน" : slip > 0 ? "เลื่อน \(slip) วัน" : "เร็วขึ้น \(-slip) วัน",
-                                     slip > 0 ? Theme.dangerText : Theme.navy)
-                        }
-                    }
-                }
-            }
-
-            // Row 2: View Switcher, Zoom, Controls & Actions
-            HStack(spacing: 10) {
-                TCCountSegments([.init("Gantt"), .init("ตาราง")],
-                                selection: Binding(get: { planView == .gantt ? 0 : 1 }, set: { planView = $0 == 0 ? .gantt : .table }),
-                                equalWidths: false, fontSize: 14)
-                    .accessibilityLabel("มุมมองแผน")
-                    .accessibilityIdentifier("plan.view")
-
-                if planView == .gantt {
-                    Picker("การซูม", selection: $zoomLevel) {
-                        ForEach(InstallAxis.Unit.allCases) { u in
-                            Text(u.rawValue).tag(u)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 170)
-                    .accessibilityLabel("ระดับการซูมแผนภูมิ")
-
-                    Button {
-                        withAnimation(.snappy) { compactTaskCol.toggle() }
-                    } label: {
-                        Label(compactTaskCol ? "ขยายชื่องาน" : "ย่อชื่องาน", systemImage: compactTaskCol ? "arrow.left.and.right" : "arrow.right.and.left")
-                    }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                    .accessibilityLabel(compactTaskCol ? "ขยายคอลัมน์ชื่องาน" : "ย่อคอลัมน์ชื่องาน")
-                }
-
-                Button(planAllClosed ? "เปิดทั้งหมด" : "ปิดทั้งหมด") {
-                    withAnimation(.snappy) {
-                        planAllClosed.toggle()
-                        planToggled = []
-                    }
-                }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                .accessibilityLabel(planAllClosed ? "เปิดงานย่อยทั้งหมด" : "ปิดงานย่อยทั้งหมด")
-
-                Spacer(minLength: 4)
-
-                Button {
-                    withAnimation(.snappy) { showMilestones.toggle() }
-                } label: {
-                    Label("Milestone", systemImage: showMilestones ? "checkmark" : "sidebar.right")
-                }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                .accessibilityLabel("Milestone")
-                .accessibilityValue(showMilestones ? "แสดงอยู่" : "ซ่อนอยู่")
-                .accessibilityAddTraits(showMilestones ? .isSelected : [])
-
-                if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
-                    Button("งานก่อนหน้า WBS") { showWBSDependencies = true }
-                        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                        .accessibilityLabel("งานก่อนหน้า WBS")
-                }
-                Menu { MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup)) } label: {
-                    Label("Excel", systemImage: "tablecells").font(.sarabun(15, .semibold)).frame(minHeight: touchMin)
-                }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                .accessibilityLabel("ไฟล์แผน Excel")
-                Button { exportPDF(p) } label: {
-                    Label("ส่งออก PDF", systemImage: "square.and.arrow.up")
-                        .font(.sarabun(15, .semibold))
-                }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
-                .disabled(job.scheduleInput == nil)
-                .accessibilityLabel("ส่งออก PDF แผนก่อสร้าง")
-                .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
-                if permissions.can(.mpSetup, on: job.access) || InstallTrackingPage.Debug.demo {
-                    Button("แก้ไขแผน") { route = .plan }
-                        .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
-                        .accessibilityIdentifier("plan.edit")
-                }
-            }
+        return HStack(spacing: 12) {
+            planTitle(p)
+            ScrollView(.horizontal, showsIndicators: false) { planChips(p) }
+            planActions(p)
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: Self.planHeaderHeight)
         .background(Theme.surface, in: frame)
         .overlay(frame.strokeBorder(Theme.borderSubtle))
         .cardShadow()
+    }
+
+    /// `แผนก่อสร้าง`, the baseline's revision when there is one, and `อนุมัติ <d> · <start> – <end>`.
+    private func planTitle(_ p: InstallPlan) -> some View {
+        let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
+        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) · " + range } ?? range
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text("แผนก่อสร้าง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                if let b = p.baseline {
+                    Text(b.revision).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
+                        .padding(.horizontal, 8).frame(height: 22).background(Theme.primarySoft, in: Capsule())
+                }
+            }
+            Text(sub).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+        }
+        .fixedSize()
+    }
+
+    /// `ระยะเวลา`, `วันทำงาน`, `งานย่อย`, then the status, coloured; the finish against the baseline only with one.
+    private func planChips(_ p: InstallPlan) -> some View {
+        HStack(spacing: 8) {
+            planChip("ระยะเวลา", "\(p.days.count) วัน", Theme.navy)
+            planChip("วันทำงาน", "\(p.workingDays) วัน", Theme.navy)
+            if p.subCount > 0 { planChip("งานย่อย", "\(p.subCount) งาน", Theme.navy) }
+            // one schedule status, from the progress to date with its days (CHA-64)
+            if let status = Self.statusText(p) {
+                planChip("สถานะแผน", status, p.schedule == .behind ? Theme.dangerText : Theme.successInk)
+            }
+            // the planned finish against the baseline's: a date, not a status
+            if let slip = p.slip {
+                planChip("วันเสร็จเทียบ Baseline", slip == 0 ? "ไม่เลื่อน" : slip > 0 ? "เลื่อน \(slip) วัน" : "เร็วขึ้น \(-slip) วัน",
+                         slip > 0 ? Theme.dangerText : Theme.navy)
+            }
+        }
+    }
+
+    /// The status chip's short value: `ตามแผน`, `ช้า n วัน`, `เร็ว n วัน`.
+    static func statusText(_ p: InstallPlan) -> String? {
+        guard let schedule = p.schedule else { return nil }
+        let n = abs(p.lateDays ?? 0)
+        switch schedule {
+        case .onPlan: return "ตามแผน"
+        case .behind: return n > 0 ? "ช้า \(n) วัน" : "ช้ากว่าแผน"
+        case .ahead: return n > 0 ? "เร็ว \(n) วัน" : "เร็วกว่าแผน"
+        }
+    }
+
+    private func planActions(_ p: InstallPlan) -> some View {
+        HStack(spacing: 10) {
+            planViewSwitch
+            if permissions.can(.mpSetup, on: job.access) || InstallTrackingPage.Debug.demo {
+                Button("แก้ไขแผน") { route = .plan }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+                    .accessibilityIdentifier("plan.edit")
+            }
+            planOptionsMenu
+            planExcelMenu
+            Button { exportPDF(p) } label: {
+                Text("ส่งออก PDF").font(.sarabun(15, .semibold))
+            }
+            .buttonStyle(TCButtonStyle(.primary, size: .card)).fixedSize()
+            .disabled(job.scheduleInput == nil)
+            .accessibilityLabel("ส่งออก PDF แผนก่อสร้าง")
+            .accessibilityHint("แผนภูมิแกนต์และ Weekly Update ของสัปดาห์นี้ หนึ่งหน้า A3")
+        }
+        .fixedSize()
+    }
+
+    private var planViewSwitch: some View {
+        TCCountSegments([.init("Gantt"), .init("ตาราง")],
+                        selection: Binding(get: { planView == .gantt ? 0 : 1 }, set: { planView = $0 == 0 ? .gantt : .table }),
+                        equalWidths: false, fontSize: 14)
+            .accessibilityLabel("มุมมองแผน")
+            .accessibilityIdentifier("plan.view")
+    }
+
+    /// The controls the board has no place for (CHA-70 item 5): zoom, the task column's width, every stage open or
+    /// closed, the Milestone column and the WBS predecessors, in one `ตัวเลือก` menu.
+    private var planOptionsMenu: some View {
+        Menu {
+            if planView == .gantt {
+                Picker(selection: $zoomLevel) {
+                    ForEach(InstallAxis.Unit.allCases) { u in Text(u.rawValue).tag(u) }
+                } label: {
+                    Label("การซูม", systemImage: "plus.magnifyingglass")
+                }
+                .pickerStyle(.menu)
+                .accessibilityLabel("ระดับการซูมแผนภูมิ")
+                Button {
+                    withAnimation(.snappy) { compactTaskCol.toggle() }
+                } label: {
+                    Label(compactTaskCol ? "ขยายชื่องาน" : "ย่อชื่องาน",
+                          systemImage: compactTaskCol ? "arrow.left.and.right" : "arrow.right.and.left")
+                }
+                .accessibilityLabel(compactTaskCol ? "ขยายคอลัมน์ชื่องาน" : "ย่อคอลัมน์ชื่องาน")
+            }
+            Button {
+                withAnimation(.snappy) {
+                    planAllClosed.toggle()
+                    planToggled = []
+                }
+            } label: {
+                Label(planAllClosed ? "เปิดทั้งหมด" : "ปิดทั้งหมด",
+                      systemImage: planAllClosed ? "chevron.down.2" : "chevron.up.2")
+            }
+            .accessibilityLabel(planAllClosed ? "เปิดงานย่อยทั้งหมด" : "ปิดงานย่อยทั้งหมด")
+            Toggle(isOn: Binding(get: { showMilestones }, set: { v in withAnimation(.snappy) { showMilestones = v } })) {
+                Label("Milestone", systemImage: "sidebar.right")
+            }
+            if permissions.can(.mpSetup, on: job.access), !job.scheduleWBS.isEmpty {
+                Button { showWBSDependencies = true } label: { Label("งานก่อนหน้า WBS", systemImage: "arrow.triangle.branch") }
+            }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold))
+                .frame(minWidth: 24, minHeight: touchMin)
+        }
+        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+        .accessibilityLabel("ตัวเลือก")
+    }
+
+    /// `Excel ▾`: the board's two-line import and export, then the menu's other items (`MPWorkbookMenuItems`).
+    private var planExcelMenu: some View {
+        Menu {
+            MPWorkbookMenuItems(flow: workbook, job: job, canImport: permissions.can(.mpSetup), boardRevision: planRevision)
+        } label: {
+            HStack(spacing: 8) {
+                ExcelTile()
+                Text("Excel").font(.sarabun(15, .semibold))
+                Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
+            }
+            .frame(minHeight: touchMin)
+        }
+        .buttonStyle(TCButtonStyle(.secondary, size: .card)).fixedSize()
+        .accessibilityLabel("ไฟล์แผน Excel")
+    }
+
+    /// Re-plans saved on this station so far, as the export's `REV 0n` (the iPhone page counts them the same way).
+    private var planRevision: String {
+        var n = job.scheduleActual.confirmations.filter(\.replan).count
+        #if DEBUG
+        if InstallTrackingPage.Debug.demo { n = 1 }
+        #endif
+        return String(format: "REV %02d", n)
     }
 
     private func planChip(_ label: String, _ value: String, _ ink: Color) -> some View {
@@ -643,5 +687,15 @@ struct InstallPlanTabView: View {
         }
         return Text(title).font(.sarabun(13, .bold)).foregroundStyle(InstallTrackingPage.ink(tone))
             .padding(.horizontal, 10).frame(height: 24).background(InstallTrackingPage.fill(tone), in: Capsule())
+    }
+}
+
+/// The board's green Excel tile beside `Excel` in the plan header.
+private struct ExcelTile: View {
+    var body: some View {
+        Text("X").font(.system(size: 12, weight: .heavy)).foregroundStyle(Theme.onPrimary)
+            .frame(width: 22, height: 22)
+            .background(Theme.successInk, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .accessibilityHidden(true)
     }
 }

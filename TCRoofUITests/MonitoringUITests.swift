@@ -54,7 +54,13 @@ final class MonitoringUITests: XCTestCase {
         XCTAssertFalse(save.isEnabled, "nothing changed yet")
         app.buttons["10 นาที"].tap()
         XCTAssertTrue(save.isEnabled)
-        app.buttons["ยกเลิก"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["ยังไม่ได้บันทึก 1 รายการ · มีผลกับทุกสถานี"].exists)
+        // ยกเลิกการแก้ puts the saved values back
+        app.buttons["monitoring.settings.undo"].tap()
+        XCTAssertFalse(save.isEnabled)
+        XCTAssertTrue(app.staticTexts["ไม่มีการเปลี่ยนแปลง"].exists)
+        XCTAssertFalse(app.buttons["monitoring.settings.undo"].exists)
+        app.buttons["monitoring.settings.close"].tap()
         XCTAssertTrue(waitGone(save))
     }
 
@@ -86,7 +92,7 @@ final class MonitoringUITests: XCTestCase {
 
         app.buttons["monitoring.pairing.back"].tap()
         XCTAssertTrue(app.buttons["monitoring.pairing.open"].waitForExistence(timeout: 8), "`‹` brings the settings back")
-        app.buttons["ยกเลิก"].firstMatch.tap()
+        app.buttons["monitoring.settings.close"].tap()
         XCTAssertTrue(waitGone(save))
     }
 
@@ -97,6 +103,16 @@ final class MonitoringUITests: XCTestCase {
         open.tap()
         XCTAssertTrue(app.staticTexts["ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["monitoring.settings.save"].exists)
+    }
+
+    /// `-monitoringLoading YES` holds the first Growatt read open: the page shows its skeletons (CHA-74), not the rows.
+    func testFirstReadShowsSkeletons() {
+        let app = launch(["-monitoringLoading", "YES"])
+        let loading = app.descendants(matching: .any)["monitoring.loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: slow), "the skeletons stand in for the figures")
+        XCTAssertEqual(loading.label, "กำลังโหลดข้อมูลจาก Growatt")
+        XCTAssertFalse(row(app, 25).exists, "no station row before the first read")
+        XCTAssertTrue(app.buttons["monitoring.settings"].exists, "the header stays")
     }
 
     func testARowOpensItsStation() {

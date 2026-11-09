@@ -283,11 +283,7 @@ extension CloudSync {
                     fields["weeklyRequests"] = job.weeklyRequestsJSON ?? NSNull()
                     fields["weeklyRequestsBy"] = external
                 }
-                // the WBS rows the contractor ticked or took back, signed the same way
-                if job.wbsTicksUnsent, let external {
-                    fields["wbsTicks"] = job.wbsTicksJSON ?? "{}"
-                    fields["wbsTicksBy"] = external
-                }
+                // a contractor no longer sends WBS ticks (CHA-71): their finished sub-tasks go in the daily report
                 changes.append(Change(key: key, write: { [fields] in $0.setData(fields, forDocument: ref, merge: true) },
                                       fingerprint: print, record: record))
             } else {

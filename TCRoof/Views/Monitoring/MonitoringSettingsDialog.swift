@@ -2,12 +2,13 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// `ตั้งค่า Monitoring` (issue #259 §7): a dialog over the page in two columns. Left: the data servers (name, URL, a
-/// token kept in this iPad's Keychain with only its last four characters shown, a connection test), the poll interval,
-/// the nightly archive and the pairings' count with `ดูรายการ ›`, which turns the dialog to `จับคู่สถานีกับ Plant`
-/// (`MonitoringPairingPane`, `‹` brings the settings back). Right: the alert thresholds, who is told, and the
-/// electricity rate. Only a manager edits; others see the values. Changes wait for `บันทึก`, the pairings too.
-/// `-monitoringPairing YES` opens it on the pairing page with example plants in place of the server's.
+/// `ตั้งค่า Monitoring` (issue #259 §7, redesigned in CHA-72 / #323): one column over the page. From the top: the
+/// Growatt accounts as cards (a token kept in this iPad's Keychain, only its last four in the settings; a dashed
+/// `+ เพิ่มบัญชี` card opens an inline form that tests the account before adding it), polling with the nightly archive
+/// and the pairings' count (`ดูรายการ ›` turns the dialog to `จับคู่สถานีกับ Plant`, `MonitoringPairingPane`), the
+/// alert thresholds as four tiles, who is told as three cards, and the electricity rate. Only a manager edits; the
+/// team sees the values. Changes wait for `บันทึก` in the footer, which says how many are unsaved;
+/// `ยกเลิกการแก้` puts the saved values back. `-monitoringPairing YES` opens it on the pairing page with example plants.
 struct MonitoringSettingsDialog: View {
     enum Page { case settings, pairing }
 
@@ -22,13 +23,16 @@ struct MonitoringSettingsDialog: View {
     @State private var newName = ""
     @State private var newURL = GrowattAPI.openAPIURL.absoluteString
     @State private var newToken = ""
-    /// Tokens typed for new servers, saved to the Keychain on `บันทึก`; servers removed, their tokens removed then.
+    /// The add form's connection test: running, and why it failed.
+    @State private var addTesting = false
+    @State private var addError: String?
+    /// Tokens typed for new accounts or changed on one, saved to the Keychain on `บันทึก` (or on a connection test);
+    /// accounts removed lose their token then.
     @State private var pendingTokens: [UUID: String] = [:]
-    /// The server whose token is being replaced, and the new one typed.
+    /// The account whose token is being replaced, and the new one typed.
     @State private var changingToken: UUID?
     @State private var changedToken = ""
-    /// Servers whose token is in this iPad's Keychain, read once when the dialog opens and kept up to date here,
-    /// not on every redraw.
+    /// Accounts whose token is in this iPad's Keychain, read once when the dialog opens, not on every redraw.
     @State private var savedTokens: Set<UUID> = []
     @State private var testing: Set<UUID> = []
     @State private var testNote: [UUID: String] = [:]
@@ -54,35 +58,40 @@ struct MonitoringSettingsDialog: View {
             Theme.popoverDim.ignoresSafeArea().onTapGesture(perform: close)
             VStack(spacing: 0) {
                 titleBar
-                Divider()
                 if page == .pairing {
+                    Divider()
                     MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants)
                 } else {
                     ScrollView {
-                        HStack(alignment: .top, spacing: 16) {
-                            VStack(spacing: 16) { serversCard.disabled(!canEdit); pollingCard }.frame(maxWidth: .infinity)
-                            VStack(spacing: 16) { thresholdsCard; recipientsCard; rateCard }.frame(maxWidth: .infinity).disabled(!canEdit)
+                        VStack(alignment: .leading, spacing: 24) {
+                            sourcesSection.disabled(!canEdit)
+                            pollingSection
+                            thresholdsSection.disabled(!canEdit)
+                            recipientsSection.disabled(!canEdit)
+                            rateSection.disabled(!canEdit)
                         }
-                        .padding(24)
+                        .padding(.horizontal, 28).padding(.top, 4).padding(.bottom, 24)
                     }
                 }
                 Divider()
                 footer
             }
-            .frame(maxWidth: 1040, maxHeight: 776)
-            .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .frame(maxWidth: 940, maxHeight: 900)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .shadow(color: .black.opacity(0.18), radius: 30, y: 10)
             .padding(40)
         }
-        // the keyboard covers the dialog's lower part rather than squeezing all of it above the keys: the server's
-        // name, URL and token fields are at the top of the left column, so they stay in view while typed
+        // the keyboard covers the dialog's lower part rather than squeezing all of it above the keys: the account
+        // fields are near the top, so they stay in view while typed
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .accessibilityAddTraits(.isModal)
     }
 
+    // MARK: title and footer
+
     private var titleBar: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             if page == .pairing {
                 Button { withAnimation(.easeInOut(duration: 0.2)) { page = .settings } } label: {
                     Image(systemName: "chevron.left").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
@@ -92,194 +101,279 @@ struct MonitoringSettingsDialog: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(page == .pairing ? "จับคู่สถานีกับ Plant" : "ตั้งค่า Monitoring")
-                    .font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-                Text(page == .pairing ? pairedLine : canEdit ? "ใช้กับ Monitoring เท่านั้น · แก้ได้เฉพาะผู้จัดการ" : "ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ")
-                    .font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                    .font(.sarabun(24, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                if page == .pairing {
+                    Text(pairedLine).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                }
             }
             Spacer()
-            Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.navy)
-                    .frame(width: 44, height: 44).background(Theme.track, in: Circle())
-            }
-            .buttonStyle(.plain).accessibilityLabel("ปิด")
+            Button(action: close) { Label("ปิด", systemImage: "xmark") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                .accessibilityIdentifier("monitoring.settings.close")
         }
-        .padding(.horizontal, 24).padding(.vertical, 16)
-        .background(Theme.surface)
+        .padding(.horizontal, 28).padding(.top, 22).padding(.bottom, 14)
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
-            Text("ค่าที่เปลี่ยนมีผลกับทุกสถานี").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+        let n = changeCount
+        return HStack(spacing: 12) {
+            Circle().fill(!canEdit || n == 0 ? Theme.muted : Theme.warning).frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+            Text(footerLine(n)).font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+                .accessibilityIdentifier("monitoring.settings.status")
             Spacer()
-            Button(action: close) { Text(verbatim: "ยกเลิก") }.buttonStyle(TCButtonStyle(.secondary, fullWidth: false))
             if canEdit {
+                if n > 0 {
+                    Button(action: undo) { Text(verbatim: "ยกเลิกการแก้") }
+                        .buttonStyle(TCButtonStyle(.secondary, fullWidth: false))
+                        .accessibilityIdentifier("monitoring.settings.undo")
+                }
                 Button(action: save) { Text(verbatim: "บันทึก") }.buttonStyle(TCButtonStyle(.primary, fullWidth: false))
-                    .disabled(draft == store.settings && pendingTokens.isEmpty)
+                    .disabled(n == 0)
                     .accessibilityIdentifier("monitoring.settings.save")
             }
         }
-        .padding(.horizontal, 24).padding(.vertical, 14)
-        .background(Theme.surface)
+        .padding(.horizontal, 28).padding(.vertical, 14)
+    }
+
+    private func footerLine(_ n: Int) -> String {
+        if !canEdit { return "ดูได้อย่างเดียว · แก้ได้เฉพาะผู้จัดการ" }
+        return n == 0 ? "ไม่มีการเปลี่ยนแปลง" : "ยังไม่ได้บันทึก \(n) รายการ · มีผลกับทุกสถานี"
+    }
+
+    /// Settings that differ from the saved ones: each account added, removed or changed (a new token counts), each
+    /// field, and the pairings as one.
+    private var changeCount: Int {
+        let saved = store.settings
+        let ids = Set(saved.servers.map(\.id)).union(draft.servers.map(\.id))
+        var n = ids.filter { id in
+            let a = saved.servers.first { $0.id == id }, b = draft.servers.first { $0.id == id }
+            return a?.name != b?.name || a?.url != b?.url || a?.tokenSuffix != b?.tokenSuffix || pendingTokens[id] != nil
+        }.count
+        let fields: [Bool] = [
+            saved.pollMinutes != draft.pollMinutes, saved.archiveNightly != draft.archiveNightly,
+            saved.loggerOfflineMinutes != draft.loggerOfflineMinutes, saved.stringLowPercent != draft.stringLowPercent,
+            saved.belowExpectedPercent != draft.belowExpectedPercent, saved.prLowPercent != draft.prLowPercent,
+            saved.notifyMaintenance != draft.notifyMaintenance, saved.notifySupervisor != draft.notifySupervisor,
+            saved.notifyContractor != draft.notifyContractor, saved.rate != draft.rate,
+            saved.pairings != draft.pairings || saved.pairingServers != draft.pairingServers,
+        ]
+        n += fields.filter { $0 }.count
+        return n
     }
 
     private func save() {
         for (id, token) in pendingTokens { MonitoringToken.save(token, for: id) }
-        // servers taken out lose their token too
+        // accounts taken out lose their token too
         for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) { MonitoringToken.remove(old.id) }
         savedTokens.formUnion(pendingTokens.keys)
         store.save(draft)
         close()
     }
 
-    // MARK: left column
+    /// `ยกเลิกการแก้`: the saved values back, tokens typed and forms dropped.
+    private func undo() {
+        draft = store.settings
+        pendingTokens = [:]
+        adding = false; changingToken = nil; changedToken = ""
+        newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString; addError = nil
+        testNote = [:]
+    }
 
-    private var serversCard: some View {
-        section("เซิร์ฟเวอร์ข้อมูล", note: "เพิ่มได้หลาย URL · อ่านอย่างเดียว") {
-            ForEach(draft.servers) { s in
-                serverRow(s)
-                Divider()
+    // MARK: data sources
+
+    private var sourcesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("แหล่งข้อมูล", note: "บัญชี Growatt ที่ดึงข้อมูลมาแสดง")
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], alignment: .leading, spacing: 12) {
+                ForEach(draft.servers) { s in accountCard(s) }
+                if canEdit { addCard }
             }
-            if adding { addServerForm; Divider() }
-            Button { adding = true } label: {
-                HStack {
-                    Label("เพิ่มเซิร์ฟเวอร์", systemImage: "plus").font(.sarabun(15, .bold)).foregroundStyle(Theme.primary)
-                    Spacer()
-                    Text("เช่น บัญชี Growatt แยกตามเฟส").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
-                }
-                .padding(.horizontal, 16).frame(minHeight: 48).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(adding)
-            Divider()
-            settingRow("Token", "เก็บในพวงกุญแจของ iPad เครื่องนี้ · ใช้ร่วมกันทุกบัญชี · แสดงแค่ 4 ตัวท้าย") {
-                Text(tokensOnDevice).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
-            }
-            Divider()
-            settingRow("สิทธิ์", "แอปไม่ส่งคำสั่งเปิดปิดหรือตั้งค่าอินเวอร์เตอร์") {
-                Text("อ่านอย่างเดียว").font(.sarabun(14, .bold)).foregroundStyle(Theme.successInk)
-            }
-            Divider()
-            settingRow("สถานะ", lastTested) {
-                Button { Task { for s in draft.servers { await test(s) } } } label: { Text(verbatim: "ทดสอบทั้งหมด") }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
-                    .disabled(draft.servers.isEmpty || !testing.isEmpty)
-            }
+            if let id = changingToken, let s = draft.servers.first(where: { $0.id == id }) { changeTokenForm(s) }
+            if adding { addForm }
         }
     }
 
-    /// How many servers have their token on this iPad (one typed and not saved yet counts): another iPad's servers
-    /// come with the settings, but their tokens stay on the iPad they were typed on.
-    private var tokensOnDevice: String {
-        guard !draft.servers.isEmpty else { return "ยังไม่มี" }
-        let n = draft.servers.filter { pendingTokens[$0.id] != nil || savedTokens.contains($0.id) }.count
-        return "ในเครื่องนี้ \(n)/\(draft.servers.count)"
-    }
-
-    private var lastTested: String {
-        guard let d = draft.servers.compactMap(\.testedAt).max() else { return "ยังไม่ได้ทดสอบ" }
-        return "ทดสอบล่าสุด " + d.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(Locale(identifier: "th_TH")))
-    }
-
-    @ViewBuilder
-    private func serverRow(_ s: Monitoring.Settings.Server) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "server.rack").font(.system(size: 16)).foregroundStyle(Theme.primary)
-                .frame(width: 40, height: 40).background(Theme.primarySoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(s.name).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
-                Text([s.host, s.tokenSuffix.isEmpty ? "ไม่มี Token" : "Token •••• " + s.tokenSuffix, s.plants.map { "\($0) Plant" }]
-                    .compactMap { $0 }.joined(separator: " · "))
-                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
-                if let note = testNote[s.id] { Text(note).font(.sarabun(12)).foregroundStyle(Theme.dangerText) }
+    private func accountCard(_ s: Monitoring.Settings.Server) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: "server.rack").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.onPrimary)
+                .frame(width: 48, height: 48)
+                .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(s.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Text(accountLine(s)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                accountStatus(s)
+                if let note = testNote[s.id] {
+                    Text(note).font(.sarabun(12)).foregroundStyle(Theme.dangerText).fixedSize(horizontal: false, vertical: true)
+                }
             }
-            Spacer(minLength: 8)
-            if testing.contains(s.id) {
-                ProgressView()
-            } else if let ok = s.testOK, let at = s.testedAt {
-                MonChip((ok ? "ทดสอบล่าสุด " : "ล้มเหลว ") + MonFormat.time(at), ok ? .ok : .bad)
-            }
-            Button {
+            Spacer(minLength: 4)
+            roundButton("key", label: "เปลี่ยน Token ของ \(s.name)", tint: Theme.primary, fill: Theme.primarySoft) {
                 changingToken = changingToken == s.id ? nil : s.id
                 changedToken = ""
-            } label: { Text(verbatim: "เปลี่ยน Token") }
-            .font(.sarabun(14, .bold)).foregroundStyle(Theme.primary).frame(minWidth: 44, minHeight: 44)
+            }
             .accessibilityIdentifier("monitoring.server.changeToken")
-            Button {
+            roundButton("trash", label: "ลบบัญชี \(s.name)", tint: Theme.dangerText, fill: Theme.dangerSoft) {
                 draft.servers.removeAll { $0.id == s.id }
                 pendingTokens[s.id] = nil
                 if changingToken == s.id { changingToken = nil }
-            } label: { Text(verbatim: "ลบ") }
-            .font(.sarabun(14, .bold)).foregroundStyle(Theme.dangerText).frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityIdentifier("monitoring.server.delete")
         }
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        if changingToken == s.id { changeTokenForm(s) }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    /// A new token for a server already added: kept with the others typed and saved to the Keychain on `บันทึก`
-    /// (or on its connection test), its last four shown at once and the last test cleared, since it was the old one's.
-    private func changeTokenForm(_ s: Monitoring.Settings.Server) -> some View {
-        HStack(spacing: 10) {
-            SecureField("Token ใหม่จาก Growatt", text: $changedToken)
-                .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .accessibilityIdentifier("monitoring.server.newToken")
-            Button { changingToken = nil; changedToken = "" } label: { Text(verbatim: "ยกเลิก") }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
-            Button {
-                let token = changedToken.trimmingCharacters(in: .whitespacesAndNewlines)
-                pendingTokens[s.id] = token
-                if let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
-                    draft.servers[i].tokenSuffix = Monitoring.Settings.Server.suffix(of: token)
-                    draft.servers[i].testOK = nil
-                    draft.servers[i].testedAt = nil
-                    draft.servers[i].plants = nil
+    /// `openapi.growatt.com · 4 สถานี`: the stations whose plant is read from this account.
+    private func accountLine(_ s: Monitoring.Settings.Server) -> String {
+        let n = stations.filter { draft.pairing(of: $0.id)?.server.id == s.id }.count
+        return s.host + " · \(n) สถานี"
+    }
+
+    /// The account's connection: a tap tests it again. No token on this iPad says so first, since nothing can be read.
+    @ViewBuilder
+    private func accountStatus(_ s: Monitoring.Settings.Server) -> some View {
+        let hasToken = pendingTokens[s.id] != nil || savedTokens.contains(s.id)
+        Button { Task { await test(s) } } label: {
+            Group {
+                if testing.contains(s.id) {
+                    MonChip("กำลังทดสอบ…", .info)
+                } else if !hasToken {
+                    MonChip("ไม่มี Token ใน iPad เครื่องนี้", .warn)
+                } else if let ok = s.testOK, let at = s.testedAt {
+                    MonChip((ok ? "เชื่อมต่อได้ · " : "เชื่อมต่อไม่ได้ · ") + MonFormat.time(at), ok ? .ok : .bad)
+                } else {
+                    MonChip("ยังไม่ได้ทดสอบ · แตะเพื่อทดสอบ", .muted)
                 }
-                testNote[s.id] = nil
-                changingToken = nil; changedToken = ""
-            } label: { Text(verbatim: "ใช้ Token นี้") }
-                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
-                .disabled(changedToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .frame(minHeight: 28).contentShape(Rectangle())
         }
-        .padding(.horizontal, 16).padding(.bottom, 12)
+        .buttonStyle(.plain)
+        .disabled(!hasToken || testing.contains(s.id))
+        .accessibilityHint("แตะเพื่อทดสอบการเชื่อมต่ออีกครั้ง")
+        .accessibilityIdentifier("monitoring.server.test")
     }
 
-    private var addServerForm: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TCTextField("ชื่อ เช่น Growatt · บัญชีเฟส 3", text: $newName)
-            TCTextField("URL", text: $newURL)
-            SecureField("Token จาก Growatt", text: $newToken)
-                .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-            HStack {
-                Button { adding = false; newName = ""; newToken = "" } label: { Text(verbatim: "ยกเลิก") }.buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
-                Button { addServer() } label: { Text(verbatim: "เพิ่ม") }.buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
-                    .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || URL(string: newURL)?.host == nil
-                              || newToken.trimmingCharacters(in: .whitespaces).isEmpty)
+    private var addCard: some View {
+        Button { adding = true; addError = nil } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "plus").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.primary)
+                    .frame(width: 32).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: "เพิ่มบัญชี").font(.sarabun(16, .bold)).foregroundStyle(Theme.primary)
+                    Text(verbatim: "URL + Token ของบัญชี Growatt").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(adding)
+        .opacity(adding ? 0.45 : 1)
+        .accessibilityIdentifier("monitoring.server.add")
+    }
+
+    private var addForm: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(verbatim: "บัญชีใหม่").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+            HStack(alignment: .top, spacing: 12) {
+                labelledField("ชื่อบัญชี") { TCTextField("เช่น Growatt บัญชีเฟส 5", text: $newName) }
+                labelledField("URL") { TCTextField("https://", text: $newURL) }
+                labelledField("Token") { secureField("วาง Token", text: $newToken, id: "monitoring.server.token") }
+            }
+            if let addError {
+                Text(addError).font(.sarabun(13)).foregroundStyle(Theme.dangerText)
+                    .accessibilityIdentifier("monitoring.server.addError")
+            }
+            HStack(spacing: 10) {
+                Spacer()
+                Button {
+                    adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString; addError = nil
+                } label: { Text(verbatim: "ยกเลิก") }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                Button { Task { await testAndAdd() } } label: {
+                    HStack(spacing: 8) {
+                        if addTesting { ProgressView().tint(Theme.onPrimary) }
+                        Text(verbatim: addTesting ? "กำลังทดสอบ…" : "ทดสอบและเพิ่ม")
+                    }
+                }
+                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
+                .disabled(addTesting || newName.trimmingCharacters(in: .whitespaces).isEmpty || URL(string: newURL)?.host == nil
+                          || newToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityIdentifier("monitoring.server.testAndAdd")
             }
         }
         .padding(16)
+        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func addServer() {
+    /// Lists the account's plants (read only, `plant/list`) before it is added, so a wrong URL or token is caught in
+    /// the form; the account and its token wait for `บันทึก` like every other change.
+    private func testAndAdd() async {
         let token = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        let s = Monitoring.Settings.Server(name: newName.trimmingCharacters(in: .whitespaces), url: newURL.trimmingCharacters(in: .whitespaces),
-                                           tokenSuffix: Monitoring.Settings.Server.suffix(of: token))
-        draft.servers.append(s)
-        pendingTokens[s.id] = token
-        adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString
+        let url = newURL.trimmingCharacters(in: .whitespaces)
+        guard let base = URL(string: url) else { return }
+        addTesting = true; addError = nil
+        defer { addTesting = false }
+        do {
+            let plants = try await GrowattAPI(baseURL: base, token: token).plants().count
+            var s = Monitoring.Settings.Server(name: newName.trimmingCharacters(in: .whitespaces), url: url,
+                                               tokenSuffix: Monitoring.Settings.Server.suffix(of: token))
+            s.testedAt = Date(); s.testOK = true; s.plants = plants
+            draft.servers.append(s)
+            pendingTokens[s.id] = token
+            adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString
+        } catch let f as GrowattAPI.Failure {
+            addError = f.message
+        } catch {
+            addError = GrowattAPI.Failure.badResponse.message
+        }
     }
 
-    /// The connection test needs the token in the Keychain: a server just added is saved first.
+    /// A new token for an account already added: kept with the others typed and saved to the Keychain on `บันทึก`
+    /// (or on its connection test), its last four shown at once and the last test cleared, since it was the old one's.
+    private func changeTokenForm(_ s: Monitoring.Settings.Server) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Token ใหม่ของ \(s.name)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+            HStack(spacing: 10) {
+                secureField("วาง Token ใหม่จาก Growatt", text: $changedToken, id: "monitoring.server.newToken")
+                Button { changingToken = nil; changedToken = "" } label: { Text(verbatim: "ยกเลิก") }
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                Button {
+                    let token = changedToken.trimmingCharacters(in: .whitespacesAndNewlines)
+                    pendingTokens[s.id] = token
+                    if let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
+                        draft.servers[i].tokenSuffix = Monitoring.Settings.Server.suffix(of: token)
+                        draft.servers[i].testOK = nil
+                        draft.servers[i].testedAt = nil
+                        draft.servers[i].plants = nil
+                    }
+                    testNote[s.id] = nil
+                    changingToken = nil; changedToken = ""
+                } label: { Text(verbatim: "ใช้ Token นี้") }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
+                    .disabled(changedToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(16)
+        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// The connection test needs the token in the Keychain: a pending one is saved first, with the account as saved
+    /// naming it (else a cancel would leave the new token under the old last four).
     private func test(_ s: Monitoring.Settings.Server) async {
         if let t = pendingTokens[s.id] {
             MonitoringToken.save(t, for: s.id)
             pendingTokens[s.id] = nil
             savedTokens.insert(s.id)
         }
-        // the server as saved must name the token now in the Keychain: a new server is added, a changed token's last
-        // four written (else a cancel would leave the new token under the old four)
         var saved = store.settings
         let current = draft.servers.first { $0.id == s.id } ?? s
         if let i = saved.servers.firstIndex(where: { $0.id == s.id }) {
@@ -303,103 +397,227 @@ struct MonitoringSettingsDialog: View {
         if case .failure(let f) = result { testNote[s.id] = f.message } else { testNote[s.id] = nil }
     }
 
-    private var pollingCard: some View {
-        section("การดึงข้อมูล", note: nil) {
-            settingRow("รอบดึงข้อมูล", "Growatt ให้ถี่สุดทุก 5 นาที") {
-                MonSwitch(options: Monitoring.Settings.pollChoices.map { ($0, "\($0) นาที") }, selection: $draft.pollMinutes)
+    // MARK: polling
+
+    private var pollingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("การดึงข้อมูล", note: "Growatt ให้ถี่สุดทุก 5 นาที")
+            VStack(spacing: 0) {
+                settingRow("รอบดึงข้อมูล", "ยิ่งถี่ ข้อมูลยิ่งใหม่ · ใช้โควตา API มากขึ้น") {
+                    Segments(options: Monitoring.Settings.pollChoices.map { ($0, "\($0) นาที") }, selection: $draft.pollMinutes)
+                        .frame(width: 280)
+                }
+                .disabled(!canEdit)
+                Divider()
+                settingRow("เก็บข้อมูลถาวรทุกคืน", "Growatt เก็บค่า 5 นาทีไว้ราว 95 วัน · TCRoof เก็บต่อเวลา 00:30") {
+                    Toggle("เก็บข้อมูลถาวรทุกคืน", isOn: $draft.archiveNightly).labelsHidden().tint(Theme.success)
+                }
+                .disabled(!canEdit)
+                Divider()
+                // viewing the pairings is open to everyone; the pane itself is read only for the team
+                settingRow("จับคู่สถานี", pairedLine) {
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { page = .pairing } } label: { Text(verbatim: "ดูรายการ ›") }
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                        .accessibilityIdentifier("monitoring.pairing.open")
+                }
             }
-            .disabled(!canEdit)
-            Divider()
-            settingRow("เก็บข้อมูลถาวรทุกคืน", "Growatt เก็บค่า 5 นาทีไว้ราว 95 วัน · TCRoof เก็บต่อเวลา 00:30") {
-                Toggle("เก็บข้อมูลถาวรทุกคืน", isOn: $draft.archiveNightly).labelsHidden().tint(Theme.success)
-            }
-            .disabled(!canEdit)
-            Divider()
-            settingRow("จับคู่สถานี", pairedLine) {
-                Button { withAnimation(.easeInOut(duration: 0.2)) { page = .pairing } } label: { Text(verbatim: "ดูรายการ ›") }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
-                    .accessibilityIdentifier("monitoring.pairing.open")
-            }
+            .modifier(SectionCard())
         }
     }
 
     /// `6/6 สถานีจับคู่กับ Plant ใน Growatt แล้ว`, from the draft.
     private var pairedLine: String { "\(draft.paired(of: stations.map(\.id)))/\(stations.count) สถานีจับคู่กับ Plant ใน Growatt แล้ว" }
 
-    // MARK: right column
+    // MARK: thresholds
 
-    private var thresholdsCard: some View {
-        section("เกณฑ์แจ้งเตือน", note: "ใช้กับทุกสถานี") {
-            settingRow("ดาต้าล็อกเกอร์ขาดการติดต่อ", "นานกว่า") {
-                MonSwitch(options: Monitoring.Settings.loggerChoices.map { ($0, $0 >= 60 ? "\($0 / 60) ชม." : "\($0) น.") }, selection: $draft.loggerOfflineMinutes)
-            }
-            Divider()
-            settingRow("สตริงกระแสต่ำ", "ต่ำกว่าค่ากลางของอินเวอร์เตอร์ นาน 30 นาที") {
-                MonSwitch(options: Monitoring.Settings.stringChoices.map { ($0, "\($0)%") }, selection: $draft.stringLowPercent)
-            }
-            Divider()
-            settingRow("ผลิตต่ำกว่าที่คาด", "ทั้งวัน ต่ำกว่า") {
-                MonSwitch(options: Monitoring.Settings.belowExpectedChoices.map { ($0, "\($0)%") }, selection: $draft.belowExpectedPercent)
-            }
-            Divider()
-            settingRow("PR ต่ำ", "เฉพาะสถานีที่มีเซนเซอร์แสง") {
-                MonSwitch(options: Monitoring.Settings.prChoices.map { ($0, "\($0)%") }, selection: $draft.prLowPercent)
+    private var thresholdsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("แจ้งเตือนเมื่อ", note: "ใช้กับทุกสถานี")
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                thresholdTile("wifi", Theme.primary, Theme.primarySoft, "ดาต้าล็อกเกอร์ขาดการติดต่อ", "นานกว่า",
+                              Segments(options: Monitoring.Settings.loggerChoices.map { ($0, $0 >= 60 ? "\($0 / 60) ชม." : "\($0) น.") },
+                                       selection: $draft.loggerOfflineMinutes))
+                thresholdTile("bolt", Theme.warningText, Theme.warningSoft, "สตริงกระแสต่ำ", "ต่ำกว่าค่ากลางของอินเวอร์เตอร์ นาน 30 นาที",
+                              Segments(options: Monitoring.Settings.stringChoices.map { ($0, "\($0)%") }, selection: $draft.stringLowPercent))
+                thresholdTile("chart.line.downtrend.xyaxis", Theme.dangerText, Theme.dangerSoft, "ผลิตต่ำกว่าที่คาด", "ต่ำกว่าค่ากลางของสถานีปกติ",
+                              Segments(options: Monitoring.Settings.belowExpectedChoices.map { ($0, "\($0)%") }, selection: $draft.belowExpectedPercent))
+                thresholdTile("sun.max", Theme.successInk, Theme.successSoft, "PR ต่ำ", "เฉพาะสถานีที่มีเซนเซอร์แสง",
+                              Segments(options: Monitoring.Settings.prChoices.map { ($0, "\($0)%") }, selection: $draft.prLowPercent))
             }
         }
     }
 
-    private var recipientsCard: some View {
-        section("ส่งแจ้งเตือนถึง", note: "แจ้งในแอปและมือถือ") {
-            settingRow("ทีมบำรุงรักษา", "ทุกสถานี") { Toggle("ทีมบำรุงรักษา", isOn: $draft.notifyMaintenance).labelsHidden().tint(Theme.success) }
-            Divider()
-            settingRow("ผู้ควบคุมงานของสถานี", "เฉพาะสถานีที่รับผิดชอบ") { Toggle("ผู้ควบคุมงานของสถานี", isOn: $draft.notifySupervisor).labelsHidden().tint(Theme.success) }
-            Divider()
-            settingRow("ผู้รับเหมาของสถานี", "เฉพาะสถานีที่ได้รับมอบหมาย") { Toggle("ผู้รับเหมาของสถานี", isOn: $draft.notifyContractor).labelsHidden().tint(Theme.success) }
-        }
-    }
-
-    /// The rate: unset until a manager picks one (`มูลค่าไฟที่ผลิตได้` reads `—` until then).
-    private var rateCard: some View {
-        section("มูลค่าไฟ", note: "ใช้คำนวณ \"มูลค่าไฟที่ผลิตได้\"") {
-            settingRow("อัตราค่าไฟ", draft.rate == nil ? "ยังไม่ได้ตั้ง · บาทต่อ kWh" : "บาทต่อ kWh") {
-                HStack(spacing: 8) {
-                    TextField("เช่น 4.20", value: $draft.rate, format: .number.precision(.fractionLength(0...2)))
-                        .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                        .font(.sarabun(16, .bold)).frame(width: 96, height: 44)
-                        .padding(.horizontal, 10)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.borderControl))
-                        .accessibilityLabel("อัตราค่าไฟ บาทต่อ kWh")
-                    Text("฿/kWh").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+    private func thresholdTile(_ icon: String, _ tint: Color, _ fill: Color, _ title: String, _ detail: String,
+                               _ control: Segments<Int>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint)
+                    .frame(width: 36, height: 36).background(fill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(detail).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
                 }
             }
+            control
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .modifier(SectionCard())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(title)
+    }
+
+    // MARK: recipients
+
+    private var recipientsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("ส่งแจ้งเตือนถึง", note: "ในแอปและมือถือ")
+            HStack(spacing: 12) {
+                recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
+                recipientCard("ผู้ควบคุมงานของสถานี", "เฉพาะสถานีที่รับผิดชอบ", on: $draft.notifySupervisor)
+                recipientCard("ผู้รับเหมาของสถานี", "เฉพาะสถานีที่ได้รับมอบหมาย", on: $draft.notifyContractor)
+            }
+        }
+    }
+
+    private func recipientCard(_ title: String, _ detail: String, on: Binding<Bool>) -> some View {
+        Button { on.wrappedValue.toggle() } label: {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
+                    Text(detail).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                ZStack {
+                    Circle().fill(on.wrappedValue ? Theme.primary : Theme.surface)
+                    Circle().strokeBorder(on.wrappedValue ? Theme.primary : Theme.borderControl, lineWidth: 1.5)
+                    if on.wrappedValue {
+                        Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.onPrimary)
+                    }
+                }
+                .frame(width: 24, height: 24)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+            .background(on.wrappedValue ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(on.wrappedValue ? Theme.primary : Theme.borderSubtle, lineWidth: on.wrappedValue ? 1.5 : 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title + " · " + detail)
+        .accessibilityAddTraits(on.wrappedValue ? .isSelected : [])
+    }
+
+    // MARK: rate
+
+    /// The rate: 4.18 until a manager sets the company's; cleared, the page reads `—`. The field takes numbers only.
+    private var rateSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("มูลค่าไฟ", note: "ใช้คำนวณ \"มูลค่าไฟที่ผลิตได้\" ของทุกสถานี")
+            settingRow("อัตราค่าไฟ", draft.rate == nil ? "ยังไม่ได้ตั้ง · มูลค่าไฟจะแสดง —" : "ค่าเฉลี่ยต่อหน่วย") {
+                HStack(spacing: 10) {
+                    TextField("4.18", value: $draft.rate, format: .number.precision(.fractionLength(0...2)))
+                        .keyboardType(.decimalPad).multilineTextAlignment(.center)
+                        .font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
+                        .frame(width: 96, height: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .accessibilityLabel("อัตราค่าไฟ บาทต่อ kWh")
+                        .accessibilityIdentifier("monitoring.settings.rate")
+                    Text(verbatim: "บาท / kWh").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
+                }
+                .padding(4).padding(.trailing, 8)
+                .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .modifier(SectionCard())
         }
     }
 
     // MARK: parts
 
-    private func section<Content: View>(_ title: String, note: String?, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text(title).font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
-                if let note { Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted.opacity(0.75)) }
-            }
-            .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
-            content()
+    private func sectionHeader(_ title: String, note: String?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            if let note { Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
         }
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
     private func settingRow<Trailing: View>(_ title: String, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
-                Text(detail).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
+                Text(title).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                Text(detail).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             trailing()
         }
-        .padding(.horizontal, 16).padding(.vertical, 8).frame(minHeight: 52)
+        .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 64)
+    }
+
+    private func labelledField<F: View>(_ label: String, @ViewBuilder _ field: () -> F) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted)
+            field()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func secureField(_ prompt: String, text: Binding<String>, id: String) -> some View {
+        SecureField(prompt, text: text)
+            .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderControl))
+            .textInputAutocapitalization(.never).autocorrectionDisabled()
+            .accessibilityIdentifier(id)
+    }
+
+    private func roundButton(_ icon: String, label: String, tint: Color, fill: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint)
+                .frame(width: 44, height: 44).background(fill, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+/// A section's white card: radius 16, a hairline border.
+private struct SectionCard: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+    }
+}
+
+/// The dialog's iOS-style segmented control: the segments share the width given, the selected one raised.
+private struct Segments<Value: Hashable>: View {
+    let options: [(Value, String)]
+    @Binding var selection: Value
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.0) { value, title in
+                let on = value == selection
+                Button { selection = value } label: {
+                    Text(verbatim: title).font(.sarabun(15, on ? .bold : .regular))
+                        .foregroundStyle(on ? Theme.primary : Theme.inkMuted)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.surface)
+                                    .shadow(color: Theme.navy.opacity(0.18), radius: 1.5, y: 1)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

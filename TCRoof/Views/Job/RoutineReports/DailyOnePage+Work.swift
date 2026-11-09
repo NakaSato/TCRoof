@@ -282,6 +282,7 @@ struct DailyLineFooter: View {
                         AnyView(actionsRow)
                     }
                 }
+                AnyView(wbsPicks)
                 Group {
                     AnyView(materialRows)
                     AnyView(problemRows)
@@ -365,6 +366,15 @@ struct DailyLineFooter: View {
 
     @ViewBuilder private var actionsRow: some View {
         if !page.readOnly { editActions }
+    }
+
+    /// The line's finished sub-tasks (CHA-71).
+    @ViewBuilder private var wbsPicks: some View {
+        if let index {
+            DailyWBSPicks(items: page.job.scheduleWBS, ticks: page.job.wbsTicks,
+                          line: Binding(get: { page.report.progress[index] }, set: { page.report.progress[index] = $0 }),
+                          readOnly: page.readOnly)
+        }
     }
 
     private var editActions: some View {

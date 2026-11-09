@@ -134,8 +134,8 @@ final class AssistantUITests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
-    /// From a station's install tracking page (iPad): the header's ผู้ช่วย AI opens the chat on that station, and the
-    /// what-if and priorities chips answer.
+    /// From a station's install tracking page (iPad): the header's ผู้ช่วย AI opens the right-side panel on that station
+    /// (CHA-68), the station's chips answer (the look-ahead with its `ที่มา:`, the what-if), and ✕ closes it.
     func testFromTheInstallPage() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("the install tracking page is the iPad's") }
         let app = XCUIApplication()
@@ -147,9 +147,10 @@ final class AssistantUITests: XCTestCase {
         XCTAssertTrue(open.waitForExistence(timeout: slow), "the header should offer ผู้ช่วย AI")
         shot("13-install-page")
         open.tap()
-        let intro = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ผู้ช่วยดูแผนของ'")).firstMatch
+        let intro = app.staticTexts["assistantIntro"]
         XCTAssertTrue(intro.waitForExistence(timeout: 10))
-        XCTAssertFalse(intro.label.hasPrefix("ผู้ช่วยดูแผนของทุกสถานี"), "it should name the station it was opened from")
+        XCTAssertTrue(intro.label.hasPrefix("สวัสดีครับ ถามเรื่องงาน "), "it should name the station it was opened from")
+        shot("14-install-panel")
 
         func ask(_ chip: String, expect: String, shot name: String) {
             let b = app.buttons[chip]
@@ -159,8 +160,15 @@ final class AssistantUITests: XCTestCase {
             XCTAssertTrue(answer.waitForExistence(timeout: 15), "\(chip) should answer")
             shot(name)
         }
-        ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "14-install-whatif")
+        ask("ต้องเตรียมอะไรสัปดาห์หน้า?", expect: "แผนล่วงหน้า", shot: "15-install-lookahead")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ที่มา:'")).firstMatch.exists,
+                      "the answer should name what it read")
         app.buttons["เริ่มใหม่"].tap()
-        ask("จัดลำดับความสำคัญทุกสถานี", expect: "ลำดับความเสี่ยง", shot: "15-install-priorities")
+        ask("วางแผนเร่งงานให้ทันกำหนด", expect: "อัตราเดิม", shot: "16-install-whatif")
+
+        app.buttons["assistantClose"].tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: intro)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, "✕ should close the panel")
+        XCTAssertTrue(open.exists, "the page should stay")
     }
 }

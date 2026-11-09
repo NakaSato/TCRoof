@@ -63,6 +63,12 @@ public enum RoutineReport {
         public var location = ""
         /// % สะสม, 0…100.
         public var percent: Double = 0
+        /// The WBS sub-task codes the reporter marks finished on this line today (`งานย่อยที่เสร็จวันนี้`, CHA-71); the
+        /// line's photos are the evidence. They count once the team confirms them (`RoutineReport.wbsPending`). Nil in
+        /// older reports and on lines without picks, so those encode as before.
+        public var wbsDone: [String]?
+        /// The picks the team sent back (`ส่งกลับ`), code → the reason the reporter sees on the chip. Nil while none.
+        public var wbsReturned: [String: String]?
 
         public init(task: MasterSchedule.Task?, description: String, location: String, percent: Double = 0) {
             self.task = task; self.description = description; self.location = location; self.percent = percent

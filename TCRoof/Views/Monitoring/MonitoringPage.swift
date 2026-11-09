@@ -33,14 +33,9 @@ struct MonitoringPage: View {
     var body: some View {
         let fleet = store.fleet
         ScrollView {
-            VStack(spacing: 14) {
-                sinceStrip(fleet)
-                kpiRow(fleet)
-                HStack(alignment: .top, spacing: 14) {
-                    chartCard(fleet).frame(maxWidth: .infinity)
-                    actionsCard(fleet).frame(width: 398)
-                }
-                stationsCard(fleet)
+            Group {
+                // the first Growatt read since launch: skeletons in the page's shape, never `—` and zeros (CHA-74)
+                if store.awaitingFirstRead { loadingContent } else { content(fleet) }
             }
             .padding(.horizontal, Self.margin)
             .padding(.top, 14)
@@ -60,6 +55,18 @@ struct MonitoringPage: View {
         // one station's page (CHA-73); `-monitoringStation <mp>` opens it in DEBUG
         .navigationDestination(item: $opened) { s in StationMonitorPage(station: s) }
         .task(id: store.stations.count) { openDebugStation() }
+    }
+
+    private func content(_ fleet: Monitoring.Fleet) -> some View {
+        VStack(spacing: 14) {
+            sinceStrip(fleet)
+            kpiRow(fleet)
+            HStack(alignment: .top, spacing: 14) {
+                chartCard(fleet).frame(maxWidth: .infinity)
+                actionsCard(fleet).frame(width: 398)
+            }
+            stationsCard(fleet)
+        }
     }
 
     /// Managers edit the settings (issue #259 §7); everyone else sees them.

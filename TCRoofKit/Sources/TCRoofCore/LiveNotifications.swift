@@ -103,7 +103,7 @@ public enum ERCNotification {
             if let at = at8(wait.due, plus: 1), at > now {
                 out.append(NotificationPlan(id: "erc-over-\(jobKey)-\(wait.step.rawValue)-\(wait.due)", type: .mp,
                                             title: "\(wait.title) เกินกำหนดแล้ว", body: station, sub: sub + " | ติดตามกับ\(wait.step.party.title)",
-                                            fire: .at(at), info: [NotificationInfo.job: jobKey]))
+                                            fire: .at(at), info: [NotificationInfo.job: jobKey], urgent: true))
             }
         }
         return out
@@ -184,6 +184,7 @@ public enum FeedNotification {
             var out = Self.plan(p, fire: .at(at))
             out.id = "due-\(p.id)"
             out.title = "ครบกำหนดแก้วันนี้"
+            out.urgent = true
             return out
         }
     }

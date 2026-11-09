@@ -181,4 +181,30 @@ final class SystemNotificationsTests: XCTestCase {
         XCTAssertEqual(DeepLink.route(type: .report, action: nil, info: req!.info), .weeklyRequest(job: "j"))
         XCTAssertEqual(NotificationGroup.report.types, [.report])
     }
+
+    /// The quick actions per kind on the board (issue #315), and which kinds have none (a tap opens the page).
+    func testQuickActionsMatchTheBoard() {
+        let titles = { (t: NotificationType) in t.actions.map(\.title) }
+        XCTAssertEqual(titles(.survey), ["นำทาง", "เปิดแบบสำรวจ", "เตือนอีก 10 นาที"])
+        XCTAssertEqual(titles(.queue), ["รับเครื่อง | ถ่ายภาพตอนยืม", "ดูคิว", "สละคิว"])
+        XCTAssertEqual(titles(.late), ["คืนอุปกรณ์", "ขอขยายเวลา 1 วัน", "โทรหาผู้รอคิว"])
+        XCTAssertEqual(titles(.cal), ["เปิดทะเบียนเครื่อง", "เตือนอีก 7 วัน"])
+        XCTAssertEqual(titles(.sync), ["ซิงก์ตอนนี้", "ดูรายการ"])
+        XCTAssertEqual(titles(.done), ["เปิดใน Drive", "แชร์ลิงก์"])
+        XCTAssertEqual(titles(.install), ["นำทาง"])
+        for t in [NotificationType.report, .mp, .feed, .issue, .inspect] { XCTAssertTrue(t.actions.isEmpty, "\(t)") }
+    }
+
+    /// Urgent first on the lock screen: the late tool by its type, then active, then passive.
+    func testRelevanceOrdersUrgentFirst() {
+        func plan(_ t: NotificationType, urgent: Bool = false) -> NotificationPlan {
+            NotificationPlan(id: t.rawValue, type: t, title: "", body: "", sub: "", fire: .after(1), urgent: urgent)
+        }
+        XCTAssertEqual(plan(.late).relevance, 1)
+        XCTAssertTrue(plan(.late).isTimeSensitive)
+        XCTAssertEqual(plan(.mp, urgent: true).relevance, 1)
+        XCTAssertEqual(plan(.mp).relevance, 0.5)
+        XCTAssertEqual(plan(.sync).relevance, 0.2)
+        XCTAssertFalse(plan(.survey).isTimeSensitive)
+    }
 }

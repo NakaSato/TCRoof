@@ -124,6 +124,10 @@ final class LiveNotificationsTests: XCTestCase {
         XCTAssertEqual(due[0].title, "ครบกำหนดแก้วันนี้")
         XCTAssertEqual(due[0].bellID, "punch-h-1")
         XCTAssertEqual(due[0].type, .issue)
+        // due today is urgent (issue #315); the issue's own post isn't
+        XCTAssertTrue(due[0].urgent)
+        XCTAssertTrue(due[0].isTimeSensitive)
+        XCTAssertFalse(FeedNotification.plan(open, fire: .after(1)).urgent)
         XCTAssertTrue(FeedNotification.due([open], now: d(14, 9)).isEmpty)
     }
 

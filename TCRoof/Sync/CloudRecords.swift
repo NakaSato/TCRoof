@@ -105,7 +105,8 @@ extension Job: CloudSynced {
         /// The plan file's WBS rows (`Job.scheduleWBS`, `[]` for none) and the ticked rows (`Job.wbsTicks`, `{}` for
         /// none), always written so a cleared list reaches the other devices; nil from app versions without them.
         var scheduleWBS, wbsTicks: String?
-        /// The external member who last wrote `wbsTicks` (the rules check it is their own email); nil when the team did.
+        /// Who last wrote `wbsTicks` outside the app's full record: the Master Plan sheet signs its writes with the
+        /// editor's email; builds before CHA-71 signed a contractor's ticks with theirs, which team devices now drop.
         var wbsTicksBy: String?
         var kind: String?
         var iecReport: String?
@@ -147,9 +148,9 @@ extension Job: CloudSynced {
                supervisor: supervisorEmail ?? "", teamMembers: teamMembers, latitude: latitude, longitude: longitude)
     }
 
-    /// The WBS rows and ticks of a record (docs/specs/project-plan-wbs.md). A contractor's ticks are taken in only where
-    /// theirs to change (`WBSTick.trusting`); either setter books the ticks into the plan's progress, which a contractor
-    /// can't send. Compared as values: the same ticks may arrive as differently ordered text.
+    /// The WBS rows and ticks of a record (docs/specs/project-plan-wbs.md). Ticks signed by a contractor are dropped
+    /// (`WBSTick.trusting`, CHA-71); the team's and the Master Plan sheet's come in, and either setter books the ticks
+    /// into the plan's progress. Compared as values: the same ticks may arrive as differently ordered text.
     private func applyWBS(_ r: Record) {
         if let v = r.scheduleWBS {
             let rows = (try? JSONDecoder().decode([MasterSchedule.WorkItem].self, from: Data(v.utf8))) ?? []
@@ -157,18 +158,13 @@ extension Job: CloudSynced {
         }
         guard let v = r.wbsTicks else { return }
         let incoming = (try? JSONDecoder().decode([String: MasterSchedule.WBSTick].self, from: Data(v.utf8))) ?? [:]
-        if wbsTicksUnsent {
-            // this contractor's own ticks, until Firestore has them
-            if incoming == wbsTicks { wbsTicksUnsent = false }
-            return
-        }
+        // a contractor's ticks left unsent by a build before CHA-71 are never sent now: the team's copy wins
+        if wbsTicksUnsent { wbsTicksUnsent = false }
         guard incoming != wbsTicks else { return }
-        let all = (r.externals ?? externals).map(Permissions.normalized)
-        if let by = r.wbsTicksBy, all.contains(Permissions.normalized(by)) {
-            wbsTicks = MasterSchedule.WBSTick.trusting(incoming, local: wbsTicks, contractors: Set(all))
-        } else {
-            wbsTicks = incoming
-        }
+        // a contractor no longer ticks (CHA-71): a write signed by one of the job's external people changes nothing
+        let all = Set((r.externals ?? externals).map(Permissions.normalized))
+        let taken = MasterSchedule.WBSTick.trusting(incoming, local: wbsTicks, signedBy: r.wbsTicksBy, contractors: all)
+        if taken != wbsTicks { wbsTicks = taken }
     }
 
     func apply(_ r: Record, jobs: [String: Job]) -> Bool {

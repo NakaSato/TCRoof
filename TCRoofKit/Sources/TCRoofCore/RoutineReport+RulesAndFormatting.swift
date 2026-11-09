@@ -28,7 +28,8 @@ extension RoutineReport {
             d.workStart = p.workStart; d.workEnd = p.workEnd
             d.crew = p.crew; d.tools = p.tools
             d.problems = p.problems.filter { !$0.closed }
-            d.progress = p.progress.filter { $0.percent < 100 }
+            // the sub-tasks picked finished belong to their own day's report
+            d.progress = p.progress.filter { $0.percent < 100 }.map { var l = $0; l.wbsDone = nil; l.wbsReturned = nil; return l }
         } else {
             d.crew = settings.roles.map { Count(name: $0, count: 0) }
             d.tools = settings.tools.map { Count(name: $0, count: 0) }

@@ -95,11 +95,25 @@ public extension Array where Element == MasterSchedule.WorkItem {
 // MARK: - Ticks
 
 public extension MasterSchedule {
-    /// A WBS row ticked done (docs/specs/project-plan-wbs.md, step 2): who, the day, and the evidence when any. Ticks
-    /// are kept by row code, apart from the plan's progress, so a contractor can send them; team devices book them
-    /// (`bookWBS`).
+    /// A WBS row ticked done (docs/specs/project-plan-wbs.md, step 2): who, the day, the evidence when any, and where
+    /// the tick came from (`Source`). Ticks are kept by row code, apart from the plan's progress; team devices book them
+    /// (`bookWBS`). Only the team ticks: a contractor's way in is the daily report, whose picks count once the team
+    /// confirms them (`RoutineReport.wbsPending`, CHA-71).
     struct WBSTick: Codable, Equatable, Sendable {
-        /// The email of who ticked it.
+        /// Where a tick came from. Nil in ticks made before sources: read through `origin(contractors:)`.
+        public enum Source: String, Codable, Sendable, CaseIterable {
+            /// `ทีมติ๊ก`: a team member tapped the box.
+            case team
+            /// `รายงานประจำวัน`: a contractor picked it in a daily report line and the team confirmed it.
+            case daily
+            /// `Google Sheet`: `Y` on the Master Plan sheet's WBS tab, written by its Apps Script.
+            case sheet
+            /// The plan file's `เสร็จ (Y)` column, taken in by an import.
+            case file
+        }
+
+        /// The email of who ticked it; for a daily report's pick, the team member who confirmed it; for the sheet's,
+        /// who typed the `Y`.
         public var by: String
         /// The day it was done; its week takes the booking.
         public var at: Date
@@ -108,27 +122,69 @@ public extension MasterSchedule {
         /// Taken from a plan file whose row was marked `Y` without a `เสร็จ` date: `at` is only the import's day, so
         /// export leaves the file's date cell as it is. Nil for a tick made in the app.
         public var undated: Bool?
+        /// Nil in older ticks (`origin`).
+        public var source: Source?
+        /// A daily report's pick: who reported it (the report's recorder, a name).
+        public var reportedBy: String?
+        /// A daily report's pick: when the team confirmed it (`at` is the report's day).
+        public var confirmedAt: Date?
 
-        public init(by: String, at: Date, document: String? = nil, undated: Bool? = nil) {
+        public init(by: String, at: Date, document: String? = nil, undated: Bool? = nil, source: Source? = nil,
+                    reportedBy: String? = nil, confirmedAt: Date? = nil) {
             self.by = by; self.at = at; self.document = document; self.undated = undated
+            self.source = source; self.reportedBy = reportedBy; self.confirmedAt = confirmedAt
         }
 
-        /// A contractor's ticks taken in by a team device: a contractor adds ticks in their own name and changes or
-        /// takes back only ticks a contractor made; the team's stay as they are. `contractors` are the job's external
-        /// people.
-        public static func trusting(_ incoming: [String: WBSTick], local: [String: WBSTick], contractors: Set<String>) -> [String: WBSTick] {
-            func isContractor(_ t: WBSTick?) -> Bool { t.map { contractors.contains(Permissions.normalized($0.by)) } ?? false }
-            var out = local
-            for code in Set(incoming.keys).union(local.keys) {
-                let old = local[code], new = incoming[code]
-                switch (old, new) {
-                case (nil, let n?) where isContractor(n): out[code] = n
-                case (let o?, nil) where isContractor(o): out[code] = nil
-                case (let o?, let n?) where o != n && isContractor(o) && isContractor(n): out[code] = n
-                default: break
+        enum CodingKeys: String, CodingKey { case by, at, document, undated, source, reportedBy, confirmedAt }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            by = try c.decode(String.self, forKey: .by)
+            at = try c.decode(Date.self, forKey: .at)
+            document = try c.decodeIfPresent(String.self, forKey: .document)
+            undated = try c.decodeIfPresent(Bool.self, forKey: .undated)
+            // a source a later build adds reads as none, rather than losing every tick of the job
+            source = ((try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil).flatMap(Source.init(rawValue:))
+            reportedBy = try c.decodeIfPresent(String.self, forKey: .reportedBy)
+            confirmedAt = try c.decodeIfPresent(Date.self, forKey: .confirmedAt)
+        }
+
+        /// Where the tick came from as its row shows it.
+        public enum Origin: Equatable, Sendable {
+            case team, daily, sheet, file
+            /// A contractor's own tick, made before CHA-71 took that away.
+            case contractor
+
+            /// The row's chip.
+            public var label: String {
+                switch self {
+                case .team: "ทีมติ๊ก"
+                case .daily: "รายงานประจำวัน"
+                case .sheet: "Google Sheet"
+                case .file: "ไฟล์แผน"
+                case .contractor: "ผู้รับเหมาติ๊ก"
                 }
             }
-            return out
+        }
+
+        /// `source`, else (an older tick) a contractor's when `by` is one of the job's external people, else the team's.
+        public func origin(contractors: Set<String> = []) -> Origin {
+            switch source {
+            case .team?: return .team
+            case .daily?: return .daily
+            case .sheet?: return .sheet
+            case .file?: return .file
+            case nil: return contractors.contains(Permissions.normalized(by)) ? .contractor : .team
+            }
+        }
+
+        /// The ticks a team device takes from a record. A contractor no longer ticks (CHA-71: the rules refuse their
+        /// write, and builds before it may still try), so ticks signed by one of the job's external people change
+        /// nothing; anything else (the team, the Master Plan sheet) is taken as it comes.
+        public static func trusting(_ incoming: [String: WBSTick], local: [String: WBSTick], signedBy: String?,
+                                    contractors: Set<String>) -> [String: WBSTick] {
+            if let signedBy, contractors.contains(Permissions.normalized(signedBy)) { return local }
+            return incoming
         }
     }
 
@@ -142,7 +198,7 @@ public extension MasterSchedule {
         let base = base ?? []
         var out = local, changed = 0
         for code in fileDone.subtracting(base).sorted() where out[code] == nil {
-            out[code] = WBSTick(by: by, at: dates[code] ?? today, undated: dates[code] == nil ? true : nil)
+            out[code] = WBSTick(by: by, at: dates[code] ?? today, undated: dates[code] == nil ? true : nil, source: .file)
             changed += 1
         }
         for code in base.subtracting(fileDone).sorted() where out[code] != nil {
@@ -223,13 +279,18 @@ public extension MasterSchedule {
 }
 
 public extension Permissions {
-    /// May tick a WBS row of this job done (`mp.wbs_tick`): the team, and a contractor on their own job.
-    func mayTickWBS(on job: JobAccess?) -> Bool { can(.mpWBSTick, on: job) }
+    /// May tick a WBS row of this job done (`mp.wbs_tick`): the team only. A contractor reports finished sub-tasks in
+    /// the daily report instead (CHA-71), and firestore.rules refuse their ticks.
+    func mayTickWBS(on job: JobAccess?) -> Bool { role != .external && can(.mpWBSTick, on: job) }
 
-    /// May take this tick back: whoever made it, a manager, or the job's supervising engineer.
+    /// May take this tick back: whoever made it (for a daily report's pick, who confirmed it), a manager, or the job's
+    /// supervising engineer. Never a contractor.
     func mayTakeBack(_ tick: MasterSchedule.WBSTick, on job: JobAccess?) -> Bool {
         guard mayTickWBS(on: job) else { return false }
         if Self.normalized(tick.by) == email || role == .manager || role == .maintainer { return true }
-        return role != .external && isSupervisor(job)
+        return isSupervisor(job)
     }
+
+    /// May confirm a contractor's daily-report pick or send it back (`ยืนยัน` / `ส่งกลับ`): whoever may tick.
+    func mayConfirmWBS(on job: JobAccess?) -> Bool { mayTickWBS(on: job) }
 }

@@ -66,8 +66,26 @@ received ones too, since the contractor can't send progress. `AppCompat.syncVers
 
 Step 2b, the screens (built): a task's sheet (`InstallStageSheet`, iPad and iPhone) lists its sub-tasks under
 `งานย่อย WBS n/m` (`WBSChecklist`): code, title, evidence, owner, weight, and who ticked it and when; a long press adds
-a document number. `mp.wbs_tick` (user-roles.json) lets the team and a contractor on their own job tick; a tick is taken
-back by whoever made it, a manager or the job's supervising engineer (`Permissions.mayTakeBack`).
+a document number. `mp.wbs_tick` (user-roles.json) lets the team tick; a tick is taken back by whoever made it, a
+manager or the job's supervising engineer (`Permissions.mayTakeBack`).
+
+Step 2c, three sources (CHA-71, built): every tick records where it came from (`WBSTick.source`, nil in older ticks:
+the team's, or `ผู้รับเหมาติ๊ก` when `by` is one of the job's externals, `WBSTick.origin`):
+- `team` (`ทีมติ๊ก`): a team member taps the box; it counts at once.
+- `daily` (`รายงานประจำวัน`): a contractor no longer ticks. In a daily report line whose task has WBS rows, the reporter
+  picks the sub-tasks finished that day (`งานย่อยที่เสร็จวันนี้`, `DailyWBSPicks`, `ProgressLine.wbsDone`), the line's
+  photos being the evidence. A signed report's picks wait (`RoutineReport.wbsPending`, `รอยืนยัน · รายงานประจำวัน`)
+  until the team taps `ยืนยัน` (or the row's dashed box) in the task's sheet, or acknowledges the report
+  (`ลงนามรับทราบ`, `Job.recordInspectorAck`), which confirms all of its picks (`confirmingAll`); the tick is dated the
+  report's day, by who confirmed it, with `reportedBy` and `confirmedAt`. `ส่งกลับ` returns a pick with a reason
+  (`ProgressLine.wbsReturned`), shown on the reporter's chip; picking it again sends it once more.
+- `sheet` (`Google Sheet`): a `Y` (and date) on the Master Plan sheet's `WBS` tab, written into `wbsTicks` by its Apps
+  Script (signed `wbsTicksBy` with the editor's email; tools/master-plan-sheet). It counts once a team device syncs.
+- `file`: the plan file's `เสร็จ (Y)` column, taken in by an import.
+All book the same way (`bookWBS`). A contractor's device shows the boxes read only, and firestore.rules no longer let
+an external member write `wbsTicks` / `wbsTicksBy`; team devices drop a write signed by a contractor
+(`WBSTick.trusting`). The iPad task sheet lays the WBS out in two cards: `งานย่อย WBS` with a source chip per row and
+`รอยืนยัน` with each pick's photo, reporter, `ส่งกลับ` / `ยืนยัน` and `เปิดรายงานประจำวัน`. `AppCompat.syncVersion` 8.
 
 Why not inside `MasterSchedule.Input`: The plan syncs as one JSON string on the job document; 124 rows would add
 about 35 KB to every job, and a device on an older build that saves ตั้งค่าแผน would drop a field it doesn't know. Set
@@ -154,7 +172,8 @@ name that station's people in the same rows (`เปรม`, `บีม`, `ผ�
 
 1. Evidence is optional: a tick alone counts; a document number or photo can be attached, and a row whose note names a
    station paper links to it.
-2. Both tick: the job's contractor and the team; managers and the supervising engineer can untick.
+2. Both tick: the job's contractor and the team; managers and the supervising engineer can untick. Changed by CHA-71:
+   only the team ticks; a contractor reports finished sub-tasks in the daily report for the team to confirm.
 3. Ticks sync both ways with the contractor's devices: a Firestore rule for the contractor's push (as the weekly
    request's, signed with its email), `AppCompat.syncVersion` raised, `config/app.minSyncVersion` set once every device
    runs it.

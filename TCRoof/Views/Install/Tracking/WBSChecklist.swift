@@ -2,9 +2,11 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// A task's WBS sub-tasks in its sheet (docs/specs/project-plan-wbs.md, step 2): each row's evidence and owner, ticked
-/// done by the team or the job's contractor. A tick books the row's weight into the plan (`Job.wbsTicks`), so the
-/// task's % follows; a document number can go with it. A row with steps under it (2.5.1 and the Inverter station's
+/// A task's WBS sub-tasks in its sheet (docs/specs/project-plan-wbs.md, step 2; CHA-71): each row's evidence and owner,
+/// ticked done by the team. A tick books the row's weight into the plan (`Job.wbsTicks`), so the task's % follows; a
+/// document number can go with it. Every row says where its tick came from (`ทีมติ๊ก`, `รายงานประจำวัน`, `Google
+/// Sheet`), or that a daily report's pick waits for the team (`รอยืนยัน · รายงานประจำวัน`, a dashed orange box: a tap
+/// confirms it). A contractor sees the boxes read only. A row with steps under it (2.5.1 and the Inverter station's
 /// steps) is a heading: its steps are ticked, indented under it.
 struct WBSChecklist: View {
     let items: [MasterSchedule.WorkItem]
@@ -17,6 +19,12 @@ struct WBSChecklist: View {
     let setDocument: (MasterSchedule.WorkItem, String) -> Void
     var updateTick: (MasterSchedule.WorkItem, MasterSchedule.WBSTick?) -> Void = { _, _ in }
     var updateItem: (MasterSchedule.WorkItem) -> Void = { _ in }
+    /// The daily reports' picks waiting for the team, by code (`Job.wbsPending`).
+    var pending: [String: RoutineReport.WBSPick] = [:]
+    /// The job's external people, for older ticks made by a contractor.
+    var contractors: Set<String> = []
+    var canConfirm = false
+    var confirm: (RoutineReport.WBSPick) -> Void = { _ in }
     @State private var documentFor: MasterSchedule.WorkItem?
     @State private var document = ""
 
@@ -38,11 +46,17 @@ struct WBSChecklist: View {
         let parents = items.parentCodes
         let tickable = items.filter { !parents.contains($0.code) }
         let done = tickable.filter { ticks[$0.code] != nil }.count
+        let waiting = tickable.filter { ticks[$0.code] == nil && pending[$0.code] != nil }.count
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 10) {
                 Text("งานย่อย WBS \(done)/\(tickable.count)").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
+                if waiting > 0 {
+                    Text("● รอยืนยัน \(waiting)").font(.sarabun(13, .bold)).foregroundStyle(Theme.warningText)
+                        .accessibilityIdentifier("wbs.pendingCount")
+                }
                 Spacer()
-                Text("ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
+                Text(canTick ? "ติ๊กแล้วนับเข้าแผน MP ตามน้ำหนัก" : "ทีมงานเป็นผู้ติ๊ก | แจ้งงานที่เสร็จในรายงานประจำวัน")
+                    .font(.sarabun(12)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.trailing)
             }
             rows(parents)
         }
@@ -111,15 +125,19 @@ struct WBSChecklist: View {
 
     private func row(_ item: MasterSchedule.WorkItem) -> some View {
         let tick = ticks[item.code]
-        let enabled = tick.map(canTakeBack) ?? canTick
+        let pick = tick == nil ? pending[item.code] : nil
+        let enabled = tick.map(canTakeBack) ?? (pick != nil ? canConfirm : canTick)
         return HStack(alignment: .top, spacing: 12) {
-            Button { toggle(item) } label: {
-                box(on: tick != nil).frame(width: 44, height: 44).contentShape(Rectangle())
+            Button {
+                if let pick { confirm(pick) } else { toggle(item) }
+            } label: {
+                box(on: tick != nil, waiting: pick != nil).frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!enabled)
             .accessibilityLabel(item.title.trimmingCharacters(in: .whitespaces))
-            .accessibilityValue(tick == nil ? "ยังไม่เสร็จ" : "เสร็จแล้ว")
+            .accessibilityValue(tick != nil ? "เสร็จแล้ว" : pick != nil ? "รอยืนยัน" : "ยังไม่เสร็จ")
+            .accessibilityHint(pick != nil && enabled ? "แตะเพื่อยืนยัน" : "")
             .accessibilityIdentifier("wbs.\(item.code)")
 
             Button {
@@ -136,7 +154,7 @@ struct WBSChecklist: View {
                             Text("หลักฐาน: \(evidence)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        if let tick { Text(tickLine(tick)).font(.sarabun(12)).foregroundStyle(Theme.successInk) }
+                        sourceLine(tick: tick, pick: pick)
                     }
                     Spacer(minLength: 4)
                     VStack(alignment: .trailing, spacing: 3) {
@@ -170,7 +188,7 @@ struct WBSChecklist: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(tick != nil ? Theme.successSoft.opacity(0.45) : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(tick != nil ? Theme.successSoft.opacity(0.45) : pick != nil ? Theme.warningSoft.opacity(0.5) : Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.borderSubtle))
         .contextMenu {
             Button("อัปเดตงานย่อย WBS", systemImage: "square.and.pencil") {
@@ -195,20 +213,66 @@ struct WBSChecklist: View {
         x.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US_POSIX"))) + "%"
     }
 
-    private func box(on: Bool) -> some View {
+    /// Ticked: green with a check; a daily report's pick waiting: dashed orange with `?`; else empty.
+    private func box(on: Bool, waiting: Bool = false) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(on ? Theme.success : Theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(on ? Theme.success : Theme.pending, lineWidth: 2))
+                .fill(on ? Theme.success : waiting ? Theme.warningSoft : Theme.surface)
+            if waiting {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Theme.warning, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                Text("?").font(.sarabun(15, .bold)).foregroundStyle(Theme.warningText)
+            } else {
+                RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(on ? Theme.success : Theme.pending, lineWidth: 2)
+            }
             if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary) }
         }
         .frame(width: 26, height: 26)
     }
 
-    /// `เสร็จ 7/12/69 | สมชาย | MOM-001`
-    private func tickLine(_ t: MasterSchedule.WBSTick) -> String {
+    /// The row's source chip and who / when: `ทีมติ๊ก` green, `รายงานประจำวัน` / `Google Sheet` blue,
+    /// `รอยืนยัน · รายงานประจำวัน` orange, `ยังไม่เสร็จ` grey.
+    private func sourceLine(tick: MasterSchedule.WBSTick?, pick: RoutineReport.WBSPick?) -> some View {
+        let shown: (label: String, tone: TCFeedTone?, line: String)
+        if let tick {
+            shown = Self.source(tick, contractors: contractors)
+        } else if let pick {
+            shown = ("รอยืนยัน · รายงานประจำวัน", .orange, Self.pickLine(pick))
+        } else {
+            shown = ("ยังไม่เสร็จ", nil, "")
+        }
+        return HStack(spacing: 6) {
+            TCToneChip(shown.label, tone: shown.tone)
+            if !shown.line.isEmpty {
+                Text(shown.line).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The chip, its tone and the who / when line of a tick: `7/12/69 | สมชาย | MOM-001`; a daily report's pick names
+    /// its reporter and who confirmed it.
+    static func source(_ t: MasterSchedule.WBSTick, contractors: Set<String>) -> (label: String, tone: TCFeedTone?, line: String) {
+        let origin = t.origin(contractors: contractors)
         let who = TeamDirectory.shared.person(t.by)?.label ?? t.by
-        return ["เสร็จ " + ThaiFormat.numericDate.string(from: t.at), who, t.document ?? ""].filter { !$0.isEmpty }.joined(separator: " | ")
+        let day = ThaiFormat.numericDate.string(from: t.at)
+        let tone: TCFeedTone?
+        switch origin {
+        case .team: tone = .green
+        case .daily, .sheet, .file: tone = .blue
+        case .contractor: tone = nil
+        }
+        let parts: [String] = origin == .daily
+            ? [day, t.reportedBy ?? "", "ยืนยันโดย " + who, t.document ?? ""]
+            : [day, who, t.document ?? ""]
+        return (origin.label, tone, parts.filter { !$0.isEmpty }.joined(separator: " | "))
+    }
+
+    /// `รายงาน 7/12/69 | ช่างเอ | 3 รูป`
+    static func pickLine(_ p: RoutineReport.WBSPick) -> String {
+        ["รายงาน " + ThaiFormat.numericDate.string(from: p.day), p.reporter, p.photos > 0 ? "\(p.photos) รูป" : "ไม่มีรูป"]
+            .filter { !$0.isEmpty }.joined(separator: " | ")
     }
 }
 
@@ -303,7 +367,7 @@ struct WBSItemEditSheet: View {
 }
 
 /// Sheet for updating a WBS sub-task's completion status, completion date, and evidence / document number.
-/// Accessible to contractors (external users) on their assigned jobs and internal team members.
+/// The team's (`mp.wbs_tick`); a contractor opens it read only.
 struct WBSTickUpdateSheet: View {
     let item: MasterSchedule.WorkItem
     let tick: MasterSchedule.WBSTick?
@@ -393,7 +457,9 @@ struct WBSTickUpdateSheet: View {
                 if let tick {
                     Section("ประวัติการบันทึก") {
                         let who = TeamDirectory.shared.person(tick.by)?.label ?? tick.by
-                        LabeledContent("ผู้บันทึก", value: who)
+                        LabeledContent("ที่มา", value: tick.origin().label)
+                        if let reporter = tick.reportedBy { LabeledContent("ผู้รายงาน", value: reporter) }
+                        LabeledContent(tick.source == .daily ? "ผู้ยืนยัน" : "ผู้บันทึก", value: who)
                         LabeledContent("วันที่บันทึก", value: ThaiFormat.numericDate.string(from: tick.at))
                         if let doc = tick.document, !doc.isEmpty {
                             LabeledContent("เลขที่เอกสาร", value: doc)
@@ -416,7 +482,12 @@ struct WBSTickUpdateSheet: View {
                             let trimmedDoc = document.trimmingCharacters(in: .whitespacesAndNewlines)
                             let doc = trimmedDoc.isEmpty ? nil : trimmedDoc
                             let by = currentUserEmail.isEmpty ? (tick?.by ?? "unknown") : currentUserEmail
-                            let newTick = MasterSchedule.WBSTick(by: by, at: cal.startOfDay(for: completedAt), document: doc)
+                            // an edited tick keeps who made it and where it came from; a new one is the team's
+                            var newTick = tick ?? MasterSchedule.WBSTick(by: by, at: completedAt, source: .team)
+                            let day = cal.startOfDay(for: completedAt)
+                            if newTick.undated == true, cal.startOfDay(for: newTick.at) != day { newTick.undated = nil }
+                            newTick.at = day
+                            newTick.document = doc
                             onSave(newTick)
                         } else {
                             onSave(nil)

@@ -144,7 +144,7 @@ public enum Capability: String, CaseIterable, Sendable {
         .assignTeam: (.allow, .deny, .deny),
         .mpSetup: (.allow, .allow, .deny),
         .mpProgress: (.allow, .allow, .deny),
-        .mpWBSTick: (.allow, .allow, .conditional),
+        .mpWBSTick: (.allow, .allow, .deny),
         .moveToInstall: (.allow, .allow, .deny),
         .installTracking: (.allow, .allow, .conditional),
         .overviewReports: (.allow, .allow, .deny),

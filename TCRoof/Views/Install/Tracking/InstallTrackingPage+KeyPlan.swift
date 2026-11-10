@@ -272,8 +272,20 @@ struct KeyPlanBoard: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 10))
         } else {
-            Color.clear
+            skeleton
         }
+    }
+
+    /// The plan's place, in grey, while its picture is read.
+    private var skeleton: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Theme.borderSubtle)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .tcShimmer()
+            .padding(8)
+            .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 10))
+            .tcLoadingLabel()
+            .accessibilityIdentifier("keyPlan.loading")
     }
 
     private var pins: some View {

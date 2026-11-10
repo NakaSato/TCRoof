@@ -1,6 +1,6 @@
 # iPhone · Monitor entry (design first), CHA-34
 
-Status: **design, waiting on the decisions in §9.** Nothing here is built yet. Board: `boards/PhoneMonitorEntry.html`
+Status: **built** (CHA-34), with the answers in §9. Board: `boards/PhoneMonitorEntry.html`
 (open it in a browser; `preview.png` is the same board at 1×). Every number on the board is example data
 (`-monitoringDemo YES`'s fleet); never hard-code it.
 
@@ -134,7 +134,19 @@ reads only what the server already wrote (`monitoring/{station}`), so it costs n
   `Monitoring ทุกสถานี`; with `-role external` there is no `Monitor`; with `-monitoringDemo YES` the button's label
   is `Monitor | ต้องดูแล n` with n > 0.
 
-## 9. Open questions (for the user)
+## 9. Decisions (answered 2026-11-10)
+
+Asked and answered: 1 A, the dock tab; 3 the iPhone reads (`MonitoringPoller` on its dock) but posts no
+notifications (`MonitoringStore.postsAlerts` is the iPad only); 4 ตั้งค่า Monitoring hidden on iPhone; 7 the compact
+page of §5 straight away. Taken as recommended: 2 the same badge number as the iPad (`needingAttention`); 5 no chart in
+v1; 6 a station opens `PWAMaintenanceStationView` (TCRoofKit, `Survey/Home`) through `MonitoringPage.summary`; 8 Monitor
+last before `ตั้งค่า`.
+
+Note from building: this version of `MonitoringStore` has no `receive(server:)` (Monitoring reads Growatt on the device
+only), so an iPhone shows readings only when a token is saved on that phone; the others show the stations as
+`ไม่มีข้อมูล` and the badge stays 0 there.
+
+### The questions as asked
 
 1. **Entry: A (5th dock tab), B (card in `กปภ.` › `บำรุงรักษา`) or C (settings row)?** Recommended A.
 2. **Badge count:** the iPad now counts alarm + offline + `ปกติ` with a low string or PR (`needingAttention`), wider

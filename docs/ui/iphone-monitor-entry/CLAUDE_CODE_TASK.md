@@ -1,8 +1,7 @@
 # iPhone · `Monitor` entry (CHA-34)
 
-> **Not ready to follow yet.** This change list assumes the recommendations in `SPEC.md` §9 (option A, the compact
-> page). Once the user has answered §9, update this file to match, then type
-> `Follow docs/ui/iphone-monitor-entry/CLAUDE_CODE_TASK.md` on a new branch `feat/iphone-monitor-entry`.
+> **Done** (CHA-34): built as below with `SPEC.md` §9's decisions. The UI test is `PhoneMonitorUITests` (iPhone),
+> not `HomeNavbarUITests`, which runs on iPad.
 
 Board: `boards/PhoneMonitorEntry.html` (390 × 844 frames); `preview.png` is the whole board. Numbers are examples.
 

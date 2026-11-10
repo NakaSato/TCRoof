@@ -34,6 +34,8 @@ struct InstallPhonePlanTabView: View {
     @State var planEditing: Bool = InstallTrackingPage.Debug.planEdit
     @State var planDraft: [String: InstallTrackingPage.PlanDraft] = [:]
     @State var planReason: String = ""
+    /// The change request behind the re-plan, when there is one (CHA-79).
+    @State var planChangeRequest: String = ""
     @State var planToggled: Set<String> = []
     @State var planAllClosed: Bool = InstallTrackingPage.Debug.planCollapsed
     @State private var shared: InstallTrackingPage.Shared?
@@ -52,7 +54,7 @@ struct InstallPhonePlanTabView: View {
         #if DEBUG
         if InstallTrackingPage.Debug.demo { return 1 }
         #endif
-        return job.scheduleActual.confirmations.filter(\.replan).count
+        return job.scheduleInput?.revisionNumber(replans: job.scheduleActual.replans) ?? 0
     }
 
     private static func rev(_ n: Int) -> String { String(format: "REV %02d", n) }
@@ -128,7 +130,8 @@ struct InstallPhonePlanTabView: View {
 
     private func phonePlanHeader(_ p: InstallPlan) -> some View {
         let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
-        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) | " + range } ?? range
+        let approved = p.baseline?.approved ?? job.scheduleInput?.revisions?.last?.at
+        let sub = approved.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0)) | " + range } ?? range
         let changed = planChanges(p).count
         return phoneCard {
             VStack(alignment: .leading, spacing: 12) {
@@ -139,8 +142,8 @@ struct InstallPhonePlanTabView: View {
                             revChip("ร่าง " + Self.rev(revisions + 1), ink: Theme.warningInk, fill: Theme.warningSoft)
                         } else if let b = p.baseline {
                             revChip(b.revision, ink: Theme.primary, fill: Theme.primarySoft)
-                        } else if revisions > 0 {
-                            revChip(Self.rev(revisions), ink: Theme.primary, fill: Theme.primarySoft)
+                        } else if revisions > 0, let input = job.scheduleInput {
+                            PlanRevisionButton(input: input, replans: job.scheduleActual.replans)
                         }
                     }
                     HStack(spacing: 6) {
@@ -229,12 +232,14 @@ struct InstallPhonePlanTabView: View {
     func startPlanEdit(_ data: InstallPageData?) {
         planDraft = [:]
         planReason = ""
+        planChangeRequest = ""
         planEditing = true
     }
 
     private func cancelPlanEdit() {
         planDraft = [:]
         planReason = ""
+        planChangeRequest = ""
         planEditing = false
     }
 
@@ -275,6 +280,12 @@ struct InstallPhonePlanTabView: View {
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.warning.opacity(0.45)))
                     .accessibilityIdentifier("plan.reason")
+                TextField("เลขที่ใบขอเปลี่ยนแปลง (CR) ถ้ามี", text: $planChangeRequest)
+                    .font(.sarabun(16))
+                    .padding(12).frame(minHeight: 52)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.warning.opacity(0.45)))
+                    .accessibilityIdentifier("plan.changeRequest")
             }
         }
         .padding(14)
@@ -286,6 +297,7 @@ struct InstallPhonePlanTabView: View {
     /// Saves the changed stages as one re-plan with the reason. The board's example (`-installDemo YES`) saves nothing.
     private func savePlanEdit(_ p: InstallPlan) {
         let reason = planReason.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cr = planChangeRequest.trimmingCharacters(in: .whitespacesAndNewlines)
         let changed = planChanges(p)
         let tasks = changed.compactMap { r -> Assistant.PendingAction.TaskDates? in
             guard let t = MasterSchedule.Task(rawValue: r.id) else { return nil }
@@ -298,7 +310,9 @@ struct InstallPhonePlanTabView: View {
             let after = changed.map { r in let d = editedDates(r); return "\(r.code) " + span(d.start, d.end) }.joined(separator: ", ")
             let action = Assistant.PendingAction(id: UUID().uuidString, jobID: job.overviewID, station: job.assistantStation,
                                                  change: .replan(tasks: tasks, reason: reason),
-                                                 title: "แก้แผน " + Self.rev(revisions + 1), before: before, after: after + " | เหตุผล: " + reason)
+                                                 title: "แก้แผน " + Self.rev(revisions + 1), before: before,
+                                                 after: after + " | เหตุผล: " + reason + (cr.isEmpty ? "" : " | CR: " + cr),
+                                                 changeRequest: cr.isEmpty ? nil : cr)
             _ = context.applyAssistant(action, by: permissions.email)
         }
         withAnimation(.snappy) { cancelPlanEdit() }

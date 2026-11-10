@@ -143,6 +143,9 @@ public enum MasterSchedule {
         /// The plan as it was before its first confirmed re-plan (task raw value → dates and weight), kept so reports can
         /// show the original plan beside the new one. Nil until a re-plan; an imported workbook is a new plan without one.
         public var baseline: [String: FixedTask]?
+        /// The approved baselines, REV 00 first and the current plan last (`MasterSchedule+Revisions`, CHA-79). Nil until
+        /// a re-plan is confirmed on a build that records them; an imported workbook is a new plan without any.
+        public var revisions: [MasterSchedule.Revision]?
 
         public init(installStart: Date, installEnd: Date, kickoff: Date, engineeringStart: Date, siteHandover: Date,
                     over200kVA: Bool) {
@@ -179,6 +182,11 @@ public enum MasterSchedule {
             i.siteHandover = move(siteHandover)
             i.fixed = fixed?.mapValues(move)
             i.baseline = baseline?.mapValues(move)
+            i.revisions = revisions?.map { r -> MasterSchedule.Revision in
+                var moved = r
+                moved.tasks = r.tasks.mapValues(move)
+                return moved
+            }
             return i
         }
 
@@ -188,6 +196,7 @@ public enum MasterSchedule {
             var i = self
             i.fixed = baseline
             i.baseline = nil
+            i.revisions = nil
             return i
         }
 
@@ -384,6 +393,9 @@ public enum MasterSchedule {
                 self.task = task; self.by = by; self.at = at; self.before = before; self.after = after; self.replan = replan
             }
         }
+
+        /// Re-plans confirmed so far (the assistant's card or the plan's `แก้ไขแผน`), revisions recorded or not.
+        public var replans: Int { confirmations.filter(\.replan).count }
 
         /// The latest assistant confirmation for a task.
         public func lastConfirmation(_ task: Task) -> Confirmation? {

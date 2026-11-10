@@ -492,6 +492,7 @@ extension Assistant.Toolbox {
                 changes.append(.init(task: t, start: ScheduleBrief.day(s, calendar: calendar), end: ScheduleBrief.day(e, calendar: calendar)))
             }
             let reason = String((args["reason"]?.string ?? "").prefix(300))
+            let cr = String((args["change_request"]?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
             let draft = Assistant.PendingAction(id: "", jobID: job.id, station: job.station, change: .replan(tasks: changes, reason: reason),
                                                 title: "", before: "", after: "")
             let newInput = draft.replanned(input, calendar: calendar) ?? input
@@ -501,9 +502,11 @@ extension Assistant.Toolbox {
                 let p = byTask[c.task]
                 return "\(c.task.code) \(p?.end.map { ScheduleBrief.day($0, calendar: calendar) } ?? "–") → \(c.end)"
             }
+            let rev = MasterSchedule.revisionLabel(input.revisionNumber(replans: job.replans) + 1)
             return propose(job, changes[0].task, .replan(tasks: changes, reason: reason),
                            before: "วันจบติดตั้ง \(old)", after: (["วันจบติดตั้ง \(new)"] + lines).joined(separator: "\n"),
-                           title: "แผนใหม่ \(changes.count) งาน" + (reason.isEmpty ? "" : " | \(reason)"))
+                           title: "แผนใหม่ \(rev) \(changes.count) งาน" + (reason.isEmpty ? "" : " | \(reason)") + (cr.isEmpty ? "" : " | CR \(cr)"),
+                           changeRequest: cr.isEmpty ? nil : cr)
         }
     }
 
@@ -532,6 +535,7 @@ extension Assistant.Toolbox {
                ["job": job], required: ["job"]),
             fn("propose_replan", "Propose a new plan (replaces tasks' planned dates); someone allowed to set up the plan must confirm. Use suggest_replan's dates",
                ["job": job, "reason": p("string", "short reason"),
+                "change_request": p("string", "the change request (CR) number or title this re-plan comes from, if any"),
                 "tasks": .object(["type": .string("array"), "description": .string("tasks whose dates change"),
                                   "items": .object(["type": .string("object"), "properties": .object([
                                       "task": p("string", "task code, e.g. 2.3"), "start": p("string", "yyyy-MM-dd"), "end": p("string", "yyyy-MM-dd")]),

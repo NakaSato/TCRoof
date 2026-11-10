@@ -59,6 +59,11 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     /// After a re-plan: the original plan's install end and its planned % today (the plan above is the new one).
     public var originalInstallEnd: String?
     public var originalPlannedPercent: Double?
+    /// The plan's current revision once it was re-planned (`REV 02`, CHA-79), and the reason and change request of its
+    /// last one when recorded. The plan above is that revision; `originalInstallEnd` is REV 00's.
+    public var revision: String?
+    public var revisionReason: String?
+    public var revisionChangeRequest: String?
     /// Actual minus planned; negative is behind.
     public var variance: Double
     /// The handover the install tracking page shows (`คาดส่งมอบ`): the install period stretched by the SPI (actual over
@@ -110,6 +115,13 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
             let p = MasterSchedule.plan(original, calendar: cal)
             originalInstallEnd = p.filter { $0.task.part != .permit }.compactMap(\.end).max().map(day)
             originalPlannedPercent = Self.round(MasterSchedule.status(plan: p, actual: actual, through: today, calendar: cal).planned)
+        }
+        let rev = input.revisionNumber(replans: actual.replans)
+        if rev > 0 {
+            revision = MasterSchedule.revisionLabel(rev)
+            let last = input.revisions?.last
+            revisionReason = last.flatMap { $0.reason.isEmpty ? nil : $0.reason }
+            revisionChangeRequest = last?.changeRequest
         }
         parts = MasterSchedule.Part.allCases.map {
             PartLine(part: $0.reportTitle, plannedPercent: Self.round(status.plannedByPart[$0] ?? 0),

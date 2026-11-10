@@ -53,6 +53,9 @@ public extension Assistant {
             return !c.isEmpty ? "ผู้รับเหมา \(c)" : !t.isEmpty ? "ทีม \(t)" : "ไม่ระบุ"
         }
 
+        /// Re-plans confirmed on it, revisions recorded or not (`Input.revisionNumber`).
+        public var replans: Int { actual.replans }
+
         public func brief(today: Date) -> ScheduleBrief? {
             input.map { ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
                                       actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings) }
@@ -93,10 +96,14 @@ public extension Assistant {
         public var title: String
         public var before: String
         public var after: String
+        /// A re-plan's change request (`site.change_request`), as its number or title; nil when none. Kept on the
+        /// revision it makes (`MasterSchedule.Revision.changeRequest`).
+        public var changeRequest: String?
 
-        public init(id: String, jobID: String, station: String, change: Change, title: String, before: String, after: String) {
+        public init(id: String, jobID: String, station: String, change: Change, title: String, before: String, after: String,
+                    changeRequest: String? = nil) {
             self.id = id; self.jobID = jobID; self.station = station; self.change = change
-            self.title = title; self.before = before; self.after = after
+            self.title = title; self.before = before; self.after = after; self.changeRequest = changeRequest
         }
 
         public var task: MasterSchedule.Task {
@@ -123,6 +130,16 @@ public extension Assistant {
             }
             i.fixed = fixed
             i.fitInstallWindow()
+            return i
+        }
+
+        /// The plan after a re-plan `by` (an email) confirmed `at`, recorded as its next revision with the card's reason
+        /// and change request (`Input.recordRevision`). `replans` counts the re-plans confirmed before revisions were
+        /// recorded. Nil for the other changes.
+        public func revised(_ input: MasterSchedule.Input, replans: Int = 0, by: String, at: Date = .now,
+                            calendar cal: Calendar = MasterSchedule.calendar) -> MasterSchedule.Input? {
+            guard case .replan(_, let reason) = change, var i = replanned(input, calendar: cal) else { return nil }
+            i.recordRevision(from: input, replans: replans, by: by, at: at, reason: reason, changeRequest: changeRequest, calendar: cal)
             return i
         }
 
@@ -296,9 +313,10 @@ public extension Assistant {
         }
 
         func propose(_ job: Job, _ task: MasterSchedule.Task, _ change: PendingAction.Change,
-                             before: String, after: String, title: String? = nil) -> Outcome {
+                             before: String, after: String, title: String? = nil, changeRequest: String? = nil) -> Outcome {
             let a = PendingAction(id: makeID(), jobID: job.id, station: job.station, change: change,
-                                  title: title ?? "\(task.code) \(task.title)", before: before, after: after)
+                                  title: title ?? "\(task.code) \(task.title)", before: before, after: after,
+                                  changeRequest: changeRequest)
             let text = Self.encode(.object([
                 "proposalID": .string(a.id), "status": .string("waiting_for_user_confirmation"),
                 "station": .string(job.station), "task": .string(a.title), "before": .string(before), "after": .string(after),

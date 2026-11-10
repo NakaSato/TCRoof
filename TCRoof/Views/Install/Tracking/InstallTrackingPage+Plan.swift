@@ -151,13 +151,17 @@ struct InstallPlanTabView: View {
     /// `แผนก่อสร้าง`, the baseline's revision when there is one, and `อนุมัติ <d> · <start> – <end>`.
     private func planTitle(_ p: InstallPlan) -> some View {
         let range = ThaiFormat.numericDate.string(from: p.start) + " – " + ThaiFormat.numericDate.string(from: p.end)
-        let sub = p.baseline.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0.approved)) · " + range } ?? range
+        let approved = p.baseline?.approved ?? job.scheduleInput?.revisions?.last?.at
+        let sub = approved.map { "อนุมัติ \(ThaiFormat.numericDate.string(from: $0)) · " + range } ?? range
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
                 Text("แผนก่อสร้าง").font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 if let b = p.baseline {
                     Text(b.revision).font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
                         .padding(.horizontal, 8).frame(height: 22).background(Theme.primarySoft, in: Capsule())
+                } else if let input = job.scheduleInput, input.revisionNumber(replans: job.scheduleActual.replans) > 0 {
+                    // the plan's revisions, once re-planned (CHA-79)
+                    PlanRevisionButton(input: input, replans: job.scheduleActual.replans)
                 }
             }
             Text(sub).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
@@ -285,7 +289,7 @@ struct InstallPlanTabView: View {
 
     /// Re-plans saved on this station so far, as the export's `REV 0n` (the iPhone page counts them the same way).
     private var planRevision: String {
-        var n = job.scheduleActual.confirmations.filter(\.replan).count
+        var n = job.scheduleInput?.revisionNumber(replans: job.scheduleActual.replans) ?? 0
         #if DEBUG
         if InstallTrackingPage.Debug.demo { n = 1 }
         #endif

@@ -244,3 +244,24 @@ the app's current links, since that flow merges completion and people rather tha
 Dependency forecasts are currently calculated in the app; export carries the links without replacing the workbook's
 forecast columns or its scheduling formulas. Lag can't be negative (no leads). Clearing a REV 11 file's typed links in the
 app writes an empty links part, so the next import doesn't read them back from the sheet.
+
+## Baseline revisions (CHA-79)
+
+PMBOK 5th §6.6.3.1 (schedule baseline) and §4.5 (integrated change control). Each confirmed re-plan keeps the plan it
+approved as the next revision (`MasterSchedule.Revision`, kept in `Input.revisions`): its number, the day it was
+approved, who confirmed it (email), the reason and the change request it came from (`site.change_request`, typed as
+its number or title, since change requests aren't records in the app yet). The assistant's `propose_replan` (with an
+optional `change_request`) and the iPhone plan's `แก้ไขแผน` (reason required, CR optional) both save through
+`applyAssistant`, which calls `PendingAction.revised`. The first revision recorded also keeps REV 00, the plan before
+the first re-plan (`Input.baseline`, so `originalInstallEnd` reads as before). A station re-planned before revisions
+were recorded counts on from its re-plan confirmations: two of them make the next one REV 03, and REV 00 is its baseline.
+
+Progress is measured against the current revision, which is the plan itself. The plan header's REV chip (iPad and
+iPhone) opens `ประวัติแผน`: each revision newest first, with its approval day, approver (named from the team
+directory), reason, change request, install end, and how many days that end moved from the revision before.
+`get_schedule` gives `revision`, `revisionReason` and `revisionChangeRequest`.
+
+Export writes the current revision into the `แผนโครงการ` sheet's baseline box, each cell found by its label: `ฉบับ` →
+`REV 02 (CR-014)`, `อนุมัติโดย` → the approver's name, `วันที่` → the approval day, and the `REV …` cell above `ฉบับ` →
+`REV 02, อนุมัติแล้ว`. A plan never re-planned in the app leaves the box as the file has it. Revisions need
+`AppCompat.syncVersion` 10: older builds drop them when they save the plan.

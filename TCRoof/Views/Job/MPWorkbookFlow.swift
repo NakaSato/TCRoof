@@ -245,13 +245,16 @@ final class MPWorkbookFlow {
         let actual = job.scheduleActual, ticks = job.wbsTicks, wbs = job.scheduleWBS
         // the station's facts go into the file's station lines too, so a plan begun from another station's file names this one
         let setup = ProjectSetup(job.setupTarget)
+        // who approved the current revision, for the sheet's baseline box (CHA-79)
+        let approver = input.revisions?.last?.by.flatMap { TeamDirectory.shared.person($0)?.label }
         let name = MPWorkbook.fileName(original: job.scheduleWorkbookName, fallback: "แผนงาน MP " + job.stationName)
         working = true
         Task {
             defer { working = false }
             do {
                 let (url, weeksOutside) = try await Task.detached(priority: .userInitiated) { () -> (URL, [String]) in
-                    let out = try MPWorkbook.export(original, input: input, actual: actual, ticks: ticks, setup: setup, wbs: wbs)
+                    let out = try MPWorkbook.export(original, input: input, actual: actual, ticks: ticks, setup: setup, wbs: wbs,
+                                                    revisionApprover: approver)
                     let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MP-" + UUID().uuidString, isDirectory: true)
                     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                     let url = dir.appendingPathComponent(name)

@@ -32,7 +32,9 @@ public enum AppCompat {
     /// 9: start-to-start and finish-to-finish WBS links and links between task lines (`WBSDependency.type`, CHA-76).
     /// Builds before it read them as finish-to-start, refuse a task line's links, and drop the type when they rewrite
     /// the WBS rows.
-    public static let syncVersion = 9
+    /// 10: the MP plan's revisions (`Input.revisions`, CHA-79): each confirmed re-plan's REV, approver, reason and change
+    /// request. Builds before it drop them when they save that plan, and count REV from the confirmations only.
+    public static let syncVersion = 10
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

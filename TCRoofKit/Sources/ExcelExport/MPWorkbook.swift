@@ -175,9 +175,11 @@ public enum MPWorkbook {
     /// `ticks`: the job's WBS ticks, written into a template file's `แผนโครงการ` sheet (`เสร็จ (Y)` and its `เสร็จ`
     /// date, docs/specs/project-plan-wbs.md step 3); nil leaves that sheet as it is. `setup`: the job's project facts
     /// (`ProjectSetup(_:)`), written into the file's station lines where they differ; nil leaves the lines as they are.
+    /// A plan re-planned in the app writes its current revision into the sheet's baseline box (`writeRevision`, CHA-79),
+    /// `revisionApprover` naming who approved it (else their email).
     public static func export(_ original: Data, input: MasterSchedule.Input, actual: MasterSchedule.Actual,
                               ticks: [String: MasterSchedule.WBSTick]? = nil, setup: ProjectSetup? = nil,
-                              wbs: [MasterSchedule.WorkItem]? = nil,
+                              wbs: [MasterSchedule.WorkItem]? = nil, revisionApprover: String? = nil,
                               calendar cal: Calendar = MasterSchedule.calendar) throws -> Export {
         let book = try Book(original)
         let layout = book.layout
@@ -298,6 +300,11 @@ public enum MPWorkbook {
             let n = writeSetup(setup, plan: &sheet, layout: layout, detail: &detail)
             changed += n.plan
             detailChanged += n.detail
+        }
+        // the plan's current revision into the baseline box, once re-planned in the app
+        if let revision = input.revisions?.last, revision.number > 0, var d = detail {
+            detailChanged += writeRevision(revision, approver: revisionApprover, into: &d, calendar: cal)
+            detail = d
         }
         let keptTicks = Snapshot.readTicks(book.zip)
         let ticksMoved = tickedRows.map { rows in keptTicks.map { $0 != rows } ?? false } ?? false

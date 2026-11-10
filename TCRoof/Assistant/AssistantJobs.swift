@@ -76,7 +76,8 @@ extension ModelContext {
     func applyAssistant(_ action: Assistant.PendingAction, by email: String) -> Bool {
         guard let job = assistantStations().first(where: { $0.overviewID == action.jobID }), let input = job.scheduleInput else { return false }
         var a = job.scheduleActual
-        if let replanned = action.replanned(input) {
+        // a re-plan becomes the plan's next revision, with who confirmed it and why (CHA-79)
+        if let replanned = action.revised(input, replans: a.replans, by: email) {
             job.scheduleInput = replanned
         } else {
             a = action.apply(to: a, input: input)

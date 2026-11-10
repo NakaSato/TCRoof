@@ -47,6 +47,10 @@ public extension InstallPlan {
         dependencyWorkingWeekdays = settings?.workingWeekdays
         let byCode = Dictionary(items.map { ($0.code, $0) }, uniquingKeysWith: { first, _ in first })
         for i in stages.indices {
+            // a task line's own links (the workbook's `2.1 SS+3, 2.1 FF+2`) show on the stage's bar
+            if let task = MasterSchedule.Task(rawValue: stages[i].row.id), let links = byCode[task.code]?.dependencies, !links.isEmpty {
+                stages[i].row.after = links.map(\.label).joined(separator: ", ")
+            }
             for j in stages[i].subs.indices {
                 let code = stages[i].subs[j].code
                 guard let forecast = result.forecasts[code] else { continue }
@@ -55,7 +59,7 @@ public extension InstallPlan {
                 stages[i].subs[j].float = forecast.float
                 stages[i].subs[j].critical = forecast.critical && stages[i].subs[j].status != .done
                 let links = byCode[code]?.dependencies ?? []
-                stages[i].subs[j].after = links.isEmpty ? nil : links.map { $0.predecessor + ($0.lagDays == 0 ? "" : " +\($0.lagDays) วัน") }.joined(separator: ", ")
+                stages[i].subs[j].after = links.isEmpty ? nil : links.map(\.label).joined(separator: ", ")
             }
             // Summary bars expand to contain their forecast children; locked baseline dates stay on each row.
             for j in stages[i].subs.indices {

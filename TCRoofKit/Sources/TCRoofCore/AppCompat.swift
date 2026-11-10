@@ -29,7 +29,10 @@ public enum AppCompat {
     /// the sources and the picks when they save, take a contractor's ticks, and a contractor's build sends its ticks in
     /// the same write as its IEC test and weekly request, which the rules then refuse whole: set the minimum before
     /// the rules without `wbsTicks` for contractors go live.
-    public static let syncVersion = 8
+    /// 9: start-to-start and finish-to-finish WBS links and links between task lines (`WBSDependency.type`, CHA-76).
+    /// Builds before it read them as finish-to-start, refuse a task line's links, and drop the type when they rewrite
+    /// the WBS rows.
+    public static let syncVersion = 9
 
     /// A build is outdated when the console asks for more than it has; no minimum (or a bad one) stops nothing.
     public static func isOutdated(minimum: Int?, current: Int = syncVersion) -> Bool {

@@ -141,6 +141,9 @@ public enum MPWorkbook {
         imported.setup = setup(book)
         if let dependencies = Snapshot.readDependencies(book.zip) {
             for i in imported.wbs.indices { imported.wbs[i].dependencies = dependencies[imported.wbs[i].code] }
+        } else if let linked = WBSDependencies.fromWorkbook(imported.wbs) {
+            // a REV 11 file's own links (`2.1 SS+3, 2.1 FF+2`), until the app saves its own into the file
+            imported.wbs = linked
         }
         if let detail = book.detail, let h = wbsHeader(detail) {
             let done = wbsDone(detail, h, cal)
@@ -298,7 +301,7 @@ public enum MPWorkbook {
         }
         let keptTicks = Snapshot.readTicks(book.zip)
         let ticksMoved = tickedRows.map { rows in keptTicks.map { $0 != rows } ?? false } ?? false
-        let dependenciesMoved = wbs.map { Snapshot.dependencyMap($0) != (Snapshot.readDependencies(book.zip) ?? [:]) } ?? false
+        let dependenciesMoved = wbs.map { Snapshot.dependencyMap($0) != Snapshot.fileDependencies(book.zip, $0) } ?? false
 
         // the progress as the file now holds it, kept in the file so a later import can tell what was changed in Excel;
         // an unchanged file with no record, or an up-to-date one, comes back as it was

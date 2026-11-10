@@ -46,7 +46,7 @@ extension BackfeedPageWide {
                             .multilineTextAlignment(.center).padding()
                     }
                 } else {
-                    ProgressView("กำลังสร้างแผนภาพ")
+                    TCSkeletonDiagram().padding(12).accessibilityIdentifier("backfeed.sld.loading")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: phone ? nil : .infinity)

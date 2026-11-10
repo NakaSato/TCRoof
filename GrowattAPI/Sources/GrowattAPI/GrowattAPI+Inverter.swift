@@ -42,6 +42,23 @@ extension GrowattAPI {
         public var faultType: Int? { readings["faultType"]?.int }
         public var warnCode: Int? { readings["warnCode"]?.int }
         public var time: String { readings.time }
+
+        /// Each string's current, A, `currentString1` on (the names the portal's chart answered for a MAX; unconfirmed in
+        /// this answer), up to the last one Growatt sent; empty when it sent none. A string Growatt left out is nil.
+        public var stringCurrents: [Double?] { Self.series(readings, "currentString", upTo: Self.maxStrings) }
+
+        /// Each MPPT's current, A, `ipv1` on, as `stringCurrents`.
+        public var mpptCurrents: [Double?] { Self.series(readings, "ipv", upTo: Self.maxMPPTs) }
+
+        /// A MAX lists 32 strings and 16 MPPTs at most (`GrowattPortal.ChartParam.maxInverter` has 10 MPPTs; room for more).
+        public static let maxStrings = 32
+        public static let maxMPPTs = 16
+
+        static func series(_ r: Readings, _ prefix: String, upTo n: Int) -> [Double?] {
+            let values = (1...n).map { r.number(prefix + "\($0)") }
+            guard let last = values.lastIndex(where: { $0 != nil }) else { return [] }
+            return Array(values[...last])
+        }
     }
 
     // MARK: calls
@@ -114,7 +131,7 @@ extension GrowattAPI {
     }
 
     /// `data: { <sn>: { dataloggerSn, <sn>: { … } } }`: each inverter's readings under its own serial number, twice.
-    static func parseLatestBatch(_ data: Data) throws -> [String: Latest] {
+    public static func parseLatestBatch(_ data: Data) throws -> [String: Latest] {
         let o = try dataObject(data)
         var out: [String: Latest] = [:]
         for (sn, entry) in o {

@@ -427,7 +427,8 @@ extension SurveyHomeView {
         if loading && stations.isEmpty {
             stationRows { ForEach(0..<3, id: \.self) { _ in TCSkeletonCard(lines: 2) } }
         }
-        if shown.isEmpty && stations.isEmpty && !loading { empty }
+        if jobsLoading { gridSkeleton }
+        else if shown.isEmpty && stations.isEmpty && !loading { empty }
         if !shown.isEmpty { grid }
         let visibleStations = Array(stations.prefix(projectWindow.stationLimit(surveyCount: shown.count)))
         if !visibleStations.isEmpty { unsurveyedSection(visibleStations, total: stations.count) }

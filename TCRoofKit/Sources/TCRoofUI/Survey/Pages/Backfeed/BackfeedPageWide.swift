@@ -46,10 +46,7 @@ struct BackfeedPageWide: View {
             if let sl = sldRender.result?.line {
                 if stacked { stackedColumn(sl) } else { sideBySide(sl) }
             } else {
-                VStack(spacing: 16) {
-                    PageStepBar(job: job, here: .module(moduleID), title: "ตำแหน่งติดตั้งระบบกันย้อน")
-                    ProgressView("กำลังสร้างแผนภาพ").frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                loadingSkeleton
             }
         }
         .foregroundStyle(Theme.navy)
@@ -99,6 +96,46 @@ struct BackfeedPageWide: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxHeight: .infinity)
+        }
+    }
+
+    /// The page's cards in outline while the SLD is drawn, laid out as `stackedCards` or `sideBySide`.
+    @ViewBuilder var loadingSkeleton: some View {
+        let stepBar = PageStepBar(job: job, here: .module(moduleID), title: "ตำแหน่งติดตั้งระบบกันย้อน")
+        let diagram = card { TCSkeletonDiagram() }
+        if stacked {
+            ScrollView {
+                VStack(spacing: 14) {
+                    stepBar
+                    TCSkeletonCard(lines: 2)
+                    TCSkeletonCard(lines: 1, block: 120)
+                    diagram.frame(height: phone ? 260 : 392)
+                    TCSkeletonCard(lines: 1, block: phone ? 200 : 260)
+                }
+                .padding(.vertical, 16)
+            }
+            .accessibilityIdentifier("backfeed.loading")
+        } else {
+            VStack(spacing: 16) {
+                stepBar
+                HStack(alignment: .top, spacing: 20) {
+                    VStack(spacing: 14) {
+                        TCSkeletonCard(lines: 2)
+                        TCSkeletonCard(lines: 1, block: 120)
+                        TCSkeletonCard(lines: 3)
+                    }
+                    .frame(width: leftWidth)
+                    VStack(spacing: 14) {
+                        diagram.frame(height: 392)
+                        HStack(alignment: .top, spacing: 14) {
+                            TCSkeletonCard(lines: 1, block: 160)
+                            TCSkeletonCard(lines: 4)
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .accessibilityIdentifier("backfeed.loading")
+            }
         }
     }
 

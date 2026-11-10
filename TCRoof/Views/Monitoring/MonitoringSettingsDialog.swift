@@ -151,11 +151,10 @@ struct MonitoringSettingsDialog: View {
             return a?.name != b?.name || a?.url != b?.url || a?.tokenSuffix != b?.tokenSuffix || pendingTokens[id] != nil
         }.count
         let fields: [Bool] = [
-            saved.pollMinutes != draft.pollMinutes, saved.archiveNightly != draft.archiveNightly,
+            saved.pollMinutes != draft.pollMinutes,
             saved.loggerOfflineMinutes != draft.loggerOfflineMinutes, saved.stringLowPercent != draft.stringLowPercent,
             saved.belowExpectedPercent != draft.belowExpectedPercent, saved.prLowPercent != draft.prLowPercent,
-            saved.notifyMaintenance != draft.notifyMaintenance, saved.notifySupervisor != draft.notifySupervisor,
-            saved.notifyContractor != draft.notifyContractor, saved.rate != draft.rate,
+            saved.notifyMaintenance != draft.notifyMaintenance, saved.rate != draft.rate,
             saved.pairings != draft.pairings || saved.pairingServers != draft.pairingServers,
         ]
         n += fields.filter { $0 }.count
@@ -164,20 +163,18 @@ struct MonitoringSettingsDialog: View {
 
     private func save() {
         for (id, token) in pendingTokens { keep(token, for: id) }
-        // accounts taken out lose their token too, here and on the server
+        // accounts taken out lose their token too
         for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) {
             MonitoringToken.remove(old.id)
-            MonitoringServerToken.send("", for: old.id)
         }
         savedTokens.formUnion(pendingTokens.keys)
         store.save(draft)
         close()
     }
 
-    /// A token saved: in this iPad's Keychain for its own poll, and on the server for the server's (CHA-93).
+    /// A token saved: in this iPad's Keychain for its own poll, and nowhere else.
     private func keep(_ token: String, for server: UUID) {
         MonitoringToken.save(token, for: server)
-        MonitoringServerToken.send(token, for: server)
     }
 
     /// `ยกเลิกการแก้`: the saved values back, tokens typed and forms dropped.
@@ -418,11 +415,6 @@ struct MonitoringSettingsDialog: View {
                 }
                 .disabled(!canEdit)
                 Divider()
-                settingRow("เก็บข้อมูลถาวรทุกคืน", "Growatt เก็บค่า 5 นาทีไว้ราว 95 วัน · TCRoof เก็บต่อเวลา 00:30") {
-                    Toggle("เก็บข้อมูลถาวรทุกคืน", isOn: $draft.archiveNightly).labelsHidden().tint(Theme.success)
-                }
-                .disabled(!canEdit)
-                Divider()
                 // viewing the pairings is open to everyone; the pane itself is read only for the team
                 settingRow("จับคู่สถานี", pairedLine) {
                     Button { withAnimation(.easeInOut(duration: 0.2)) { page = .pairing } } label: { Text(verbatim: "ดูรายการ ›") }
@@ -479,14 +471,12 @@ struct MonitoringSettingsDialog: View {
 
     // MARK: recipients
 
+    /// Only the maintenance team: alerts come from the iPad that reads Growatt, and with no server poll nothing can
+    /// reach a station's supervisor or contractor (CHA-94), so their switches are left out.
     private var recipientsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("ส่งแจ้งเตือนถึง", note: "ในแอปและมือถือ")
-            HStack(spacing: 12) {
-                recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
-                recipientCard("ผู้ควบคุมงานของสถานี", "เฉพาะสถานีที่รับผิดชอบ", on: $draft.notifySupervisor)
-                recipientCard("ผู้รับเหมาของสถานี", "เฉพาะสถานีที่ได้รับมอบหมาย", on: $draft.notifyContractor)
-            }
+            sectionHeader("ส่งแจ้งเตือนถึง", note: "แจ้งบน iPad ที่เปิด Monitoring")
+            recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
         }
     }
 

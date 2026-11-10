@@ -26,7 +26,7 @@ The `GrowattAPI` Swift package at the repo root (`GrowattAPI/`) is the client. I
 | `alarms` | `device/inverter/alarm` | GET | `device_sn`, `date` (not in either guide, but required), `page`, `perpage` | `alarms[]`: `alarm_code`, `alarm_message`, `start_time`, `end_time`, `status` |
 | `inverterHistory` | `device/inverter/data` | GET | `device_sn`, `start_date`, `end_date` (≤7 days), `page`, `perpage` (≤1000) | `datas[]`, `next_page_start_id` |
 | `latest(deviceSN:)` | `device/inverter/last_new_data` | GET | `device_sn` | latest readings: `pac`, `powerToday`, strings, `faultType`, `warnCode` |
-| `latest(deviceSNs:)` | `device/inverter/invs_data` | POST | `pageNum`, `inverters` (≤100) | each inverter's latest readings by SN |
+| `latest(deviceSNs:)` | `device/inverter/invs_data` | POST | `pageNum`, `inverters` (≤100) | each inverter's latest readings by SN; `Latest.stringCurrents` (`currentString1…`) and `mpptCurrents` (`ipv1…`) |
 | `info` | `device/inverter/inv_data_info` | GET | `device_sn` | settings and state: `nominalPower`, `fwVersion`, `lost` |
 | `storageAlarms` | `device/storage/alarm_data` | POST | `storage_sn`, `date`, `page`, `perpage` | `alarms[]` |
 | `storageLatest` | `device/storage/storage_last_data` | POST | `storage_sn` | latest readings |
@@ -38,31 +38,25 @@ Readings with many fields (inverter and storage) come back as `Readings`, every 
 Not confirmed against a live answer:
 - `device/inverter/alarm`: needs a `date` (`yyyy-MM-dd`) that neither guide names: without it the test server answers 10003 `error_dateError`; with it and `device_sn` it looks the inverter up (10005 for a serial it doesn't know), while `device_id` gets 10002 (10 Nov 2026). The meaning of an alarm's `status` isn't given.
 - Times: the guide's examples write `2015-12-08T11:05:00Z` and `2016-04-28 18:41:40.0`, while live `plant/data` writes `yyyy-MM-dd HH:mm:ss` on the plant's clock.
-- `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`).
+- `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`). Monitoring reads the string currents from it (CHA-106) by the names the portal's chart answered for a MAX (`currentString1…32`, else `ipv1…` per MPPT, two strings to an MPPT, `GrowattMap.mppts`), not yet seen in this answer: the iPad calls it every poll and treats a failure as no news (the last currents stay, nothing shows in the header). Record a live answer for the tests when a token and a MAX plant are at hand.
 - `search_type`: the appendix gives `name`, the example `PlantName`.
 
 ### Left out on purpose
 
 These change something on Growatt, and nothing in the app should: `user/user_register`, `user/check_user`, `user/modify`, `plant/add`, `plant/modify`, `plant/delete`, `device/datalogger/add`, `device/datalogger/delete`, `device/datalogger/validate`, `inverterSet` and `storageSet` (these two switch equipment on and off and change its settings).
 
-### Cloud Function
-
-`functions/src/growatt.ts` (`GrowattClient`) makes the same GETs from the server poll: `plant/data`, `plant/power`, `device/list`, `plant/energy` (TCRoof/CLAUDE.md, Monitoring's server poll).
-
 ### Polling
 
-How the Cloud Function reads the company's plants (`functions/src/monitoring.ts`), so the calls grow slowly with the fleet:
+Only the device reads Growatt (`MonitoringFeed`, for `MonitoringStore`): there is no server poll, and none of Growatt's answers go through Firebase. Every `pollMinutes` (5 at the most often), one call after another, each paired station whose token is on the device:
 
 | What | Call | How often | Calls |
 |---|---|---|---|
-| The fleet's power now | `plant/list`, 100 plants a page | every run (`pollMinutes`, 5) | 1 per 100 plants per account |
-| A healthy station's detail | `plant/data`, `plant/power` (the whole day so far), `device/list` | every `detailMinutes` (15), a third of the fleet a run | 3 |
-| A station in alarm or offline | the same | every run | 3 |
-| History | yesterday's `plant/power`, `plant/energy` by day (5 calls) and month | once a Bangkok day | 7 |
+| A station's figures | `plant/data`, `plant/power` (the whole day so far), `device/list`, `invs_data` (its inverters' string currents) | every poll | 4 |
+| History | yesterday's `plant/power`, `plant/energy` by day (5 calls) and month | once a day per station | 7 |
 
-For 43 healthy plants that is about 13,000 calls a day, against 37,000 when every station's detail was read every 5 minutes. The iPads judge the server's reading fresh within two detail reads and a minute; past that they read Growatt themselves.
+Each device with the token polls on its own, so two iPads open on Monitoring make twice the calls on the same account.
 
-Still to check on the live server: that `plant/list` gives every plant's `current_power` (the test server's sample plants never report), and whether 10012 limits calls per plant or per token.
+Still to check on the live server: whether 10012 limits calls per plant or per token.
 
 ## 2. Web portal, guest session (`TCRoofCore/GrowattWebDemo`)
 

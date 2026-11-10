@@ -3,7 +3,8 @@ import TCRoofCore
 
 /// Reads the paired stations' plants from Growatt's OpenAPI for `MonitoringStore`, off the main actor. Every call is
 /// read only. One call after another (a server answers 10012 to calls too close together; `GrowattAPI` waits and
-/// retries): each poll `plant/data`, today's `plant/power` and `device/list` per station, and once a day the history
+/// retries): each poll `plant/data`, today's `plant/power`, `device/list` and the inverters' latest readings
+/// (`invs_data`, for the string currents) per station, and once a day the history
 /// (yesterday's `plant/power` for `เมื่อวานถึงเวลานี้`, `plant/energy` by day for the 30 days and by month for the
 /// 12 months). What a call couldn't give is nil in the reading, and the mapping keeps the station's previous value.
 actor MonitoringFeed {
@@ -107,6 +108,10 @@ actor MonitoringFeed {
         }
         r.power = await call { try await t.api.power(plantID: t.plantID, date: day(0)) }
         r.devices = await call { try await t.api.devices(plantID: t.plantID) }
+        // the inverters' string currents (CHA-106): `invs_data` isn't confirmed on the live server yet, so its failure
+        // only keeps the last currents and never shows in the header
+        let sns = r.devices?.filter(\.isInverter).map(\.sn) ?? []
+        if !sns.isEmpty { r.inverters = try? await t.api.latest(deviceSNs: sns) }
 
         if historyDay[t.stationID] != today {
             r.yesterdayPower = await call { try await t.api.power(plantID: t.plantID, date: day(1)) }

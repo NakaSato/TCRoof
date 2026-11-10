@@ -63,7 +63,10 @@ struct IECSheetPreview: View {
                         } else if let failed {
                             Text(failed).font(.sarabunFixed(16)).foregroundStyle(Theme.dangerText).padding(40)
                         } else {
-                            ProgressView("กำลังวาดชีต…").padding(60).frame(width: g.size.width - 48)
+                            TCSkeletonPage()
+                                .frame(width: max(g.size.width - 48, 0), height: max(g.size.width - 48, 0) * 297 / 210)
+                                .overlay(Rectangle().stroke(Theme.borderSubtle))
+                                .accessibilityIdentifier("iec.sheet.loading")
                         }
                     }
                     .padding(24)

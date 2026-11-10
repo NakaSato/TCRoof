@@ -213,6 +213,14 @@ The construction plan shifts source dates with each stage before scheduling, dis
 bars and the chart axis, and retains original baseline dates. Invalid graphs show an error and keep legacy dates.
 This forecast does not overwrite MP progress, actual completion dates, weekly bookings or locked workbook baselines.
 
+Critical path and float (CHA-77, PMBOK 5th §6.6.2.2): once the WBS has links, they decide every stage's float and red
+outline on `แผนก่อสร้าง`, a stage without WBS rows of its own too: a task's float is the least of its task line's and
+its sub-tasks' (`InstallCriticalPath.float(wbs:starts:…)`). The assistant's `get_schedule` gives the same `floatDays`
+(with `floatFromLinks: true`), so `what_if` and `suggest_replan` can say which tasks can move without moving the
+handover; a task the WBS has no rows for keeps the float read from the dates. A plan without links, or with links that
+don't hold together, keeps the date-based float (`InstallCriticalPath.float(_:)`: a task follows every task that ends
+before it starts).
+
 The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
 It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
 Rows persist through the existing `scheduleWBS` JSON and job sync. Finish-to-start links need `AppCompat.syncVersion`

@@ -1,9 +1,11 @@
 import Foundation
 
 /// The critical path of an install plan (docs/ui/install-tracking-ipad-v2 §6), for the `แผนก่อสร้าง` tab's red
-/// outlines and float tails. The MP plan keeps no predecessors, so the links are read from the dates: a task follows
-/// every task that ends on or before the day it starts (finish → start). Float is counted in working days, so days
-/// off and days waiting on the utility between two tasks are not spare time.
+/// outlines and float tails, and the assistant's `floatDays`. A plan whose WBS has links (FS, SS, FF; `WBSDependencies`)
+/// takes its critical path and float from them (`float(wbs:…)`, CHA-77). Without links the MP plan keeps no
+/// predecessors, so they are read from the dates: a task follows every task that ends on or before the day it starts
+/// (finish → start). Float is counted in working days, so days off and days waiting on the utility between two tasks
+/// are not spare time.
 public enum InstallCriticalPath {
     public struct Task: Equatable, Sendable {
         public var id: String
@@ -60,5 +62,39 @@ public enum InstallCriticalPath {
             if !off.contains(d) { n += 1 }
         }
         return n
+    }
+
+    /// Each MP task's float (keyed by `Task.rawValue`) from the plan's WBS links, PMBOK's critical path method: the
+    /// least float of its task line and its sub-tasks in `WBSDependencies`' forward and backward passes. The rows are
+    /// first moved with their task's start in the plan (`starts`, as `แผนก่อสร้าง` moves them). Nil when the WBS has
+    /// no links or they don't hold together, so the caller keeps the date-based float.
+    public static func float(wbs items: [MasterSchedule.WorkItem], starts: [String: Date], nonWorking: Set<Date> = [],
+                             settings: RoutineReport.Settings? = nil, calendar cal: Calendar = MasterSchedule.calendar) -> [String: Int]? {
+        let result = schedule(wbs: items, starts: starts, nonWorking: nonWorking, settings: settings, calendar: cal)
+        guard let result, result.isValid, !result.forecasts.isEmpty else { return nil }
+        return byTask(result, items)
+    }
+
+    /// `WBSDependencies.schedule` on the rows moved with their task's start; nil without links.
+    static func schedule(wbs items: [MasterSchedule.WorkItem], starts: [String: Date], nonWorking: Set<Date>,
+                         settings: RoutineReport.Settings?, calendar cal: Calendar) -> WBSDependencies.Result? {
+        guard items.contains(where: { !($0.dependencies ?? []).isEmpty }) else { return nil }
+        let projected = items.map { item -> MasterSchedule.WorkItem in
+            guard let task = item.task, let start = starts[task.rawValue],
+                  let base = items.first(where: { $0.code == task.code })?.baselineStart else { return item }
+            let shift = cal.dateComponents([.day], from: cal.startOfDay(for: base), to: cal.startOfDay(for: start)).day ?? 0
+            return item.shifted(days: shift, calendar: cal)
+        }
+        return WBSDependencies.schedule(projected, nonWorking: nonWorking, settings: settings, calendar: cal)
+    }
+
+    /// The least float of each task's rows in the forecast.
+    static func byTask(_ result: WBSDependencies.Result, _ items: [MasterSchedule.WorkItem]) -> [String: Int] {
+        var out: [String: Int] = [:]
+        for item in items {
+            guard let task = item.task, let f = result.forecasts[item.code]?.float else { continue }
+            out[task.rawValue] = min(out[task.rawValue] ?? .max, f)
+        }
+        return out
     }
 }

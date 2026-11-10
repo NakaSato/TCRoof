@@ -35,15 +35,13 @@ public extension InstallPlan {
         }
         // Keep the legacy plan byte-for-byte in behavior until a link is explicitly configured.
         guard items.contains(where: { !($0.dependencies ?? []).isEmpty }) else { dependencyIssues = []; return }
-        let projected = items.map { item -> MasterSchedule.WorkItem in
-            guard let task = item.task, let stage = stages.first(where: { $0.id == task.rawValue }),
-                  let base = items.first(where: { $0.code == task.code })?.baselineStart else { return item }
-            let shift = cal.dateComponents([.day], from: cal.startOfDay(for: base), to: stage.row.start).day ?? 0
-            return item.shifted(days: shift, calendar: cal)
-        }
-        let result = WBSDependencies.schedule(projected, nonWorking: nonWorking, settings: settings, calendar: cal)
+        let starts = Dictionary(stages.map { ($0.id, $0.row.start) }, uniquingKeysWith: { first, _ in first })
+        guard let result = InstallCriticalPath.schedule(wbs: items, starts: starts, nonWorking: nonWorking, settings: settings, calendar: cal)
+        else { dependencyIssues = []; return }
         dependencyIssues = result.issues
         guard result.isValid else { return }
+        // the links decide every stage's float (CHA-77), a stage without WBS rows of its own too
+        let taskFloat = InstallCriticalPath.byTask(result, items)
         dependencyWorkingWeekdays = settings?.workingWeekdays
         let byCode = Dictionary(items.map { ($0.code, $0) }, uniquingKeysWith: { first, _ in first })
         for i in stages.indices {
@@ -72,8 +70,9 @@ public extension InstallPlan {
                 }
             }
             if let last = stages[i].subs.map(\.end).max() { stages[i].row.end = max(stages[i].row.end, last) }
-            stages[i].row.float = stages[i].subs.compactMap(\.float).min() ?? stages[i].row.float
-            stages[i].row.critical = stages[i].subs.contains(where: \.critical) && stages[i].row.status != .done
+            let float = taskFloat[stages[i].row.id] ?? stages[i].subs.compactMap(\.float).min()
+            stages[i].row.float = float ?? stages[i].row.float
+            stages[i].row.critical = (stages[i].subs.contains(where: \.critical) || float == 0) && stages[i].row.status != .done
         }
         end = stages.map { $0.row.end }.max() ?? end
         if let settings {

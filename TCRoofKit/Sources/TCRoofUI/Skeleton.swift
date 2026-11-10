@@ -50,6 +50,44 @@ public struct TCSkeletonCard: View {
     }
 }
 
+/// A single-line diagram in outline while it is drawn: a feed line down through three boxes to a busbar with four
+/// branches, scaled to fit and centred. At least 160 pt high.
+public struct TCSkeletonDiagram: View {
+    public init() {}
+
+    public var body: some View {
+        SkeletonDiagramShape()
+            .fill(Theme.borderSubtle)
+            .tcShimmer()
+            .frame(maxWidth: .infinity, minHeight: 160, maxHeight: .infinity)
+            .tcLoadingLabel()
+    }
+}
+
+private struct SkeletonDiagramShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        // the outline is 10 units wide and 7.3 high
+        let u = min(r.width / 10, r.height / 8, 48)
+        let line = max(u * 0.08, 2)
+        let corner = CGSize(width: u * 0.15, height: u * 0.15)
+        let cx = r.midX, top = r.midY - 3.65 * u
+        for i in 0..<3 {
+            let y = top + CGFloat(i) * 2 * u
+            p.addRoundedRect(in: CGRect(x: cx - 0.7 * u, y: y, width: 1.4 * u, height: u), cornerSize: corner)
+            p.addRect(CGRect(x: cx - line / 2, y: y + u, width: line, height: u))
+        }
+        let bus = top + 6 * u
+        p.addRect(CGRect(x: cx - 4 * u, y: bus, width: 8 * u, height: line * 1.5))
+        for i in 0..<4 {
+            let x = cx - 3 * u + CGFloat(i) * 2 * u
+            p.addRect(CGRect(x: x - line / 2, y: bus, width: line, height: 0.5 * u))
+            p.addRoundedRect(in: CGRect(x: x - 0.5 * u, y: bus + 0.5 * u, width: u, height: 0.8 * u), cornerSize: corner)
+        }
+        return p
+    }
+}
+
 /// A list row in outline: a round avatar (or none) and two lines, at least 44 pt high, for lists of people or records.
 public struct TCSkeletonRow: View {
     var avatar: Bool

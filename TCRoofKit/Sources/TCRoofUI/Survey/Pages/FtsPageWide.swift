@@ -220,7 +220,7 @@ struct FtsPageWide: View {
                 if let drawing = sldRender.result?.drawing, drawing.ftsBox != nil {
                     SLDCrop(drawing: drawing)
                 } else if sldRender.result == nil {
-                    ProgressView("กำลังสร้างแผนภาพ")
+                    TCSkeletonDiagram().padding(12).accessibilityIdentifier("fts.sld.loading")
                 } else {
                     Text("ยังไม่มีแผนภาพ | กรอกหม้อแปลงและ MDB ในหน้า A3 ก่อน").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                         .multilineTextAlignment(.center).padding()

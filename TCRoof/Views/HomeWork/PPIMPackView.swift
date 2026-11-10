@@ -138,9 +138,12 @@ struct PPIMPackView: View {
                     ForEach(["เอกสารหลัก", "พลังงานแสงอาทิตย์"], id: \.self) { group in
                         Text(group).font(.sarabun(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.navy)
                             .accessibilityAddTraits(.isHeader)
-                        ForEach(slots.filter { $0.upload.slot.group == group }) { slotRow($0) }
+                        if slots.isEmpty {
+                            ForEach(0..<3, id: \.self) { _ in slotRowSkeleton }
+                        } else {
+                            ForEach(slots.filter { $0.upload.slot.group == group }) { slotRow($0) }
+                        }
                     }
-                    if slots.isEmpty { ProgressView().frame(maxWidth: .infinity) }
                 }
                 .padding(Space.l)
             }
@@ -188,5 +191,24 @@ struct PPIMPackView: View {
         }
         .padding(Space.m)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+    }
+
+    /// A slot row (number, file name, title, contents, size chip) while the slot files are built.
+    private var slotRowSkeleton: some View {
+        HStack(alignment: .top, spacing: Space.m) {
+            TCSkeletonBlock(width: 16, height: 18).frame(width: 24)
+            VStack(alignment: .leading, spacing: 6) {
+                TCSkeletonBlock(width: 200, height: 15)
+                TCSkeletonBlock(width: 260, height: 11)
+                TCSkeletonBlock(width: 180, height: 11)
+            }
+            Spacer()
+            TCSkeletonBlock(width: 72, height: 24, radius: 12)
+        }
+        .padding(Space.m)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+        .tcShimmer()
+        .tcLoadingLabel()
+        .accessibilityIdentifier("ppimPack.loading")
     }
 }

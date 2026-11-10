@@ -17,19 +17,28 @@ struct DriveOpenView: View {
         NavigationStack {
             PadForm(maxWidth: 720) {
                 if let error { PadSection { Text(error).foregroundStyle(Theme.dangerText) } }
+                if loading && files.isEmpty { skeleton }
                 if files.isEmpty && !loading && error == nil {
                     PadSection { Text("ไม่พบไฟล์ข้อมูลงาน (survey-data) ใน Drive").foregroundStyle(Theme.inkMuted) }
                 }
                 if !files.isEmpty { PadSection { ForEach(files) { f in fileRow(f) } } }
             }
-            .overlay { if loading { ProgressView("กำลังค้นหาใน Google Drive…") } }
             .navigationTitle("เปิดงานจาก Google Drive").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("ปิด") { dismiss() } }
-                ToolbarItem(placement: .primaryAction) { Button { load() } label: { Image(systemName: "arrow.clockwise") }.accessibilityLabel("โหลดใหม่") }
+                ToolbarItem(placement: .primaryAction) {
+                    if loading && !files.isEmpty { ProgressView() }
+                    else { Button { load() } label: { Image(systemName: "arrow.clockwise") }.accessibilityLabel("โหลดใหม่").disabled(loading) }
+                }
             }
             .task { load() }
         }
+    }
+
+    /// Rows shaped like `fileRow` while the first search runs.
+    var skeleton: some View {
+        PadSection { ForEach(0..<5, id: \.self) { _ in TCSkeletonRow(avatar: false) } }
+            .accessibilityIdentifier("driveOpen.loading")
     }
 
     func fileRow(_ f: DriveFile) -> some View {

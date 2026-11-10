@@ -79,10 +79,10 @@ final class WBSDependencyTests: XCTestCase {
         XCTAssertTrue(WBSDependencies.schedule([a, item("2.2.1", 0)]).issues.contains(.duplicateLink(task: a.code, predecessor: "2.2.1")))
     }
     func testSummaryAndInactiveRowsCannotBePredecessors() {
-        var parent = item("2.1", 0)
-        parent.dependencies = [.init(predecessor: "2.2.1")]
-        let result = WBSDependencies.schedule([parent, item("2.1.1", 0), item("2.2.1", 0)])
-        XCTAssertTrue(result.issues.contains(.invalidEndpoint("2.1")))
+        var part = item("2", 0)
+        part.dependencies = [.init(predecessor: "2.2.1")]
+        let result = WBSDependencies.schedule([part, item("2.1", 0), item("2.1.1", 0), item("2.2.1", 0)])
+        XCTAssertTrue(result.issues.contains(.invalidEndpoint("2")))
         var inactive = item("2.4.1", 0)
         inactive.title += " (ไม่ต้องยื่น)"
         XCTAssertTrue(WBSDependencies.schedule([inactive, item("2.2.1", 0, after: [.init(predecessor: inactive.code)])]).issues.contains(.invalidEndpoint(inactive.code)))
@@ -159,5 +159,114 @@ final class WBSDependencyTests: XCTestCase {
         plan.useWBS([item("2.1.1", 5), item("2.3.1", 5, after: [.init(predecessor: "2.1.1")])], ticked: [], settings: settings, calendar: cal)
         XCTAssertEqual(plan.stages.last?.subs.first?.start, d(6))
         XCTAssertEqual(plan.workingDays, 2)
+    }
+
+    // MARK: start-to-start and finish-to-finish (CHA-76)
+
+    func testStartToStartAndFinishToFinishMoveTheStartAndTheFinish() throws {
+        let a = item("2.1.1", 0, 4)
+        let b = item("2.3.1", 0, 2, after: [.init(predecessor: a.code, lagDays: 3, type: .startToStart),
+                                            .init(predecessor: a.code, lagDays: 2, type: .finishToFinish)])
+        let result = WBSDependencies.schedule([a, b], calendar: cal)
+        XCTAssertTrue(result.isValid, result.issues.map(\.message).joined(separator: "\n"))
+        let forecast = try XCTUnwrap(result.forecasts[b.code])
+        XCTAssertEqual(forecast.start, d(3), "SS+3: three working days after 2.1.1 starts")
+        XCTAssertEqual(forecast.end, d(5), "FF+2: stretched to two working days after 2.1.1 finishes")
+        XCTAssertEqual(result.forecasts[a.code]?.float, 0)
+    }
+
+    func testStartToStartLagZeroStartsTheSameDayAndLeavesFloat() {
+        let a = item("2.1.1", 0, 4)
+        let b = item("2.5.1", 0, 2, after: [.init(predecessor: a.code, type: .startToStart)])
+        let result = WBSDependencies.schedule([a, b], calendar: cal)
+        XCTAssertEqual(result.forecasts[b.code]?.start, d(0))
+        XCTAssertEqual(result.forecasts[b.code]?.end, d(1))
+        XCTAssertEqual(result.forecasts[b.code]?.float, 2, "it can slip until 2.1.1's finish")
+    }
+
+    func testFinishToFinishOnlyLaterThanTheRowsOwnFinish() {
+        let a = item("2.1.1", 0, 2)
+        let b = item("2.2.1", 0, 4, after: [.init(predecessor: a.code, type: .finishToFinish)])
+        let result = WBSDependencies.schedule([a, b], calendar: cal)
+        XCTAssertEqual(result.forecasts[b.code]?.start, d(0))
+        XCTAssertEqual(result.forecasts[b.code]?.end, d(3))
+    }
+
+    func testSameRowLinkedBySSAndFFIsNotADuplicate() {
+        let a = item("2.1.1", 0)
+        let b = item("2.3.1", 0, after: [.init(predecessor: a.code, type: .startToStart), .init(predecessor: a.code, type: .finishToFinish)])
+        XCTAssertTrue(WBSDependencies.schedule([a, b]).isValid)
+        let c = item("2.3.1", 0, after: [.init(predecessor: a.code, type: .startToStart), .init(predecessor: a.code, lagDays: 1, type: .startToStart)])
+        XCTAssertTrue(WBSDependencies.schedule([a, c]).issues.contains(.duplicateLink(task: c.code, predecessor: a.code)))
+    }
+
+    func testOldLinksDecodeAsFinishToStartAndStayWrittenWithoutAType() throws {
+        let old = Data(#"{"predecessor":"2.1.1","lagDays":2}"#.utf8)
+        let link = try JSONDecoder().decode(MasterSchedule.WBSDependency.self, from: old)
+        XCTAssertEqual(link, .init(predecessor: "2.1.1", lagDays: 2))
+        XCTAssertEqual(link.type, .finishToStart)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        XCTAssertEqual(String(decoding: try encoder.encode(link), as: UTF8.self), #"{"lagDays":2,"predecessor":"2.1.1"}"#)
+        let ss = MasterSchedule.WBSDependency(predecessor: "2.1", lagDays: 3, type: .startToStart)
+        XCTAssertEqual(try JSONDecoder().decode(MasterSchedule.WBSDependency.self, from: encoder.encode(ss)), ss)
+        XCTAssertEqual(ss.label, "2.1 SS+3")
+        XCTAssertEqual(link.label, "2.1.1 +2 วัน")
+    }
+
+    func testTaskLinesLinkAndTheirSubTasksFollow() throws {
+        let rows = [item("2.1", 0, 4), item("2.1.1", 0, 2), item("2.1.2", 2, 2),
+                    item("2.3", 0, 4, after: [.init(predecessor: "2.1", lagDays: 2, type: .startToStart)]),
+                    item("2.3.1", 0, 2), item("2.3.2", 2, 2)]
+        let result = WBSDependencies.schedule(rows, calendar: cal)
+        XCTAssertTrue(result.isValid, result.issues.map(\.message).joined(separator: "\n"))
+        XCTAssertEqual(result.forecasts["2.3"]?.start, d(2))
+        XCTAssertEqual(result.forecasts["2.3"]?.end, d(5))
+        XCTAssertEqual(result.forecasts["2.3.1"]?.start, d(2))
+        XCTAssertEqual(result.forecasts["2.3.1"]?.end, d(3))
+        XCTAssertEqual(result.forecasts["2.3.2"]?.start, d(4))
+        XCTAssertEqual(result.forecasts["2.3.2"]?.end, d(5))
+        XCTAssertEqual(result.forecasts["2.1.2"]?.start, d(2), "the predecessor's sub-tasks stay")
+    }
+
+    func testASubTaskCannotBeLinkedInsideALinkedTaskLine() {
+        let rows = [item("2.1", 0, 4), item("2.1.1", 0, 2),
+                    item("2.3", 0, 4, after: [.init(predecessor: "2.1", type: .startToStart)]),
+                    item("2.3.1", 0, 2, after: [.init(predecessor: "2.1.1")])]
+        let issues = WBSDependencies.schedule(rows).issues
+        XCTAssertTrue(issues.contains(.linkedInsideTask(task: "2.1", sub: "2.1.1")))
+        XCTAssertTrue(issues.contains(.linkedInsideTask(task: "2.3", sub: "2.3.1")))
+    }
+
+    func testParsesTheWorkbooksTypedLinksOnly() {
+        XCTAssertEqual(WBSDependencies.parse("2.1 SS+3, 2.1 FF+2"),
+                       [.init(predecessor: "2.1", lagDays: 3, type: .startToStart), .init(predecessor: "2.1", lagDays: 2, type: .finishToFinish)])
+        XCTAssertEqual(WBSDependencies.parse("Master Plan, FS 2.1–2.9+0").map(\.predecessor), (1...9).map { "2.\($0)" })
+        XCTAssertEqual(WBSDependencies.parse("Master Plan, FS 2.2, 2.3+1"),
+                       [.init(predecessor: "2.2", lagDays: 1), .init(predecessor: "2.3", lagDays: 1)])
+        XCTAssertEqual(WBSDependencies.parse("ย้อนจาก 2.10 (60 วัน)"), [])
+        XCTAssertEqual(WBSDependencies.parse("3.2.7, 3.2.6"), [])
+        XCTAssertEqual(WBSDependencies.parse("Master Plan"), [])
+    }
+
+    func testWorkbookLinksSkipRowsThisStationLeavesOut() throws {
+        func row(_ code: String, _ text: String?, title: String? = nil) -> MasterSchedule.WorkItem {
+            var r = item(code, 0, 2)
+            r.predecessor = text
+            if let title { r.title = title }
+            return r
+        }
+        let rows = [row("2.1", "ย้อนจาก 2.10 (4 วัน)"), row("2.1.1", nil), row("2.2", "2.3 SS+1, 2.3 FF+1"),
+                    row("2.3", "2.1 SS+3, 2.1 FF+2"),
+                    row("2.4", "2.2 SS+2, 2.2 FF+0", title: "2.4 Firefighter (ไม่ต้องติดตั้ง)"),
+                    row("2.10", "Master Plan, FS 2.1–2.9+0")]
+        let linked = try XCTUnwrap(WBSDependencies.fromWorkbook(rows))
+        let links = Dictionary(uniqueKeysWithValues: linked.map { ($0.code, $0.dependencies ?? []) })
+        XCTAssertEqual(links["2.3"]?.map(\.label), ["2.1 SS+3", "2.1 FF+2"])
+        XCTAssertEqual(links["2.4"], [], "a row the station leaves out gets no links")
+        XCTAssertEqual(links["2.10"]?.map(\.predecessor), ["2.1", "2.2", "2.3"], "2.4 left out, 2.5–2.9 missing")
+        XCTAssertEqual(links["2.1"], [])
+        XCTAssertTrue(WBSDependencies.schedule(linked, calendar: cal).isValid)
+        XCTAssertNil(WBSDependencies.fromWorkbook([row("2.1", "Master Plan")]))
     }
 }

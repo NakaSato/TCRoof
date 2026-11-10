@@ -26,9 +26,17 @@ extension MPWorkbook {
             }, uniquingKeysWith: { first, _ in first })
         }
 
+        /// The links the file gives an import: the app's saved part, else the sheet's own typed links (REV 11).
+        static func fileDependencies(_ zip: ZipArchive, _ items: [MasterSchedule.WorkItem]) -> [String: [MasterSchedule.WBSDependency]] {
+            if let saved = readDependencies(zip) { return saved }
+            let unlinked = items.map { item -> MasterSchedule.WorkItem in var row = item; row.dependencies = nil; return row }
+            return WBSDependencies.fromWorkbook(unlinked).map(dependencyMap) ?? [:]
+        }
+
         static func writeDependencies(_ items: [MasterSchedule.WorkItem], into zip: inout ZipArchive) {
             let links = dependencyMap(items)
-            guard !links.isEmpty || part(zip, dependenciesNamespace) != nil else { return }
+            // an empty part too when the sheet has typed links, so links cleared in the app stay cleared
+            guard !links.isEmpty || part(zip, dependenciesNamespace) != nil || !fileDependencies(zip, items).isEmpty else { return }
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
             guard let data = try? encoder.encode(links) else { return }

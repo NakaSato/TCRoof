@@ -181,13 +181,28 @@ name that station's people in the same rows (`เปรม`, `บีม`, `ผ�
 
 ## Explicit dependency forecasts
 
-`WorkItem.dependencies` optionally stores finish-to-start links (`predecessor`: WBS code, `lagDays`: working days).
-It is separate from the worksheet's predecessor prose: descriptions such as `ย้อนจาก 2.10` are never parsed as links.
-Missing links in older JSON leave the existing schedule unchanged.
+`WorkItem.dependencies` optionally stores links (`predecessor`: WBS code, `lagDays`: working days, `type`: `FS`, `SS`
+or `FF`, PMBOK 5th §6.3.2.1–3; CHA-76). A link without `type` is finish-to-start, and a finish-to-start link is written
+without one, so older JSON and older plan files read and write as before. Missing links in older JSON leave the
+existing schedule unchanged.
+
+A link joins two sub-tasks or two task lines (`2.3` after `2.1`), as the Master Plan REV 11 links the install tasks
+2.1–2.10 and 3.1. A linked task line's sub-tasks follow it, keeping their share of its span (the workbook's
+`N + ROUND((O − N) × share)`), and can't be linked themselves while it is (`linkedInsideTask`). Parts (`2`) can't be
+endpoints.
+
+The worksheet's predecessor prose (`ย้อนจาก 2.10`, `Master Plan`, `3.2.7, 3.2.6`) is never parsed. Only the typed
+notation a REV 11 file writes from its `DEP_*` lags is read (`WBSDependencies.parse`): `2.1 SS+3, 2.1 FF+2`,
+`FS 2.1–2.9+0`, `FS 2.2, 2.3+0`. A full import takes them (`WBSDependencies.fromWorkbook`) when the file has no links
+saved by the app. It drops a link to or from a row the station leaves out (`(ไม่ต้อง…)`), a missing row or one without
+dates, so one station's case doesn't stop the plan from forecasting.
 
 `WBSDependencies.schedule` validates duplicate codes/links, missing references, summary or irrelevant endpoints,
 missing/invalid dates, negative or excessive lag, and cycles. Endpoints must be active leaf rows with baseline dates.
-Zero lag starts on the next working day after the predecessor finishes; lag and duration use the station's working
+FS: zero lag starts on the next working day after the predecessor finishes. SS: the row starts `lag` working days after
+the predecessor starts (zero: the same day). FF: the row finishes no earlier than `lag` working days after the
+predecessor finishes, stretched when it would finish sooner, as the workbook's `MAX(N + H − 1, O_pred + lag)` does.
+The workbook counts lags in calendar days; the app counts working days, as for its other links. Lag and duration use the station's working
 weekdays, its holidays and public holidays, including dates beyond the original plan end. A linked row uses its `days`
 when present (zero is a same-day milestone), else its baseline working-day span. Lag is limited to 3,650 working days;
 durations to 3,650 days and baseline spans to 100 years. A calendar must have at least one working weekday.
@@ -200,13 +215,15 @@ This forecast does not overwrite MP progress, actual completion dates, weekly bo
 
 The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
 It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
-Rows persist through the existing `scheduleWBS` JSON and job sync. `AppCompat.syncVersion` is 7; after this build has
-been rolled out, set `config/app.minSyncVersion` to 7 before relying on links across devices. Older builds can drop
-unknown fields if they rewrite WBS rows. This change does not alter the deployed Firebase switch.
+Rows persist through the existing `scheduleWBS` JSON and job sync. Finish-to-start links need `AppCompat.syncVersion`
+7, and SS / FF links and task-line links need 9: once that build is out, set `config/public.minSyncVersion` to 9 before
+relying on them across devices. Older builds read SS / FF as FS, refuse task-line links, and drop the type if they
+rewrite WBS rows. This change does not alter the deployed Firebase switch.
 
 Plan exports keep explicit links in `urn:tcroof:wbs-dependencies` custom XML, and full plan imports restore them.
 The worksheet's human-readable predecessor text and baseline cells remain unchanged. Exporting an unchanged graph
 keeps file bytes unchanged; exporting an empty graph clears previously exported links. Progress-only imports retain
 the app's current links, since that flow merges completion and people rather than replacing the plan structure.
 Dependency forecasts are currently calculated in the app; export carries the links without replacing the workbook's
-forecast columns or its scheduling formulas. Only finish-to-start links and nonnegative lag are supported in this version.
+forecast columns or its scheduling formulas. Lag can't be negative (no leads). Clearing a REV 11 file's typed links in the
+app writes an empty links part, so the next import doesn't read them back from the sheet.

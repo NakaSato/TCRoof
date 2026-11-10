@@ -23,7 +23,8 @@ extension Job {
                              input: scheduleInput, actual: scheduleActual, dailies: dailyReports,
                              canEdit: permissions.can(.mpProgress, on: access), canReplan: permissions.can(.mpSetup, on: access),
                              contractor: settings.subcontractor.trimmingCharacters(in: .whitespaces), team: team.rawValue,
-                             workingWeekdays: settings.workingWeekdays, inspections: settings.inspections, deadlines: deadlines)
+                             workingWeekdays: settings.workingWeekdays, inspections: settings.inspections, deadlines: deadlines,
+                             wbs: scheduleWBS, calendarSettings: settings)
     }
 }
 

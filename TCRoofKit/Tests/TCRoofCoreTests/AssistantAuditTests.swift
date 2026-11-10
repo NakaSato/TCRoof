@@ -91,4 +91,25 @@ final class AssistantAuditTests: XCTestCase {
         XCTAssertNotNil(brief.originalPlannedPercent)
         XCTAssertNil(ScheduleBrief(jobID: "job-1", station: "s", input: input(), actual: .init(), today: d(2026, 3, 16)).originalInstallEnd)
     }
+
+    /// `floatDays` come from the plan's WBS links when it has them (CHA-77), else from the dates.
+    func testTheBriefsFloatFollowsTheLinks() throws {
+        func line(_ code: String, _ a: Date, _ b: Date, after links: [MasterSchedule.WBSDependency] = []) -> MasterSchedule.WorkItem {
+            var item = MasterSchedule.WorkItem(code: code, title: code, level: 1)
+            item.baselineStart = a; item.baselineEnd = b
+            item.dependencies = links.isEmpty ? nil : links
+            return item
+        }
+        let today = d(2026, 1, 20)
+        let dated = ScheduleBrief(jobID: "job-1", station: "s", input: input(), actual: .init(), today: today)
+        XCTAssertNil(dated.floatFromLinks)
+        let wbs = [line("2.1", d(2026, 3, 1), d(2026, 3, 28)),
+                   line("2.3", d(2026, 4, 1), d(2026, 4, 18), after: [.init(predecessor: "2.1", lagDays: 3, type: .startToStart)])]
+        let linked = ScheduleBrief(jobID: "job-1", station: "s", input: input(), actual: .init(), today: today, wbs: wbs)
+        XCTAssertEqual(linked.floatFromLinks, true)
+        func float(_ b: ScheduleBrief, _ code: String) -> Int? { b.tasks.first { $0.code == code }?.floatDays }
+        XCTAssertEqual(float(linked, "2.3"), 0)
+        XCTAssertNotEqual(float(linked, "2.1"), float(dated, "2.1"), "SS+3 leaves the structure weeks of float, not the days to panels")
+        XCTAssertEqual(float(linked, "2.2"), float(dated, "2.2"), "a task without WBS rows keeps the dates' float")
+    }
 }

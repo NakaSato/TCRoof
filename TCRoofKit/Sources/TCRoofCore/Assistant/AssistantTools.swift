@@ -28,17 +28,23 @@ public extension Assistant {
         /// The rest of the project for `get_project`, when given here; the app instead builds it only for the station
         /// asked (`Session`'s `project`).
         public var project: ProjectFacts?
+        /// The plan file's WBS rows (`Job.scheduleWBS`), whose links give the tasks' float (CHA-77), and the project
+        /// calendar they are counted in (the station's working days and holidays).
+        public var wbs: [MasterSchedule.WorkItem]
+        public var calendarSettings: RoutineReport.Settings?
 
         public init(id: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil, input: MasterSchedule.Input?,
                     actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool,
                     canReplan: Bool = false, contractor: String = "", team: String = "",
                     workingWeekdays: Set<Int> = [2, 3, 4, 5, 6, 7], inspections: [RoutineReport.Inspection] = [],
-                    deadlines: [Deadline] = [], project: ProjectFacts? = nil) {
+                    deadlines: [Deadline] = [], project: ProjectFacts? = nil,
+                    wbs: [MasterSchedule.WorkItem] = [], calendarSettings: RoutineReport.Settings? = nil) {
             self.id = id; self.station = station; self.mpNumber = mpNumber; self.kWp = kWp
             self.input = input; self.actual = actual; self.dailies = dailies; self.canEdit = canEdit
             self.canReplan = canReplan; self.contractor = contractor; self.team = team
             self.workingWeekdays = workingWeekdays; self.inspections = inspections; self.deadlines = deadlines
             self.project = project
+            self.wbs = wbs; self.calendarSettings = calendarSettings
         }
 
         /// The crew group the station draws on, for the all-station loads.
@@ -49,7 +55,7 @@ public extension Assistant {
 
         public func brief(today: Date) -> ScheduleBrief? {
             input.map { ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
-                                      actual: actual, dailies: dailies, today: today) }
+                                      actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings) }
         }
     }
 

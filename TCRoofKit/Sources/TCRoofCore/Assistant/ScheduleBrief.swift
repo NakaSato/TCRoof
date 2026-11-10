@@ -27,8 +27,9 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
         public var pacePointsPerWeek: Double?
         public var projectedFinish: String?
         public var slipDays: Int?
-        /// Working days the task can slip on the plan before it moves the install end (`InstallCriticalPath`, links
-        /// read from the dates); 0 = on the critical path. Nil for permit tasks and tasks without dates.
+        /// Working days the task can slip on the plan before it moves the install end (`InstallCriticalPath`: from the
+        /// plan's WBS links when it has them, `floatFromLinks`, else links read from the dates); 0 = on the critical
+        /// path. Nil for permit tasks and tasks without dates.
         public var floatDays: Int?
     }
 
@@ -69,6 +70,9 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     /// the install end. `what_if` starts from it.
     public var projectedFinish: String?
     public var projectedSlipDays: Int?
+    /// True when `floatDays` come from the links people set in the plan's WBS (FS, SS, FF; CHA-77); nil when they are
+    /// read from the dates.
+    public var floatFromLinks: Bool?
     public var parts: [PartLine]
     public var tasks: [TaskLine]
     /// Codes of the tasks planned in this week, and in the two weeks after it.
@@ -79,6 +83,7 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     public init(jobID: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil,
                 input: MasterSchedule.Input, actual: MasterSchedule.Actual,
                 dailies: [RoutineReport.Daily] = [], today: Date, days: Int = 14,
+                wbs: [MasterSchedule.WorkItem] = [], settings: RoutineReport.Settings? = nil,
                 calendar cal: Calendar = MasterSchedule.calendar) {
         let plan = MasterSchedule.plan(input, calendar: cal)
         let status = MasterSchedule.status(plan: plan, actual: actual, through: today, calendar: cal)
@@ -104,10 +109,16 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
             PartLine(part: $0.reportTitle, plannedPercent: Self.round(status.plannedByPart[$0] ?? 0),
                      actualPercent: Self.round(status.actualByPart[$0] ?? 0))
         }
-        let float = InstallCriticalPath.float(plan.compactMap { p in
+        let dated = plan.compactMap { p -> InstallCriticalPath.Task? in
             guard p.weight > 0, p.task.part != .permit, let s = p.start, let e = p.end else { return nil }
             return InstallCriticalPath.Task(id: p.task.rawValue, start: s, end: e)
-        }, calendar: cal)
+        }
+        let starts = Dictionary(dated.map { ($0.id, $0.start) }, uniquingKeysWith: { first, _ in first })
+        let linked = InstallCriticalPath.float(wbs: wbs, starts: starts, settings: settings, calendar: cal)
+            .map { f in f.filter { starts[$0.key] != nil } }
+        // a task the WBS has no rows for keeps the float read from the dates
+        let float = InstallCriticalPath.float(dated, calendar: cal).merging(linked ?? [:]) { _, link in link }
+        floatFromLinks = linked != nil ? true : nil
         tasks = plan.filter { $0.weight > 0 }.map { p in
             let r = recovery[p.task]
             return TaskLine(code: p.task.code, title: p.task.title, weight: p.weight,

@@ -61,4 +61,58 @@ final class InstallCriticalPathTests: XCTestCase {
     func testEmptyPlan() {
         XCTAssertTrue(InstallCriticalPath.float([], calendar: cal).isEmpty)
     }
+
+    // MARK: from the plan's links (CHA-77)
+
+    func row(_ code: String, _ a: Int, _ b: Int, after links: [MasterSchedule.WBSDependency] = []) -> MasterSchedule.WorkItem {
+        var item = MasterSchedule.WorkItem(code: code, title: code)
+        item.baselineStart = d(a); item.baselineEnd = d(b); item.days = b - a + 1
+        item.dependencies = links.isEmpty ? nil : links
+        return item
+    }
+
+    /// Panels start two days after the structure starts (SS+2). Read from the dates, the structure has a day of float
+    /// and the inverter none, since panels start the day after it ends; by the links it is the other way round.
+    func testLinksDecideWhereTheDatesDisagree() throws {
+        let wbs = [row("2.1", 0, 5), row("2.3", 2, 6, after: [.init(predecessor: "2.1", lagDays: 2, type: .startToStart)]), row("2.5", 0, 1)]
+        let dated = InstallCriticalPath.float([task("structure", 0, 5), task("panels", 2, 6), task("inverter", 0, 1)], calendar: cal)
+        XCTAssertEqual(dated["structure"], 1)
+        XCTAssertEqual(dated["inverter"], 0)
+        let starts = ["structure": d(0), "panels": d(2), "inverter": d(0)]
+        let linked = try XCTUnwrap(InstallCriticalPath.float(wbs: wbs, starts: starts, calendar: cal))
+        XCTAssertEqual(linked["structure"], 0, "panels can't start until two days after it starts")
+        XCTAssertEqual(linked["panels"], 0)
+        XCTAssertEqual(linked["inverter"], 5, "nothing waits on it")
+    }
+
+    func testAPlanWithoutLinksKeepsTheDates() {
+        XCTAssertNil(InstallCriticalPath.float(wbs: [row("2.1", 0, 5), row("2.3", 2, 6)], starts: [:], calendar: cal))
+        let broken = [row("2.3", 2, 6, after: [.init(predecessor: "2.9")])]
+        XCTAssertNil(InstallCriticalPath.float(wbs: broken, starts: [:], calendar: cal), "links that don't hold together")
+    }
+
+    /// The rows move with their task's start in the plan before the passes.
+    func testRowsMoveWithTheirTask() throws {
+        let wbs = [row("2.1", 0, 5), row("2.3", 2, 6, after: [.init(predecessor: "2.1", lagDays: 2, type: .startToStart)])]
+        let linked = try XCTUnwrap(InstallCriticalPath.float(wbs: wbs, starts: ["panels": d(8)], calendar: cal))
+        XCTAssertEqual(linked["structure"], 6, "panels start on day 8 now, so the structure can slip six days")
+        XCTAssertEqual(linked["panels"], 0)
+    }
+
+    func testTheConstructionPlanTakesTheLinksFloat() {
+        let g = InstallGantt(rows: [
+            .init(id: "structure", code: "2.1", title: "structure", status: .waiting, start: d(0), end: d(5), percent: 0),
+            .init(id: "panels", code: "2.3", title: "panels", status: .waiting, start: d(2), end: d(6), percent: 0),
+            .init(id: "inverter", code: "2.5", title: "inverter", status: .waiting, start: d(0), end: d(1), percent: 0)
+        ], today: d(0))
+        var plan = InstallPlan(gantt: g, nonWorking: [], tracking: nil, calendar: cal)
+        XCTAssertEqual(plan.stages.first { $0.id == "inverter" }?.row.critical, true, "read from the dates")
+        plan.useWBS([row("2.1", 0, 5), row("2.3", 2, 6, after: [.init(predecessor: "2.1", lagDays: 2, type: .startToStart)]), row("2.5", 0, 1)],
+                    ticked: [], calendar: cal)
+        XCTAssertEqual(plan.stages.first { $0.id == "structure" }?.row.float, 0)
+        XCTAssertEqual(plan.stages.first { $0.id == "structure" }?.row.critical, true)
+        XCTAssertEqual(plan.stages.first { $0.id == "inverter" }?.row.float, 5)
+        XCTAssertEqual(plan.stages.first { $0.id == "inverter" }?.row.critical, false)
+        XCTAssertEqual(plan.stages.first { $0.id == "panels" }?.row.after, "2.1 SS+2")
+    }
 }

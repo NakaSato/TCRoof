@@ -218,7 +218,8 @@ public extension Assistant {
                 s = scenario(parts.joined(separator: " | "), plan: plan, actual: job.actual, input: input, factor: max(f, 0.1),
                              startNow: startNow, today: today, calendar: cal)
             }
-            let brief = ScheduleBrief(jobID: job.id, station: job.station, input: input, actual: job.actual, today: today, calendar: cal)
+            let brief = ScheduleBrief(jobID: job.id, station: job.station, input: input, actual: job.actual, today: today,
+                                      wbs: job.wbs, settings: job.calendarSettings, calendar: cal)
             return WhatIf(jobID: job.id, station: job.station, today: day(today, cal), installEnd: day(input.installEnd, cal),
                           handoverForecast: brief.handoverForecast, handoverSlipDays: brief.handoverSlipDays,
                           crewAverage: crew.map(ScheduleBrief.round), workingDaysPerWeek: workdays,

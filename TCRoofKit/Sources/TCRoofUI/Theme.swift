@@ -165,6 +165,20 @@ public enum Theme {
     public static let inkTab = Color(light: 0x3E4C60, dark: 0xC2CFDF)
     /// `TCTabBar`'s top line, module rows and card borders.
     public static let borderOutdoor = Color(light: 0xC9D3E0, dark: 0x34465C)
+    // iPad glass dock (`TCTabBar` `.pad`, issue CHA-95)
+    /// The dock's glass wash over the blur: white at 42 %.
+    public static let glassFill = Color(light: 0xFFFFFF, dark: 0x121A24, opacity: 0.42)
+    /// The dock's 1 pt border: navy at 16 %.
+    public static let glassStroke = navySolid.opacity(0.16)
+    /// The selected pill's 1 pt border: navy at 12 %.
+    public static let glassPillStroke = navySolid.opacity(0.12)
+    /// The white line along the top edge of the dock and the pill.
+    public static let glassHighlight = Color(hex: 0xFFFFFF, opacity: 0.9)
+    /// The faint dark line along the dock's bottom edge.
+    public static let glassShade = navySolid.opacity(0.06)
+    /// The selected pill's fill, white running down to light grey.
+    public static let glassPillTop = Color(hex: 0xFFFFFF, opacity: 0.95)
+    public static let glassPillBottom = Color(hex: 0xE9EEF5, opacity: 0.9)
     // iPad home board (docs/ui/tcroof-home-ipad)
     /// Hairline under the white header #E6EBF2.
     public static let headerLine = Color(light: 0xE6EBF2, dark: 0x243142)

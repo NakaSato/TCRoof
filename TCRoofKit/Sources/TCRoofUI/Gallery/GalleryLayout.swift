@@ -133,19 +133,19 @@ private struct GalleryTabBar: View {
     }
 }
 
-/// The iPad home's dock: the home, the six modules and `ตั้งค่า` (an action).
+/// The iPad dock (CHA-95): the glass capsule, its seven tabs and `ตั้งค่า` (an action). Tap a tab to see the pill slide.
 private struct GalleryPadTabBar: View {
-    @State var selection = "home"
+    @State var selection = "monitor"
 
     var body: some View {
         TCTabBar(items: [
-            TCTabItem("home", title: "หน้าหลัก", symbol: "house"),
-            TCTabItem("survey", title: "สำรวจ", asset: "tab-survey", badge: 2, accessibilityLabel: "สำรวจ | นัดวันนี้ 2"),
-            TCTabItem("plan", title: "แผนงาน", symbol: "calendar"),
-            TCTabItem("install", title: "ติดตั้ง", asset: "tab-install"),
+            TCTabItem("home", title: "หน้าแรก", symbol: "house"),
+            TCTabItem("pwa", title: "โครงการ", asset: "tab-project", badge: 2, accessibilityLabel: "โครงการ | นัดวันนี้ 2"),
+            TCTabItem("survey", title: "งานบ้าน", asset: "tab-homework"),
+            TCTabItem("docs", title: "เอกสาร", asset: "tab-docs"),
+            TCTabItem("monitor", title: "Monitor", asset: "tab-monitor", badge: 3, accessibilityLabel: "Monitor | ต้องดูแล 3"),
+            TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools", accessibilityLabel: "เครื่องมือวัด"),
             TCTabItem("scan", title: "สแกน", asset: "tab-scan"),
-            TCTabItem("pwa", title: "กปภ.", asset: "tab-pwa"),
-            TCTabItem("tools", title: "เครื่องมือ", asset: "tab-tools"),
             TCTabItem("settings", title: "ตั้งค่า", symbol: "gearshape") {},
         ], selection: $selection, dividerBefore: "settings", size: .pad)
     }

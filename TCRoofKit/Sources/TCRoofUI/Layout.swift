@@ -436,22 +436,30 @@ public enum TCTabBarSize: Sendable {
 }
 
 /// Floating tab dock. iPhone (docs/ui/tcroof-home-iphone-v3, state 08): an opaque capsule, radius 28, 1 pt border,
-/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label. iPad (`size: .pad`): tabs 84 × 58, padding 6,
-/// white 96 % over a blur. The selected tab is a navy capsule. A hairline stands before the `dividerBefore` tab
-/// (`ตั้งค่า`). The caller insets it (iPhone: 12 pt sides, 22 pt above the bottom edge; iPad: centred, 18 pt above)
-/// and puts `TCDockFade` behind it.
+/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label; the selected tab is a navy capsule.
+/// iPad (`size: .pad`, issue CHA-95): a glass capsule (Liquid Glass on iOS 26, a blur under white 42 % before), tabs
+/// 84 × 58, padding 6, no shadow; one glass pill behind the selected tab slides to the tab tapped, without animation
+/// under Reduce Motion, and the selected tab's glyph and label turn `Theme.primary`. A hairline stands before the
+/// `dividerBefore` tab (`ตั้งค่า`). The caller insets it (iPhone: 12 pt sides, 22 pt above the bottom edge; iPad:
+/// centred, 18 pt above) and puts `TCDockFade` behind it.
 public struct TCTabBar<ID: Hashable>: View {
     let items: [TCTabItem<ID>]
     @Binding var selection: ID
     let dividerBefore: ID?
     let size: TCTabBarSize
+    /// iPad: where the pill is while it slides in. Each iPad tab has its own dock, so the dock of a tab opened for the
+    /// first time starts its pill on the tab just left and slides it over.
+    @State private var pill: ID
+    @Namespace private var pillSpace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(items: [TCTabItem<ID>], selection: Binding<ID>, dividerBefore: ID? = nil, size: TCTabBarSize = .phone) {
+    public init(items: [TCTabItem<ID>], selection: Binding<ID>, dividerBefore: ID? = nil, size: TCTabBarSize = .phone,
+                slideFrom: ID? = nil) {
         self.items = items; self._selection = selection; self.dividerBefore = dividerBefore; self.size = size
+        _pill = State(initialValue: slideFrom ?? selection.wrappedValue)
     }
 
     public var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
         HStack(spacing: 2) {
             ForEach(items) { item in
                 if item.id == dividerBefore {
@@ -462,13 +470,51 @@ public struct TCTabBar<ID: Hashable>: View {
             }
         }
         .fixedSize(horizontal: size.isPad, vertical: true)
+        .background { if size.isPad { selectedPill } }
         .padding(size.isPad ? 6 : 5)
-        .background {
-            if size.isPad { shape.fill(.ultraThinMaterial).overlay(shape.fill(Theme.surface.opacity(0.96))) } else { shape.fill(Theme.surface) }
-        }
-        .overlay(shape.strokeBorder(Theme.borderOutdoor))
+        .background { if size.isPad { padGlass } else { phoneShape.fill(Theme.surface) } }
+        .overlay { if !size.isPad { phoneShape.strokeBorder(Theme.borderOutdoor) } }
+        .onAppear { if size.isPad, pill != selection { slidePill() } }
+        .onChange(of: selection) { if size.isPad { slidePill() } }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("เมนูหลัก")
+    }
+
+    private var phoneShape: RoundedRectangle { RoundedRectangle(cornerRadius: 28, style: .continuous) }
+
+    private func slidePill() {
+        withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.72)) { pill = selection }
+    }
+
+    /// The bar: glass, a 1 pt navy border, a white line along the top and a faint dark one along the bottom.
+    @ViewBuilder private var padGlass: some View {
+        let shape = Capsule(style: .continuous)
+        Group {
+            if #available(iOS 26, *) {
+                Color.clear.glassEffect(.regular.tint(Theme.glassFill), in: shape)
+            } else {
+                shape.fill(.ultraThinMaterial).overlay(shape.fill(Theme.glassFill))
+            }
+        }
+        .overlay(shape.strokeBorder(Theme.glassStroke))
+        .overlay(shape.inset(by: 1).stroke(
+            LinearGradient(stops: [.init(color: Theme.glassHighlight, location: 0), .init(color: .clear, location: 0.3),
+                                   .init(color: .clear, location: 0.7), .init(color: Theme.glassShade, location: 1)],
+                           startPoint: .top, endPoint: .bottom), lineWidth: 1))
+    }
+
+    /// One capsule behind the selected tab, placed on its frame, so it slides when the selection changes.
+    @ViewBuilder private var selectedPill: some View {
+        if items.contains(where: { $0.id == pill && $0.action == nil }) {
+            let shape = Capsule(style: .continuous)
+            shape.fill(LinearGradient(colors: [Theme.glassPillTop, Theme.glassPillBottom], startPoint: .top, endPoint: .bottom))
+                .overlay(shape.strokeBorder(Theme.glassPillStroke))
+                .overlay(shape.inset(by: 1).stroke(
+                    LinearGradient(stops: [.init(color: Theme.glassHighlight, location: 0), .init(color: .clear, location: 0.35)],
+                                   startPoint: .top, endPoint: .bottom), lineWidth: 1))
+                .matchedGeometryEffect(id: pill, in: pillSpace, isSource: false)
+                .accessibilityHidden(true)
+        }
     }
 
     func tab(_ item: TCTabItem<ID>) -> some View {
@@ -481,10 +527,10 @@ public struct TCTabBar<ID: Hashable>: View {
                 Text(item.title).font(.sarabun(size.label, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                     .frame(height: size.isPad ? 14 : 13)
             }
-            .foregroundStyle(selected ? Theme.onPrimary : Theme.inkTab)
+            .foregroundStyle(selected ? (size.isPad ? Theme.primary : Theme.onPrimary) : Theme.inkTab)
             .frame(maxWidth: size.isPad ? nil : .infinity, minHeight: size.height)
             .frame(width: size.isPad ? 84 : nil)
-            .background { if selected { RoundedRectangle(cornerRadius: size.radius, style: .continuous).fill(Theme.navySolid) } }
+            .background { if selected && !size.isPad { RoundedRectangle(cornerRadius: size.radius, style: .continuous).fill(Theme.navySolid) } }
             // 4 pt down (iPad 5), starting 5 pt (iPad 6) right of the centre: the glyph's top right
             .overlay(alignment: .top) {
                 if item.badge > 0 {
@@ -497,7 +543,8 @@ public struct TCTabBar<ID: Hashable>: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .tabPress(shrinks: size.isPad)
+        .matchedGeometryEffect(id: item.id, in: pillSpace, isSource: true)
         .accessibilityLabel(item.accessibilityLabel ?? item.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
@@ -517,6 +564,24 @@ public struct TCTabBar<ID: Hashable>: View {
             .background(Capsule().fill(Theme.surface).padding(-2))
             .fixedSize()
             .accessibilityHidden(true)
+    }
+}
+
+private extension View {
+    /// The iPad's dock tabs shrink to 0.9 while held; the iPhone's stay `.plain`.
+    @ViewBuilder func tabPress(shrinks: Bool) -> some View {
+        if shrinks { buttonStyle(TCTabPressStyle()) } else { buttonStyle(.plain) }
+    }
+}
+
+/// An iPad dock tab's press: shrunk to 0.9 while held.
+private struct TCTabPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 

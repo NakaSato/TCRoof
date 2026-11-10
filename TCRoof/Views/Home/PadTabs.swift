@@ -32,9 +32,19 @@ enum PadTab: String, CaseIterable {
         opened = [tab]
     }
 
+    /// The tab just left and when, so the dock of a tab opened for the first time slides its pill over from it.
+    private var left: (tab: PadTab, at: Date)?
+
     func select(_ t: PadTab) {
+        if t != tab { left = (tab, .now) }
         opened.insert(t)
         tab = t
+    }
+
+    /// The tab the dock's pill slides from: the one just left, for half a second after the tap.
+    var slideFrom: PadTab? {
+        guard let left, Date.now.timeIntervalSince(left.at) < 0.5 else { return nil }
+        return left.tab
     }
 }
 
@@ -156,7 +166,8 @@ private struct PadDockBarContent: View {
     }
 
     var body: some View {
-        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad)
+        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings, size: .pad,
+                 slideFrom: dock.slideFrom)
             // the demo's fleet counts from launch; real stations once the page has read them
             .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
             // the team's devices read Growatt while the app is open; contractors have no Monitor

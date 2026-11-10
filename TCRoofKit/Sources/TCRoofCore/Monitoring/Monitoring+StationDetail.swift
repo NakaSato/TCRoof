@@ -23,8 +23,8 @@ extension Monitoring {
             self.events = events; self.loadCurve = loadCurve; self.zeroExport = zeroExport
         }
 
-        /// What the fleet's row knows: one inverter line per inverter (status from the row's alarms), the logger's last
-        /// reading, and the current alarms as the history. Nothing else is made up.
+        /// What the fleet's row knows: one inverter line per inverter (status from the row's alarms, string currents
+        /// from `inverterStrings`), the logger's last reading, and the current alarms as the history. Nothing else is made up.
         public init(station s: Station, health: Health) {
             let offline = health == .offline
             let faulty = Set(s.alarms.filter { $0.source == .growatt }.map(\.part))
@@ -33,7 +33,9 @@ extension Monitoring {
                 let name = "INV \(i + 1)"
                 let status: DeviceStatus = !s.paired ? .unknown
                     : offline || lost.contains(name) ? .offline : faulty.contains(name) ? .fault : .unknown
-                return Inverter(id: name, name: name, status: status)
+                // the currents Growatt last gave, none while the station is out of contact
+                let strings = !offline && i < s.inverterStrings.count ? s.inverterStrings[i] : []
+                return Inverter(id: name, name: name, status: status, strings: strings)
             }
             self.init(inverters: inverters,
                       logger: s.paired ? Logger(online: offline ? false : true, lastData: s.lastReading) : nil,

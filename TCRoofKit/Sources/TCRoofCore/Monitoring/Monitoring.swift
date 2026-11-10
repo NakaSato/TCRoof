@@ -114,8 +114,8 @@ public enum Monitoring {
         /// PR is worked out only with an irradiance sensor.
         public var hasIrradianceSensor: Bool
         public var prToday: Double?
-        /// String currents, A, per inverter (`INV 1` first), then per MPPT its strings `a`, `b`; empty when the source
-        /// gives none (Growatt's OpenAPI as read today), so no string is judged.
+        /// String currents, A, per inverter (`INV 1` first), then per MPPT its strings `a`, `b` (from Growatt's
+        /// `invs_data`, `GrowattMap.strings`); empty when the source gives none, so no string is judged.
         public var inverterStrings: [[[Double?]]]
         public var alarms: [Alarm]
         /// Today's power, kW, one value per 5-minute slot from 00:00 (`Monitoring.slots`); nil where nothing was read.

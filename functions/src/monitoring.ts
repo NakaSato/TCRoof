@@ -1,16 +1,19 @@
 // The Monitoring poll's steps (CHA-93), apart from Firestore and the schedule (index.ts), so monitoring.test.ts runs
 // them against a fake Growatt. Each run (every `pollMinutes`) reads the whole fleet's power in one `plant/list` call
-// per account (`readFleet`); a station's detail (`pollStation`: `plant/data`, today's `plant/power`, `device/list`;
+// per account (`readFleet`); a station's detail (`pollStation`: `plant/data`, today's `plant/power`, `device/list`, the
+// inverters' latest readings `invs_data` for their string currents;
 // once a Bangkok day yesterday's `plant/power` and `plant/energy` by day and by month) is read every
 // `detailMinutes`, or every run while it is in alarm or offline, the stations spread over the runs (`pickDetail`).
 // docs/specs/growatt-api.md, "Polling".
-import { bangkokDayText, bangkokMonthStart, DAY_CHUNKS, failureMessage, GrowattFailure, health, joinEnergy, Pairing } from './growatt';
+import { bangkokDayText, bangkokMonthStart, DAY_CHUNKS, failureMessage, GrowattFailure, health, inverterSNs, joinEnergy, Pairing } from './growatt';
 
 /** The calls a station's poll makes; `GrowattClient` in the function, a fake in the tests. */
 export type Reader = {
   data(plantID: number): Promise<string>;
   power(plantID: number, date: string): Promise<string>;
   devices(plantID: number): Promise<string>;
+  /** `device/inverter/invs_data` for these serials. */
+  inverters(sns: string[]): Promise<string>;
   energy(plantID: number, start: string, end: string, unit: 'day' | 'month'): Promise<string>;
   /** `plant/list`, 100 a page. */
   plants(page: number): Promise<string>;
@@ -118,6 +121,14 @@ export async function pollStation(api: Reader, p: Pairing, previous: Previous, n
   if (power !== null) fields.power = power;
   const devices = await call(() => api.devices(p.plantID));
   if (devices !== null) fields.devices = devices;
+  // the string currents (CHA-106): `invs_data` isn't confirmed on the live server yet, so a failure is only logged
+  // and the iPads keep the last currents; it never becomes the station's `failure`
+  const sns = devices === null ? [] : inverterSNs(JSON.parse(devices).data);
+  if (sns.length > 0) {
+    try { fields.inverters = await api.inverters(sns); } catch (e) {
+      console.warn(`invs_data failed for ${p.stationID}:`, e instanceof GrowattFailure ? e.code : String(e));
+    }
+  }
 
   const today = bangkokDayText(now);
   if (replace || previous?.historyDay !== today) {

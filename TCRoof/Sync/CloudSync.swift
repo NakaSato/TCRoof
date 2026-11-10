@@ -244,9 +244,6 @@ final class CloudSync {
                 guard await waitForStartup("directory", register: { listenDirectory(barrier: $0) }) else { return }
                 try await delaySequenceLoad()
                 guard await waitForStartup("monitoring settings", register: { listenMonitoringSettings(barrier: $0) }) else { return }
-                try await delaySequenceLoad()
-                // not waited for: the readings change every few minutes and hold nothing the start needs
-                listenMonitoringReadings()
             }
             guard await waitForStartup("configuration", register: { listenConfig(barrier: $0) }) else { return }
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] notification in

@@ -44,7 +44,8 @@ extension Monitoring {
         public var servers: [Server]
         /// Minutes between polls; never under `minimumPollMinutes`.
         public var pollMinutes: Int
-        /// Keep the 5-minute readings every night (Growatt keeps them about 95 days).
+        /// Was the nightly archive's switch (the server poll, removed). Nothing reads it; it stays so the team's
+        /// `config/monitoring` keeps the shape older app versions decode.
         public var archiveNightly: Bool
         /// A logger silent this many minutes is offline.
         public var loggerOfflineMinutes: Int
@@ -137,14 +138,6 @@ extension Monitoring {
 
         /// The poll interval as used: one of the choices, never under Growatt's limit.
         public var pollInterval: TimeInterval { TimeInterval(max(pollMinutes, Monitoring.minimumPollMinutes) * 60) }
-
-        /// Minutes between the server's detail reads of a healthy station (`plant/data`, `plant/power`, `device/list`;
-        /// every `pollMinutes` it reads only the fleet's power): 15, never longer than half the logger threshold nor
-        /// shorter than `pollMinutes`. The Cloud Function's `detailMinutes` is the same rule.
-        public var detailMinutes: Int {
-            let poll = max(pollMinutes, Monitoring.minimumPollMinutes)
-            return max(poll, min(15, loggerOfflineMinutes / 2))
-        }
 
         /// `6/6 สถานีจับคู่กับ Plant ใน Growatt แล้ว`: how many of these stations are paired.
         public func paired(of stationIDs: [String]) -> Int { stationIDs.filter { pairings[$0] != nil }.count }

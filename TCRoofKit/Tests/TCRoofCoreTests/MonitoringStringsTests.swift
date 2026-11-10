@@ -130,14 +130,4 @@ final class MonitoringStringsTests: XCTestCase {
         // none while the station is out of contact
         XCTAssertEqual(Monitoring.StationDetail(station: s, health: .offline).inverters.map(\.strings), [[], []])
     }
-
-    // MARK: from the server's poll
-
-    func testTheServersInvsDataReadsAsTheAppsOwn() throws {
-        let text = String(decoding: try reply(["MAXA": ["currentString1": 10, "currentString2": 3]]), as: UTF8.self)
-        let r = try XCTUnwrap(Monitoring.ServerReading(fields: ["stationID": "mp12", "plantID": 7, "inverters": text], readAt: now))
-        XCTAssertEqual(r.reading.inverters?["MAXA"].map(Map.mppts), [[10, 3]])
-        let without = try XCTUnwrap(Monitoring.ServerReading(fields: ["stationID": "mp12", "plantID": 7], readAt: now))
-        XCTAssertNil(without.reading.inverters, "an older document: the station keeps its currents")
-    }
 }

@@ -61,7 +61,7 @@ struct MPStationFilesSheet: View {
             }
             .interactiveDismissDisabled(progress != nil)
         }
-        .task { load() }
+        .task { await load() }
     }
 
     private var summary: some View {
@@ -146,9 +146,10 @@ struct MPStationFilesSheet: View {
         .accessibilityIdentifier("stationFiles.row")
     }
 
-    private func load() {
+    /// The plan files are read off the main thread, so the skeleton rows keep moving meanwhile.
+    private func load() async {
         guard !loaded else { return }
-        let all = MPTemplates.cases()
+        let all = await Task.detached { MPTemplates.cases() }.value
         let existing = jobs.map { j in
             MPTemplates.Existing(name: j.stationName, codes: [j.code, j.stationDocs.code ?? ""].joined(separator: " "),
                                  kWp: j.capacityKW > 0 ? j.capacityKW : nil)

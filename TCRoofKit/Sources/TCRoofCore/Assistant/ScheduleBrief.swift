@@ -66,6 +66,12 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     public var spi: Double?
     public var handoverForecast: String
     public var handoverSlipDays: Int
+    /// The handover as a range (CHA-80, `HandoverRange`): the likely (P50) and late (P90) days once the open authority
+    /// tasks (`handoverRangeTasks`: PPIM review, อ.1, พค.2, กฟภ.) run between their optimistic and pessimistic
+    /// durations. Nil when none of them is open.
+    public var handoverLikely: String?
+    public var handoverLate: String?
+    public var handoverRangeTasks: [String]?
     /// The task by task forecast (each task's pace, the plan's order of work): the last task's end and its days past
     /// the install end. `what_if` starts from it.
     public var projectedFinish: String?
@@ -140,6 +146,12 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
         spi = tracking.spi.map { (($0 * 100).rounded()) / 100 }
         handoverForecast = day(tracking.forecastEnd(calendar: cal))
         handoverSlipDays = -tracking.slackDays(calendar: cal)
+        if let range = HandoverRange.forecast(plan: plan, actual: actual, base: tracking.forecastEnd(calendar: cal),
+                                              installEnd: input.installEnd, today: today, calendar: cal) {
+            handoverLikely = day(range.likely)
+            handoverLate = day(range.late)
+            handoverRangeTasks = range.tasks.map(\.code)
+        }
         let open = recovery.values.contains { $0.state != .done }
         let latest = open ? Assistant.Strategy.forecast(plan: plan, actual: actual, factor: 1, keepPlannedEnds: false,
                                                         today: today, calendar: cal).values.map(\.end).max() : nil

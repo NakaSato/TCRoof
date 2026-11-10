@@ -221,6 +221,15 @@ handover; a task the WBS has no rows for keeps the float read from the dates. A 
 don't hold together, keeps the date-based float (`InstallCriticalPath.float(_:)`: a task follows every task that ends
 before it starts).
 
+Handover range (CHA-80, PMBOK 5th §6.5.2.4): `คาดส่งมอบ` stays one date, and beside it the tracking page shows
+`น่าจะ … | กรณีช้า …` (P50 and P90, `HandoverRange`) while the tasks we don't control are open: 1.2 PPIM review, 1.4 อ.1,
+1.5 พค.2 and 1.7 กฟภ. Each gets an optimistic, most likely and pessimistic duration as multiples of its planned one
+(`HandoverRange.defaults`: 0.8 / 1 / 2, 1.75, 2.5, 2.5), drawn from a triangular distribution in 1,000 seeded runs; a
+task pushes the point forecast by the days it overruns past its spare days to the install end, and an open task ends
+today at the soonest. The chip shows only when the late case is after `คาดส่งมอบ`, amber when it passes the due date.
+`get_schedule` gives `handoverLikely`, `handoverLate` and `handoverRangeTasks`. With O = M = P the range is the point
+forecast. The defaults live in code; editing them per station is a later step.
+
 The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
 It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
 Rows persist through the existing `scheduleWBS` JSON and job sync. Finish-to-start links need `AppCompat.syncVersion`

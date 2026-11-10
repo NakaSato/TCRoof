@@ -21,6 +21,9 @@ struct InstallPageData {
     var subtitle: String
     /// nil without an MP plan: the strip then shows only what doesn't need one.
     var tracking: InstallTracking?
+    /// The handover's likely and late days from the open authority tasks' three-point durations (CHA-80); nil without
+    /// a plan or once those tasks are done.
+    var handoverRange: HandoverRange.Result?
     var actions: [Action]
     /// Today is a working day and its daily report isn't signed: the dot on `รายงานประจำวัน`.
     var dailyUnsent: Bool
@@ -75,6 +78,9 @@ struct InstallPageData {
             tracking = InstallTracking(actual: now.actual, planned: now.planned, actualWeekAgo: weekAgo.actual,
                                        start: job.installStart, due: job.installEnd, today: today,
                                        earned: InstallTracking.earnedDate(plan: plan, actual: actual, done: now.actual, start: job.installStart))
+            if let t = tracking {
+                handoverRange = HandoverRange.forecast(plan: plan, actual: actual, base: t.forecastEnd(), installEnd: input.installEnd, today: today)
+            }
             let g = InstallGantt(plan: plan, actual: actual,
                                  places: RoutineReport.places(reports: job.dailyReports, through: today, settings: job.routineSettings), today: today)
             gantt = g.rows.isEmpty ? nil : g
@@ -213,6 +219,9 @@ extension InstallPageData {
         let planned: [Double] = [4, 10, 18, 26, 36, 44, 52, 60, 70, 85, 85, 85, 100], actual: [Double] = late ? [5, 12, 18, 18, 30, 36, 41] : [5, 12, 20, 20, 40, 47, 50]
         data.curveDays = planned.indices.map { CurveDay(date: d($0), planned: planned[$0], actual: $0 < actual.count ? actual[$0] : nil) }
         data.waitLabel = "รอการไฟฟ้านัดตรวจ"
+        // the utility's inspection may run long: likely 2 days and up to 9 days past the due date
+        data.handoverRange = HandoverRange.Result(likely: due.adding(days: late ? 4 : 2), late: due.adding(days: late ? 12 : 9),
+                                                  tasks: [.gridConnection])
         data.plan = InstallPlan.demo(gantt: InstallGantt(rows: rows, today: day), nonWorking: data.nonWorking, tracking: data.tracking, day: day)
         return data
     }

@@ -34,6 +34,12 @@ extension InstallTrackingPage {
                     Text(range).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                     if let t = data.tracking { forecastChip(t) }
                 }
+                if let t = data.tracking, let r = data.handoverRange, let text = Self.rangeText(r, t) {
+                    toneChip(text, Self.rangeTone(r, t))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Self.rangeLabel(r, t))
+                        .accessibilityIdentifier("install.handoverRange")
+                }
             }
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 12)
             Rectangle().fill(Theme.hairline).frame(height: 1)

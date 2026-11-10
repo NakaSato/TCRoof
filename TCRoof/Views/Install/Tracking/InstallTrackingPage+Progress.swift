@@ -51,6 +51,14 @@ extension InstallTrackingPage {
                         .font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
                         .minimumScaleFactor(0.8)
                     if let t = data.tracking { forecastPill(t) }
+                    if let t = data.tracking, let r = data.handoverRange, let text = Self.rangeText(r, t) {
+                        Text(text).font(.sarabun(12, .bold)).foregroundStyle(Self.ink(Self.rangeTone(r, t))).lineLimit(1)
+                            .padding(.horizontal, 10).frame(height: 22)
+                            .background(Self.fill(Self.rangeTone(r, t)), in: Capsule())
+                            .fixedSize()
+                            .accessibilityLabel(Self.rangeLabel(r, t))
+                            .accessibilityIdentifier("install.handoverRange")
+                    }
                 }
             }
             .layoutPriority(1)
@@ -76,6 +84,27 @@ extension InstallTrackingPage {
     static func forecastDay(_ t: InstallTracking) -> String {
         let f = t.forecastEnd(), cal = Calendar.current
         return cal.component(.year, from: f) == cal.component(.year, from: t.due) ? ThaiFormat.dayMonth.string(from: f) : ThaiFormat.numericDate.string(from: f)
+    }
+
+    /// `น่าจะ 8/10 | กรณีช้า 21/10`: the handover once the authority tasks (PPIM, อ.1, พค.2, กฟภ.) run between their
+    /// optimistic and pessimistic durations (`HandoverRange`, P50 and P90). Nil when it adds nothing to `คาดส่งมอบ`.
+    static func rangeText(_ r: HandoverRange.Result, _ t: InstallTracking) -> String? {
+        let cal = Calendar.current, base = cal.startOfDay(for: t.forecastEnd())
+        guard cal.startOfDay(for: r.late) > base else { return nil }
+        func day(_ d: Date) -> String {
+            cal.component(.year, from: d) == cal.component(.year, from: t.due) ? ThaiFormat.dayMonth.string(from: d) : ThaiFormat.numericDate.string(from: d)
+        }
+        let likely = cal.startOfDay(for: r.likely) > base ? "น่าจะ \(day(r.likely)) | " : ""
+        return likely + "กรณีช้า \(day(r.late))"
+    }
+
+    /// Amber when the late case falls past the due date, else green.
+    static func rangeTone(_ r: HandoverRange.Result, _ t: InstallTracking) -> InstallPageData.Tone {
+        Calendar.current.startOfDay(for: r.late) > Calendar.current.startOfDay(for: t.due) ? .warn : .ok
+    }
+
+    static func rangeLabel(_ r: HandoverRange.Result, _ t: InstallTracking) -> String {
+        (rangeText(r, t) ?? "") + " หากงานราชการ " + r.tasks.map(\.code).joined(separator: ", ") + " ใช้เวลานานกว่าแผน"
     }
 
     /// `คาดส่งมอบ 6/10 ตามกำหนด | เผื่อ 1 วัน`, amber with no spare day, red `คาดส่งมอบช้า n วัน` when late.

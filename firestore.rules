@@ -178,23 +178,6 @@ service cloud.firestore {
         && request.resource.data.savedBy == signedInEmail()
         && (resource == null || request.resource.data.revision > resource.data.revision);
     }
-    // What the Monitoring poll (functions/src/index.ts `monitoringPoll`, CHA-93) last read of each paired station:
-    // Growatt's answers as text, when they came and whether the station is offline or in alarm. The team reads them
-    // (`Monitoring.ServerReading`), never contractors; only the function writes them.
-    match /monitoring/{station} {
-      allow read: if isTeam();
-      allow write: if false;
-    }
-    // Each paired station's day of 5-minute power, kept by `monitoringArchive` each night while เก็บข้อมูลถาวรทุกคืน is
-    // on (Growatt keeps ~95 days). The team reads them; only the function writes them.
-    match /monitoringArchive/{day} {
-      allow read: if isTeam();
-      allow write: if false;
-    }
-    // The monitoring servers' tokens, set through `monitoringToken` by a manager. No device reads or writes them.
-    match /monitoringTokens/{server} {
-      allow read, write: if false;
-    }
     // The developer key that opens จัดการผู้ใช้และสิทธิ์: a PBKDF2 hash and its salt, never the digits. A Maintainer's
     // only, to read or to set. The key only gates the page: these rules decide what its changes may do.
     match /config/devKey {

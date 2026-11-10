@@ -69,8 +69,8 @@ struct MonitoringPage: View {
         }
     }
 
-    /// Managers and the Maintainer edit the settings (issue #259 §7), as `config/monitoring`'s rule and the
-    /// `monitoringToken` function allow; everyone else sees them.
+    /// Managers and the Maintainer edit the settings (issue #259 §7), as `config/monitoring`'s rule allows; everyone
+    /// else sees them.
     var canEdit: Bool { permissions.role.managesTeam }
 
     // MARK: header

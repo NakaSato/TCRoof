@@ -151,7 +151,7 @@ struct MonitoringSettingsDialog: View {
             return a?.name != b?.name || a?.url != b?.url || a?.tokenSuffix != b?.tokenSuffix || pendingTokens[id] != nil
         }.count
         let fields: [Bool] = [
-            saved.pollMinutes != draft.pollMinutes, saved.archiveNightly != draft.archiveNightly,
+            saved.pollMinutes != draft.pollMinutes,
             saved.loggerOfflineMinutes != draft.loggerOfflineMinutes, saved.stringLowPercent != draft.stringLowPercent,
             saved.belowExpectedPercent != draft.belowExpectedPercent, saved.prLowPercent != draft.prLowPercent,
             saved.notifyMaintenance != draft.notifyMaintenance, saved.notifySupervisor != draft.notifySupervisor,
@@ -164,20 +164,18 @@ struct MonitoringSettingsDialog: View {
 
     private func save() {
         for (id, token) in pendingTokens { keep(token, for: id) }
-        // accounts taken out lose their token too, here and on the server
+        // accounts taken out lose their token too
         for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) {
             MonitoringToken.remove(old.id)
-            MonitoringServerToken.send("", for: old.id)
         }
         savedTokens.formUnion(pendingTokens.keys)
         store.save(draft)
         close()
     }
 
-    /// A token saved: in this iPad's Keychain for its own poll, and on the server for the server's (CHA-93).
+    /// A token saved: in this iPad's Keychain for its own poll, and nowhere else.
     private func keep(_ token: String, for server: UUID) {
         MonitoringToken.save(token, for: server)
-        MonitoringServerToken.send(token, for: server)
     }
 
     /// `ยกเลิกการแก้`: the saved values back, tokens typed and forms dropped.
@@ -415,11 +413,6 @@ struct MonitoringSettingsDialog: View {
                 settingRow("รอบดึงข้อมูล", "ยิ่งถี่ ข้อมูลยิ่งใหม่ · ใช้โควตา API มากขึ้น") {
                     Segments(options: Monitoring.Settings.pollChoices.map { ($0, "\($0) นาที") }, selection: $draft.pollMinutes)
                         .frame(width: 280)
-                }
-                .disabled(!canEdit)
-                Divider()
-                settingRow("เก็บข้อมูลถาวรทุกคืน", "Growatt เก็บค่า 5 นาทีไว้ราว 95 วัน · TCRoof เก็บต่อเวลา 00:30") {
-                    Toggle("เก็บข้อมูลถาวรทุกคืน", isOn: $draft.archiveNightly).labelsHidden().tint(Theme.success)
                 }
                 .disabled(!canEdit)
                 Divider()

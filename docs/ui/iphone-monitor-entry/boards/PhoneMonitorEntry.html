@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iPhone Monitor Entry</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* tokens: Theme (docs/ui/ipad-dock-monitor/boards/ds/tcroofsurvey/tokens.css), light */
+:root{--navy:#16325C;--primary:#1F6FB5;--on-primary:#fff;--background:#F3F6FA;--page:#F5F8FB;--surface:#fff;
+--ink-muted:#5B6B82;--ink-tab:#3E4C60;--border:#DDE4ED;--danger:#D9453B;--danger-text:#B42318;--danger-soft:#FDECEA;
+--success:#2E9E5B;--success-ink:#1F6B43;--success-soft:#E8F5EE;--warning:#B45309;--warning-soft:#FFF4E5;--grey-soft:#EEF1F5;
+--grad:linear-gradient(135deg,#16325C,#1F6FB5);--skel:#E6ECF3}
+*{box-sizing:border-box}body{margin:0;background:#E9EDF2;font-family:Sarabun,sans-serif;color:var(--navy)}
+h1{font-size:28px;margin:32px 40px 4px}p.lead{margin:0 40px 24px;color:var(--ink-muted);max-width:1100px}
+h2{font-size:20px;margin:28px 40px 12px}
+.row{display:flex;gap:36px;padding:0 40px 20px;flex-wrap:wrap}
+.cap{width:390px;font-size:14px;color:var(--ink-muted);margin-top:8px}.cap b{color:var(--navy)}
+.rec{display:inline-block;background:var(--success);color:#fff;border-radius:8px;padding:0 8px;font-weight:700;font-size:13px}
+.phone{width:390px;height:844px;background:var(--page);border-radius:44px;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(22,50,92,.18);border:8px solid #111}
+.status{height:47px;display:flex;justify-content:space-between;padding:14px 26px 0;font-weight:700;font-size:15px}
+.hdr{background:var(--grad);color:#fff;padding:8px 16px 16px;border-radius:0 0 18px 18px;margin-top:-47px;padding-top:55px}
+.hdr .t{font-size:22px;font-weight:800}.hdr .s{font-size:13px;opacity:.85}
+.body{padding:10px 16px 130px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px}
+.ct{font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ct small{font-weight:600;color:var(--primary);font-size:13px}
+.ring{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--success) 0 74%,var(--border) 74% 100%);display:grid;place-items:center;flex:none}
+.ring i{width:50px;height:50px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:15px}
+.sum{display:flex;gap:12px;align-items:center}.big{font-size:17px;font-weight:800}.sm{font-size:13px}.mut{color:var(--ink-muted)}.warn{color:var(--warning)}
+.tiles{display:flex;gap:6px;margin-top:10px}.tile{flex:1;border-radius:10px;padding:6px 8px;font-size:11px}.tile b{display:block;font-size:18px}
+.ok{background:var(--success-soft);color:var(--success-ink)}.bad{background:var(--danger-soft);color:var(--danger-text)}.off{background:var(--grey-soft);color:var(--ink-muted)}
+.act{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--border);min-height:56px}.act:first-of-type{border-top:0}
+.dot{width:9px;height:9px;border-radius:50%;margin-top:7px;flex:none}.act .m{flex:1;min-width:0}.act .n{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;border-radius:6px;padding:0 6px;background:var(--background);color:var(--navy);margin-right:4px}
+.act .r{text-align:right;font-size:12px;color:var(--ink-muted);white-space:nowrap}.act .r b{display:block;color:var(--warning);font-size:14px}
+.seg{display:flex;background:#E6ECF3;border-radius:22px;padding:3px;height:44px;margin:4px 0 8px}.seg span{flex:1;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--ink-muted);border-radius:19px}
+.seg span.on{background:var(--surface);color:var(--navy);font-weight:800;box-shadow:0 1px 3px rgba(22,50,92,.16)}
+.st{display:flex;align-items:center;gap:8px;min-height:60px;border-top:1px solid var(--border)}.mp{font-size:12px;font-weight:800;background:var(--background);border-radius:6px;padding:2px 6px}
+.st .m{flex:1}.st .m b{font-size:14px}.st .m div{font-size:12px;color:var(--ink-muted)}
+.pill{font-size:12px;font-weight:700;border-radius:12px;padding:2px 9px}
+.dockwrap{position:absolute;left:0;right:0;bottom:0;height:128px;background:linear-gradient(to bottom,rgba(245,248,251,0),rgba(245,248,251,.85) 38%,var(--page) 62%)}
+.dock{position:absolute;left:12px;right:12px;bottom:22px;background:var(--surface);border:1px solid #C8D2DE;border-radius:28px;padding:5px;display:flex;gap:2px}
+.tab{flex:1;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--ink-tab);border-radius:22px;position:relative}
+.tab svg{width:23px;height:23px}.tab.on{background:var(--navy);color:#fff;font-weight:800}
+.tab.new{outline:2px dashed var(--primary);outline-offset:-2px}
+.badge{position:absolute;top:4px;left:calc(50% + 5px);background:var(--danger);color:#fff;font:800 10.5px system-ui;min-width:17px;height:17px;border-radius:9px;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 0 2px var(--surface)}
+.div{width:1px;background:var(--border);margin:12px 2px}
+.sk{background:var(--skel);border-radius:8px}
+.banner{background:var(--warning-soft);color:var(--warning);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600}
+.hl{outline:2px dashed var(--primary);outline-offset:3px}
+.sheet{position:absolute;inset:60px 0 0;background:var(--background);border-radius:14px 14px 0 0;padding:16px}
+.grp{background:var(--surface);border-radius:12px;margin-bottom:16px}.grp div{display:flex;justify-content:space-between;padding:0 14px;min-height:46px;align-items:center;border-top:1px solid var(--border);font-size:15px}.grp div:first-child{border-top:0}
+.gt{font-size:12px;color:var(--ink-muted);margin:0 6px 6px}
+.empty{text-align:center;padding:26px 10px}.empty b{display:block;font-size:16px;margin-bottom:4px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="g-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="g-hw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l8-6 8 6v10z"/><path d="M8 14h8"/></symbol>
+<symbol id="g-pwa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="11" rx="1"/><path d="M3 10h18M9 5v11M15 5v11M12 16v4M8 20h8"/></symbol>
+<symbol id="g-docs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
+<symbol id="g-mon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M6.5 11.5h2.5l1.5-3 2.5 5 1.5-2h3M9 21h6M12 17v4"/></symbol>
+<symbol id="g-set" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.8 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.8-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.8 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 10h.1a2 2 0 1 1 0 4z"/></symbol>
+</defs></svg>
+
+<h1>iPhone · Monitor entry (CHA-34)</h1>
+<p class="lead">Design for discussion: where the iPhone's way into Monitor goes (row 1) and what it opens (row 2). Numbers are the <code>-monitoringDemo</code> example fleet, never hard-coded. Spec: <code>../SPEC.md</code>.</p>
+
+<h2>1 · Where the entry goes</h2>
+<div class="row">
+ <div><div class="phone"><div class="status"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="body" style="padding-top:4px"><div class="big" style="font-size:24px">สวัสดี, ทีม A</div>
+   <div class="card"><div class="ct">นัดวันนี้</div><div class="sm mut">หน้าหลักเดิม (ไม่เปลี่ยน)</div><div class="sk" style="height:90px;margin-top:8px;background:var(--background)"></div></div>
+   <div class="card"><div class="sk" style="height:160px;background:var(--background)"></div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab on"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.<span class="badge">1</span></div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="tab new"><svg><use href="#g-mon"/></svg>Monitor<span class="badge">3</span></div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>A · 5th dock tab</b> <span class="rec">แนะนำ</span><br>~54 pt a tab at 375 pt. Badge = <code>attentionCount</code>, seen from every tab. Same name, glyph and place (after เอกสาร) as iPad.</div></div>
+
+ <div><div class="phone"><div class="status"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="hdr"><div class="t">โครงการ กปภ.</div><div class="s">PWA Solar Project</div></div>
+  <div class="body"><div class="seg"><span>ทั้งหมด 14</span><span>ติดตั้ง 8</span><span class="on">บำรุงรักษา 6</span></div>
+   <div class="card hl"><div class="sum"><svg width="30" height="30" style="color:var(--primary)"><use href="#g-mon"/></svg><div style="flex:1"><div class="big" style="font-size:15px">Monitoring ทุกสถานี</div><div class="sm mut">ต้องดูแล 3 สถานี · อัปเดต 14:55</div></div><span class="badge" style="position:static;box-shadow:none">3</span><span class="mut">›</span></div></div>
+   <div class="card"><div class="ct">ส่งมอบแล้ว 6 สถานี</div><div class="sm mut">ภาพรวมบำรุงรักษาเดิม</div><div class="sk" style="height:120px;margin-top:8px;background:var(--background)"></div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab on"><svg><use href="#g-pwa"/></svg>กปภ.<span class="badge">1</span></div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>B · card in กปภ. › บำรุงรักษา</b><br>Dock unchanged; 2 taps. The count shows only on this stage (the กปภ. badge already means นัดวันนี้).</div></div>
+
+ <div><div class="phone" style="background:#555"><div class="status" style="color:#fff"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="sheet"><div class="big" style="text-align:center;margin-bottom:14px">ตั้งค่า</div>
+   <div class="gt">โครงการ PWA</div><div class="grp"><div>ตั้งค่าโครงการ PWA<span class="mut">›</span></div><div class="hl" style="outline-offset:-2px">Monitoring ทุกสถานี<span class="mut">ต้องดูแล 3 ›</span></div></div>
+   <div class="gt">เครื่องมือ</div><div class="grp"><div>เครื่องมือวัด<span class="mut">›</span></div><div>เอกสารงานบ้าน<span class="mut">›</span></div></div>
+   <div class="gt">บัญชี</div><div class="grp"><div>บัญชี Google<span class="mut">a@tcroof.co</span></div><div>บทบาท<span class="mut">ทีมภายใน</span></div></div></div>
+ </div><div class="cap"><b>C · row in the settings sheet</b><br>Nothing on the dock; 3 taps; a daily watch hidden among account settings. Not recommended.</div></div>
+
+ <div><div class="phone"><div class="status"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="body" style="padding-top:4px"><div class="big" style="font-size:24px">สวัสดี, ผู้รับเหมา</div><div class="card"><div class="sk" style="height:220px;background:var(--background)"></div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab on"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.</div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>A · contractor (role external)</b><br>No เอกสาร, no Monitor: the dock is as today.</div></div>
+</div>
+
+<h2>2 · What it opens: Monitoring ทุกสถานี (compact)</h2>
+<div class="row">
+ <div><div class="phone"><div class="status" style="color:#fff;position:relative;z-index:1"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="hdr"><div class="t">Monitoring ทุกสถานี</div><div class="s">อัปเดต 14:55 · จับคู่แล้ว 6/8 สถานี</div></div>
+  <div class="body">
+   <div class="card"><div class="sum"><div class="ring"><i>74%</i></div><div><div class="big">กำลังตอนนี้ 412 kW</div><div class="sm">วันนี้ <b>2,572</b> / คาด 3,475 kWh</div><div class="sm warn">สูญเสียวันนี้ ~38 kWh · ≈ ฿159</div></div></div>
+    <div class="tiles"><div class="tile ok"><b>5</b>ปกติ</div><div class="tile bad"><b>2</b>แจ้งเตือน</div><div class="tile off"><b>1</b>ออฟไลน์</div></div></div>
+   <div class="card"><div class="ct">ต้องดำเนินการ 4<small>ดูทั้งหมด ›</small></div>
+    <div class="act"><span class="dot" style="background:var(--ink-muted)"></span><div class="m"><div class="n">MP 44 · บางปะกง 2</div><span class="chip">Lost</span><span class="sm mut">ไม่มีข้อมูลตั้งแต่ 12:10</span></div><div class="r"><b>~21 kWh</b>ตั้งแต่ 12:10</div></div>
+    <div class="act"><span class="dot" style="background:var(--danger)"></span><div class="m"><div class="n">MP 25 · ศรีราชา</div><span class="chip">Error 102</span><span class="chip">INV 2</span><div class="sm mut">Grid voltage high</div></div><div class="r"><b>~12 kWh</b>เกิด 3 ครั้ง</div></div>
+    <div class="act"><span class="dot" style="background:var(--warning)"></span><div class="m"><div class="n">MP 12 · ชลบุรี</div><span class="chip">TCRoof</span><span class="chip">INV 1 · MPPT 4 b</span><div class="sm mut">สตริงกระแสต่ำ · 3.1 A จากค่ากลาง 6.2 A · เกณฑ์ 30%</div></div><div class="r"><b>~4.2 kWh</b>ตั้งแต่ 11:30</div></div>
+   </div>
+   <div class="card"><div class="ct">สถานี<small>เรียง: สูญเสีย ▾</small></div>
+    <div class="seg"><span class="on">มีปัญหา 3</span><span>ออฟไลน์ 1</span><span>ทั้งหมด 8</span></div>
+    <div class="st"><span class="mp">MP 44</span><div class="m"><b>บางปะกง 2</b><div>150 kWp · — kW · —</div></div><span class="pill off">ออฟไลน์</span></div>
+    <div class="st"><span class="mp">MP 25</span><div class="m"><b>ศรีราชา</b><div>200 kWp · 61 kW · 2.1 kWh/kWp</div></div><span class="pill bad">แจ้งเตือน</span></div>
+   </div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.</div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="tab on"><svg><use href="#g-mon"/></svg>Monitor<span class="badge">3</span></div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>Loaded</b> (<code>-homeTab monitor -monitoringDemo YES</code>)<br>Summary, ต้องดำเนินการ (<code>Fleet.actions</code>, 5 max), stations by filter. A row opens <code>PWAMaintenanceStationView</code>.</div></div>
+
+ <div><div class="phone"><div class="status" style="color:#fff;position:relative;z-index:1"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="hdr"><div class="t">Monitoring ทุกสถานี</div><div class="s">กำลังอ่านข้อมูล…</div></div>
+  <div class="body">
+   <div class="card"><div class="sum"><div class="sk" style="width:64px;height:64px;border-radius:50%"></div><div style="flex:1"><div class="sk" style="height:18px;width:70%"></div><div class="sk" style="height:12px;width:85%;margin-top:8px"></div><div class="sk" style="height:12px;width:55%;margin-top:6px"></div></div></div><div class="tiles"><div class="tile sk" style="height:44px"></div><div class="tile sk"></div><div class="tile sk"></div></div></div>
+   <div class="card"><div class="sk" style="height:16px;width:40%;margin-bottom:12px"></div><div class="sk" style="height:44px;margin-bottom:10px"></div><div class="sk" style="height:44px;margin-bottom:10px"></div><div class="sk" style="height:44px"></div></div>
+   <div class="card"><div class="sk" style="height:44px;border-radius:22px;margin-bottom:12px"></div><div class="sk" style="height:48px;margin-bottom:10px"></div><div class="sk" style="height:48px"></div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.</div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="tab on"><svg><use href="#g-mon"/></svg>Monitor</div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>Loading</b> (<code>-monitoringLoading YES</code>)<br>Skeletons in the page's shape, <code>.tcShimmer()</code>; no spinner, never — and zeros.</div></div>
+
+ <div><div class="phone"><div class="status" style="color:#fff;position:relative;z-index:1"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="hdr"><div class="t">Monitoring ทุกสถานี</div><div class="s">ข้อมูลล่าสุด 14:30 · จับคู่แล้ว 6/8 สถานี</div></div>
+  <div class="body">
+   <div class="banner">⚠ อ่าน Growatt ไม่สำเร็จ: เชื่อมต่อเซิร์ฟเวอร์ไม่ได้<br><span style="font-weight:400">แสดงข้อมูลล่าสุดที่อ่านได้</span></div>
+   <div class="card"><div class="sum"><div class="ring"><i>71%</i></div><div><div class="big">กำลังตอนนี้ 398 kW</div><div class="sm">วันนี้ <b>2,301</b> / คาด 3,240 kWh</div></div></div>
+    <div class="tiles"><div class="tile ok"><b>6</b>ปกติ</div><div class="tile bad"><b>1</b>แจ้งเตือน</div><div class="tile off"><b>1</b>ออฟไลน์</div></div></div>
+   <div class="card"><div class="ct">ต้องดำเนินการ 2<small>ดูทั้งหมด ›</small></div><div class="sk" style="height:44px;background:var(--background);margin-bottom:8px"></div><div class="sk" style="height:44px;background:var(--background)"></div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.</div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="tab on"><svg><use href="#g-mon"/></svg>Monitor<span class="badge">2</span></div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>Read failed / offline</b> (<code>store.feedFailure</code>)<br>A warning strip over the last figures; the badge keeps the last count.</div></div>
+
+ <div><div class="phone"><div class="status" style="color:#fff;position:relative;z-index:1"><span>14:55</span><span>●●● ▮</span></div>
+  <div class="hdr"><div class="t">Monitoring ทุกสถานี</div><div class="s">จับคู่แล้ว 0/8 สถานี</div></div>
+  <div class="body">
+   <div class="card empty"><b>ยังไม่ได้จับคู่สถานีกับ Plant ใน Growatt</b><span class="sm mut">ผู้จัดการจับคู่ได้ที่ ตั้งค่า Monitoring บน iPad</span></div>
+   <div class="card"><div class="ct">สถานี 8</div>
+    <div class="st"><span class="mp">MP 12</span><div class="m"><b>ชลบุรี</b><div>120 kWp</div></div><span class="pill off">ไม่มีข้อมูล</span></div>
+    <div class="st"><span class="mp">MP 25</span><div class="m"><b>ศรีราชา</b><div>200 kWp</div></div><span class="pill off">ไม่มีข้อมูล</span></div></div>
+   <div class="card empty" style="opacity:.75"><b>ยังไม่มีสถานีที่ส่งมอบ</b><span class="sm mut">สถานีจะขึ้นที่นี่เมื่อส่งมอบงานแล้ว</span><div class="sm mut" style="margin-top:8px">(the state with no handed-over stations)</div></div></div>
+  <div class="dockwrap"></div>
+  <div class="dock"><div class="tab"><svg><use href="#g-home"/></svg>หน้าหลัก</div><div class="tab"><svg><use href="#g-hw"/></svg>งานบ้าน</div><div class="tab"><svg><use href="#g-pwa"/></svg>กปภ.</div><div class="tab"><svg><use href="#g-docs"/></svg>เอกสาร</div><div class="tab on"><svg><use href="#g-mon"/></svg>Monitor</div><div class="div"></div><div class="tab"><svg><use href="#g-set"/></svg>ตั้งค่า</div></div>
+ </div><div class="cap"><b>Empty</b><br>None paired (top), or no handed-over stations (bottom card). Badge hidden at 0.</div></div>
+</div>
+</body></html>

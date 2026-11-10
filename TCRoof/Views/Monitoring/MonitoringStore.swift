@@ -1,6 +1,7 @@
 import Foundation
 import Security
 import SwiftData
+import UIKit
 import TCRoofCore
 
 /// `Monitoring ทุกสถานี`'s data (issue #259): the settings, the stations and when they were last read. One store for
@@ -170,8 +171,9 @@ final class MonitoringStore {
         feedFailure = failure
         refreshedAt = Date()
         recount()
-        // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt)
-        if settings.notifyMaintenance {
+        // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt). Only an
+        // iPad posts them: a phone shows the readings and the badge, so someone with both isn't told twice (CHA-34)
+        if settings.notifyMaintenance, Self.postsAlerts {
             MonitoringNotification.plans(previous: before, stations: stations, now: readAt,
                                          offlineAfter: settings.loggerOfflineMinutes).forEach(NotificationService.shared.post)
         }
@@ -198,6 +200,9 @@ final class MonitoringStore {
         refreshedAt = Date()
         recount()
     }
+
+    /// Whether this device posts the `ออฟไลน์` / `แจ้งเตือน` notifications: the iPad only.
+    static var postsAlerts: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     private static func stationID(_ job: Job) -> String { job.syncID ?? job.code }
 

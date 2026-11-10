@@ -6,9 +6,9 @@ import TCRoofCore
 /// Root tabs of the iPhone (compact width) behind the floating tab dock (docs/ui/tcroof-home-iphone-v3).
 enum PhoneTab: String {
     /// `settings` is only the dock's button for the settings sheet, never a selected tab.
-    case home, homeWork = "homework", pwa, docs, settings
+    case home, homeWork = "homework", pwa, docs, monitor, settings
 
-    static let stacks: [PhoneTab] = [.home, .homeWork, .pwa, .docs]
+    static let stacks: [PhoneTab] = [.home, .homeWork, .pwa, .docs, .monitor]
     /// Space the root screens keep above the dock: with the dock's 66 pt and its 22 pt below, content ends 104 pt up.
     static let barGap: CGFloat = 16
 
@@ -17,7 +17,7 @@ enum PhoneTab: String {
         case .home, .settings: nil
         case .homeWork: .survey
         case .pwa: .pwa
-        case .docs: nil
+        case .docs, .monitor: nil
         }
     }
 
@@ -71,7 +71,8 @@ struct PhoneTabs<HomeRoot: View>: View {
     @State private var notificationService = NotificationService.shared
 
     private var availableTabs: [PhoneTab] {
-        PhoneTab.stacks.filter { $0 != .docs || permissions.role != .external }
+        // the papers and Monitoring are the team's (a contractor has neither), as on iPad
+        PhoneTab.stacks.filter { ($0 != .docs && $0 != .monitor) || permissions.role != .external }
     }
 
     var body: some View {
@@ -112,6 +113,8 @@ struct PhoneTabs<HomeRoot: View>: View {
                 case .docs: AnyView(PWADocsHomeView(isActive: dock.tab == .docs))
                 // the PWA project home, with its plan, stations and bell (docs/ui/pwa-solar-survey-iphone-v3 §1)
                 case .pwa: AnyView(PWARoot())
+                // every handed-over station's output from Growatt, in one column (CHA-34, docs/ui/iphone-monitor-entry)
+                case .monitor: AnyView(PhoneMonitoringPage())
                 default: if let module = t.module { AnyView(module.destination) } else { AnyView(home()) }
                 }
             }
@@ -126,7 +129,7 @@ struct PhoneTabs<HomeRoot: View>: View {
         #if DEBUG
         // `-screen pwa` is the PWA module: the `กปภ.` tab
         if DebugScreen.requested == "pwa" { return .pwa }
-        // `-homeTab homework|pwa|docs` opens with that tab selected, for simulator checks
+        // `-homeTab homework|pwa|docs|monitor` opens with that tab selected, for simulator checks
         if let raw = UserDefaults.standard.string(forKey: "homeTab"), let t = PhoneTab(rawValue: raw), PhoneTab.stacks.contains(t) { return t }
         #endif
         return .home
@@ -159,6 +162,8 @@ private struct PhoneDockBarContent: View {
     let permissions: Permissions
     let today: Date
     @Query private var jobsToday: [Job]
+    /// The badge of `Monitor`: the stations needing someone (`MonitoringStore.attentionCount`, as on iPad).
+    @State private var monitoring = MonitoringStore.shared
 
     init(dock: PhoneDock, permissions: Permissions, today: Date) {
         self.dock = dock
@@ -172,19 +177,27 @@ private struct PhoneDockBarContent: View {
 
     var body: some View {
         TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings)
+            // the demo's fleet counts from launch; real stations once the page has read them
+            .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
+            // the team's phones read Growatt while the app is open (only with a token saved on this phone), for the
+            // badge; they post no alerts, which stay the iPad's (CHA-34); contractors have no Monitor
+            .background { if permissions.role != .external { MonitoringPoller() } }
     }
 
     private func items(_ dock: PhoneDock) -> [TCTabItem<PhoneTab>] {
         let home = jobsToday.filter { $0.kind == .home }.count
         let pwa = jobsToday.filter { $0.kind == .pwa }.count
+        let attention = monitoring.attentionCount
         return [
             TCTabItem<PhoneTab>(.home, title: "หน้าหลัก", symbol: "house"),
             TCTabItem(.homeWork, title: "งานบ้าน", asset: "tab-homework", badge: home, accessibilityLabel: home > 0 ? "งานบ้าน | นัดวันนี้ \(home)" : nil),
             TCTabItem(.pwa, title: "กปภ.", asset: "tab-pwa", badge: pwa, accessibilityLabel: pwa > 0 ? "กปภ. | นัดวันนี้ \(pwa)" : nil),
             TCTabItem(.docs, title: "เอกสาร", asset: "tab-docs"),
+            TCTabItem(.monitor, title: "Monitor", asset: "tab-monitor", badge: attention,
+                      accessibilityLabel: attention > 0 ? "Monitor | ต้องดูแล \(attention)" : "Monitor"),
             // not a tab: settings stays a sheet, like the avatar
             TCTabItem(.settings, title: "ตั้งค่า", symbol: "gearshape") { dock.showSettings = true },
-        ].filter { $0.id != .docs || permissions.role != .external }
+        ].filter { ($0.id != .docs && $0.id != .monitor) || permissions.role != .external }
     }
 }
 

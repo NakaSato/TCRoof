@@ -56,6 +56,8 @@ extension Monitoring {
         /// PR under this percent (stations with an irradiance sensor only).
         public var prLowPercent: Int
         public var notifyMaintenance: Bool
+        /// Unread and out of ตั้งค่า Monitoring: with no server poll, alerts reach only the iPad reading Growatt
+        /// (CHA-94). Kept so the team's settings still decode and round-trip on older apps.
         public var notifySupervisor: Bool
         public var notifyContractor: Bool
         /// Baht per kWh, for `มูลค่าไฟที่ผลิตได้`: `defaultRate` until a manager sets one; nil when a manager cleared

@@ -154,8 +154,7 @@ struct MonitoringSettingsDialog: View {
             saved.pollMinutes != draft.pollMinutes,
             saved.loggerOfflineMinutes != draft.loggerOfflineMinutes, saved.stringLowPercent != draft.stringLowPercent,
             saved.belowExpectedPercent != draft.belowExpectedPercent, saved.prLowPercent != draft.prLowPercent,
-            saved.notifyMaintenance != draft.notifyMaintenance, saved.notifySupervisor != draft.notifySupervisor,
-            saved.notifyContractor != draft.notifyContractor, saved.rate != draft.rate,
+            saved.notifyMaintenance != draft.notifyMaintenance, saved.rate != draft.rate,
             saved.pairings != draft.pairings || saved.pairingServers != draft.pairingServers,
         ]
         n += fields.filter { $0 }.count
@@ -472,14 +471,12 @@ struct MonitoringSettingsDialog: View {
 
     // MARK: recipients
 
+    /// Only the maintenance team: alerts come from the iPad that reads Growatt, and with no server poll nothing can
+    /// reach a station's supervisor or contractor (CHA-94), so their switches are left out.
     private var recipientsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("ส่งแจ้งเตือนถึง", note: "ในแอปและมือถือ")
-            HStack(spacing: 12) {
-                recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
-                recipientCard("ผู้ควบคุมงานของสถานี", "เฉพาะสถานีที่รับผิดชอบ", on: $draft.notifySupervisor)
-                recipientCard("ผู้รับเหมาของสถานี", "เฉพาะสถานีที่ได้รับมอบหมาย", on: $draft.notifyContractor)
-            }
+            sectionHeader("ส่งแจ้งเตือนถึง", note: "แจ้งบน iPad ที่เปิด Monitoring")
+            recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
         }
     }
 

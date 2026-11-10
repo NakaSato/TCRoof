@@ -6,7 +6,11 @@ import XCTest
 final class MonitoringTests: XCTestCase {
     let cal = Calendar.current
     var now: Date { Monitoring.demoNow(calendar: cal) }
-    var demo: Monitoring.Fleet { Monitoring.Fleet(Monitoring.demo(now: now, calendar: cal), now: now, settings: .init()) }
+    var demo: Monitoring.Fleet {
+        let stations = Monitoring.demo(now: now, calendar: cal)
+        return Monitoring.Fleet(stations, now: now, settings: .init(),
+                                raised: Monitoring.demoRaised(stations, now: now, calendar: cal), calendar: cal)
+    }
 
     func testTheBoardsFleetAddsUp() throws {
         let f = demo
@@ -80,8 +84,8 @@ final class MonitoringTests: XCTestCase {
     }
 
     func testTheDockCountsStationsInAlarmOrOffline() {
-        // MP 44 offline and MP 25 in alarm; MP 12's own string check leaves it normal (issue #270)
-        XCTAssertEqual(demo.needingAttention, 2)
+        // MP 44 offline and MP 25 in alarm; MP 12 stays normal, but its low string needs someone too (CHA-92)
+        XCTAssertEqual(demo.needingAttention, 3)
         // a station not paired yet reads offline in the table but has no feed to fall silent: the badge stays 0
         let unpaired = Monitoring.Station.unpaired(id: "a", mpNumber: 1, name: "A", kWp: 100, inverters: 1)
         let fleet = Monitoring.Fleet([unpaired], now: now, settings: .init())
@@ -317,12 +321,12 @@ final class MonitoringTests: XCTestCase {
         XCTAssertNil(below(Monitoring.Fleet([normal("a", kWp: 100, kWh: 340), early], now: now, settings: .init()), "b"))
 
         let stations = [normal("a", kWp: 100, kWh: 340), normal("b", kWp: 100, kWh: 200)]
-        let first = Monitoring.Fleet(stations, now: now, settings: .init())
-        let since = first.belowSinceAfter([:])
-        XCTAssertEqual(since, ["b": now])
+        let first = Monitoring.Fleet(stations, now: now, settings: .init(), calendar: cal)
+        XCTAssertEqual(Set(first.raised.keys), ["b/below"])
         let later = now.addingTimeInterval(600)
-        let next = Monitoring.Fleet(stations, now: later, settings: .init(), belowSince: since)
+        let next = Monitoring.Fleet(stations, now: later, settings: .init(), raised: first.raised, calendar: cal)
         XCTAssertEqual(below(next, "b")?.since, now)
-        XCTAssertEqual(next.belowSinceAfter(since), ["b": now])
+        XCTAssertEqual(below(next, "b")?.occurrences, 1)
+        XCTAssertEqual(next.raised["b/below"]?.since, now)
     }
 }

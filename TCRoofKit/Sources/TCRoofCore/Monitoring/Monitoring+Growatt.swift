@@ -2,7 +2,7 @@ import Foundation
 
 extension Monitoring {
     /// What one poll read from Growatt's OpenAPI for a paired station: `plant/data`, today's and yesterday's
-    /// `plant/power`, `device/list` and `plant/energy` by day and by month. A part is nil when its call failed or
+    /// `plant/power`, `device/list`, each inverter's latest readings (`invs_data`) and `plant/energy` by day and by month. A part is nil when its call failed or
     /// wasn't made this time (the history is read once a day), and `GrowattMap.station` then keeps the station's
     /// previous value for it, so a failed read never turns a figure into 0.
     public struct GrowattReading: Equatable, Sendable {
@@ -12,17 +12,21 @@ extension Monitoring {
         public var devices: [GrowattAPI.Device]?
         public var days: [GrowattAPI.EnergyPoint]?
         public var months: [GrowattAPI.EnergyPoint]?
+        /// Each inverter's latest readings by serial number (`device/inverter/invs_data`), for the string currents.
+        public var inverters: [String: GrowattAPI.Latest]?
 
         public init(data: GrowattAPI.PlantData? = nil, power: [GrowattAPI.PowerPoint]? = nil,
                     yesterdayPower: [GrowattAPI.PowerPoint]? = nil, devices: [GrowattAPI.Device]? = nil,
-                    days: [GrowattAPI.EnergyPoint]? = nil, months: [GrowattAPI.EnergyPoint]? = nil) {
+                    days: [GrowattAPI.EnergyPoint]? = nil, months: [GrowattAPI.EnergyPoint]? = nil,
+                    inverters: [String: GrowattAPI.Latest]? = nil) {
             self.data = data; self.power = power; self.yesterdayPower = yesterdayPower; self.devices = devices
-            self.days = days; self.months = months
+            self.days = days; self.months = months; self.inverters = inverters
         }
 
         /// Nothing came back at all.
         public var isEmpty: Bool {
             data == nil && power == nil && yesterdayPower == nil && devices == nil && days == nil && months == nil
+                && inverters == nil
         }
     }
 
@@ -180,6 +184,9 @@ extension Monitoring {
                 s.invertersOnline = prev?.invertersOnline
             }
 
+            // invs_data: each inverter's string currents, in the same INV order
+            s.inverterStrings = strings(reading.inverters, order: inverters, previous: prev?.inverterStrings ?? [])
+
             // the alarms: the logger's silence, and each inverter's fault or lost contact
             var alarms: [Alarm] = []
             if offline {
@@ -244,6 +251,46 @@ extension Monitoring {
             s.hasIrradianceSensor = false
             s.prToday = nil
             return s
+        }
+
+        /// A MAX wires two strings to each MPPT: `currentString1` and `2` are MPPT 1's `a` and `b`, and so on.
+        public static let stringsPerMPPT = 2
+
+        /// One inverter's currents as MPPT rows of strings (`Station.inverterStrings`' inner part), A. From
+        /// `currentStringN` two to an MPPT, else, when Growatt gives no string carrying current, from `ipvN` with one
+        /// "string" per MPPT. The unused inputs after the last one carrying current are left out; nothing carrying
+        /// current anywhere (night, or neither field given) is empty.
+        public static func mppts(_ latest: GrowattAPI.Latest) -> [[Double?]] {
+            func used(_ values: [Double?]) -> [Double?] {
+                guard let last = values.lastIndex(where: { ($0 ?? 0) > StringTint.noCurrent }) else { return [] }
+                return Array(values[...last])
+            }
+            let strings = used(latest.stringCurrents)
+            if !strings.isEmpty {
+                return stride(from: 0, to: strings.count, by: stringsPerMPPT).map {
+                    Array(strings[$0..<min($0 + stringsPerMPPT, strings.count)])
+                }
+            }
+            return used(latest.mpptCurrents).map { [$0] }
+        }
+
+        /// Every inverter's string currents in `INV` order (`device/list`'s inverters by serial number, else the
+        /// batch's serials sorted). An inverter the batch left out, or the whole batch failing (`batch` nil), keeps
+        /// its previous currents, so a missed read never shows 0; one out of contact has none (its last readings are
+        /// old). One reading no current at all keeps its previous grid with 0 A, else none.
+        static func strings(_ batch: [String: GrowattAPI.Latest]?, order devices: [GrowattAPI.Device]?,
+                            previous: [[[Double?]]]) -> [[[Double?]]] {
+            guard let batch else { return previous }
+            let sns = devices.map { $0.map(\.sn) } ?? batch.keys.sorted()
+            let lost = Set(devices?.filter(\.isLost).map(\.sn) ?? [])
+            let out: [[[Double?]]] = sns.enumerated().map { i, sn in
+                let kept = i < previous.count ? previous[i] : []
+                guard !lost.contains(sn) else { return [] }
+                guard let latest = batch[sn] else { return kept }
+                let rows = mppts(latest)
+                return rows.isEmpty ? kept.map { $0.map { $0 == nil ? nil : 0 } } : rows
+            }
+            return out.allSatisfy(\.isEmpty) ? [] : out
         }
 
         /// `09:00` today, else `7/11 17:00`.

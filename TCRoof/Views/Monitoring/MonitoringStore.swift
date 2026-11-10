@@ -1,7 +1,4 @@
-import FirebaseAuth
-import FirebaseCore
 import Foundation
-import os
 import Security
 import SwiftData
 import TCRoofCore
@@ -10,9 +7,9 @@ import TCRoofCore
 /// the page and the dock's badge.
 ///
 /// The stations are the handed-over PWA stations, or with `-monitoringDemo YES` the board's example fleet. A station
-/// paired with a Growatt plant (`Settings.pairings`) is read by the server's poll (`monitoring/{station}`, CHA-93,
-/// `receive(server:)`), or from Growatt's OpenAPI by this iPad every `pollMinutes` while the server's reading is stale
-/// and this iPad has the token (`poll`, `MonitoringFeed`); an unpaired one reads `ไม่มีข้อมูล`.
+/// paired with a Growatt plant (`Settings.pairings`) is read from Growatt's OpenAPI by this iPad every `pollMinutes`
+/// when it has the token (`poll`, `MonitoringFeed`); an unpaired one reads `ไม่มีข้อมูล`. Growatt's figures never go
+/// through Firebase: only the settings sync (`config/monitoring`).
 @MainActor @Observable
 final class MonitoringStore {
     static let shared = MonitoringStore()
@@ -76,19 +73,19 @@ final class MonitoringStore {
     /// The line under the page's header naming where the rows come from, nil for the stations' own.
     var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
 
-    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, belowSince: belowSince) }
+    var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, raised: raised) }
 
-    /// When each station's `ผลิตต่ำกว่าที่คาด` line was first raised, so its age carries from one reading to the next.
-    private var belowSince: [String: Date] = [:]
+    /// The app's own lines (`ผลิตต่ำกว่าที่คาด`, `สตริงกระแสต่ำ`, `PR ต่ำ`) as last raised, so each keeps its age and
+    /// today's count from one reading to the next (`Monitoring.Raised`).
+    private var raised: [String: Monitoring.Raised] = [:]
 
-    /// The dock's badge: the stations in alarm or offline (`Fleet.needingAttention`), worked out when the stations or the
-    /// settings change, not on each redraw of the dock.
+    /// The dock's badge: the stations in alarm or offline, or with a low string or PR (`Fleet.needingAttention`),
+    /// worked out when the stations or the settings change, not on each redraw of the dock.
     private(set) var attentionCount = 0
 
     private func recount() {
         let f = fleet
-        let since = f.belowSinceAfter(belowSince)
-        if since != belowSince { belowSince = since }
+        if f.raised != raised { raised = f.raised }
         let n = f.needingAttention
         if n != attentionCount { attentionCount = n }
     }
@@ -99,6 +96,7 @@ final class MonitoringStore {
         if Self.demo {
             now = Monitoring.demoNow()
             stations = Monitoring.demo(now: now)
+            if raised.isEmpty { raised = Monitoring.demoRaised(stations, now: now, settings: settings) }
         } else if Self.growattWebDemo {
             // the example plants come with the next poll; keep the ones read
             if !stations.allSatisfy({ $0.id.hasPrefix(Monitoring.GrowattWebMap.stationID("")) }) { stations = [] }
@@ -116,81 +114,43 @@ final class MonitoringStore {
         recount()
     }
 
-    /// Reads every paired station: from the server's poll (`monitoring/{station}`, CHA-93) while it is fresh, else
-    /// from Growatt itself (read only, one call after another, off the main actor) when this iPad has the server's
-    /// token. A station read neither way, or whose read failed, keeps its last figures.
+    /// Reads every paired station from Growatt itself (read only, one call after another, off the main actor) when this
+    /// iPad has the server's token. A station not read, or whose read failed, keeps its last figures.
     func poll(jobs: [Job]) async {
         guard !Self.demo else { return refresh(jobs: jobs) }
         if Self.growattWebDemo { return await pollWebDemo() }
         sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
         let readAt = Date()
-        let (fromServer, serverFailure) = await serverReadings(now: readAt)
         var targets: [MonitoringFeed.Target] = []
-        for src in sources where fromServer[src.base.id] == nil {
+        for src in sources {
             guard let p = settings.pairing(of: src.base.id), let url = URL(string: p.server.url),
                   let token = MonitoringToken.token(p.server.id) else { continue }
             targets.append(.init(stationID: src.base.id, api: GrowattAPI(baseURL: url, token: token), plantID: p.plantID,
                                  latitude: src.latitude, longitude: src.longitude))
         }
-        guard !targets.isEmpty || !fromServer.isEmpty else {
+        guard !targets.isEmpty else {
             refresh(jobs: jobs)
-            feedFailure = serverFailure
+            feedFailure = nil
             return
         }
-        if !hasRead, !targets.isEmpty { readingFirst = true }
-        let readings = targets.isEmpty ? [] : await feed.read(targets, now: readAt, calendar: .current)
+        if !hasRead { readingFirst = true }
+        let readings = await feed.read(targets, now: readAt, calendar: .current)
         // cancelled (the page left): no skeleton left on; the next poll starts the wait again
         guard !Task.isCancelled else { readingFirst = false; return }
         // a failed first read ends the wait too: the header says why (`feedFailure`)
         hasRead = true
         readingFirst = false
-        var all = fromServer
-        for r in readings { all[r.stationID] = r }
-        apply(all, at: readAt, failure: readings.compactMap(\.failure).first?.message ?? serverFailure)
+        let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
+        apply(all, at: readAt, failure: readings.compactMap(\.failure).first?.message)
     }
 
-    /// The handed-over stations as last listed by `poll`, so a server reading that comes between polls fills its row.
+    /// The handed-over stations as last listed by `poll`.
     private struct Source {
         var base: Monitoring.Station
         var latitude: Double?
         var longitude: Double?
     }
     @ObservationIgnored private var sources: [Source] = []
-    /// The server's poll of each station (`monitoring/{station}`), from `CloudSync`.
-    @ObservationIgnored private var server: [String: Monitoring.ServerReading] = [:]
-
-    /// The server's readings from Firestore (CHA-93): fresh ones fill their rows at once, without waiting for the next
-    /// poll, so the dock's badge and the alerts follow the server whichever tab shows.
-    func receive(server readings: [Monitoring.ServerReading]) {
-        server = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
-        guard !Self.demo, !Self.growattWebDemo, !sources.isEmpty else { return }
-        Task {
-            let readAt = Date()
-            let (fresh, failure) = await serverReadings(now: readAt)
-            guard !fresh.isEmpty else { return }
-            hasRead = true
-            readingFirst = false
-            apply(fresh, at: readAt, failure: failure)
-        }
-    }
-
-    /// The fresh server readings of the paired stations, with the site's forecast; and why the server couldn't read a
-    /// station this iPad can't read either (no token here), for the header.
-    private func serverReadings(now: Date) async -> ([String: MonitoringFeed.Reading], String?) {
-        var out: [String: MonitoringFeed.Reading] = [:]
-        var failure: String?
-        for src in sources {
-            guard let p = settings.pairing(of: src.base.id), let s = server[src.base.id] else { continue }
-            guard s.fresh(now: now, plantID: p.plantID, pollMinutes: settings.pollMinutes) else {
-                if MonitoringToken.token(p.server.id) == nil { failure = failure ?? s.failure }
-                continue
-            }
-            let daily = await feed.forecast(stationID: src.base.id, latitude: src.latitude, longitude: src.longitude)
-            out[src.base.id] = .init(stationID: src.base.id, reading: s.reading, forecastDailyKWhPerKWp: daily, failure: nil)
-            failure = failure ?? s.failure
-        }
-        return (out, failure)
-    }
 
     /// The readings as the stations' rows; a station without one keeps its row. Alerts for what changed since.
     private func apply(_ byID: [String: MonitoringFeed.Reading], at readAt: Date, failure: String?) {
@@ -255,7 +215,7 @@ final class MonitoringStore {
     private static func inverters(_ job: Job) -> Int { max(job.iecReport?.inverters.count ?? 1, 1) }
 
     /// A manager's `บันทึก` in ตั้งค่า Monitoring: the next revision, signed with their email and sent to the team
-    /// (CHA-91). Nothing is sent when only a token changed: tokens go to the server on their own (`MonitoringServerToken`).
+    /// (CHA-91). Nothing is sent when only a token changed: a token stays on this device.
     func save(_ s: Monitoring.Settings) {
         guard s != settings else { return }
         let signed = s.signed(after: settings, by: MemberRole.shared.permissions.email)
@@ -278,17 +238,6 @@ final class MonitoringStore {
         let signed = settings.signed(after: settings, by: MemberRole.shared.permissions.email)
         keep(signed)
         onChange?(signed)
-    }
-
-    /// Tokens a manager saved on this iPad before the server polled (CHA-93) go up once, so its poll starts without
-    /// anyone typing them again. A manager's only: the function refuses anyone else.
-    func sendKeptTokens() {
-        let key = "monitoring.tokensSentToServer"
-        guard MemberRole.shared.permissions.role.managesTeam, !UserDefaults.standard.bool(forKey: key) else { return }
-        let kept = settings.servers.compactMap { s in MonitoringToken.token(s.id).map { (s.id, $0) } }
-        guard !kept.isEmpty else { return }
-        for (id, token) in kept { MonitoringServerToken.send(token, for: id) }
-        UserDefaults.standard.set(true, forKey: key)
     }
 
     private func keep(_ s: Monitoring.Settings) {
@@ -322,7 +271,7 @@ final class MonitoringStore {
 }
 
 /// A monitoring server's token, kept in this device's Keychain (only the last four characters are in the settings) for
-/// this iPad's own poll, and sent to the server's (`MonitoringServerToken`). Like the assistant's key (`AssistantKey`)
+/// this iPad's own poll, and never sent anywhere. Like the assistant's key (`AssistantKey`)
 /// it belongs to the device, shared by every account signed in there and kept through account switches.
 enum MonitoringToken {
     private static let service = "com.tcroof.monitoring"
@@ -349,43 +298,5 @@ enum MonitoringToken {
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                                 kSecAttrAccount as String: server.uuidString]
         SecItemDelete(q as CFDictionary)
-    }
-}
-
-/// The `monitoringToken` Cloud Function (functions/src/index.ts, CHA-93): a manager's token for a server, kept where no
-/// device reads it (`monitoringTokens/{server}`) for the server's poll; an empty token removes it. A callable function
-/// is a JSON POST of `{"data": …}` with the account's ID token, as `AssistantClient` sends it.
-enum MonitoringServerToken {
-    private static let log = Logger(subsystem: "com.tcroof.internal", category: "monitoring")
-
-    /// Sends the token, or its removal; failures are logged, since the server's reading then says it has no token.
-    static func send(_ token: String, for server: UUID) {
-        Task {
-            do { try await post(token, for: server) } catch {
-                log.error("monitoring token not sent: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-    }
-
-    private struct Envelope: Encodable {
-        struct Body: Encodable { let serverID: String; let token: String }
-        let data: Body
-    }
-
-    private static func post(_ token: String, for server: UUID) async throws {
-        guard let user = Auth.auth().currentUser, let project = FirebaseApp.app()?.options.projectID,
-              let url = URL(string: "https://\(AssistantClient.region)-\(project).cloudfunctions.net/monitoringToken") else {
-            throw AssistantClient.Failure.signedOut
-        }
-        var r = URLRequest(url: url, timeoutInterval: 30)
-        r.httpMethod = "POST"
-        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        r.setValue("Bearer \(try await user.getIDToken())", forHTTPHeaderField: "Authorization")
-        r.httpBody = try JSONEncoder().encode(Envelope(data: .init(serverID: server.uuidString, token: token)))
-        let (data, response) = try await URLSession.shared.data(for: r)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw AssistantClient.Failure.server(status: "\((response as? HTTPURLResponse)?.statusCode ?? 0)",
-                                                 message: String(data: data, encoding: .utf8) ?? "")
-        }
     }
 }

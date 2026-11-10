@@ -71,7 +71,8 @@ struct MPTemplateSheet: View {
         NavigationStack {
             PadForm(maxWidth: 720) {
                 if !loaded {
-                    PadSection { HStack { ProgressView(); Text("กำลังอ่านแผนของสถานี…").foregroundStyle(Theme.inkMuted) } }
+                    PadSection { ForEach(0..<5, id: \.self) { _ in MPCaseRowSkeleton() } }
+                        .accessibilityIdentifier("mpTemplate.loading")
                 } else {
                     if let o = cases.first(where: { $0.id == own }) {
                         PadSection("สถานีของงานนี้") { row(o) }
@@ -232,5 +233,22 @@ struct MPTemplateSheet: View {
                 failure = (error as? MPWorkbook.Failure)?.message ?? error.localizedDescription
             }
         }
+    }
+}
+
+/// A station plan row (selection circle, code and title, details) while the plans are read.
+struct MPCaseRowSkeleton: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(Theme.borderSubtle).frame(width: 20, height: 20)
+            VStack(alignment: .leading, spacing: 6) {
+                TCSkeletonBlock(width: 220, height: 14)
+                TCSkeletonBlock(width: 160, height: 11)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .tcShimmer()
+        .tcLoadingLabel()
     }
 }

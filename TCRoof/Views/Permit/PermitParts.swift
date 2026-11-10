@@ -114,7 +114,7 @@ struct PermitPagesPreview: View {
                 if let image = images[i] {
                     Image(uiImage: image).resizable().interpolation(.high)
                 } else {
-                    Theme.paper.overlay(ProgressView())
+                    TCSkeletonPage()
                 }
             }
             .frame(width: width, height: width * size.height / size.width)

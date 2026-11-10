@@ -26,7 +26,7 @@ struct RequestPDFSheet: View {
                 }
                 ZStack {
                     Theme.paper
-                    if let page { Image(uiImage: page).resizable().scaledToFit() } else { ProgressView() }
+                    if let page { Image(uiImage: page).resizable().scaledToFit() } else { TCSkeletonPage() }
                 }
                 .aspectRatio(210.0 / 297.0, contentMode: .fit)
                 .overlay(Rectangle().stroke(Theme.borderSubtle))

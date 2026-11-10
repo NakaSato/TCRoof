@@ -69,8 +69,9 @@ struct MonitoringPage: View {
         }
     }
 
-    /// Managers edit the settings (issue #259 §7); everyone else sees them.
-    var canEdit: Bool { permissions.role == .manager }
+    /// Managers and the Maintainer edit the settings (issue #259 §7), as `config/monitoring`'s rule allows; everyone
+    /// else sees them.
+    var canEdit: Bool { permissions.role.managesTeam }
 
     // MARK: header
 

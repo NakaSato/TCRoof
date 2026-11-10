@@ -17,6 +17,8 @@ extension Monitoring {
             var drop: (h: Int, m: Int, after: Double)? = nil
             var sensor = false
             var alarms: [Alarm] = []
+            /// INV 1's string (MPPT, place) carrying 31 % of its share.
+            var lowString: (mppt: Int, string: Int)? = nil
         }
         let specs: [Spec] = [
             Spec(mp: 44, name: "สถานีผลิตน้ำสามพราน", kWp: 120, inverters: 1, online: 0, soFar: 0, expected: 430, total: 160_000,
@@ -29,10 +31,9 @@ extension Monitoring {
                                 since: at(9, 50), occurrences: 4, workOrder: "TK-0412", loss: .measured(380)),
                           Alarm(id: "mp25-117", source: .growatt, code: "117", part: "INV 2", detail: "Relay fault",
                                 since: at(9, 48), occurrences: 1, workOrder: "TK-0412", loss: .unknown)]),
+            // INV 1's MPPT 4 b carries 31 % of the others' current: the fleet raises its `TCRoof` line (`demoRaised`)
             Spec(mp: 12, name: "สถานีผลิตน้ำบางเลน", kWp: 180, inverters: 2, online: 2, soFar: 612, expected: 650, total: 240_000,
-                 yesterday: 640, sensor: true,
-                 alarms: [Alarm(id: "mp12-mppt", source: .tcroof, part: "MPPT 4 b", detail: "สตริง 3.1 A จากค่ากลาง 10 A",
-                                since: at(11, 30), loss: .about(6))]),
+                 yesterday: 640, sensor: true, lowString: (3, 1)),
             Spec(mp: 52, name: "สถานีผลิตน้ำกำแพงแสน", kWp: 200, inverters: 2, online: 2, soFar: 690, expected: 720, total: 265_000,
                  yesterday: 450, sensor: true),
             Spec(mp: 7, name: "สถานีผลิตน้ำดอนตูม", kWp: 95, inverters: 1, online: 1, soFar: 330, expected: 345, total: 155_000,
@@ -81,12 +82,37 @@ extension Monitoring {
                 let f = 0.85 + 0.12 * (0.5 + 0.5 * cos(Double(back + s.mp)))
                 return Period(start: m, energy: back == 0 ? x * f * 0.25 : x * f, expected: back == 0 ? x * 0.27 : x)
             }
-            return Station(id: "demo-mp\(s.mp)", mpNumber: s.mp, name: s.name, kWp: s.kWp, inverters: s.inverters,
-                           invertersOnline: s.stop == nil ? s.online : nil, powerNow: power,
-                           energyToday: energy, expectedSoFar: s.expected, expectedToday: Forecast.energy(expectedCurve, through: Monitoring.slots - 1),
-                           totalEnergy: s.total, lastReading: last, backfeedToday: s.stop == nil ? 0 : nil,
-                           hasIrradianceSensor: s.sensor, prToday: s.sensor ? 81 : nil, alarms: s.alarms, curve: raw,
-                           expectedCurve: expectedCurve, yesterdaySoFar: s.yesterday, days: days, months: months)
+            var station = Station(id: "demo-mp\(s.mp)", mpNumber: s.mp, name: s.name, kWp: s.kWp, inverters: s.inverters,
+                                  invertersOnline: s.stop == nil ? s.online : nil, powerNow: power,
+                                  energyToday: energy, expectedSoFar: s.expected, expectedToday: Forecast.energy(expectedCurve, through: Monitoring.slots - 1),
+                                  totalEnergy: s.total, lastReading: last, backfeedToday: s.stop == nil ? 0 : nil,
+                                  hasIrradianceSensor: s.sensor, prToday: s.sensor ? 81 : nil, alarms: s.alarms, curve: raw,
+                                  expectedCurve: expectedCurve, yesterdaySoFar: s.yesterday, days: days, months: months)
+            // the string currents the station page shows, read by the fleet's `สตริงกระแสต่ำ` too
+            if s.stop == nil {
+                var strings = demoDetail(station, now: clock, calendar: calendar).inverters.map(\.strings)
+                if let low = s.lowString, !strings.isEmpty, low.mppt < strings[0].count, low.string < strings[0][low.mppt].count,
+                   let v = strings[0][low.mppt][low.string] {
+                    strings[0][low.mppt][low.string] = v * 0.31
+                }
+                station.inverterStrings = strings
+            }
+            return station
+        }
+    }
+
+    /// The demo's `TCRoof` lines as first raised, for the fleet's `raised`: MP 12's low string since 11:30, as on the
+    /// board, so it shows at once and not 30 minutes after the page opens.
+    public static func demoRaised(_ stations: [Station], now: Date, settings: Settings = Settings(),
+                                  calendar: Calendar = .current) -> [String: Raised] {
+        let today = calendar.startOfDay(for: now)
+        let since = calendar.date(bySettingHour: 11, minute: 30, second: 0, of: today) ?? today
+        let fleet = Fleet(stations, now: now, settings: settings, calendar: calendar)
+        return fleet.raised.mapValues { r in
+            var r = r
+            guard r.active, !r.shown else { return r }
+            r.since = since
+            return r
         }
     }
 

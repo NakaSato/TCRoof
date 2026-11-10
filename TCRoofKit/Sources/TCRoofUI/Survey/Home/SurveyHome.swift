@@ -271,7 +271,6 @@ struct SurveyHomeView: View {
         } message: { p in Text(p.notes.joined(separator: "\n")) }
         .overlay {
             if let busy { BusyOverlay(text: busy) }
-            else if model.isLoading && model.jobs.isEmpty { ProgressView("กำลังโหลดงานสำรวจ…") }
         }
         .errorAlert($error)
         .onAppear { model.reload(); model.linkInstallJobs() }
@@ -289,9 +288,23 @@ struct SurveyHomeView: View {
 
     // MARK: cards
 
+    /// The project cards' columns: one on iPhone, `padColumns` on iPad.
+    var gridColumns: [GridItem] { compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns) }
+
+    /// The first load of the jobs, before any is in the list: skeleton cards stand in for them.
+    var jobsLoading: Bool { model.isLoading && model.jobs.isEmpty }
+
+    /// Skeleton cards on the cards' grid, a row's worth more on iPad.
+    var gridSkeleton: some View {
+        LazyVGrid(columns: gridColumns, spacing: compact ? 10 : 16) {
+            ForEach(0..<(compact ? 3 : padColumns * 2), id: \.self) { _ in JobCardSkeleton() }
+        }
+        .accessibilityIdentifier("surveyHome.loading")
+    }
+
     var grid: some View {
         let stations = phaseStations
-        return LazyVGrid(columns: compact ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 16), count: padColumns), spacing: compact ? 10 : 16) {
+        return LazyVGrid(columns: gridColumns, spacing: compact ? 10 : 16) {
             ForEach(shown.prefix(projectWindow.limit)) { j in
                 let station = stations[j.id]
                 let mode: JobCard.Mode = tab == .install ? .install : .survey

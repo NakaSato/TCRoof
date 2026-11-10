@@ -19,7 +19,6 @@ extension Monitoring {
         let rated = ratings.reduce(0, +)
         let faults = s.alarms.filter { $0.source == .growatt }
         let loggerSN = String(format: "DLG%03d%dZ", mp * 41 % 1000, s.inverters)
-        let stringAlarm = s.alarms.first { $0.source == .tcroof && $0.part.hasPrefix("MPPT") }
         let month = s.months.last?.energy
         var inverters: [Inverter] = []
         for (i, r) in ratings.enumerated() {
@@ -44,16 +43,15 @@ extension Monitoring {
             let status: DeviceStatus = offline ? .offline : fault != nil ? .fault : .normal
             let mppts = r >= 100 ? 10 : 7
             let volts = 330.0
-            var strings: [[Double?]] = (0..<mppts).map { m in
-                (0..<2).map { b -> Double? in
-                    if offline { return nil }
-                    guard let p = power else { return nil }
-                    return p * 1000 / Double(mppts * 2) / volts * wobble(m * 2 + b, Double(mp))
+            // the station's own currents when it has them (`Monitoring.demo` sets them, a low string included)
+            let strings: [[Double?]] = !offline && i < s.inverterStrings.count ? s.inverterStrings[i]
+                : (0..<mppts).map { m in
+                    (0..<2).map { b -> Double? in
+                        if offline { return nil }
+                        guard let p = power else { return nil }
+                        return p * 1000 / Double(mppts * 2) / volts * wobble(m * 2 + b, Double(mp))
+                    }
                 }
-            }
-            if i == 0, let a = stringAlarm, let (m, b) = demoString(a.part), m < strings.count, let v = strings[m][b] {
-                strings[m][b] = v * 0.31
-            }
             let reporting = !offline && power != nil
             let phases: [ACPhase] = ["L1", "L2", "L3"].enumerated().map { k, n in
                 guard reporting, let p = power else { return ACPhase(name: n) }
@@ -219,13 +217,6 @@ extension Monitoring {
     static func demoModel(_ kW: Double) -> String {
         let n = Int(kW)
         return kW >= 100 ? "MAX \(n)KTL3-X LV" : "MAX \(n)KTL3 LV"
-    }
-
-    /// `MPPT 4 b` → (3, 1).
-    static func demoString(_ part: String) -> (Int, Int)? {
-        let bits = part.split(separator: " ")
-        guard bits.count == 3, let m = Int(bits[1]), m > 0 else { return nil }
-        return (m - 1, bits[2] == "b" ? 1 : 0)
     }
 
     static func numberText(_ v: Double?) -> String {

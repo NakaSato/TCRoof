@@ -224,6 +224,7 @@
 			packageReferences = (
 				A1000000000000000000F100 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */,
+				A1000000000000000000F003 /* XCLocalSwiftPackageReference "GrowattAPI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000005 /* Products */;
@@ -589,6 +590,10 @@
 		A1000000000000000000F002 /* XCLocalSwiftPackageReference "TCRoofKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = TCRoofKit;
+		};
+		A1000000000000000000F003 /* XCLocalSwiftPackageReference "GrowattAPI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GrowattAPI;
 		};
 /* End XCLocalSwiftPackageReference section */
 

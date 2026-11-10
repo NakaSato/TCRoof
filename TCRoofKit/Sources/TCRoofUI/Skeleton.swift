@@ -110,6 +110,31 @@ public struct TCSkeletonRow: View {
     }
 }
 
+/// A printed page in outline: paper with a heading and lines of text, filling the frame it is given, for a page preview
+/// (a PDF page, a form, a test sheet) while it is drawn.
+public struct TCSkeletonPage: View {
+    public init() {}
+
+    public var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, margin = w * 0.08, line = max(w * 0.018, 4)
+            let count = min(40, max(0, Int((geo.size.height - 2 * margin - line * 1.8) / (line * 2.6))))
+            VStack(alignment: .leading, spacing: line * 1.6) {
+                TCSkeletonBlock(width: w * 0.45, height: line * 1.8, radius: 3)
+                ForEach(0..<count, id: \.self) { i in
+                    TCSkeletonBlock(width: (w - 2 * margin) * (i % 4 == 3 ? 0.6 : 1), height: line, radius: 2)
+                }
+            }
+            .padding(margin)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+            .clipped()
+        }
+        .tcShimmer()
+        .background(Theme.paper)
+        .tcLoadingLabel()
+    }
+}
+
 public extension View {
     /// The skeleton sweep over this view's own shapes (only where it draws), while `active`.
     func tcShimmer(_ active: Bool = true) -> some View { modifier(TCShimmer(active: active)) }

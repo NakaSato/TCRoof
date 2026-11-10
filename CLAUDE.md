@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | `TCRoof/CLAUDE.md` | the app target (sign-in, sync, Drive, travel log) and roles in full |
 | `TCRoofKit/CLAUDE.md` | the package's layers: TCRoofUI, TCRoofCore (DXF, drawings, IEC, MP plan, assistant…), PDFReport, ExcelExport, DriveSync, PVYield, ModuleRules |
+| `GrowattAPI/CLAUDE.md` | the Growatt package: the OpenAPI and web portal clients, its rules and tests |
 | `TCRoofUITests/CLAUDE.md` | how to run UI tests and their rules |
 | `tools/master-plan-sheet/CLAUDE.md` | the Master Plan Google Sheet and its Apps Script |
 | `docs/ui/CLAUDE.md` | how to follow the design boards and specs |
@@ -33,7 +34,7 @@ TCRoof is an iPad-first SwiftUI app (iOS 17, bundle `com.tcroof.internal`) for a
 - **Master Plan sheet script:** `node --test tools/master-plan-sheet/core.test.js` (the Google Sheet's Apps Script, below).
 - **Test plans** (`TestPlans/`): the TCRoof scheme's test action runs `Unit` (the app's unit tests) by default; `Package` runs the package's tests and `UI` the UI tests (`xcodebuild test -scheme TCRoof -testPlan UI …`). The Crashlytics symbol upload is skipped for Debug builds.
 - **Lint:** there is no SwiftLint or swift-format config; the checks are `swift test` and the xcodebuild build.
-- **CI:** `.github/workflows/ci.yml` runs on pull requests and `main`: the Linux package tests (`tools/linux-swift/test.sh` in `swift:6.2-noble`), the Master Plan sheet script, the Cloud Functions and the Firestore rules tests (emulator, Java 21). Every TCRoofKit test on macOS runs on `main` and by hand only (macOS minutes cost more). Nothing in CI builds the app or runs `TCRoofTests` and the UI tests: they need xcodebuild with a simulator, so a decision worth testing goes in TCRoofCore (as `DriveDestination` does for `DriveRoute`).
+- **No CI:** nothing runs on GitHub. Before merging, run the checks locally: `swift test --parallel` in `TCRoofKit/` (and `GrowattAPI/` when it changed), the xcodebuild build above, `npm test` in `functions/`, `node --test tools/master-plan-sheet/core.test.js`, and the Firestore rules tests when `firestore.rules` changed (`npx firebase-tools emulators:exec --only firestore --project demo-tcroof 'node --test rules.test.js'` in `tools/firestore-rules-tests`, a local emulator with Java). Nothing builds `TCRoofTests` or the UI tests by default: they need xcodebuild with a simulator, so a decision worth testing goes in TCRoofCore (as `DriveDestination` does for `DriveRoute`).
 - **Toolchain:** if `swift build` fails on `actool`, or `xcodebuild` says the active developer directory "is a command line tools instance", prefix the command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - **Secrets:** `Config.xcconfig` includes the git-ignored `Secrets.xcconfig` (copy `Secrets.example.xcconfig`) for `GISTDA_API_KEY`. The app builds without it. A key built in there ships readable in the app, so restrict it at its provider; keys typed in the survey settings (Mapbox, Google Maps, GISTDA) are kept in the device's Keychain (`SurveySettings.secretKeys`), not in the settings JSON.
 
@@ -43,6 +44,7 @@ To open a screen in a given state (screenshots, checks), read `docs/debug-flags.
 
 - **App target (`TCRoof/`):** Google sign-in, SwiftData models, Firestore sync (`Sync/CloudSync.swift`, limited by `firestore.rules`, project `tcroof-1564c`), Google Drive for photos and files, and the non-survey screens. Details: `TCRoof/CLAUDE.md`.
 - **`TCRoofKit` package:** all survey work and shared logic: `TCRoofUI` (design system and the survey editor), `TCRoofCore` (pure values and rules), `PDFReport`, `ExcelExport`, `DriveSync`, `PVYield`, `ModuleRules`, `TCRoofMCP`. Details: `TCRoofKit/CLAUDE.md`.
+- **`GrowattAPI` package** (`GrowattAPI/`, its own `Package.swift`): Growatt's server OpenAPI v1, read calls only, Foundation only; `TCRoofKit` depends on it by path and `TCRoofCore` re-exports it. `swift test` there. Endpoints, Growatt's web portal calls and what is unconfirmed: `docs/specs/growatt-api.md`.
 - **Master Plan sheet** (`tools/master-plan-sheet`): a Google Sheet that reads Firestore; renaming or re-encoding the fields it reads breaks it. Details: its CLAUDE.md.
 - **Roles:** `members/<email>.role` is `manager`, `internal` or `external` (`docs/reference/roles/user-roles.json`, `TCRoofCore/UserRoles.swift`, kept the same by `RoleTableTests`). Check `permissions.can(.capability, on: job.access)` before showing an action; `firestore.rules` enforces it (tests in `tools/firestore-rules-tests`), and a newly synced collection needs a rule. Raise `AppCompat.syncVersion` when a change needs every device on it before its rules go live. Details: `TCRoof/CLAUDE.md`.
 

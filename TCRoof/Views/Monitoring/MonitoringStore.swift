@@ -102,17 +102,35 @@ final class MonitoringStore {
     }
 
     /// DEBUG: Growatt's web portal example plants in place of the stations (`-growattDemo YES`, or the PWA settings'
-    /// `สถานีตัวอย่าง Growatt` switch, the same flag as the `บำรุงรักษา` overview's). `test` and `-growattToken` stay
-    /// the overview's only: here a token goes in ตั้งค่า Monitoring and a station is paired with its plant.
+    /// `สถานีตัวอย่าง Growatt` switch, the same flag as the `บำรุงรักษา` overview's). Off, the stations are the real
+    /// ones: a token goes in ตั้งค่า Monitoring and a station is paired with its plant.
     static var growattWebDemo: Bool {
         #if DEBUG
-        let d = UserDefaults.standard
-        let flag = (d.string(forKey: "growattDemo") ?? "").lowercased()
-        let token = (d.string(forKey: "growattToken") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return !demo && token.isEmpty && !["", "no", "0", "false", "test"].contains(flag)
+        let flag = (UserDefaults.standard.string(forKey: "growattDemo") ?? "").lowercased()
+        return !demo && !["", "no", "0", "false"].contains(flag)
         #else
         false
         #endif
+    }
+
+    /// A paired station read from Growatt, for the `บำรุงรักษา` overview and its station page; nil when the station
+    /// isn't paired or hasn't been read since launch (Growatt is read only while Monitor shows, CHA-107), or with either
+    /// demo on, whose stations are none of the jobs.
+    func reading(of stationID: String) -> Monitoring.Station? {
+        guard !Self.demo, !Self.growattWebDemo else { return nil }
+        return stations.first { $0.id == stationID && $0.paired && $0.lastReading != nil }
+    }
+
+    /// The overview's row with its paired station's figures from Growatt (`MaintenanceStationSummary.monitored`).
+    func maintenanceRow(_ row: MaintenanceStationSummary) -> MaintenanceStationSummary {
+        guard let s = reading(of: row.id) else { return row }
+        return row.monitored(by: s, now: now, offlineAfter: settings.loggerOfflineMinutes)
+    }
+
+    /// The station page of a paired station read from Growatt; nil for any other, which keeps its own page.
+    func maintenanceDetail(_ row: MaintenanceStationSummary) -> MaintenanceStationDetail? {
+        guard let s = reading(of: row.id) else { return nil }
+        return .monitored(summary: row, station: s, now: now, offlineAfter: settings.loggerOfflineMinutes)
     }
 
     /// The line under the page's header naming where the rows come from, nil for the stations' own.

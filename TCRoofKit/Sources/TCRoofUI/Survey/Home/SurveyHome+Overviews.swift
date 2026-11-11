@@ -428,7 +428,7 @@ extension SurveyHomeView {
         addMaintenanceButton
     }
 
-    /// `-growattDemo YES` / `-growattToken`: where the Growatt rows come from, the call's state and `ดึงใหม่`. The home
+    /// `-growattDemo YES`: where the Growatt example rows come from, the call's state and `ดึงใหม่`. The home
     /// loads them (`SurveyHomeView.body`), not this line: in the lazy list it leaves the screen, which would cancel the load.
     @ViewBuilder private var growattDemoLine: some View {
         if growatt.on {

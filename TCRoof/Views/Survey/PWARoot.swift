@@ -22,6 +22,8 @@ struct PWARoot: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     /// Published background summaries, updated only when station inputs change.
     @State private var summaryCache = InstallSummaryCache()
+    /// Growatt's readings of the paired stations (`MonitoringPoller` reads them app-wide), for the maintenance rows.
+    @State private var monitoring = MonitoringStore.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad: the dock over this stack (`PadTabs`).
     @Environment(PadDock.self) private var dock: PadDock?
@@ -40,7 +42,7 @@ struct PWARoot: View {
             }
             .navigationDestination(item: $dailies) { DailyReportListView(job: $0) }
             .navigationDestination(item: $maintenanceStation) { s in
-                PWAMaintenanceStationView(station: s)
+                PWAMaintenanceStationView(station: s, detail: monitoring.maintenanceDetail(s))
             }
             .navigationDestination(isPresented: $showPlan) { PWAPlanPhoneView() }
             .navigationDestination(isPresented: $showSettings) { PWASettingsPage() }
@@ -111,7 +113,8 @@ struct PWARoot: View {
             openStation: { s in station = installing.first { $0.overviewID == s.id } },
             // one station's list: the first that hasn't sent today's report
             openDailyReports: installing.isEmpty ? nil : { dailies = installing.first { !$0.sentDailyReportToday } ?? installing.first },
-            maintenanceStations: stations.filter { $0.status == .completed }.map(\.maintenanceSummary),
+            // a station paired with its Growatt plant shows what the Monitoring poll last read (`GrowattAPI`)
+            maintenanceStations: stations.filter { $0.status == .completed }.map { monitoring.maintenanceRow($0.maintenanceSummary) },
             openMaintenanceStation: { s in maintenanceStation = s },
             handOver: { id in stations.first { $0.overviewID == id }?.status = .completed },
             returnToInstall: { id in stations.first { $0.overviewID == id }?.status = .installing },

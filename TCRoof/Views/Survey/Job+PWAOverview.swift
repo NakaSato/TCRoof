@@ -7,7 +7,8 @@ extension Job {
 
     var sentDailyReportToday: Bool { dailyLog(on: .now)?.engineerSignedAt != nil }
 
-    /// This handed-over station for the maintenance overview. No monitoring feed yet, so it has no energy or PR.
+    /// This handed-over station for the maintenance overview, before Growatt's figures (`MonitoringStore.maintenanceRow`
+    /// adds them for a paired station): no energy or PR.
     var maintenanceSummary: MaintenanceStationSummary {
         MaintenanceStationSummary(id: overviewID, mpNumber: mpNumber, name: projectName, kWp: capacityKW, status: .normal,
                                   note: "ยังไม่มีข้อมูลการผลิต")

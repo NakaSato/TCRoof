@@ -236,12 +236,12 @@ struct MonitoringSettingsDialog: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    /// `openapi.growatt.com · 4 สถานี · 43 Plant`: the stations whose plant is read from this account, and how many
-    /// plants the last test saw.
+    /// `openapi.growatt.com · จับคู่ 4 สถานี · 43 Plant`: the stations whose plant is read from this account (so 0
+    /// reads as not paired yet, not an empty account), and how many plants the last test saw.
     private func accountLine(_ s: Monitoring.Settings.Server) -> String {
         let n = stations.filter { draft.pairing(of: $0.id)?.server.id == s.id }.count
         let total = s.plants.map { " · \($0) Plant" } ?? ""
-        return s.host + " · \(n) สถานี" + total
+        return s.host + " · จับคู่ \(n) สถานี" + total
     }
 
     /// The account's connection: a tap tests it again. No token on this iPad says so first, since nothing can be read.

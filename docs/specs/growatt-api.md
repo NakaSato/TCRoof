@@ -21,13 +21,13 @@ The `GrowattAPI` Swift package at the repo root (`GrowattAPI/`) is the client. I
 | `details` | `plant/details` | GET | `plant_id` | name, user, place, `peak_power`, `timezone`, arrays, inverters |
 | `data` | `plant/data` | GET | `plant_id` | energy today / month / year / total, `current_power`, `last_update_time`, `timezone` |
 | `power` | `plant/power` | GET | `plant_id`, `date` | `powers[]` every 5 min, W |
-| `energy` | `plant/energy` | GET | `plant_id`, `start_date`, `end_date`, `time_unit` | `energys[]`; a range too long gets 10004 |
+| `energy` | `plant/energy` | GET | `plant_id`, `start_date`, `end_date`, `time_unit` | `energys[]`; dates always `yyyy-MM-dd`, even by month (live, 2026-11-12: `yyyy-MM` and a year alone get 10004); by day at most 7 days, a longer range gets 10004 `error_time format is incorrect` |
 | `dataloggers` | `device/datalogger/list` | GET | `plant_id`, `page`, `perpage` | `dataloggers[]` |
-| `devices`, `devicePage` | `device/list` | GET | `plant_id`, `page`, `perpage` | `devices[]`: `device_sn`, `type`, `status`, `lost`, `device_id` |
+| `devices`, `devicePage` | `device/list` | GET | `plant_id`, `page`, `perpage` | `devices[]`: `device_sn`, `type`, `status`, `lost`, `device_id`; live (2026-11-12), every MAX inverter is listed twice under one serial number, type 1 and type 4, so inverters are counted once by serial number (`Device.inverters`) |
 | `alarms` | `device/inverter/alarm` | GET | `device_sn`, `date` (not in either guide, but required), `page`, `perpage` | `alarms[]`: `alarm_code`, `alarm_message`, `start_time`, `end_time`, `status` |
 | `inverterHistory` | `device/inverter/data` | GET | `device_sn`, `start_date`, `end_date` (≤7 days), `page`, `perpage` (≤1000) | `datas[]`, `next_page_start_id` |
 | `latest(deviceSN:)` | `device/inverter/last_new_data` | GET | `device_sn` | latest readings: `pac`, `powerToday`, strings, `faultType`, `warnCode` |
-| `latest(deviceSNs:)` | `device/inverter/invs_data` | POST | `pageNum`, `inverters` (≤100) | each inverter's latest readings by SN; `Latest.stringCurrents` (`currentString1…`) and `mpptCurrents` (`ipv1…`) |
+| `latest(deviceSNs:)` | `device/inverter/invs_data` | POST | `pageNum`, `inverters` (≤100, comma-separated) | each inverter's latest readings by SN; `Latest.stringCurrents` (`currentString1…`) and `mpptCurrents` (`ipv1…`) |
 | `info` | `device/inverter/inv_data_info` | GET | `device_sn` | settings and state: `nominalPower`, `fwVersion`, `lost` |
 | `storageAlarms` | `device/storage/alarm_data` | POST | `storage_sn`, `date`, `page`, `perpage` | `alarms[]` |
 | `storageLatest` | `device/storage/storage_last_data` | POST | `storage_sn` | latest readings |
@@ -39,7 +39,7 @@ Readings with many fields (inverter and storage) come back as `Readings`, every 
 Not confirmed against a live answer:
 - `device/inverter/alarm`: needs a `date` (`yyyy-MM-dd`) that neither guide names: without it the test server answers 10003 `error_dateError`; with it and `device_sn` it looks the inverter up (10005 for a serial it doesn't know), while `device_id` gets 10002 (10 Nov 2026). The meaning of an alarm's `status` isn't given.
 - Times: the guide's examples write `2015-12-08T11:05:00Z` and `2016-04-28 18:41:40.0`, while live `plant/data` writes `yyyy-MM-dd HH:mm:ss` on the plant's clock.
-- `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`). Monitoring reads the string currents from it (CHA-106) by the names the portal's chart answered for a MAX (`currentString1…32`, else `ipv1…` per MPPT, two strings to an MPPT, `GrowattMap.mppts`), not yet seen in this answer: the device calls it for the station page shown (CHA-107) and treats a failure as no news (the last currents stay, nothing shows in the header). Record a live answer for the tests when a token and a MAX plant are at hand.
+- `invs_data`: `inverters` is the serial numbers joined by commas (`SN1,SN2`). Live, 2026-11-12, a MAX plant: that answered every inverter (183 fields each, 16 `currentString…` and 10 `ipv…` read); a JSON array (`["SN1","SN2"]`, what the client sent before) answered `data: {}` with no error, so the string currents never came. Monitoring reads the string currents from it (CHA-106) by the names the portal's chart answered for a MAX (`currentString1…32`, else `ipv1…` per MPPT, two strings to an MPPT, `GrowattMap.mppts`), which the live answer above carried: the device calls it for the station page shown (CHA-107) and treats a failure as no news (the last currents stay, nothing shows in the header). Record a live answer for the tests when a token and a MAX plant are at hand.
 - `search_type`: the appendix gives `name`, the example `PlantName`.
 
 ### Left out on purpose

@@ -212,7 +212,7 @@ final class GrowattEndpointsTests: XCTestCase {
         XCTAssertEqual(l["2033022963"]?.datalogger, "AH13140003")
         XCTAssertEqual(l["TL15300005"]?.status, 3)
         XCTAssertEqual(GrowattStub.requests.first?.httpMethod, "POST")
-        XCTAssertEqual(GrowattStub.bodies.first, "inverters=%5B%222033022963%22%2C%22TL15300005%22%5D&pageNum=1")
+        XCTAssertEqual(GrowattStub.bodies.first, "inverters=2033022963%2CTL15300005&pageNum=1")
     }
 
     /// The string and MPPT currents by the names the live portal answered for a MAX (`currentString1…`, `ipv1…`; not

@@ -31,6 +31,20 @@ extension GrowattAPI {
         public var isLost: Bool { lost == true || status == -1 }
         /// Reporting without a fault (a waiting inverter at night counts).
         public var isOnline: Bool { !isLost && !isFault }
+
+        /// The inverters of a `device/list`, each once, by serial number. A live account lists every MAX inverter
+        /// twice under the same serial number (type 1 and type 4); the copy reporting without a fault is kept, else
+        /// the one updated last.
+        public static func inverters(_ devices: [Device]) -> [Device] {
+            var best: [String: Device] = [:]
+            for d in devices where d.isInverter {
+                guard let other = best[d.sn] else { best[d.sn] = d; continue }
+                if (d.isOnline && !other.isOnline) || (d.isOnline == other.isOnline && d.lastUpdate > other.lastUpdate) {
+                    best[d.sn] = d
+                }
+            }
+            return best.values.sorted { $0.sn < $1.sn }
+        }
     }
 
     /// One data logger (collector) of `device/datalogger/list`.

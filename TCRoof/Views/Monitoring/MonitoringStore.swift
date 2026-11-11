@@ -91,33 +91,12 @@ final class MonitoringStore {
     private init() {
         settings = UserDefaults.standard.data(forKey: Self.settingsKey)
             .flatMap { try? JSONDecoder().decode(Monitoring.Settings.self, from: $0) } ?? .init()
-        // the PWA settings' `สถานีตัวอย่าง Growatt` switch writes the device's defaults: follow it at once
-        NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.followDemoSwitch() }
-        }
     }
 
-    /// `growattWebDemo` as last seen, so the pages and the poller follow the switch while they show (`followDemoSwitch`).
-    private(set) var webDemoOn = MonitoringStore.growattWebDemo
-    /// The jobs of the last `refresh` or `poll`, to rebuild the stations when the switch changes.
+    /// Growatt's example plants in place of the stations (`growattWebDemo`, set at launch).
+    var webDemoOn: Bool { Self.growattWebDemo }
+    /// The jobs of the last `refresh` or `poll`, to rebuild the stations when the settings change.
     @ObservationIgnored private var lastJobs: [Job] = []
-
-    /// The example plants were switched on or off: drops what was read for the other side, so the stations are the
-    /// example plants or the real ones at once, and the next poll (restarted by `MonitoringPoller`) reads them.
-    func followDemoSwitch() {
-        let on = Self.growattWebDemo
-        guard on != webDemoOn else { return }
-        webDemoOn = on
-        stations = []
-        sources = []
-        raised = [:]
-        stringsRead = [:]
-        summaryRead = nil
-        hasRead = false
-        readingFirst = false
-        feedFailure = nil
-        refresh(jobs: lastJobs)
-    }
 
     static var demo: Bool {
         #if DEBUG
@@ -127,12 +106,13 @@ final class MonitoringStore {
         #endif
     }
 
-    /// DEBUG: Growatt's web portal example plants in place of the stations (`-growattDemo YES`, or the PWA settings'
-    /// `สถานีตัวอย่าง Growatt` switch, the same flag as the `บำรุงรักษา` overview's). Off, the stations are the real
-    /// ones: a token goes in ตั้งค่า Monitoring and a station is paired with its plant.
+    /// DEBUG: Growatt's web portal example plants in place of the stations, with `-growattDemo YES` at launch only.
+    /// The PWA settings' `สถานีตัวอย่าง Growatt` switch, kept in the device's defaults, adds them to the `บำรุงรักษา`
+    /// overview but not here: Monitoring always shows the stations and the accounts' plants.
     static var growattWebDemo: Bool {
         #if DEBUG
-        let flag = (UserDefaults.standard.string(forKey: "growattDemo") ?? "").lowercased()
+        let launch = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+        let flag = ((launch["growattDemo"] as? String) ?? "").lowercased()
         return !demo && !["", "no", "0", "false"].contains(flag)
         #else
         false

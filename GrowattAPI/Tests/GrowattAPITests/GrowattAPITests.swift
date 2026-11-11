@@ -74,6 +74,17 @@ final class GrowattAPITests: XCTestCase {
         XCTAssertEqual(p[3].time, "2026-11-08 06:15")
     }
 
+    /// A live account lists each MAX inverter twice under one serial number (type 1 and type 4): counted once, the
+    /// reporting copy kept.
+    func testAnInverterListedTwiceCountsOnce() {
+        typealias D = GrowattAPI.Device
+        let list = [D(sn: "B", type: 1, status: -1), D(sn: "A", type: 1, status: 1), D(sn: "B", type: 4, status: 1),
+                    D(sn: "A", type: 4, status: 1), D(sn: "L", type: 3)]
+        let inv = D.inverters(list)
+        XCTAssertEqual(inv.map(\.sn), ["A", "B"])
+        XCTAssertTrue(inv.allSatisfy(\.isOnline))
+    }
+
     func testDeviceList() throws {
         let d = try GrowattAPI.parseDevices(devices)
         XCTAssertEqual(d.map(\.sn), ["MAX0001", "MAX0002", "MTR0001"])

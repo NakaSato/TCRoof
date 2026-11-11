@@ -128,14 +128,24 @@ public extension MasterSchedule {
         public var reportedBy: String?
         /// A daily report's pick: when the team confirmed it (`at` is the report's day).
         public var confirmedAt: Date?
+        /// The credit step it reached (the WBS Dictionary's rules of credit, CHA-84: `ยื่น 50`), `at` being that
+        /// step's day; nil is done (100). Only a tick under 100 writes it, so older ticks read as done.
+        public var percent: Double?
 
         public init(by: String, at: Date, document: String? = nil, undated: Bool? = nil, source: Source? = nil,
-                    reportedBy: String? = nil, confirmedAt: Date? = nil) {
+                    reportedBy: String? = nil, confirmedAt: Date? = nil, percent: Double? = nil) {
             self.by = by; self.at = at; self.document = document; self.undated = undated
             self.source = source; self.reportedBy = reportedBy; self.confirmedAt = confirmedAt
+            self.percent = percent.flatMap { $0 >= 100 - 1e-9 ? nil : max($0, 0) }
         }
 
-        enum CodingKeys: String, CodingKey { case by, at, document, undated, source, reportedBy, confirmedAt }
+        /// Done: no step under 100. A tick that isn't is only part of its row's weight, and the plan file, the Master
+        /// Plan sheet and the install plan don't count it as `Y`.
+        public var isDone: Bool { percent == nil }
+        /// The share of the row's weight it books, 0…1.
+        public var credit: Double { min(max((percent ?? 100) / 100, 0), 1) }
+
+        enum CodingKeys: String, CodingKey { case by, at, document, undated, source, reportedBy, confirmedAt, percent }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -147,6 +157,7 @@ public extension MasterSchedule {
             source = ((try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil).flatMap(Source.init(rawValue:))
             reportedBy = try c.decodeIfPresent(String.self, forKey: .reportedBy)
             confirmedAt = try c.decodeIfPresent(Date.self, forKey: .confirmedAt)
+            percent = try c.decodeIfPresent(Double.self, forKey: .percent).flatMap { $0 >= 100 - 1e-9 ? nil : $0 }
         }
 
         /// Where the tick came from as its row shows it.
@@ -237,7 +248,7 @@ public extension MasterSchedule {
         public var points: Double
     }
 
-    /// Books the ticked rows into the plan's progress: each row's weight in the week of its tick, once per row (kept in
+    /// Books the ticked rows into the plan's progress: each row's weight (times its credit step, `WBSTick.credit`) in the week of its tick, once per row (kept in
     /// `Actual.fromWBS`), never past its task's weight; a tick taken back, or a row the plan no longer has, takes its
     /// booking away again. The task's start moves back to the earliest tick, and it finishes on the last one once it
     /// reaches its weight. A task's own line, a row with steps under it, rows of the other case and rows without a task or weight book
@@ -253,7 +264,9 @@ public extension MasterSchedule {
             let item = byCode[code]
             let valid = ticks[code] != nil && item != nil && item?.task != nil && item?.code != item?.task?.code
                 && !parents.contains(code) && (item?.weight ?? 0) > 0 && item?.notForThisStation == false
-            if !valid || abs((item?.weight ?? 0) - b.points) > 1e-9 {
+            // a tick moved to another credit step books again, all of it in the new step's week
+            let want = (item?.weight ?? 0) * (ticks[code]?.credit ?? 1)
+            if !valid || abs(want - b.points) > 1e-9 {
                 var week = actual.points[b.task] ?? [:]
                 let left = (week[b.week] ?? 0) - b.points
                 week[b.week] = left > 1e-9 ? left : nil
@@ -267,7 +280,7 @@ public extension MasterSchedule {
                   !parents.contains(item.code), item.weight > 0, !item.notForThisStation else { continue }
             let key = task.rawValue, weight = input.weight(task)
             let done = (actual.points[key] ?? [:]).values.reduce(0, +)
-            let points = max(0, min(item.weight, weight - done))
+            let points = max(0, min(item.weight * tick.credit, weight - done))
             let day = cal.startOfDay(for: tick.at), week = Actual.key(day, calendar: cal)
             if points > 0 { actual.points[key, default: [:]][week, default: 0] += points }
             actual.fromWBS[item.code] = WBSBooking(task: key, week: week, points: points)

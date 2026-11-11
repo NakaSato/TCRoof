@@ -273,7 +273,8 @@ public enum MPWorkbook {
             // a row without the cell keeps its tick in the app only, and stays out of the record so a later import
             // doesn't read it as unticked in Excel; the Inverter station table's steps go in that table's own column
             for r in tickCells(d, h) where d.cell(Sheet.ref(r.mark, r.row)) != nil {
-                let tick = ticks[r.code]
+                // a step under 100 (`ยื่น 50`, CHA-84) is not the file's `Y`
+                let tick = ticks[r.code].flatMap { $0.isDone ? $0 : nil }
                 if tick != nil { rows.insert(r.code) }
                 let markRef = Sheet.ref(r.mark, r.row)
                 let marked = d.text(r.mark, r.row)?.trimmingCharacters(in: .whitespaces).uppercased() == "Y"

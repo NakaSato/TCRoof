@@ -265,3 +265,27 @@ Export writes the current revision into the `แผนโครงการ` she
 `REV 02 (CR-014)`, `อนุมัติโดย` → the approver's name, `วันที่` → the approval day, and the `REV …` cell above `ฉบับ` →
 `REV 02, อนุมัติแล้ว`. A plan never re-planned in the app leaves the box as the file has it. Revisions need
 `AppCompat.syncVersion` 10: older builds drop them when they save the plan.
+
+## Done criteria and rules of credit (CHA-84)
+
+The Master Plan's `WBS Dictionary` sheet says, for each WBS code, what "done" means (`เกณฑ์เสร็จ / Deliverable`, PMBOK
+7th's Definition of Done), how it earns credit (`Rules of credit`, PMBOK 5th), the documents that prove it and the app
+record that stands for it. `tools/plan-template/wbs_dictionary.py` writes the sheet's first table (124 rows, REV 10)
+from the template workbook to `TCRoofKit/Sources/TCRoofCore/Resources/wbs-dictionary.json`
+(`MasterSchedule.WBSDictionary.bundled`); run it again when the dictionary changes.
+
+- **Credit steps.** A credit worded `ร่าง 10% → ยื่น 50% → อนุมัติ 100%` or `50/50 (S = เริ่ม, Y = เสร็จ)` gives its
+  steps (16 rows); any other credit (`0/100`, level of effort, milestones) is all or nothing. A tick at a step under 100
+  keeps it in `WBSTick.percent` (nil is done, so older ticks read as done) and books that share of the row's weight in
+  its week; moving to another step books the row again, all of it in the new step's week.
+- **Not done.** A tick under 100 isn't `Y`: the plan file's `เสร็จ (Y)`, the install plan's ticked rows and the Master
+  Plan sheet's `WBS` tab (which shows `50%`, and refuses a `Y` typed over it) count only done ticks.
+- **Evidence.** 100 % of a row whose dictionary lists documents needs a document number on the tick, unless an app
+  record gives it (`WBSDictionary.problem`): its task's ICL sheets all signed (rows confirmed through `ใบตรวจรับงาน
+  (ICL)`), or the station papers its note names (`หลักฐาน: site_map`) approved. Those papers also suggest the step
+  (submitted → `ยื่น` / `ส่ง`, drafted or signed → `ร่าง`; `WBSDictionary.credit`).
+- **The sheet.** Tapping the box of a row with steps, or one whose 100 % needs a document, opens `อัปเดต WBS` instead of
+  ticking: it shows the done criteria, the credit, the documents and the app record, offers the steps, and saves only
+  once `problem` is nil. A step under 100 shows a half-filled box and a `ยื่น 50%` chip, and doesn't count in `n/N`.
+- Ticks from a confirmed daily report pick, the Master Plan sheet and a plan file stay done ticks, as before: the
+  check applies where the team ticks in the app.

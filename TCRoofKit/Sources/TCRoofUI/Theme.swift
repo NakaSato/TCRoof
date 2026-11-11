@@ -165,9 +165,11 @@ public enum Theme {
     public static let inkTab = Color(light: 0x3E4C60, dark: 0xC2CFDF)
     /// `TCTabBar`'s top line, module rows and card borders.
     public static let borderOutdoor = Color(light: 0xC9D3E0, dark: 0x34465C)
-    // iPad glass dock (`TCTabBar` `.pad`, issue CHA-95)
-    /// The dock's glass wash over the blur: white at 42 %.
+    // Glass dock (`TCTabBar`: iPad CHA-95, iPhone CHA-108)
+    /// The iPad dock's glass wash over the blur: white at 42 %.
     public static let glassFill = Color(light: 0xFFFFFF, dark: 0x121A24, opacity: 0.42)
+    /// The iPhone dock's wash: white at 72 %, so the tab names stay readable over busy pages (install tracking).
+    public static let glassFillPhone = Color(light: 0xFFFFFF, dark: 0x121A24, opacity: 0.72)
     /// The dock's 1 pt border: navy at 16 %.
     public static let glassStroke = navySolid.opacity(0.16)
     /// The selected pill's 1 pt border: navy at 12 %.

@@ -42,9 +42,19 @@ enum PhoneTab: String {
         opened = [tab]
     }
 
+    /// The tab just left and when, so the dock of a tab opened for the first time slides its pill over from it.
+    private var left: (tab: PhoneTab, at: Date)?
+
     func select(_ t: PhoneTab) {
+        if t != tab { left = (tab, .now) }
         opened.insert(t)
         tab = t
+    }
+
+    /// The tab the dock's pill slides from: the one just left, for half a second after the tap or swipe.
+    var slideFrom: PhoneTab? {
+        guard let left, Date.now.timeIntervalSince(left.at) < 0.5 else { return nil }
+        return left.tab
     }
 
     /// A swipe to the left goes to the next tab of the dock, to the right to the one before.
@@ -176,7 +186,8 @@ private struct PhoneDockBarContent: View {
     }
 
     var body: some View {
-        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings)
+        TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings,
+                 slideFrom: dock.slideFrom)
             // the demo's fleet counts from launch; real stations once the page has read them
             .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
             // the team's phones read Growatt while the app is open (only with a token saved on this phone), for the

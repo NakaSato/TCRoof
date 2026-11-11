@@ -431,24 +431,23 @@ public enum TCTabBarSize: Sendable {
     var glyph: CGFloat { isPad ? 24 : 23 }
     var label: CGFloat { isPad ? 11.5 : 10.5 }
     var height: CGFloat { isPad ? 58 : 56 }
-    var radius: CGFloat { isPad ? 20 : 22 }
     var badge: CGFloat { isPad ? 18 : 17 }
 }
 
-/// Floating tab dock. iPhone (docs/ui/tcroof-home-iphone-v3, state 08): an opaque capsule, radius 28, 1 pt border,
-/// padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label; the selected tab is a navy capsule.
-/// iPad (`size: .pad`, issue CHA-95): a glass capsule (Liquid Glass on iOS 26, a blur under white 42 % before), tabs
-/// 84 × 58, padding 6, no shadow; one glass pill behind the selected tab slides to the tab tapped, without animation
-/// under Reduce Motion, and the selected tab's glyph and label turn `Theme.primary`. A hairline stands before the
-/// `dividerBefore` tab (`ตั้งค่า`). The caller insets it (iPhone: 12 pt sides, 22 pt above the bottom edge; iPad:
-/// centred, 18 pt above) and puts `TCDockFade` behind it.
+/// Floating tab dock: a glass capsule (Liquid Glass on iOS 26, a blur under a white wash before) with a 1 pt navy
+/// border, a white line along the top and no shadow; one glass pill behind the selected tab slides to the tab tapped
+/// or swiped to, without animation under Reduce Motion, and the selected tab's glyph and label turn `Theme.primary`.
+/// iPhone (issue CHA-108): white at 72 %, padding 5, equal tabs 56 high with a 23 pt glyph over a 10.5 pt label.
+/// iPad (`size: .pad`, issue CHA-95): white at 42 %, tabs 84 × 58, padding 6. A hairline stands before the
+/// `dividerBefore` tab (`ตั้งค่า`), whose `action` never takes the pill. The caller insets it (iPhone: 12 pt sides,
+/// 22 pt above the bottom edge; iPad: centred, 18 pt above) and puts `TCDockFade` behind it.
 public struct TCTabBar<ID: Hashable>: View {
     let items: [TCTabItem<ID>]
     @Binding var selection: ID
     let dividerBefore: ID?
     let size: TCTabBarSize
-    /// iPad: where the pill is while it slides in. Each iPad tab has its own dock, so the dock of a tab opened for the
-    /// first time starts its pill on the tab just left and slides it over.
+    /// Where the pill is while it slides in. Each tab has its own dock, so the dock of a tab opened for the first time
+    /// starts its pill on the tab just left (`slideFrom`) and slides it over.
     @State private var pill: ID
     @Namespace private var pillSpace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -470,30 +469,28 @@ public struct TCTabBar<ID: Hashable>: View {
             }
         }
         .fixedSize(horizontal: size.isPad, vertical: true)
-        .background { if size.isPad { selectedPill } }
+        .background { selectedPill }
         .padding(size.isPad ? 6 : 5)
-        .background { if size.isPad { padGlass } else { phoneShape.fill(Theme.surface) } }
-        .overlay { if !size.isPad { phoneShape.strokeBorder(Theme.borderOutdoor) } }
-        .onAppear { if size.isPad, pill != selection { slidePill() } }
-        .onChange(of: selection) { if size.isPad { slidePill() } }
+        .background { glass }
+        .onAppear { if pill != selection { slidePill() } }
+        .onChange(of: selection) { slidePill() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("เมนูหลัก")
     }
-
-    private var phoneShape: RoundedRectangle { RoundedRectangle(cornerRadius: 28, style: .continuous) }
 
     private func slidePill() {
         withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.72)) { pill = selection }
     }
 
     /// The bar: glass, a 1 pt navy border, a white line along the top and a faint dark one along the bottom.
-    @ViewBuilder private var padGlass: some View {
+    @ViewBuilder private var glass: some View {
         let shape = Capsule(style: .continuous)
+        let wash = size.isPad ? Theme.glassFill : Theme.glassFillPhone
         Group {
             if #available(iOS 26, *) {
-                Color.clear.glassEffect(.regular.tint(Theme.glassFill), in: shape)
+                Color.clear.glassEffect(.regular.tint(wash), in: shape)
             } else {
-                shape.fill(.ultraThinMaterial).overlay(shape.fill(Theme.glassFill))
+                shape.fill(.ultraThinMaterial).overlay(shape.fill(wash))
             }
         }
         .overlay(shape.strokeBorder(Theme.glassStroke))
@@ -527,10 +524,9 @@ public struct TCTabBar<ID: Hashable>: View {
                 Text(item.title).font(.sarabun(size.label, selected ? .heavy : .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                     .frame(height: size.isPad ? 14 : 13)
             }
-            .foregroundStyle(selected ? (size.isPad ? Theme.primary : Theme.onPrimary) : Theme.inkTab)
+            .foregroundStyle(selected ? Theme.primary : Theme.inkTab)
             .frame(maxWidth: size.isPad ? nil : .infinity, minHeight: size.height)
             .frame(width: size.isPad ? 84 : nil)
-            .background { if selected && !size.isPad { RoundedRectangle(cornerRadius: size.radius, style: .continuous).fill(Theme.navySolid) } }
             // 4 pt down (iPad 5), starting 5 pt (iPad 6) right of the centre: the glyph's top right
             .overlay(alignment: .top) {
                 if item.badge > 0 {
@@ -561,7 +557,8 @@ public struct TCTabBar<ID: Hashable>: View {
         Text("\(n)").font(.system(size: size.isPad ? 11 : 10.5, weight: .heavy)).monospacedDigit().foregroundStyle(.white)
             .padding(.horizontal, size.isPad ? 5 : 4).frame(minWidth: size.badge, minHeight: size.badge)
             .background(color, in: Capsule())
-            .background(Capsule().fill(Theme.surface).padding(-2))
+            // iPhone: outlined in white at 90 % on the glass (CHA-108)
+            .background(Capsule().fill(size.isPad ? Theme.surface : Theme.glassHighlight).padding(-2))
             .fixedSize()
             .accessibilityHidden(true)
     }

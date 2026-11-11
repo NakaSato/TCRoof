@@ -286,3 +286,12 @@ Export writes the current revision into the `แผนโครงการ` she
 `REV 02 (CR-014)`, `อนุมัติโดย` → the approver's name, `วันที่` → the approval day, and the `REV …` cell above `ฉบับ` →
 `REV 02, อนุมัติแล้ว`. A plan never re-planned in the app leaves the box as the file has it. Revisions need
 `AppCompat.syncVersion` 10: older builds drop them when they save the plan.
+
+Project risk register (CHA-81, PMBOK 5th §11.2.3.1 and §11.3): the Master Plan's `ทะเบียนความเสี่ยง` (R01–R13: probability,
+impact, score, level `สูง` ≥ 15 / `กลาง` ≥ 8 / `ต่ำ`, KRI and its threshold, response, owner, status `เปิด` / `เฝ้าระวัง` /
+`เกิดแล้ว` / `ปิด`) reaches the app read only: the team's Google Sheet copies it into `config/risks` on each pull, with each
+risk's stations as job ids (`tools/master-plan-sheet`), and the team's devices read it (`RiskRegisterStore`, decoded by
+`RiskRegister`; contractors can't, by the rules and in the app). The install tracking page lists the station's open high
+risks after its tripped leading indicators (`ความเสี่ยงสูง R03 …`, with ⚠ and the KRI once it reaches its threshold, the
+response and the owner), and `look_ahead` gives `risks`: the open high ones and any whose KRI has reached its threshold.
+Changing a risk's status in the app, written back to the sheet, is a later step.

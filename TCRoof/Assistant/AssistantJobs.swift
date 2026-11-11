@@ -14,6 +14,7 @@ extension Job {
 
     /// This station as the assistant sees it: its MP plan, progress, daily reports, crew, inspections and paper
     /// deadlines; no customer details. `library` is the PWA paper library, read once for all stations.
+    @MainActor
     func assistantJob(_ permissions: Permissions, library: StationDocs.Library? = nil) -> Assistant.Job {
         let settings = routineSettings
         let deadlines = library.map { lib in
@@ -26,6 +27,7 @@ extension Job {
                              workingWeekdays: settings.workingWeekdays, inspections: settings.inspections, deadlines: deadlines,
                              wbs: scheduleWBS, calendarSettings: settings)
         job.indicators = leadingIndicators()
+        job.risks = RiskRegisterStore.shared.open(for: overviewID)
         return job
     }
 }

@@ -67,10 +67,12 @@ function pullFromApp() {
     writeUnmatched(tab, c1 + 2, first, unmatchedJobs(jobs, matches, stats));
     writeAppTab(book, appTabRows(jobs, matches, rows, stats), logs.length);
     writeWBSTab(book, wbsTabRows(rows, matches), wbs);
+    var risks = syncRisks(book, rows, matches);
 
     var found = matches.filter(function (m, i) { return m.job && String(ids[i] || '').trim(); }).length;
     var stations = ids.filter(function (id) { return String(id || '').trim(); }).length;
     var line = 'สำเร็จ: จับคู่ ' + found + ' / ' + stations + ' สถานี, งานในแอป ' + jobs.length + ', รายงานประจำวัน ' + logs.length;
+    if (risks) line += ', ' + risks;
     if (wbs.written || wbs.refusals.length) line += ', WBS ส่งเข้าแอป ' + wbs.written + ' งาน' + (wbs.refusals.length ? ' ไม่รับ ' + wbs.refusals.length + ' แถว (ดูชีต WBS)' : '');
     // the app's days are Bangkok's: a sheet in another time zone shows them a day early
     var tz = book.getSpreadsheetTimeZone();
@@ -254,6 +256,36 @@ function firestoreGet(path) {
   if (code === 404) return null;
   if (code !== 200) throw new Error('Firestore ' + path + ' (' + code + '): ' + res.getContentText().slice(0, 200));
   return fsFields(JSON.parse(res.getContentText()).fields || {});
+}
+
+// MARK: the risk register for the app (CHA-81)
+
+/**
+ * Copies `ทะเบียนความเสี่ยง` into `config/risks` (`Core.riskRegister`: each risk with the paired jobs of the stations
+ * its `ขอบเขต` touches), only when it changed, so an unchanged register costs one read a pull. The app reads it, team
+ * only (firestore.rules). Returns a few words for the pull's line, or '' when nothing was written; a failure here is
+ * reported in that line and never stops the pull.
+ */
+function syncRisks(book, rows, matches) {
+  try {
+    var jobByCode = {};
+    matches.forEach(function (m, i) {
+      var code = String(rows[i].code || '').trim();
+      if (m.job && code) jobByCode[code] = m.job.id;
+    });
+    var tz = book.getSpreadsheetTimeZone();
+    var json = riskRegister(readRows(book, 'ทะเบียนความเสี่ยง'), readRows(book, 'Master Plan'), jobByCode,
+                            function (d) { return Utilities.formatDate(d, tz, 'yyyy-MM-dd'); });
+    var current = firestoreGet('config/risks');
+    if (current && current.json === json) return '';
+    firestoreCall(':commit', { writes: [{
+      update: { name: 'projects/' + project() + '/databases/(default)/documents/config/risks',
+                fields: { json: { stringValue: json }, updatedAt: { timestampValue: new Date().toISOString() } } }
+    }] }, 'config/risks');
+    return 'ทะเบียนความเสี่ยงส่งเข้าแอป ' + JSON.parse(json).risks.length + ' รายการ';
+  } catch (e) {
+    return '⚠ ทะเบียนความเสี่ยง: ' + e.message;
+  }
 }
 
 // MARK: adding the stations to the app

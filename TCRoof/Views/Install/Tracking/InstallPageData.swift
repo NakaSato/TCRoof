@@ -122,6 +122,14 @@ struct InstallPageData {
                                detail: [i.detail, i.thresholdText].filter { !$0.isEmpty }.joined(separator: " | "),
                                target: Self.target(i.kind)))
         }
+        // the Master Plan risk register's open high risks for this station (CHA-81), after the tripped indicators
+        for r in RiskRegisterStore.shared.open(for: job.overviewID, highOnly: true) {
+            let kri = r.warn && !r.kri.isEmpty ? "⚠ " + r.kri : nil
+            items.append(.init(id: "risk-" + r.id, priority: .high, title: "ความเสี่ยงสูง " + r.label,
+                               detail: [kri, r.response.isEmpty ? nil : r.response, r.owner.isEmpty ? nil : "ผู้รับผิดชอบ: " + r.owner]
+                                .compactMap { $0 }.joined(separator: " | "),
+                               target: .plan))
+        }
         if let input = job.scheduleInput {
             let permits = RoutineReport.permits(plan: MasterSchedule.plan(input), actual: job.scheduleActual, at: today)
             let late = (InstallOverview.permits(permits) ?? []).filter { $0.state == .overdue }

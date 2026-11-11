@@ -345,6 +345,54 @@ function phaseSummary(stations, previousCOD, risks, changes) {
   };
 }
 
+// MARK: the risk register (CHA-81): `ทะเบียนความเสี่ยง` copied into `config/risks` for the app, read only
+
+/**
+ * The station codes a risk's `ขอบเขต` touches, from the Master Plan rows (`id`, `contractor`, `pk2_required`); null
+ * for every station. `ผรม. S` is contractor S's stations, `สถานี > 200 kVA` the ones that need พค.2; `ทั้งเฟส`,
+ * `ทุก ผรม.`, `รายเขต`, `รายสถานี`, `รายวิศวกร` and anything else touch every station.
+ */
+function riskStations(scope, stations) {
+  var text = String(scope === null || scope === undefined ? '' : scope).trim();
+  var ids = function (keep) {
+    return (stations || []).filter(function (s) { return String(s.id || '').trim() && keep(s); })
+      .map(function (s) { return String(s.id).trim(); });
+  };
+  if (/200\s*kVA/i.test(text)) return ids(function (s) { return isY(s.pk2_required); });
+  var m = /^ผรม\.?\s*(\S+)$/.exec(text);
+  if (m && m[1] !== 'ทุก') {
+    var who = m[1].toUpperCase();
+    return ids(function (s) { return String(s.contractor || '').trim().toUpperCase() === who; });
+  }
+  return null;
+}
+
+/**
+ * `config/risks`' JSON: every row of `ทะเบียนความเสี่ยง` with an id, in the sheet's order, its stations as app job
+ * ids (`jobByCode`: station code → Firestore job id; a station not paired with a job is left out). The app's
+ * `RiskRegister.decode` reads it. `bangkokDay` formats a date cell (the sheet passes Utilities.formatDate).
+ */
+function riskRegister(rows, stations, jobByCode, bangkokDay) {
+  var num = function (v) { return typeof v === 'number' && isFinite(v) ? v : null; };
+  var str = function (v) { return v === null || v === undefined ? '' : String(v).trim(); };
+  var risks = (rows || []).filter(function (r) { return str(r.id); }).map(function (r) {
+    var codes = riskStations(r.scope, stations);
+    var jobs = codes === null ? null : codes.map(function (c) { return jobByCode[c]; }).filter(Boolean)
+      .filter(function (j, i, a) { return a.indexOf(j) === i; });
+    var out = {
+      id: str(r.id), title: str(r.risk), category: str(r.cat), cause: str(r.cause), scope: str(r.scope), wbs: str(r.wbs),
+      kri: str(r.kri), kriValue: num(r.kri_v), kriThreshold: num(r.kri_t), warn: str(r.warn) === '⚠',
+      probability: num(r.p), impact: num(r.i), score: num(r.score), level: str(r.level),
+      impactDays: num(r.days), reserveDays: num(r.res), strategy: str(r.strat), response: str(r.resp), owner: str(r.owner),
+      status: str(r.status) || 'เปิด',
+      reviewed: r.rev instanceof Date && bangkokDay ? bangkokDay(r.rev) : (str(r.rev) || null)
+    };
+    if (jobs !== null) out.jobs = jobs;
+    return out;
+  });
+  return JSON.stringify({ risks: risks });
+}
+
 // MARK: the WBS tab (CHA-71): the plans' sub-tasks, and a `Y` typed there written to the app as a `sheet` tick
 
 /** Bangkok is UTC+7 all year. */
@@ -524,5 +572,6 @@ if (typeof module !== 'undefined') {
                      phaseSummary: phaseSummary, bangkokDayToSwift: bangkokDayToSwift, swiftToBangkokDay: swiftToBangkokDay,
                      sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsSourceLabel: wbsSourceLabel,
                      WBS_TAB_HEADER: WBS_TAB_HEADER, wbsTabRows: wbsTabRows, wbsCells: wbsCells, wbsSnapshotRows: wbsSnapshotRows,
-                     wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges };
+                     wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges,
+                     riskStations: riskStations, riskRegister: riskRegister };
 }

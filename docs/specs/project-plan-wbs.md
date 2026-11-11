@@ -295,3 +295,14 @@ risk's stations as job ids (`tools/master-plan-sheet`), and the team's devices r
 risks after its tripped leading indicators (`ความเสี่ยงสูง R03 …`, with ⚠ and the KRI once it reaches its threshold, the
 response and the owner), and `look_ahead` gives `risks`: the open high ones and any whose KRI has reached its threshold.
 Changing a risk's status in the app, written back to the sheet, is a later step.
+
+Schedule buffer (CHA-87, PMBOK 7th Guide 2.8.5 and 2.4.2): as the Master Plan's risk sheet keeps `COD + สำรองทั้งหมด`, each
+station's buffer sits after its install end and protects `installEnd + buffer` (`ScheduleBuffer`). Its size is the
+contingency, the authority tasks' spread at baseline (`HandoverRange` late − likely with nothing done, CHA-80), plus the
+management reserve, 10 % of the install span (`MGMT_PCT`); at least 1 day. The forecast's days past the install end
+(`คาดส่งมอบ`) use it up: `% used` = days late ÷ buffer. Against `% done` (the plan's actual %) it is green while the buffer
+is used no faster than the work, amber when faster, red once a third ahead (`redMargin` 33) or all used. The iPad's KPI
+strip has a `บัฟเฟอร์` cell (`ใช้ 40%`, `เหลือ 6 จาก 19 วัน`) whose popover is the fever chart (`BufferFeverChart`: the
+zones, the weekly points and today's dot) with the buffer's make-up and the protected date; the iPhone overview shows the
+same as a row with a small chart; the PWA `แผนงาน` page's `รายสถานี` list has a column (`40%` in the zone's colour on
+iPad, a dot on iPhone; `PWAPlan.Bar.bufferUsed` / `bufferZone` / `bufferLeft`). A handed-over station has none.

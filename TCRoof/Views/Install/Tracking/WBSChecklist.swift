@@ -7,7 +7,9 @@ import TCRoofCore
 /// document number can go with it. Every row says where its tick came from (`ทีมติ๊ก`, `รายงานประจำวัน`, `Google
 /// Sheet`), or that a daily report's pick waits for the team (`รอยืนยัน · รายงานประจำวัน`, a dashed orange box: a tap
 /// confirms it). A contractor sees the boxes read only. A row with steps under it (2.5.1 and the Inverter station's
-/// steps) is a heading: its steps are ticked, indented under it.
+/// steps) is a heading: its steps are ticked, indented under it. A row the WBS Dictionary gives credit steps (`ยื่น 50% →
+/// ได้รับ 100%`), or documents to prove it, opens its sheet instead of ticking at once (CHA-84); a step under 100 shows
+/// its percent and doesn't count as done.
 struct WBSChecklist: View {
     let items: [MasterSchedule.WorkItem]
     let ticks: [String: MasterSchedule.WBSTick]
@@ -25,6 +27,9 @@ struct WBSChecklist: View {
     var contractors: Set<String> = []
     var canConfirm = false
     var confirm: (RoutineReport.WBSPick) -> Void = { _ in }
+    /// What the job's ICL sheets and station papers say of the rows (`Job.wbsRecords`).
+    var records = MasterSchedule.WBSDictionary.Records()
+    private let dictionary = MasterSchedule.WBSDictionary.bundled
     @State private var documentFor: MasterSchedule.WorkItem?
     @State private var document = ""
 
@@ -45,7 +50,7 @@ struct WBSChecklist: View {
     var body: some View {
         let parents = items.parentCodes
         let tickable = items.filter { !parents.contains($0.code) }
-        let done = tickable.filter { ticks[$0.code] != nil }.count
+        let done = tickable.filter { ticks[$0.code]?.isDone == true }.count
         let waiting = tickable.filter { ticks[$0.code] == nil && pending[$0.code] != nil }.count
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -75,6 +80,7 @@ struct WBSChecklist: View {
             case .updateTick(let item):
                 WBSTickUpdateSheet(item: item,
                                    tick: ticks[item.code],
+                                   records: records,
                                    canTick: canTick,
                                    canTakeBack: ticks[item.code].map(canTakeBack) ?? canTick,
                                    currentUserEmail: currentUserEmail) { newTick in
@@ -129,14 +135,16 @@ struct WBSChecklist: View {
         let enabled = tick.map(canTakeBack) ?? (pick != nil ? canConfirm : canTick)
         return HStack(alignment: .top, spacing: 12) {
             Button {
-                if let pick { confirm(pick) } else { toggle(item) }
+                if let pick { confirm(pick) } else if tick == nil && needsSheet(item) { activeSheet = .updateTick(item) } else { toggle(item) }
             } label: {
-                box(on: tick != nil, waiting: pick != nil).frame(width: 44, height: 44).contentShape(Rectangle())
+                box(on: tick != nil, waiting: pick != nil, partial: tick.map { !$0.isDone } ?? false)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!enabled)
             .accessibilityLabel(item.title.trimmingCharacters(in: .whitespaces))
-            .accessibilityValue(tick != nil ? "เสร็จแล้ว" : pick != nil ? "รอยืนยัน" : "ยังไม่เสร็จ")
+            .accessibilityValue(tick.map { $0.isDone ? "เสร็จแล้ว" : "นับแล้ว " + MasterSchedule.WBSDictionary.percentText($0.percent ?? 0) }
+                                ?? (pick != nil ? "รอยืนยัน" : "ยังไม่เสร็จ"))
             .accessibilityHint(pick != nil && enabled ? "แตะเพื่อยืนยัน" : "")
             .accessibilityIdentifier("wbs.\(item.code)")
 
@@ -154,7 +162,7 @@ struct WBSChecklist: View {
                             Text("หลักฐาน: \(evidence)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        sourceLine(tick: tick, pick: pick)
+                        sourceLine(item.code, tick: tick, pick: pick)
                     }
                     Spacer(minLength: 4)
                     VStack(alignment: .trailing, spacing: 3) {
@@ -208,23 +216,31 @@ struct WBSChecklist: View {
         }
     }
 
+    /// A tick needs its sheet: the row has credit steps, or 100 % needs a document no record gives.
+    private func needsSheet(_ item: MasterSchedule.WorkItem) -> Bool {
+        dictionary.percents(item.code) != [100] || dictionary.problem(item, percent: 100, document: nil, records: records) != nil
+    }
+
     /// `0.25%`, `1.5%`, `5%`: a step's share can be under a tenth.
     static func weight(_ x: Double) -> String {
         x.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US_POSIX"))) + "%"
     }
 
-    /// Ticked: green with a check; a daily report's pick waiting: dashed orange with `?`; else empty.
-    private func box(on: Bool, waiting: Bool = false) -> some View {
-        ZStack {
+    /// Ticked: green with a check; a credit step under 100: green outline, half filled; a daily report's pick waiting:
+    /// dashed orange with `?`; else empty.
+    private func box(on: Bool, waiting: Bool = false, partial: Bool = false) -> some View {
+        let on = on && !partial
+        return ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(on ? Theme.success : waiting ? Theme.warningSoft : Theme.surface)
+                .fill(on ? Theme.success : waiting ? Theme.warningSoft : partial ? Theme.successSoft : Theme.surface)
             if waiting {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(Theme.warning, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
                 Text("?").font(.sarabun(15, .bold)).foregroundStyle(Theme.warningText)
             } else {
-                RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(on ? Theme.success : Theme.pending, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(on || partial ? Theme.success : Theme.pending, lineWidth: 2)
             }
+            if partial { Image(systemName: "circle.lefthalf.filled").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.success) }
             if on { Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.onPrimary) }
         }
         .frame(width: 26, height: 26)
@@ -232,7 +248,7 @@ struct WBSChecklist: View {
 
     /// The row's source chip and who / when: `ทีมติ๊ก` green, `รายงานประจำวัน` / `Google Sheet` blue,
     /// `รอยืนยัน · รายงานประจำวัน` orange, `ยังไม่เสร็จ` grey.
-    private func sourceLine(tick: MasterSchedule.WBSTick?, pick: RoutineReport.WBSPick?) -> some View {
+    private func sourceLine(_ code: String, tick: MasterSchedule.WBSTick?, pick: RoutineReport.WBSPick?) -> some View {
         let shown: (label: String, tone: TCFeedTone?, line: String)
         if let tick {
             shown = Self.source(tick, contractors: contractors)
@@ -243,12 +259,21 @@ struct WBSChecklist: View {
         }
         return HStack(spacing: 6) {
             TCToneChip(shown.label, tone: shown.tone)
+            if let p = tick?.percent {
+                TCToneChip(stepLabel(code, p), tone: .orange)
+            }
             if !shown.line.isEmpty {
                 Text(shown.line).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// `ยื่น 50%`: a step under 100.
+    private func stepLabel(_ code: String, _ p: Double) -> String {
+        let pct = MasterSchedule.WBSDictionary.percentText(p)
+        return dictionary.entry(code)?.step(p).map { "\($0.label) \(pct)" } ?? pct
     }
 
     /// The chip, its tone and the who / when line of a tick: `7/12/69 | สมชาย | MOM-001`; a daily report's pick names
@@ -367,10 +392,13 @@ struct WBSItemEditSheet: View {
 }
 
 /// Sheet for updating a WBS sub-task's completion status, completion date, and evidence / document number.
-/// The team's (`mp.wbs_tick`); a contractor opens it read only.
+/// The team's (`mp.wbs_tick`); a contractor opens it read only. It shows the WBS Dictionary's done criteria and rules
+/// of credit (CHA-84), offers the row's credit steps in place of done / not done, and asks for a document number before
+/// 100 % when the dictionary lists documents, unless an app record (signed ICL sheets, approved station papers) gives it.
 struct WBSTickUpdateSheet: View {
     let item: MasterSchedule.WorkItem
     let tick: MasterSchedule.WBSTick?
+    var records = MasterSchedule.WBSDictionary.Records()
     let canTick: Bool
     let canTakeBack: Bool
     let currentUserEmail: String
@@ -380,15 +408,20 @@ struct WBSTickUpdateSheet: View {
     @State private var isDone: Bool
     @State private var completedAt: Date
     @State private var document: String
+    /// The credit step: 100 is done.
+    @State private var percent: Double
+    private let dictionary = MasterSchedule.WBSDictionary.bundled
 
     init(item: MasterSchedule.WorkItem,
          tick: MasterSchedule.WBSTick?,
+         records: MasterSchedule.WBSDictionary.Records = .init(),
          canTick: Bool,
          canTakeBack: Bool,
          currentUserEmail: String,
          onSave: @escaping (MasterSchedule.WBSTick?) -> Void) {
         self.item = item
         self.tick = tick
+        self.records = records
         self.canTick = canTick
         self.canTakeBack = canTakeBack
         self.currentUserEmail = currentUserEmail
@@ -398,6 +431,15 @@ struct WBSTickUpdateSheet: View {
         _isDone = State(initialValue: done)
         _completedAt = State(initialValue: tick?.at ?? cal.startOfDay(for: .now))
         _document = State(initialValue: tick?.document ?? "")
+        // a tick's own step, else what the app's records give, else the row's first step
+        let dict = MasterSchedule.WBSDictionary.bundled
+        let start = tick.map { $0.percent ?? 100 } ?? dict.credit(item, records: records)?.percent ?? dict.percents(item.code).first ?? 100
+        _percent = State(initialValue: start)
+    }
+
+    private var entry: MasterSchedule.WBSDictionary.Entry? { dictionary.entry(item.code) }
+    private var problem: String? {
+        isDone ? dictionary.problem(item, percent: percent, document: document, records: records) : nil
     }
 
     private var mayModify: Bool {
@@ -430,13 +472,41 @@ struct WBSTickUpdateSheet: View {
                     }
                 }
 
+                if let entry, entry.done != nil || entry.credit != nil {
+                    Section {
+                        if let done = entry.done {
+                            Text(done).font(.sarabun(14)).foregroundStyle(Theme.navy).fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("wbsTick.doneCriteria")
+                        }
+                        if let credit = entry.credit { LabeledContent("Rules of credit") { Text(credit).multilineTextAlignment(.trailing) } }
+                        if let docs = entry.evidence { LabeledContent("หลักฐาน (เอกสาร)") { Text(docs.joined(separator: ", ")).multilineTextAlignment(.trailing) } }
+                        if let record = entry.record { LabeledContent("บันทึกในแอป") { Text(record).multilineTextAlignment(.trailing) } }
+                        if let c = dictionary.credit(item, records: records) {
+                            LabeledContent("ตามบันทึกในแอป", value: "\(c.label) | \(MasterSchedule.WBSDictionary.percentText(c.percent))")
+                        }
+                    } header: {
+                        Text("เกณฑ์เสร็จ (WBS Dictionary)")
+                    }
+                }
+
                 Section("สถานะการดำเนินงาน") {
-                    Toggle("ดำเนินการเสร็จแล้ว", isOn: $isDone)
+                    Toggle(entry?.steps == nil ? "ดำเนินการเสร็จแล้ว" : "นับความคืบหน้า", isOn: $isDone)
                         .disabled(!mayModify)
                         .accessibilityIdentifier("wbsTick.isDone")
 
+                    if isDone, let steps = entry?.steps {
+                        Picker("ขั้น", selection: $percent) {
+                            ForEach(steps, id: \.percent) { s in
+                                Text("\(s.label) \(MasterSchedule.WBSDictionary.percentText(s.percent))").tag(s.percent)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .disabled(!mayModify)
+                        .accessibilityIdentifier("wbsTick.step")
+                    }
+
                     if isDone {
-                        DatePicker("วันที่เสร็จ", selection: $completedAt, displayedComponents: .date)
+                        DatePicker(percent < 100 ? "วันที่ถึงขั้นนี้" : "วันที่เสร็จ", selection: $completedAt, displayedComponents: .date)
                             .disabled(!mayModify)
                             .accessibilityIdentifier("wbsTick.date")
 
@@ -446,6 +516,10 @@ struct WBSTickUpdateSheet: View {
                                 .disabled(!mayModify)
                                 .accessibilityIdentifier("wbsTick.document")
                         }
+                    }
+                    if let problem, mayModify {
+                        Text(problem).font(.sarabun(13)).foregroundStyle(Theme.danger)
+                            .accessibilityIdentifier("wbsTick.problem")
                     }
                     if !mayModify {
                         Text(tick != nil ? "รายการนี้บันทึกโดยบุคคลอื่น คุณไม่มีสิทธิ์แก้ไข" : "คุณไม่มีสิทธิ์บันทึกรายการนี้")
@@ -461,6 +535,7 @@ struct WBSTickUpdateSheet: View {
                         if let reporter = tick.reportedBy { LabeledContent("ผู้รายงาน", value: reporter) }
                         LabeledContent(tick.source == .daily ? "ผู้ยืนยัน" : "ผู้บันทึก", value: who)
                         LabeledContent("วันที่บันทึก", value: ThaiFormat.numericDate.string(from: tick.at))
+                        if let p = tick.percent { LabeledContent("ขั้นที่นับแล้ว", value: MasterSchedule.WBSDictionary.percentText(p)) }
                         if let doc = tick.document, !doc.isEmpty {
                             LabeledContent("เลขที่เอกสาร", value: doc)
                         }
@@ -488,13 +563,14 @@ struct WBSTickUpdateSheet: View {
                             if newTick.undated == true, cal.startOfDay(for: newTick.at) != day { newTick.undated = nil }
                             newTick.at = day
                             newTick.document = doc
+                            newTick.percent = percent < 100 ? percent : nil
                             onSave(newTick)
                         } else {
                             onSave(nil)
                         }
                         dismiss()
                     }
-                    .disabled(!mayModify)
+                    .disabled(!mayModify || problem != nil)
                     .accessibilityIdentifier("wbsTick.save")
                 }
             }

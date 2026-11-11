@@ -424,7 +424,7 @@ var WBS_TAB_HEADER = ['รหัสสถานี', 'งานในแอป (
 /**
  * One row per tickable WBS row of each paired PWA job (`matchRows` of the station `rows`), in the stations' order:
  * [station code, job id, WBS code, title, weight, 'Y' or '', Bangkok day or '', source, by, '']. A job two rows take is
- * listed once.
+ * listed once. A tick at a credit step under 100 (`percent`, CHA-84) shows its percent (`50%`), which isn't a `Y`.
  */
 function wbsTabRows(rows, matches) {
   var out = [], seen = {};
@@ -437,11 +437,18 @@ function wbsTabRows(rows, matches) {
     var station = String((rows[i] || {}).code || j.codes[0] || '').trim();
     wbsTickable(items).forEach(function (it) {
       var t = ticks[it.code];
-      out.push([station, j.id, it.code, String(it.title || '').trim(), Number(it.weight) || 0, t ? 'Y' : '',
+      out.push([station, j.id, it.code, String(it.title || '').trim(), Number(it.weight) || 0, wbsMark(t),
                 t ? swiftToBangkokDay(t.at) : '', wbsSourceLabel(t, d.externals), t ? (t.by || '') : '', '']);
     });
   });
   return out;
+}
+
+/** A tick's `Y` column: `Y` when done, its percent at a credit step under 100 (CHA-84), '' without one. */
+function wbsMark(t) {
+  if (!t) return '';
+  var p = Number(t.percent);
+  return t.percent !== undefined && t.percent !== null && p < 100 ? String(p) + '%' : 'Y';
 }
 
 /**
@@ -477,7 +484,8 @@ function wbsTicksJSON(ticks) {
  * `wbsCells` (of `_wbs` and of the tab); `appTicks` { jobId: ticks } as Firestore has them now; `editor` the email to
  * write them under (a cell's own `แก้โดย` wins); `isTeam(email)` whether that account is one of the team (members, not
  * external); `today` Bangkok's day for a `Y` without a date.
- * - `Y` added: a tick `{ by, at, source: 'sheet' }`, unless the app has one already.
+ * - `Y` added: a tick `{ by, at, source: 'sheet' }`, unless the app has one already (one at a credit step under 100
+ *   is the app's to finish, and is refused).
  * - date changed on a `Y`: the sheet's own tick moves; the app's other ticks are refused (changed in the app only).
  * - `Y` cleared: only a `sheet` tick goes; any other is refused, and stays.
  * Returns { writes: [{ jobId, by, ticks, json }], refusals: [{ jobId, code, why }] }.
@@ -499,7 +507,11 @@ function wbsSheetChanges(snapshot, current, appTicks, editor, isTeam, today) {
         if (c.day === null) return refuse('อ่านวันที่ไม่ได้');
         var at = bangkokDayToSwift(c.day || today);
         if (at === null) return refuse('อ่านวันที่ไม่ได้');
-        if (t && t.source !== 'sheet') { if (s.y) refuse('ติ๊กมาจาก' + wbsSourceLabel(t) + ' แก้วันในแอป'); return; }
+        if (t && t.source !== 'sheet') {
+          if (s.y) refuse('ติ๊กมาจาก' + wbsSourceLabel(t) + ' แก้วันในแอป');
+          else if (wbsMark(t) !== 'Y') refuse('นับไว้ ' + wbsMark(t) + ' ในแอป ให้ครบในแอป');
+          return;
+        }
         if (t && swiftToBangkokDay(t.at) === (c.day || today)) return;
         if (t && !s.y) return; // already ticked by the sheet
         if (stranger()) return;
@@ -522,7 +534,7 @@ if (typeof module !== 'undefined') {
                      progress: progress, fsDocuments: fsDocuments, fsValue: fsValue, normalizeName: normalizeName,
                      jobSummary: jobSummary, matchRows: matchRows, unmatchedJobs: unmatchedJobs, appTabRows: appTabRows, APP_TAB_HEADER: APP_TAB_HEADER, newJobFields: newJobFields, rowsToCreate: rowsToCreate, logStats: logStats, iecLabel: iecLabel, tabRow: tabRow,
                      phaseSummary: phaseSummary, bangkokDayToSwift: bangkokDayToSwift, swiftToBangkokDay: swiftToBangkokDay,
-                     sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsSourceLabel: wbsSourceLabel,
+                     sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsMark: wbsMark, wbsSourceLabel: wbsSourceLabel,
                      WBS_TAB_HEADER: WBS_TAB_HEADER, wbsTabRows: wbsTabRows, wbsCells: wbsCells, wbsSnapshotRows: wbsSnapshotRows,
                      wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges };
 }

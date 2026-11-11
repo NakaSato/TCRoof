@@ -248,6 +248,7 @@ struct InstallTrackingPage: View {
                               updateWBSTick: updateWBSTick, updateWBSItem: updateWBSItem,
                               pending: wbsPending(row.id), pickPhoto: pickPhoto,
                               contractors: Set(job.externals.map(Permissions.normalized)),
+                              records: job.wbsRecords,
                               canConfirm: permissions.mayConfirmWBS(on: job.access),
                               confirmWBS: { pick in
                                   guard permissions.mayConfirmWBS(on: job.access) else { return }

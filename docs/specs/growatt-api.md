@@ -52,12 +52,14 @@ Only the device reads Growatt (`MonitoringFeed`, for `MonitoringStore`): there i
 | What | Call | When | Calls |
 |---|---|---|---|
 | Summary | `plant/data`, `plant/power` (the whole day so far), `device/list` | every `pollMinutes` (5 at the most often); coming back to the tab before then reads nothing | 3 |
-| Yesterday | yesterday's `plant/power` (`เทียบเมื่อวานเวลาเดียวกัน`) | the iPad overview's chart on `วันนี้`, or a station page on it; once a day | 1 |
-| Days | `plant/energy` by day, 30 days | a chart on `7 วัน` or `30 วัน`; once a day | 5 |
+| Yesterday | yesterday's `plant/power` (`เทียบเมื่อวานเวลาเดียวกัน`) | the iPad overview's chart on `วันนี้`, or a station page on it; once a day, on a poll after one that read today's power (that poll's today's curve is the last poll's) | 1 |
+| Days | `plant/energy` by day, 30 days | a chart on `7 วัน` or `30 วัน`; once a day, a week a poll | 5 |
 | Months | `plant/energy` by month, 12 months | a chart on `12 เดือน`, or a station page (its month card); once a day | 1 |
 | String currents | `invs_data` | the station page shown, with each summary | 1 |
 
-The overview's chart range reads its history for every station; a station page reads its own only. A new pairing, server or token reads the summary at once.
+The overview's chart range reads its history for every station; a station page reads its own only. A new pairing, server or token reads the summary at once, except on a plant read less than 5 minutes before.
+
+No call is made twice on a plant within 5 minutes (`MonitoringFeed.callGap`, `lastCall`): Growatt answers 10012 to the same call again sooner, and the SDK's retries (36 s at most) don't outlast that. The history is one call a poll per station, without retries; a 10012 there waits for the next poll and isn't shown in the header. The `บำรุงรักษา` overview reuses these readings and calls nothing.
 
 Each device with the token polls on its own, so two iPads open on Monitoring make twice the calls on the same account.
 

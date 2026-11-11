@@ -2,38 +2,23 @@
 import SwiftUI
 import TCRoofCore
 
-/// DEBUG: the `บำรุงรักษา` overview also lists Growatt plants, to try it with live data. Nothing is saved.
-/// - `-growattDemo YES`: the web portal's example plants (`GrowattWebDemo`, real home systems on a guest session).
-/// - `-growattDemo test`: the OpenAPI test server's sample plants (`GrowattAPI.demo`), which never report.
-/// - `-growattToken <token>`: the company's own plants from `openapi.growatt.com`. The token is only ever a launch
-///   argument, never in the repo.
-/// - The PWA settings' `นักพัฒนา` switch (`GrowattDemoSwitch`) keeps `growattDemo` on in the device's defaults, so the web
-///   example plants show without launching from a Mac. A launch argument wins over it for that launch.
+/// DEBUG demo: the `บำรุงรักษา` overview also lists Growatt's web portal example plants (`GrowattWebDemo`, real home
+/// systems on a guest session), to try it without a paired station. Nothing is saved. Off unless asked for:
+/// `-growattDemo YES`, or the PWA settings' `นักพัฒนา` switch (`GrowattDemoSwitch`), which keeps `growattDemo` on in the
+/// device's defaults (a launch argument wins over it for that launch).
+/// Real plants don't come through here: a handed-over station paired with its plant in ตั้งค่า Monitoring shows what
+/// the Monitoring poll read from Growatt's OpenAPI (`GrowattAPI`, `MonitoringStore.maintenanceRow`).
 /// What Growatt doesn't give (expected energy, PR, PM, repairs, modules) is sample data (`MaintenanceMock`).
-/// The plant list comes first, then each plant's figures: all at once on the portal, 6 s apart on the OpenAPI, which
-/// refuses calls closer together.
+/// The plant list comes first, then every plant's figures at once.
 @MainActor @Observable
 final class GrowattDemoFeed {
-    enum Source {
-        case web(GrowattWebDemo)
-        case api(GrowattAPI)
-    }
-
     static var enabled: Bool {
         #if DEBUG
-        !demoFlag.isEmpty || !token.isEmpty
+        let v = (UserDefaults.standard.string(forKey: "growattDemo") ?? "").lowercased()
+        return !["", "no", "0", "false"].contains(v)
         #else
         false
         #endif
-    }
-
-    private static var demoFlag: String {
-        let v = (UserDefaults.standard.string(forKey: "growattDemo") ?? "").lowercased()
-        return ["", "no", "0", "false"].contains(v) ? "" : v
-    }
-
-    private static var token: String {
-        (UserDefaults.standard.string(forKey: "growattToken") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// `enabled` as last seen, so the overview redraws when the settings switch changes (`refresh`).
@@ -44,15 +29,10 @@ final class GrowattDemoFeed {
     /// Plants listed whose figures are still being fetched: the overview draws them as skeleton rows.
     private(set) var pending: Set<String> = []
     private var loaded = false
-    let source: Source = !token.isEmpty ? .api(.live(token: token)) : demoFlag == "test" ? .api(.demo) : .web(GrowattWebDemo())
+    private let web = GrowattWebDemo()
 
     /// Where the rows come from, for the line under them.
-    var sourceName: String {
-        switch source {
-        case .web: "สถานีตัวอย่างจากเว็บ Growatt"
-        case .api(let a): a.isDemo ? "สถานีตัวอย่างจาก Growatt test server" : "สถานีจาก Growatt (openapi.growatt.com)"
-        }
-    }
+    let sourceName = "สถานีตัวอย่างจากเว็บ Growatt"
 
     func isPending(_ id: String) -> Bool { pending.contains(id) }
 
@@ -67,10 +47,7 @@ final class GrowattDemoFeed {
         loading = true; failure = nil
         defer { loading = false }
         do {
-            switch source {
-            case .web(let web): try await loadWeb(web)
-            case .api(let api): try await loadAPI(api)
-            }
+            try await loadWeb(web)
         } catch is CancellationError {
             // left before the figures were in: the next visit fetches again
             loaded = false
@@ -113,18 +90,6 @@ final class GrowattDemoFeed {
             row.hourly = GrowattWebDemo.hourly(day)
         }
         return row
-    }
-
-    private func loadAPI(_ api: GrowattAPI) async throws {
-        let plants = try await api.allPlants()
-        stations = plants.map { Self.mocked(GrowattAPI.summary($0)) }
-        loaded = true
-        for p in plants {
-            try await Task.sleep(nanoseconds: 6_000_000_000)
-            // a plant whose data fails keeps its list row
-            guard let d = try? await api.data(plantID: p.id) else { continue }
-            replace(Self.mocked(GrowattAPI.summary(p, data: d)))
-        }
     }
 
     // MARK: station page

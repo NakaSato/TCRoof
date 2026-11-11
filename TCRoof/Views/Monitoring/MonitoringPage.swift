@@ -232,7 +232,7 @@ struct MonitoringPoller: View {
             .task(id: PollKey(minutes: store.settings.pollMinutes, pairings: store.settings.pairings,
                               pairingServers: store.settings.pairingServers,
                               servers: store.settings.servers.map(\.id), tokenRevision: store.tokenRevision,
-                              overviewRange: store.overviewRange, focus: store.focus)) {
+                              overviewRange: store.overviewRange, focus: store.focus, webDemo: store.webDemoOn)) {
                 while !Task.isCancelled {
                     await store.poll(jobs: jobs)
                     try? await Task.sleep(for: .seconds(store.nextPollDelay))
@@ -243,5 +243,7 @@ struct MonitoringPoller: View {
     private struct PollKey: Equatable {
         var minutes: Int, pairings: [String: String], pairingServers: [String: UUID], servers: [UUID], tokenRevision: Int
         var overviewRange: Monitoring.ChartRange?, focus: MonitoringStore.Focus?
+        /// The example plants switched on or off: read the other side at once.
+        var webDemo: Bool
     }
 }

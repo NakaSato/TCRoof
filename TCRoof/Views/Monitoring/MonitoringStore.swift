@@ -91,6 +91,32 @@ final class MonitoringStore {
     private init() {
         settings = UserDefaults.standard.data(forKey: Self.settingsKey)
             .flatMap { try? JSONDecoder().decode(Monitoring.Settings.self, from: $0) } ?? .init()
+        // the PWA settings' `สถานีตัวอย่าง Growatt` switch writes the device's defaults: follow it at once
+        NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.followDemoSwitch() }
+        }
+    }
+
+    /// `growattWebDemo` as last seen, so the pages and the poller follow the switch while they show (`followDemoSwitch`).
+    private(set) var webDemoOn = MonitoringStore.growattWebDemo
+    /// The jobs of the last `refresh` or `poll`, to rebuild the stations when the switch changes.
+    @ObservationIgnored private var lastJobs: [Job] = []
+
+    /// The example plants were switched on or off: drops what was read for the other side, so the stations are the
+    /// example plants or the real ones at once, and the next poll (restarted by `MonitoringPoller`) reads them.
+    func followDemoSwitch() {
+        let on = Self.growattWebDemo
+        guard on != webDemoOn else { return }
+        webDemoOn = on
+        stations = []
+        sources = []
+        raised = [:]
+        stringsRead = [:]
+        summaryRead = nil
+        hasRead = false
+        readingFirst = false
+        feedFailure = nil
+        refresh(jobs: lastJobs)
     }
 
     static var demo: Bool {
@@ -134,7 +160,7 @@ final class MonitoringStore {
     }
 
     /// The line under the page's header naming where the rows come from, nil for the stations' own.
-    var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
+    var sourceNote: String? { webDemoOn ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
 
     var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, raised: raised) }
 
@@ -156,6 +182,7 @@ final class MonitoringStore {
     /// Reads the stations again: the demo's, or the handed-over PWA stations (`jobs` from the page's query). A paired
     /// station keeps what Growatt last gave until the next `poll`.
     func refresh(jobs: [Job]) {
+        lastJobs = jobs
         if Self.demo {
             now = Monitoring.demoNow()
             stations = Monitoring.demo(now: now)
@@ -182,6 +209,7 @@ final class MonitoringStore {
     /// it (`parts(for:summary:now:)`). A station not read, or whose read failed, keeps its last figures.
     func poll(jobs: [Job]) async {
         guard !Self.demo else { return refresh(jobs: jobs) }
+        lastJobs = jobs
         let readAt = Date()
         let summary = summaryDue(at: readAt)
         if Self.growattWebDemo {

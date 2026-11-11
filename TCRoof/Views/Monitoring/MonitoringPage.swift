@@ -23,7 +23,8 @@ struct MonitoringPage: View {
     @Environment(\.isPresented) private var isPushed
     @Environment(\.dismiss) private var dismiss
     @Environment(SurveyModel.self) private var envSurvey: SurveyModel?
-    /// iPad: the dock, whose `MonitoringPoller` reads Growatt; nil where the page is pushed on its own.
+    /// iPad: the dock, whose tabs read Growatt while `Monitor` is shown (`MonitoringPoller`); nil where the page is
+    /// pushed on its own.
     @Environment(PadDock.self) private var dock: PadDock?
     var survey: SurveyModel { envSurvey ?? SurveyModel.shared }
 
@@ -45,8 +46,10 @@ struct MonitoringPage: View {
         .background(Theme.phonePage.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task(id: jobs.map(\.persistentModelID)) { store.refresh(jobs: jobs) }
-        // Growatt is read by the dock's `MonitoringPoller` while the app is open; off the dock (pushed elsewhere) here
+        // Growatt is read by `PadTabs`' `MonitoringPoller` while this tab is shown; off the dock (pushed elsewhere) here
         .background { if dock == nil { MonitoringPoller() } }
+        // the chart's history is read for the range shown (CHA-107)
+        .onChange(of: range, initial: true) { _, r in store.overviewRange = r }
         .overlay {
             if showSettings {
                 MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
@@ -215,9 +218,11 @@ struct MonitoringPage: View {
     #endif
 }
 
-/// Reads Growatt while the app is open, at once and then every `pollMinutes` (never closer than its 5 minutes), so the
-/// dock's badge and the alerts follow the stations whichever tab shows (CHA-21). A new pairing, server or token reads
-/// again at once. Draws nothing.
+/// Reads Growatt while it is shown: `PadTabs` and `PhoneTabs` put it in only while the Monitor tab is selected, so no
+/// other tab calls Growatt and leaving the tab stops it (CHA-107). It polls once the summary is due (`pollMinutes`,
+/// never closer than its 5 minutes, so coming back to the tab within them reads nothing) and sleeps until the next. A
+/// new pairing, server or token reads at once, and a screen asking for more (`overviewRange`, `focus`) reads just
+/// that. Draws nothing.
 struct MonitoringPoller: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var store = MonitoringStore.shared
@@ -226,15 +231,17 @@ struct MonitoringPoller: View {
         Color.clear.frame(width: 0, height: 0)
             .task(id: PollKey(minutes: store.settings.pollMinutes, pairings: store.settings.pairings,
                               pairingServers: store.settings.pairingServers,
-                              servers: store.settings.servers.map(\.id), tokenRevision: store.tokenRevision)) {
+                              servers: store.settings.servers.map(\.id), tokenRevision: store.tokenRevision,
+                              overviewRange: store.overviewRange, focus: store.focus)) {
                 while !Task.isCancelled {
                     await store.poll(jobs: jobs)
-                    try? await Task.sleep(for: .seconds(store.settings.pollInterval))
+                    try? await Task.sleep(for: .seconds(store.nextPollDelay))
                 }
             }
     }
 
     private struct PollKey: Equatable {
         var minutes: Int, pairings: [String: String], pairingServers: [String: UUID], servers: [UUID], tokenRevision: Int
+        var overviewRange: Monitoring.ChartRange?, focus: MonitoringStore.Focus?
     }
 }

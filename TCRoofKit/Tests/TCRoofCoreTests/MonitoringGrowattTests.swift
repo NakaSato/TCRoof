@@ -246,6 +246,29 @@ final class MonitoringGrowattTests: XCTestCase {
         XCTAssertTrue(map(.init(data: data(at: at(14, 52)), devices: [ok]), previous: s).alarms.isEmpty)
     }
 
+    func testAReadWithoutTheDeviceListKeepsTheInvertersAlarms() throws {
+        let fault = GrowattAPI.Device(sn: "MAX0002", type: 4, status: 3, lost: false, lastUpdate: stamp(at(9, 50)))
+        let first = map(.init(data: data(at: at(14, 40)), devices: [fault]))
+        // plant/data only (the history or the strings read alone, or device/list failing): the fault stands
+        let s = map(.init(data: data(at: at(14, 52))), previous: first)
+        XCTAssertEqual(s.alarms.map(\.id), first.alarms.map(\.id))
+        XCTAssertEqual(s.alarms.first?.since, at(9, 50))
+        // offline, the logger's line replaces them
+        XCTAssertEqual(map(.init(data: data(at: at(9, 0))), previous: first).alarms.map(\.source), [.lost])
+    }
+
+    func testAHistoryReadUsesThePlantsZoneWithoutPlantData() throws {
+        let first = map(.init(data: data(at: at(14, 40))))
+        // a plant on GMT+7, its days read without plant/data
+        let zone = TimeZone(secondsFromGMT: 7 * 3600)!
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
+        let rows = [GrowattAPI.EnergyPoint(date: Map.dayText(yesterday.addingTimeInterval(12 * 3600), zone: zone), energy: 777)]
+        let s = map(.init(days: rows, timezone: "GMT+7"), previous: first)
+        XCTAssertEqual(s.days[28].energy, 777)
+        XCTAssertEqual(s.lastReading, first.lastReading)
+        XCTAssertEqual(s.energyToday, 410)
+    }
+
     // MARK: the history
 
     func testDaysAndMonthsFromPlantEnergy() throws {

@@ -98,6 +98,7 @@ public final class SurveyModel {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         DesignLibrary.shared.configure(url: support.appendingPathComponent("standard-designs.json"))
         TankStandard.Store.shared.configure(url: support.appendingPathComponent("tank-standard.json"))
+        CrewSupply.Store.shared.configure(url: support.appendingPathComponent("crew-supply.json"))
     }
 
     /// Starts a background load. Existing jobs stay visible until a current result is available.

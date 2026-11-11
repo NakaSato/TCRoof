@@ -185,11 +185,15 @@ public extension Assistant {
         public var jobs: [Job]
         public var today: Date
         public var calendar: Calendar
+        /// The crew each contractor said it has (`CrewSupply`, CHA-78), for `station_priorities`; the team's saved one
+        /// by default.
+        public var crewSupply: CrewSupply?
         private let makeID: @Sendable () -> String
 
         public init(jobs: [Job], today: Date, calendar: Calendar = MasterSchedule.calendar,
+                    crewSupply: CrewSupply? = CrewSupply.Store.shared.current,
                     makeID: @escaping @Sendable () -> String = { UUID().uuidString }) {
-            self.jobs = jobs; self.today = today; self.calendar = calendar; self.makeID = makeID
+            self.jobs = jobs; self.today = today; self.calendar = calendar; self.crewSupply = crewSupply; self.makeID = makeID
         }
 
         public static let names = ["list_stations", "get_schedule", "get_project", "get_week_tasks",
@@ -207,7 +211,7 @@ public extension Assistant {
             case "propose_dates": return proposeDates(args)
             case "propose_late_cause": return proposeCause(args)
             case "what_if": return withJob(args) { job, _, _ in whatIf(job, args) }
-            case "station_priorities": return .result(Strategy.priorities(jobs, today: today, calendar: calendar).json)
+            case "station_priorities": return .result(Strategy.priorities(jobs, supply: crewSupply, today: today, calendar: calendar).json)
             case "look_ahead": return withJob(args) { job, _, _ in lookAhead(job, args) }
             case "suggest_replan": return withJob(args) { job, input, _ in
                 .result(Strategy.replan(job, input: input, today: today, calendar: calendar).json) }

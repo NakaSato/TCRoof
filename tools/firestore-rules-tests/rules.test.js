@@ -591,6 +591,21 @@ test('monitoring settings: the team reads them, never a contractor; a manager sa
   await assertFails(deleteDoc(ref(BOSS)));
 });
 
+test('crew supply: the team reads it, never a contractor; a team member saves a newer revision signed by themselves', async () => {
+  const ref = (who) => doc(db(who), 'config', 'crewSupply');
+  const supply = (by, revision) => ({ json: '{"groups":{}}', revision, savedBy: by, updatedAt: serverTimestamp() });
+  await assertFails(setDoc(ref(CON), supply(CON, 1)));
+  await assertFails(setDoc(ref(TEAM), supply(BOSS, 1)));
+  await assertSucceeds(setDoc(ref(TEAM), supply(TEAM, 1)));
+  for (const who of [TEAM, BOSS, DEV]) await assertSucceeds(getDoc(ref(who)));
+  await assertFails(getDoc(ref(CON)));
+  await assertFails(getDoc(doc(db('stranger@gmail.com'), 'config', 'crewSupply')));
+  await assertFails(setDoc(ref(BOSS), supply(BOSS, 1)));
+  await assertFails(setDoc(ref(BOSS), { ...supply(BOSS, 2), extra: 1 }));
+  await assertSucceeds(setDoc(ref(BOSS), supply(BOSS, 2)));
+  await assertFails(deleteDoc(ref(TEAM)));
+});
+
 test('monitoring readings, archive and tokens: no rule, so no member reads or writes them', async () => {
   for (const who of [TEAM, BOSS, DEV, CON]) {
     await assertFails(getDoc(doc(db(who), 'monitoring', 'S1')));

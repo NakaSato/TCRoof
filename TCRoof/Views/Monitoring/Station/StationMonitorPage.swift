@@ -168,7 +168,7 @@ struct StationMonitorPage: View {
 
     /// `MP 25 · นครชัยศรี`.
     static func pickerName(_ s: Monitoring.Station) -> String {
-        [s.mpNumber.map { "MP \($0)" }, MonitoringPage.shortName(s)].compactMap { $0 }.joined(separator: " · ")
+        MonitoringPage.title(s, separator: " · ")
     }
 
     // MARK: tab bar

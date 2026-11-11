@@ -23,7 +23,7 @@ extension MonitoringPage {
                     tableHeader
                     ForEach(rows) { r in
                         Divider()
-                        tableRow(r)
+                        tableRow(r, night: Night(f))
                     }
                     if rows.isEmpty {
                         Divider()
@@ -81,7 +81,14 @@ extension MonitoringPage {
         Text(t).lineLimit(1).frame(width: w, alignment: trailing ? .trailing : .leading).padding(.trailing, trailing ? 12 : 0)
     }
 
-    private func tableRow(_ r: Monitoring.Row) -> some View {
+    /// At night the row reads as night (CHA-110): `0 kW · กลางคืน`, `0 / — kWh` and `กลางคืน` before sunrise.
+    struct Night {
+        var on: Bool
+        var beforeSunrise: Bool
+        init(_ f: Monitoring.Fleet) { on = f.isNight; beforeSunrise = f.isBeforeSunrise }
+    }
+
+    private func tableRow(_ r: Monitoring.Row, night: Night) -> some View {
         let s = r.station
         return Button { opened = s } label: {
             HStack(spacing: 0) {
@@ -93,9 +100,9 @@ extension MonitoringPage {
                 .frame(width: Col.station, alignment: .leading)
                 MonChip(r.health.title, r.health == .normal ? .ok : r.health == .alarm ? .bad : .muted)
                     .frame(width: Col.status, alignment: .leading)
-                powerCell(s).frame(width: Col.power, alignment: .leading)
-                energyCell(s).frame(width: Col.energy, alignment: .leading).padding(.trailing, 12)
-                yieldCell(r).frame(width: Col.yield, alignment: .trailing).padding(.trailing, 12)
+                powerCell(r, night: night).frame(width: Col.power, alignment: .leading)
+                energyCell(r, night: night).frame(width: Col.energy, alignment: .leading).padding(.trailing, 12)
+                yieldCell(r, night: night).frame(width: Col.yield, alignment: .trailing).padding(.trailing, 12)
                 Text(r.loss.map(Self.rowLoss) ?? MonFormat.dash)
                     .font(.sarabun(14, .bold)).foregroundStyle(r.loss == nil ? Theme.inkMuted : Theme.warningInk)
                     .frame(width: Col.loss, alignment: .trailing).padding(.trailing, 12)
@@ -131,9 +138,16 @@ extension MonitoringPage {
         }
     }
 
-    private func powerCell(_ s: Monitoring.Station) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if let p = s.powerNow {
+    private func powerCell(_ r: Monitoring.Row, night: Night) -> some View {
+        let s = r.station
+        return VStack(alignment: .leading, spacing: 3) {
+            if night.on, r.health != .offline, (s.powerNow ?? 0) < 0.05 {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text("0").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                    Text("kW · กลางคืน").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
+                }
+                bar(0, Theme.primary)
+            } else if let p = s.powerNow {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(MonFormat.number(p, 1)).font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
                     Text("kW · " + MonFormat.percent(s.powerShare)).font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
@@ -146,7 +160,21 @@ extension MonitoringPage {
         .padding(.trailing, 14)
     }
 
-    private func energyCell(_ s: Monitoring.Station) -> some View {
+    @ViewBuilder private func energyCell(_ r: Monitoring.Row, night: Night) -> some View {
+        if night.beforeSunrise, r.health != .offline {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text("0").font(.sarabun(14, .bold)).foregroundStyle(Theme.navy)
+                    Text("/ " + MonFormat.dash + " kWh").font(.sarabun(11)).foregroundStyle(Theme.inkMuted)
+                }
+                bar(0, Theme.success)
+            }
+        } else {
+            dayEnergyCell(r.station)
+        }
+    }
+
+    private func dayEnergyCell(_ s: Monitoring.Station) -> some View {
         let share = s.yieldShare
         let color: Color = (share ?? 1) * 100 < Double(store.settings.belowExpectedPercent) ? Theme.warning : Theme.success
         return VStack(alignment: .leading, spacing: 3) {
@@ -160,39 +188,52 @@ extension MonitoringPage {
         }
     }
 
-    private func yieldCell(_ r: Monitoring.Row) -> some View {
+    private func yieldCell(_ r: Monitoring.Row, night: Night) -> some View {
         let offline = r.health == .offline
         return VStack(alignment: .trailing, spacing: 1) {
+            if night.beforeSunrise, !offline {
+                Text("กลางคืน").font(.sarabun(13, .semibold)).foregroundStyle(Theme.inkMuted)
+            } else {
+                yieldFigures(r, offline: offline)
+            }
+        }
+    }
+
+    @ViewBuilder private func yieldFigures(_ r: Monitoring.Row, offline: Bool) -> some View {
             Text(offline ? MonFormat.dash : MonFormat.number(r.station.specificYield, 2)).font(.sarabun(14, .bold))
                 .foregroundStyle((r.yieldVsMedian ?? 0) < -0.1 ? Theme.dangerText : Theme.navy)
             Text(r.yieldVsMedian.map { MonFormat.percent($0, signed: true) + " จากค่ากลาง" } ?? "ไม่มีข้อมูล")
                 .font(.sarabun(10)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-        }
     }
 
     private func invertersCell(_ r: Monitoring.Row) -> some View {
         let s = r.station
         let online = r.health == .offline ? 0 : (s.invertersOnline ?? s.inverters)
+        let asleep = r.health == .offline ? 0 : (s.invertersAsleep ?? 0)
         // a square each up to 4 (the column's width); a bigger station shows the share working as one bar
         let squares = s.inverters <= 4
         return HStack(spacing: 4) {
             if squares {
                 ForEach(0..<max(s.inverters, 0), id: \.self) { i in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(r.health == .offline ? Theme.track : i < online ? Theme.success : Theme.danger)
+                        .fill(r.health == .offline || (i >= online && i < online + asleep) ? Theme.track
+                              : i < online ? Theme.success : Theme.danger)
                         .frame(width: 14, height: 14)
                 }
             } else {
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 3).fill(r.health == .offline ? Theme.track : Theme.danger)
+                        // asleep at night: grey, after the working ones
+                        RoundedRectangle(cornerRadius: 3).fill(Theme.track)
+                            .frame(width: g.size.width * Double(online + asleep) / Double(max(s.inverters, 1)))
                         RoundedRectangle(cornerRadius: 3).fill(Theme.success)
                             .frame(width: g.size.width * Double(online) / Double(max(s.inverters, 1)))
                     }
                 }
                 .frame(width: 68, height: 14)
             }
-            Text("\(online)/\(s.inverters)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 2)
+            Text(asleep > 0 ? "พัก \(asleep)" : "\(online)/\(s.inverters)").font(.sarabun(12)).foregroundStyle(Theme.inkMuted).padding(.leading, 2)
                 .lineLimit(1).fixedSize()
         }
     }
@@ -224,7 +265,7 @@ extension MonitoringPage {
                 .frame(width: Col.energy + 12, alignment: .leading)
             Text(MonFormat.number(f.specificYield, 2)).frame(width: Col.yield, alignment: .trailing).padding(.trailing, 12)
             Text(MonFormat.number(f.lossToday) + " kWh").foregroundStyle(Theme.warningInk).frame(width: Col.loss, alignment: .trailing).padding(.trailing, 12)
-            Text("\(f.invertersOnline)/\(f.inverters) ทำงาน").frame(width: Col.inverters, alignment: .leading)
+            Text("\(f.invertersOnline)/\(f.inverters) ทำงาน" + (f.isNight && f.invertersAsleep > 0 ? " · พัก \(f.invertersAsleep)" : "")).frame(width: Col.inverters, alignment: .leading)
             Text("\(f.online)/\(f.stations.count) ออนไลน์").frame(width: Col.data, alignment: .leading)
             Text("\(f.alarmCount)").frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 22)
         }

@@ -27,6 +27,13 @@ enum MonFormat {
         return (number(e), "kWh")
     }
 
+    /// Capacity: `MWp` with 2 decimals from 10,000 kWp (CHA-110), else `kWp` with 1.
+    static func capacity(_ kWp: Double?) -> (value: String, unit: String) {
+        guard let p = kWp else { return (dash, "kWp") }
+        if p >= 10_000 { return (number(p / 1000, 2), "MWp") }
+        return (number(p, 1), "kWp")
+    }
+
     /// Baht scaled: `5.51 ล้านบาท`.
     static func baht(_ v: Double?) -> (value: String, unit: String) {
         guard let v else { return (dash, "บาท") }

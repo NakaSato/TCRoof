@@ -69,14 +69,16 @@ final class MonitoringTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(mp25.yieldVsMedian), (410.0 / 220) / ((690.0 / 200 + 330.0 / 95) / 2) - 1, accuracy: 1e-3)
     }
 
-    func testActionsArePerPartAndSortedByEnergyLost() {
+    func testActionsArePerStationAndSortedByEnergyLost() {
         let a = demo.actions
         XCTAssertEqual(a.map { $0.station.mpNumber }, [44, 25, 12])
         // MP 25's two alarms on INV 2 are one action
         XCTAssertEqual(a[1].alarms.count, 2)
         XCTAssertEqual(a[1].alarm.code, "124")
         XCTAssertEqual(a[1].occurrences, 5)
-        XCTAssertEqual(a[0].alarm.label, "Lost")
+        XCTAssertEqual(a[0].alarm.label, "ขาดการติดต่อ")
+        XCTAssertEqual(a[0].status, "ขาดการติดต่อ")
+        XCTAssertEqual(a[2].status, "TCRoof ตรวจพบ")
         XCTAssertEqual(a[2].alarm.label, "TCRoof")
         XCTAssertNil(a[2].alarm.workOrder)
         // the table's alarm column counts every alarm

@@ -156,6 +156,8 @@ extension Monitoring {
                 s.powerNow = prev?.powerNow
             }
             let offline = s.lastReading.map { now.timeIntervalSince($0) > Double(offlineAfter * 60) } ?? true
+            // at night an inverter out of contact behind a logger still reporting is asleep, not lost (CHA-110)
+            let asleepAllowed = !offline && Daylight.isNight(now, calendar: calendar)
             // the power at a reading that old isn't the power now
             if offline { s.powerNow = nil }
 
@@ -181,9 +183,11 @@ extension Monitoring {
                 } else {
                     s.inverters = max(s.inverters, inv.count)
                     s.invertersOnline = inv.filter(\.isOnline).count
+                    s.invertersAsleep = asleepAllowed ? inv.filter(\.isLost).count : nil
                 }
             } else {
                 s.invertersOnline = prev?.invertersOnline
+                s.invertersAsleep = asleepAllowed ? prev?.invertersAsleep : nil
             }
 
             // invs_data: each inverter's string currents, in the same INV order
@@ -205,14 +209,16 @@ extension Monitoring {
                     if d.isFault {
                         alarms.append(Alarm(id: base.id + "/fault/" + d.sn, source: .growatt, part: part,
                                             detail: "Fault" + (label.isEmpty ? "" : " · " + label), since: since))
-                    } else if d.isLost {
+                    } else if d.isLost && !asleepAllowed {
                         alarms.append(Alarm(id: base.id + "/lost/" + d.sn, source: .lost, part: part,
                                             detail: "ขาดการติดต่อ" + (label.isEmpty ? "" : " · " + label), since: since))
                     }
                 }
             } else {
                 // device/list not read this time: its inverters' faults stand as last read
-                alarms += (prev?.alarms ?? []).filter { $0.id.hasPrefix(base.id + "/fault/") || $0.id.hasPrefix(base.id + "/lost/") }
+                alarms += (prev?.alarms ?? []).filter {
+                    $0.id.hasPrefix(base.id + "/fault/") || (!asleepAllowed && $0.id.hasPrefix(base.id + "/lost/"))
+                }
             }
             // one still raised keeps when it began, its count and its work order
             let before = Dictionary((prev?.alarms ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })

@@ -39,16 +39,50 @@ extension Monitoring {
         public var hasProblem: Bool { health != .normal || !station.alarms.isEmpty }
     }
 
-    /// One line of `ต้องดำเนินการ`: a station's part with what was raised on it, the worst first.
+    /// One line of `ต้องดำเนินการ`: a station with everything raised on it, the worst first (CHA-110: one row per
+    /// station, not one per inverter behind the same logger).
     public struct Action: Identifiable, Hashable, Sendable {
         public var station: Station
-        /// The part's alarms, the costliest first; `alarm` is that one.
+        /// The station's alarms, the costliest first (then the earliest); `alarm` is that one.
         public var alarms: [Alarm]
-        public var id: String { station.id + "/" + alarm.part }
+        public var id: String { station.id }
         public var alarm: Alarm { alarms[0] }
-        /// Times raised today, over the part's alarms.
+        /// Times raised today, over the station's alarms.
         public var occurrences: Int { alarms.reduce(0) { $0 + $1.occurrences } }
         public var lossKWh: Double { alarm.loss.kWh }
+
+        /// The chip: `ขาดการติดต่อ`, `Error 124`, `TCRoof ตรวจพบ`.
+        public var status: String { alarm.source == .tcroof ? "TCRoof ตรวจพบ" : alarm.label }
+
+        /// The parts raised, each once, in `alarms`' order.
+        public var parts: [String] {
+            var seen = Set<String>()
+            return alarms.map(\.part).filter { seen.insert($0).inserted }
+        }
+
+        /// The line under the title, device · count · since: `ดาต้าล็อกเกอร์ · 6 อินเวอร์เตอร์ · ตั้งแต่ 00:10`,
+        /// `อินเวอร์เตอร์ · 3 เครื่อง · ตั้งแต่ 09:48`, `INV 2 · No AC Connection · ตั้งแต่ 09:48`.
+        public func summary(now: Date, calendar: Calendar = .current) -> String {
+            let today = calendar.startOfDay(for: now)
+            let since = alarms.map(\.since).min() ?? alarm.since
+            let when = "ตั้งแต่ " + GrowattMap.clock(since, today: today, calendar: calendar)
+            let parts = self.parts
+            var line: [String]
+            if alarm.part == Action.logger {
+                line = [Action.logger, "\(station.inverters) อินเวอร์เตอร์"]
+            } else if parts.count > 1, parts.allSatisfy({ $0.hasPrefix("INV ") }) {
+                line = ["อินเวอร์เตอร์", "\(parts.count) เครื่อง"]
+            } else {
+                line = [alarm.part, alarm.detail]
+                if parts.count > 1 { line.append("อีก \(parts.count - 1) รายการ") }
+            }
+            line.append(when)
+            // one part's repeats; over several parts the count would mix them
+            if parts.count == 1, occurrences > 1 { line.append("เกิด \(occurrences) ครั้ง") }
+            return line.filter { !$0.isEmpty }.joined(separator: " · ")
+        }
+
+        static let logger = "ดาต้าล็อกเกอร์"
     }
 
     /// The fleet at `now`: every figure of the page above the table, and the table's rows.
@@ -56,6 +90,7 @@ extension Monitoring {
         public let rows: [Row]
         public let now: Date
         public let settings: Settings
+        let calendar: Calendar
 
         /// The median kWh/kWp so far of the stations running normally, the loss's reference; nil with fewer than
         /// `minimumForMedian` of them, when each station's forecast stands in.
@@ -77,6 +112,7 @@ extension Monitoring {
                     calendar: Calendar = .current) {
             self.now = now
             self.settings = settings
+            self.calendar = calendar
             let health = stations.map { $0.health(now: now, offlineAfter: settings.loggerOfflineMinutes) }
             let normal: [Double] = zip(stations, health).compactMap { s, h in h == .normal ? s.specificYield : nil }
             let median = Fleet.median(normal)
@@ -227,9 +263,18 @@ extension Monitoring {
         }
         public var lossStations: Int { rows.filter { $0.loss != nil }.count }
 
-        /// `พร้อมใช้งาน`: inverters reporting without a fault over all of them (an offline station's count none).
+        /// `พร้อมใช้งาน`: inverters reporting without a fault over all of them (an offline station's count none). An
+        /// inverter asleep at night isn't counted against it (CHA-110).
         public var invertersOnline: Int {
-            rows.reduce(0) { n, r in n + (r.health == .offline ? 0 : (r.station.invertersOnline ?? r.station.inverters)) }
+            rows.reduce(0) { n, r in
+                guard r.health != .offline else { return n }
+                let s = r.station
+                return n + min((s.invertersOnline ?? s.inverters) + (s.invertersAsleep ?? 0), s.inverters)
+            }
+        }
+        /// Inverters asleep at night behind a logger still reporting (`Station.invertersAsleep`).
+        public var invertersAsleep: Int {
+            rows.reduce(0) { $0 + ($1.health == .offline ? 0 : ($1.station.invertersAsleep ?? 0)) }
         }
         public var availability: Double? { inverters > 0 ? Double(invertersOnline) / Double(inverters) : nil }
 
@@ -254,27 +299,58 @@ extension Monitoring {
             }.count
         }
 
+        // MARK: night
+
+        /// Night on the device's clock (`Daylight`): the page reads as night, not as zeros (CHA-110).
+        public var isNight: Bool { Daylight.isNight(now, calendar: calendar) }
+        /// Before sunrise: today has made nothing yet, so the cards show yesterday's figures.
+        public var isBeforeSunrise: Bool { Daylight.isBeforeSunrise(now, calendar: calendar) }
+
+        /// When the fleet's forecast passes 2 % of its peak today, to the 5 minutes: `คาดเริ่มผลิตราว 06:10`.
+        public var productionStart: Date? {
+            let curve: [Double] = (0..<Monitoring.slots).map { i in
+                stations.reduce(0) { $0 + (i < $1.expectedCurve.count ? $1.expectedCurve[i] : 0) }
+            }
+            guard let peak = curve.max(), peak > 0, let i = curve.firstIndex(where: { $0 >= peak * 0.02 }) else { return nil }
+            return calendar.startOfDay(for: now).addingTimeInterval(TimeInterval(i * Monitoring.slotMinutes * 60))
+        }
+
+        /// Yesterday's whole day from the stations' days, kWh; nil when none has it.
+        public var yesterdayEnergy: Double? { Fleet.sum(stations.map { Fleet.yesterday($0, calendar: calendar, now: now)?.energy }) }
+        /// kWh/kWp yesterday over the stations with yesterday's energy.
+        public var yesterdaySpecificYield: Double? {
+            let known = stations.compactMap { s in Fleet.yesterday(s, calendar: calendar, now: now)?.energy.map { (s.kWp, $0) } }
+            let size = known.reduce(0) { $0 + $1.0 }
+            return size > 0 ? known.reduce(0) { $0 + $1.1 } / size : nil
+        }
+        /// Yesterday under its forecast, kWh, over the stations with both.
+        public var yesterdayLoss: Double? {
+            Fleet.sum(stations.map { s -> Double? in
+                guard let p = Fleet.yesterday(s, calendar: calendar, now: now), let e = p.energy, let x = p.expected else { return nil }
+                return max(x - e, 0)
+            })
+        }
+
+        static func yesterday(_ s: Station, calendar: Calendar, now: Date) -> Period? {
+            guard let day = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: now)) else { return nil }
+            return s.days.first { calendar.isDate($0.start, inSameDayAs: day) }
+        }
+
         // MARK: ต้องดำเนินการ
 
-        /// One line per station and part, the costliest first.
+        /// One line per station, the costliest first; within a station its alarms the costliest, then the earliest.
         public var actions: [Action] {
-            var groups: [String: Action] = [:]
-            var order: [String] = []
-            for s in stations {
-                for a in s.alarms {
-                    let key = s.id + "/" + a.part
-                    if groups[key] == nil { groups[key] = Action(station: s, alarms: []); order.append(key) }
-                    groups[key]?.alarms.append(a)
+            let list: [Action] = stations.compactMap { s in
+                guard !s.alarms.isEmpty else { return nil }
+                let sorted = s.alarms.sorted { a, b in
+                    a.loss.kWh != b.loss.kWh ? a.loss.kWh > b.loss.kWh : a.since < b.since
                 }
-            }
-            let list: [Action] = order.compactMap { key in
-                guard var g = groups[key] else { return nil }
-                g.alarms.sort { $0.loss.kWh > $1.loss.kWh }
-                return g
+                return Action(station: s, alarms: sorted)
             }
             return list.sorted { a, b in
                 if a.lossKWh != b.lossKWh { return a.lossKWh > b.lossKWh }
-                return (a.station.mpNumber ?? .max) < (b.station.mpNumber ?? .max)
+                let x = a.station.mpNumber ?? .max, y = b.station.mpNumber ?? .max
+                return x != y ? x < y : a.station.name < b.station.name
             }
         }
 

@@ -92,6 +92,17 @@ extension Monitoring {
         public var source: Alarm.Source
     }
 
+    /// Chart events close in time, as one pill in the lane under the plot (CHA-110): those less than
+    /// `Chart.clusterGap` after the cluster's first, or all of those before the axis (`ก่อน 06:00 · n`).
+    public struct EventCluster: Identifiable, Hashable, Sendable {
+        public var events: [ChartEvent]
+        /// Before the axis begins: no rule is drawn for it, and its pill sits at the axis' start.
+        public var early: Bool
+        public var id: String { (early ? "early/" : "") + (events.first?.id ?? "") }
+        /// The first event's time.
+        public var x: Date { events.first?.x ?? .distantPast }
+    }
+
     /// The column beside the chart, for its range.
     public struct ChartSummary: Hashable, Sendable {
         /// Made so far and its share of the forecast so far, kWh.
@@ -118,9 +129,13 @@ extension Monitoring {
     /// `กำลังผลิตรวม`: the fleet's line against the forecast for a range, or one line per station.
     public struct Chart: Sendable {
         public let range: ChartRange
-        /// The fleet's total, and each station's (`hidden` left out).
+        /// The fleet's total, and each station's (`hidden` left out). Past `splitLimit` stations, the five largest
+        /// have their own line and the rest one together (`othersID`).
         public let total: [ChartPoint]
         public let series: [ChartSeries]
+        /// The stations with their own line, in the chips' order, and those drawn together as `อื่น ๆ`.
+        public let leadIDs: [String]
+        public let otherIDs: [String]
         public let events: [ChartEvent]
         public let summary: ChartSummary
         /// The axis: 06:00 to 19:00 today, else the range's first to last day.
@@ -129,9 +144,20 @@ extension Monitoring {
         /// Today's line is drawn from 06:00 to 19:00.
         public static let dayWindow = (6 * 60 / Monitoring.slotMinutes)..<(19 * 60 / Monitoring.slotMinutes)
 
+        /// At most this many chips under `แยกสถานี` (CHA-110).
+        public static let splitLimit = 6
+        /// The series of the stations past the five largest.
+        public static let othersID = "others"
+        /// Events closer than this share a pill.
+        public static let clusterGap: TimeInterval = 3600
+
         public init(_ stations: [Station], range: ChartRange, now: Date, calendar: Calendar = .current, hidden: Set<String> = []) {
             self.range = range
-            let shown = stations.filter { !hidden.contains($0.id) }
+            let (lead, rest) = Chart.split(stations)
+            leadIDs = lead.map(\.id)
+            otherIDs = rest.map(\.id)
+            let shownLead = lead.filter { !hidden.contains($0.id) }
+            let shownRest = rest.filter { !hidden.contains($0.id) }
             switch range {
             case .today:
                 let start = calendar.startOfDay(for: now)
@@ -146,7 +172,8 @@ extension Monitoring {
                     }
                 }
                 total = points(stations)
-                series = shown.map { ChartSeries(id: $0.id, name: Chart.name($0), points: points([$0])) }
+                series = shownLead.map { ChartSeries(id: $0.id, name: Chart.name($0), points: points([$0])) }
+                    + (shownRest.isEmpty ? [] : [ChartSeries(id: Chart.othersID, name: "อื่น ๆ", points: points(shownRest))])
                 // once per station and part, at its first alarm today
                 events = stations.flatMap { s -> [ChartEvent] in
                     let today = s.alarms.filter { $0.source != .tcroof && $0.since >= start && $0.since <= now }
@@ -183,7 +210,8 @@ extension Monitoring {
                     }
                 }
                 total = points(stations, ends)
-                series = shown.map { ChartSeries(id: $0.id, name: Chart.name($0), points: points([$0], ends)) }
+                series = shownLead.map { ChartSeries(id: $0.id, name: Chart.name($0), points: points([$0], ends)) }
+                    + (shownRest.isEmpty ? [] : [ChartSeries(id: Chart.othersID, name: "อื่น ๆ", points: points(shownRest, ends))])
                 events = []
                 let produced = Fleet.sum(total.map(\.actual)), expected = Fleet.sum(total.map(\.expected))
                 let loss = Fleet.sum(total.map { p -> Double? in p.expected == nil ? nil : (p.loss ?? 0) })
@@ -205,8 +233,53 @@ extension Monitoring {
             return (0..<n).reversed().compactMap { calendar.date(byAdding: unit, value: -$0, to: last) }
         }
 
-        /// `MP 25`, else the station's name.
-        public static func name(_ s: Station) -> String { s.mpNumber.map { "MP \($0)" } ?? s.name }
+        /// The stations with their own line and the rest: all of them up to `splitLimit`, else the five largest
+        /// (by kWp, then MP) and the others.
+        static func split(_ stations: [Station]) -> (lead: [Station], rest: [Station]) {
+            guard stations.count > splitLimit else { return (stations, []) }
+            let ranked = stations.sorted { a, b in
+                a.kWp != b.kWp ? a.kWp > b.kWp : (a.mpNumber ?? .max) < (b.mpNumber ?? .max)
+            }
+            let lead = Array(ranked.prefix(splitLimit - 1))
+            let ids = Set(lead.map(\.id))
+            return (lead, stations.filter { !ids.contains($0.id) })
+        }
+
+        /// The station's code: `MP 25`, else the plant name's first word when it reads as a code (`P1_3` of
+        /// `P1_3 สถานีผลิตน้ำบ้านโป่ง`: Latin letters or digits, at most 12 characters), else the whole name.
+        public static func name(_ s: Station) -> String {
+            if let mp = s.mpNumber { return "MP \(mp)" }
+            return code(of: s.name) ?? s.name
+        }
+
+        /// The name less its code: `สถานีผลิตน้ำบ้านโป่ง` of `P1_3 สถานีผลิตน้ำบ้านโป่ง`; the name when it has none.
+        public static func rest(_ s: Station) -> String {
+            guard s.mpNumber == nil, let c = code(of: s.name) else { return s.name }
+            return String(s.name.dropFirst(c.count)).trimmingCharacters(in: .whitespaces)
+        }
+
+        static func code(of name: String) -> String? {
+            let words = name.split(whereSeparator: \.isWhitespace)
+            guard words.count > 1, let first = words.first, first.count <= 12,
+                  first.unicodeScalars.contains(where: { CharacterSet.alphanumerics.contains($0) && $0.isASCII }),
+                  first.unicodeScalars.allSatisfy({ $0.isASCII }) else { return nil }
+            return String(first)
+        }
+
+        /// The day's events as pills: those before the axis in one, then each run less than `clusterGap` after its
+        /// first. Empty for the other ranges.
+        public var clusters: [EventCluster] {
+            let early = events.filter { $0.x < domain.lowerBound }
+            var out: [EventCluster] = early.isEmpty ? [] : [EventCluster(events: early, early: true)]
+            for e in events where e.x >= domain.lowerBound {
+                if let last = out.last, !last.early, e.x.timeIntervalSince(last.x) < Chart.clusterGap {
+                    out[out.count - 1].events.append(e)
+                } else {
+                    out.append(EventCluster(events: [e], early: false))
+                }
+            }
+            return out
+        }
 
         /// The day's highest reading so far, and the last one (today only).
         public var peak: ChartPoint? {

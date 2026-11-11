@@ -226,8 +226,10 @@ final class MonitoringGrowattTests: XCTestCase {
         XCTAssertEqual(s.alarms[0].since, at(9, 50))
         XCTAssertEqual(s.alarms[1].source, .lost)
         XCTAssertEqual(s.alarms[1].detail, "ขาดการติดต่อ · MAX 80KTL3 LV MAX0003")
-        // the fleet lists them under ต้องดำเนินการ
-        XCTAssertEqual(Monitoring.Fleet([s], now: now, settings: .init()).actions.map { $0.alarm.part }, ["INV 2", "INV 3"])
+        // the fleet lists them under ต้องดำเนินการ as one row for the station
+        let actions = Monitoring.Fleet([s], now: now, settings: .init()).actions
+        XCTAssertEqual(actions.map(\.parts), [["INV 2", "INV 3"]])
+        XCTAssertEqual(actions.first?.summary(now: now, calendar: cal), "อินเวอร์เตอร์ · 2 เครื่อง · ตั้งแต่ 09:50")
     }
 
     func testAnAlarmStillRaisedKeepsItsStartCountAndWorkOrder() throws {

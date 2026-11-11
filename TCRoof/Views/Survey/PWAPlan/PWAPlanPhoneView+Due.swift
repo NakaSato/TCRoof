@@ -5,9 +5,9 @@ import TCRoofCore
 /// `กำหนดส่ง`: the handovers and submissions of this week (with everything overdue) and the next, and the filter
 /// button at the end of the pill row with its menu.
 extension PWAPlanPhoneView {
-    /// The menu's choices: every kind, handovers, submissions.
+    /// The menu's choices: every kind, handovers, submissions, reports to stakeholders (CHA-82).
     private static let dueFilters: [(kind: PWAPlan.DeadlineKind?, title: String)] =
-        [(nil, "ทั้งหมด"), (.handover, "ส่งมอบ"), (.document, "ยื่นเอกสาร")]
+        [(nil, "ทั้งหมด"), (.handover, "ส่งมอบ"), (.document, "ยื่นเอกสาร"), (.report, "ส่งรายงาน")]
 
     private func shown(_ list: [PWAPlan.Deadline], kind: PWAPlan.DeadlineKind?) -> [PWAPlan.Deadline] {
         list.filter { (kind == nil || $0.kind == kind) && $0.matches(search: search) }
@@ -37,7 +37,7 @@ extension PWAPlanPhoneView {
     /// iPad: the framed `กำหนดส่ง` card, beside `รายสถานี`. It grows with its rows. No filter: the board has none.
     func padDueCard(_ due: PWAPlan.DeadlineGroups) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            padCardHeader("กำหนดส่ง", "งานส่งมอบและเอกสาร")
+            padCardHeader("กำหนดส่ง", "งานส่งมอบ เอกสาร และรายงาน")
             dueList(due)
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 12)

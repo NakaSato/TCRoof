@@ -13,13 +13,15 @@ struct PWAPlanBoard {
     /// The job types the calendar draws a bar for on each day; nil takes them from the agenda rows.
     var typesByDay: [Date: Set<PWAPlan.JobType>]?
 
-    /// From the PWA jobs: their MP plans, survey appointments, papers and daily reports.
-    init(stations: [PWAPlan.Station], library: StationDocs.Library, today: Date, threshold: Double) {
+    /// From the PWA jobs: their MP plans, survey appointments, papers and daily reports, and the reports due to the
+    /// Master Plan's stakeholders (CHA-82), which join the deadlines only.
+    init(stations: [PWAPlan.Station], library: StationDocs.Library, today: Date, threshold: Double,
+         stakeholders: [StakeholderList.Due] = []) {
         let deadlines = PWAPlan.deadlines(stations, library: library, today: today, threshold: threshold)
         self.today = today
         self.bars = PWAPlan.bars(stations, today: today, threshold: threshold)
         self.curve = PWAPlan.curve(stations, today: today)
-        self.deadlines = deadlines
+        self.deadlines = PWAPlan.merged(deadlines, PWAPlan.stakeholderDeadlines(stakeholders, today: today))
         self.agenda = { PWAPlan.agenda(stations, deadlines: deadlines, days: $0, today: today, threshold: threshold) }
     }
 

@@ -159,11 +159,15 @@ private struct NotificationScheduler: ViewModifier {
     private var heard: [Job] { jobs.filter { permissions.hearsNews($0.access) } }
 
     /// Routine-report reminders of the stations being installed (docs/specs/routine-reports-swift.md §5): 17:00 when today's
-    /// daily report isn't signed, Friday 15:00 when next week has no request.
+    /// daily report isn't signed, Friday 15:00 when next week has no request; and the reports due to the Master Plan's
+    /// stakeholders (CHA-82).
     private func reportPlans(_: Int) -> [NotificationPlan] {
         guard reportOn else { return [] }
-        let now = Date.now, cal = RoutineReport.calendar
-        return heard.filter { $0.status == .installing || $0.installInterval.contains(now) }.flatMap { job -> [NotificationPlan] in
+        let now = Date.now, cal = RoutineReport.calendar, heard = heard
+        // reports due to the Master Plan's stakeholders (CHA-82), 08:00 the day before: the programme's to the whole
+        // team, a station's handover papers to that station's people; none for contractors (the store gives them nothing)
+        let stakeholders = StakeholderNotification.plans(StakeholderStore.shared.dues(jobs: heard, from: now, days: 8), now: now)
+        let routine = heard.filter { $0.status == .installing || $0.installInterval.contains(now) }.flatMap { job -> [NotificationPlan] in
             let key = job.syncID ?? job.code
             let settings = job.routineSettings
             let daily = RoutineReportNotification.daily(jobKey: key, station: job.stationName, now: now,
@@ -175,7 +179,7 @@ private struct NotificationScheduler: ViewModifier {
                 : nil
             return [daily, request].compactMap { $0 }
         }
-        .sorted { $0.id < $1.id }
+        return (stakeholders + routine).sorted { $0.id < $1.id }
     }
 
     /// 30 and 7 days before each tool's calibration runs out (the tools register: the iPad `เครื่องมือ` tab, on iPhone the settings sheet's `เครื่องมือวัด` row).

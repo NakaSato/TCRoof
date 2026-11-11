@@ -6,7 +6,7 @@ import TCRoofCore
 /// `Monitoring ทุกสถานี` on iPhone (CHA-34, docs/ui/iphone-monitor-entry §5): the iPhone dock's `Monitor` tab. The same
 /// `MonitoringStore.shared.fleet` as the iPad's `MonitoringPage`, in one column: the header, the failure strip, the
 /// summary card, `ต้องดำเนินการ` (the costliest five) and the stations. Read only; no chart and no ตั้งค่า Monitoring
-/// (managers use the iPad). A station opens `PWAMaintenanceStationView`. The dock's `MonitoringPoller` reads Growatt.
+/// (managers use the iPad). A station opens `PWAMaintenanceStationView`. `PhoneTabs`' `MonitoringPoller` reads Growatt while this tab is shown.
 struct PhoneMonitoringPage: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State var store = MonitoringStore.shared

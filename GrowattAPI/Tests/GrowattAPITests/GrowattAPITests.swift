@@ -186,6 +186,7 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) private static var queue: [Data] = []
     nonisolated(unsafe) private static var seen: [URLRequest] = []
     nonisolated(unsafe) private static var sent: [String] = []
+    nonisolated(unsafe) private static var fields: [String: String] = [:]
 
     static var replies: [Data] {
         get { lock.lock(); defer { lock.unlock() }; return queue }
@@ -194,7 +195,12 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
     static var requests: [URLRequest] { lock.lock(); defer { lock.unlock() }; return seen }
     /// Each request's body as text ("" for a GET).
     static var bodies: [String] { lock.lock(); defer { lock.unlock() }; return sent }
-    static func reset() { lock.lock(); queue = []; seen = []; sent = []; lock.unlock() }
+    /// Header fields every reply carries (`Set-Cookie`, …).
+    static var headers: [String: String] {
+        get { lock.lock(); defer { lock.unlock() }; return fields }
+        set { lock.lock(); fields = newValue; lock.unlock() }
+    }
+    static func reset() { lock.lock(); queue = []; seen = []; sent = []; fields = [:]; lock.unlock() }
 
     /// A session that answers through this stub.
     static func api() -> GrowattAPI {
@@ -224,8 +230,9 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
         Self.seen.append(request)
         Self.sent.append(Self.body(request))
         let data = Self.queue.isEmpty ? Data() : Self.queue.removeFirst()
+        let headers = Self.fields
         Self.lock.unlock()
-        if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+        if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: headers) {
             client?.urlProtocol(self, didReceive: r, cacheStoragePolicy: .notAllowed)
         }
         client?.urlProtocol(self, didLoad: data)

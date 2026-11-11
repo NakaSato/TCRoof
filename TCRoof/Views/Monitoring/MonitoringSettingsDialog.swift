@@ -26,14 +26,14 @@ struct MonitoringSettingsDialog: View {
     /// The add form's connection test: running, and why it failed.
     @State private var addTesting = false
     @State private var addError: String?
-    /// Tokens typed for new accounts or changed on one, saved to the Keychain on `บันทึก` (or on a connection test);
-    /// accounts removed lose their token then.
-    @State private var pendingTokens: [UUID: String] = [:]
     /// The account whose token is being replaced, and the new one typed.
     @State private var changingToken: UUID?
     @State private var changedToken = ""
     /// Accounts whose token is in this iPad's Keychain, read once when the dialog opens, not on every redraw.
     @State private var savedTokens: Set<UUID> = []
+    /// Plants already read for each server during this dialog session (`testAndAdd`, `test`, or the pairing pane),
+    /// kept so opening `จับคู่สถานีกับ Plant` doesn't call `plant/list` a second time.
+    @State private var plants: [UUID: [Monitoring.Pairing.Plant]] = [:]
     @State private var testing: Set<UUID> = []
     @State private var testNote: [UUID: String] = [:]
 
@@ -60,7 +60,8 @@ struct MonitoringSettingsDialog: View {
                 titleBar
                 if page == .pairing {
                     Divider()
-                    MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants)
+                    MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants,
+                                          plants: $plants)
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 24) {
@@ -148,7 +149,7 @@ struct MonitoringSettingsDialog: View {
         let ids = Set(saved.servers.map(\.id)).union(draft.servers.map(\.id))
         var n = ids.filter { id in
             let a = saved.servers.first { $0.id == id }, b = draft.servers.first { $0.id == id }
-            return a?.name != b?.name || a?.url != b?.url || a?.tokenSuffix != b?.tokenSuffix || pendingTokens[id] != nil
+            return a?.name != b?.name || a?.url != b?.url || a?.tokenSuffix != b?.tokenSuffix
         }.count
         let fields: [Bool] = [
             saved.pollMinutes != draft.pollMinutes,
@@ -162,13 +163,14 @@ struct MonitoringSettingsDialog: View {
     }
 
     private func save() {
-        for (id, token) in pendingTokens { keep(token, for: id) }
-        // accounts taken out lose their token too
+        // tokens are saved when they are added or changed; accounts taken out lose theirs here
+        var tokensChanged = false
         for old in store.settings.servers where !draft.servers.contains(where: { $0.id == old.id }) {
+            if savedTokens.contains(old.id) { tokensChanged = true }
             MonitoringToken.remove(old.id)
         }
-        savedTokens.formUnion(pendingTokens.keys)
         store.save(draft)
+        if tokensChanged { store.noteTokenChange() }
         close()
     }
 
@@ -177,10 +179,11 @@ struct MonitoringSettingsDialog: View {
         MonitoringToken.save(token, for: server)
     }
 
-    /// `ยกเลิกการแก้`: the saved values back, tokens typed and forms dropped.
+    /// `ยกเลิกการแก้`: the saved values back and forms dropped. Accounts added and tokens changed were saved at once,
+    /// so they stay.
     private func undo() {
         draft = store.settings
-        pendingTokens = [:]
+        plants = [:]
         adding = false; changingToken = nil; changedToken = ""
         newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString; addError = nil
         testNote = [:]
@@ -222,7 +225,7 @@ struct MonitoringSettingsDialog: View {
             .accessibilityIdentifier("monitoring.server.changeToken")
             roundButton("trash", label: "ลบบัญชี \(s.name)", tint: Theme.dangerText, fill: Theme.dangerSoft) {
                 draft.servers.removeAll { $0.id == s.id }
-                pendingTokens[s.id] = nil
+                plants[s.id] = nil
                 if changingToken == s.id { changingToken = nil }
             }
             .accessibilityIdentifier("monitoring.server.delete")
@@ -233,16 +236,18 @@ struct MonitoringSettingsDialog: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
     }
 
-    /// `openapi.growatt.com · 4 สถานี`: the stations whose plant is read from this account.
+    /// `openapi.growatt.com · 4 สถานี · 43 Plant`: the stations whose plant is read from this account, and how many
+    /// plants the last test saw.
     private func accountLine(_ s: Monitoring.Settings.Server) -> String {
         let n = stations.filter { draft.pairing(of: $0.id)?.server.id == s.id }.count
-        return s.host + " · \(n) สถานี"
+        let total = s.plants.map { " · \($0) Plant" } ?? ""
+        return s.host + " · \(n) สถานี" + total
     }
 
     /// The account's connection: a tap tests it again. No token on this iPad says so first, since nothing can be read.
     @ViewBuilder
     private func accountStatus(_ s: Monitoring.Settings.Server) -> some View {
-        let hasToken = pendingTokens[s.id] != nil || savedTokens.contains(s.id)
+        let hasToken = savedTokens.contains(s.id)
         Button { Task { await test(s) } } label: {
             Group {
                 if testing.contains(s.id) {
@@ -286,12 +291,21 @@ struct MonitoringSettingsDialog: View {
         .accessibilityIdentifier("monitoring.server.add")
     }
 
+    private var defaultAccountName: String {
+        draft.servers.isEmpty ? "Growatt" : "Growatt \(draft.servers.count + 1)"
+    }
+
+    private var resolvedNewURL: String {
+        let trimmed = newURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? GrowattAPI.openAPIURL.absoluteString : trimmed
+    }
+
     private var addForm: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(verbatim: "บัญชีใหม่").font(.sarabun(16, .bold)).foregroundStyle(Theme.navy)
             HStack(alignment: .top, spacing: 12) {
-                labelledField("ชื่อบัญชี") { TCTextField("เช่น Growatt บัญชีเฟส 5", text: $newName) }
-                labelledField("URL") { TCTextField("https://", text: $newURL) }
+                labelledField("ชื่อบัญชี") { TCTextField(defaultAccountName, text: $newName) }
+                labelledField("URL") { TCTextField(GrowattAPI.openAPIURL.absoluteString, text: $newURL) }
                 labelledField("Token") { secureField("วาง Token", text: $newToken, id: "monitoring.server.token") }
             }
             if let addError {
@@ -311,7 +325,7 @@ struct MonitoringSettingsDialog: View {
                     }
                 }
                 .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
-                .disabled(addTesting || newName.trimmingCharacters(in: .whitespaces).isEmpty || URL(string: newURL)?.host == nil
+                .disabled(addTesting || URL(string: resolvedNewURL)?.host == nil
                           || newToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityIdentifier("monitoring.server.testAndAdd")
             }
@@ -321,20 +335,28 @@ struct MonitoringSettingsDialog: View {
     }
 
     /// Lists the account's plants (read only, `plant/list`) before it is added, so a wrong URL or token is caught in
-    /// the form; the account and its token wait for `บันทึก` like every other change.
+    /// the form; once verified, the account and its token are saved at once so closing the dialog doesn't lose them.
     private func testAndAdd() async {
         let token = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        let url = newURL.trimmingCharacters(in: .whitespaces)
+        let url = resolvedNewURL
+        let typedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = typedName.isEmpty ? defaultAccountName : typedName
         guard let base = URL(string: url) else { return }
         addTesting = true; addError = nil
         defer { addTesting = false }
         do {
-            let plants = try await GrowattAPI(baseURL: base, token: token).plants().count
-            var s = Monitoring.Settings.Server(name: newName.trimmingCharacters(in: .whitespaces), url: url,
+            let rows = try await GrowattAPI(baseURL: base, token: token).allPlants(maxPages: 10)
+            var s = Monitoring.Settings.Server(name: name, url: url,
                                                tokenSuffix: Monitoring.Settings.Server.suffix(of: token))
-            s.testedAt = Date(); s.testOK = true; s.plants = plants
+            s.testedAt = Date(); s.testOK = true; s.plants = rows.count
+            keep(token, for: s.id)
+            savedTokens.insert(s.id)
             draft.servers.append(s)
-            pendingTokens[s.id] = token
+            plants[s.id] = rows.map(Monitoring.Pairing.Plant.init)
+            var saved = store.settings
+            saved.servers.append(s)
+            store.save(saved)
+            store.noteTokenChange()
             adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString
         } catch let f as GrowattAPI.Failure {
             addError = f.message
@@ -343,8 +365,8 @@ struct MonitoringSettingsDialog: View {
         }
     }
 
-    /// A new token for an account already added: kept with the others typed and saved to the Keychain on `บันทึก`
-    /// (or on its connection test), its last four shown at once and the last test cleared, since it was the old one's.
+    /// A new token for an account already added: saved to the Keychain at once, its last four updated and the last
+    /// test cleared, since it was the old one's.
     private func changeTokenForm(_ s: Monitoring.Settings.Server) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Token ใหม่ของ \(s.name)").font(.sarabun(15, .bold)).foregroundStyle(Theme.navy)
@@ -354,13 +376,25 @@ struct MonitoringSettingsDialog: View {
                     .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
                 Button {
                     let token = changedToken.trimmingCharacters(in: .whitespacesAndNewlines)
-                    pendingTokens[s.id] = token
+                    let suffix = Monitoring.Settings.Server.suffix(of: token)
+                    keep(token, for: s.id)
+                    savedTokens.insert(s.id)
+                    plants[s.id] = nil
                     if let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
-                        draft.servers[i].tokenSuffix = Monitoring.Settings.Server.suffix(of: token)
+                        draft.servers[i].tokenSuffix = suffix
                         draft.servers[i].testOK = nil
                         draft.servers[i].testedAt = nil
                         draft.servers[i].plants = nil
                     }
+                    var saved = store.settings
+                    if let i = saved.servers.firstIndex(where: { $0.id == s.id }) {
+                        saved.servers[i].tokenSuffix = suffix
+                        saved.servers[i].testOK = nil
+                        saved.servers[i].testedAt = nil
+                        saved.servers[i].plants = nil
+                        store.save(saved)
+                    }
+                    store.noteTokenChange()
                     testNote[s.id] = nil
                     changingToken = nil; changedToken = ""
                 } label: { Text(verbatim: "ใช้ Token นี้") }
@@ -372,35 +406,26 @@ struct MonitoringSettingsDialog: View {
         .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    /// The connection test needs the token in the Keychain: a pending one is saved first, with the account as saved
-    /// naming it (else a cancel would leave the new token under the old last four).
+    /// Tests the account's connection with the token in this iPad's Keychain (`MonitoringStore.test` records the
+    /// result on the saved row), and shows the result and the plants read in the draft.
     private func test(_ s: Monitoring.Settings.Server) async {
-        if let t = pendingTokens[s.id] {
-            keep(t, for: s.id)
-            pendingTokens[s.id] = nil
-            savedTokens.insert(s.id)
-        }
-        var saved = store.settings
         let current = draft.servers.first { $0.id == s.id } ?? s
-        if let i = saved.servers.firstIndex(where: { $0.id == s.id }) {
-            if saved.servers[i].tokenSuffix != current.tokenSuffix {
-                saved.servers[i].tokenSuffix = current.tokenSuffix
-                store.save(saved)
-            }
-        } else {
-            saved.servers.append(current)
-            store.save(saved)
-        }
         testing.insert(s.id)
-        let result = await store.test(s)
+        let result = await store.test(current)
         testing.remove(s.id)
-        if let updated = store.settings.servers.first(where: { $0.id == s.id }),
-           let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
-            draft.servers[i].testedAt = updated.testedAt
-            draft.servers[i].testOK = updated.testOK
-            draft.servers[i].plants = updated.plants
+        if let i = draft.servers.firstIndex(where: { $0.id == s.id }) {
+            draft.servers[i].testedAt = store.settings.servers.first(where: { $0.id == s.id })?.testedAt ?? Date()
+            switch result {
+            case .success(let list):
+                draft.servers[i].testOK = true
+                draft.servers[i].plants = list.count
+                plants[s.id] = list.map(Monitoring.Pairing.Plant.init)
+                testNote[s.id] = nil
+            case .failure(let f):
+                draft.servers[i].testOK = false
+                testNote[s.id] = f.message
+            }
         }
-        if case .failure(let f) = result { testNote[s.id] = f.message } else { testNote[s.id] = nil }
     }
 
     // MARK: polling
@@ -563,12 +588,35 @@ struct MonitoringSettingsDialog: View {
     }
 
     private func secureField(_ prompt: String, text: Binding<String>, id: String) -> some View {
-        SecureField(prompt, text: text)
-            .font(.sarabun(15)).padding(.horizontal, 12).frame(minHeight: 44)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderControl))
-            .textInputAutocapitalization(.never).autocorrectionDisabled()
-            .accessibilityIdentifier(id)
+        HStack(spacing: 8) {
+            SecureField(prompt, text: text)
+                .font(.sarabun(15))
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .accessibilityIdentifier(id)
+            if text.wrappedValue.isEmpty {
+                Button {
+                    if let pasted = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines), !pasted.isEmpty {
+                        text.wrappedValue = pasted
+                    }
+                } label: {
+                    Text(verbatim: "วาง").font(.sarabun(13, .bold)).foregroundStyle(Theme.primary)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Theme.primarySoft, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("วาง Token จากคลิปบอร์ด")
+                .accessibilityIdentifier(id + ".paste")
+            } else {
+                Button { text.wrappedValue = "" } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 15)).foregroundStyle(Theme.inkMuted)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ล้าง Token")
+            }
+        }
+        .padding(.leading, 12).padding(.trailing, 8).frame(minHeight: 44)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.borderControl))
     }
 
     private func roundButton(_ icon: String, label: String, tint: Color, fill: Color, action: @escaping () -> Void) -> some View {

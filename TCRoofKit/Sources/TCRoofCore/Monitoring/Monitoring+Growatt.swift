@@ -3,8 +3,8 @@ import Foundation
 extension Monitoring {
     /// What one poll read from Growatt's OpenAPI for a paired station: `plant/data`, today's and yesterday's
     /// `plant/power`, `device/list`, each inverter's latest readings (`invs_data`) and `plant/energy` by day and by month. A part is nil when its call failed or
-    /// wasn't made this time (the history is read once a day), and `GrowattMap.station` then keeps the station's
-    /// previous value for it, so a failed read never turns a figure into 0.
+    /// wasn't made this time (only what a screen shows is read, the history once a day: CHA-107), and
+    /// `GrowattMap.station` then keeps the station's previous value for it, so a failed read never turns a figure into 0.
     public struct GrowattReading: Equatable, Sendable {
         public var data: GrowattAPI.PlantData?
         public var power: [GrowattAPI.PowerPoint]?
@@ -14,13 +14,15 @@ extension Monitoring {
         public var months: [GrowattAPI.EnergyPoint]?
         /// Each inverter's latest readings by serial number (`device/inverter/invs_data`), for the string currents.
         public var inverters: [String: GrowattAPI.Latest]?
+        /// The plant's zone as `plant/data` last gave it, for a read that didn't call `plant/data` this time.
+        public var timezone: String?
 
         public init(data: GrowattAPI.PlantData? = nil, power: [GrowattAPI.PowerPoint]? = nil,
                     yesterdayPower: [GrowattAPI.PowerPoint]? = nil, devices: [GrowattAPI.Device]? = nil,
                     days: [GrowattAPI.EnergyPoint]? = nil, months: [GrowattAPI.EnergyPoint]? = nil,
-                    inverters: [String: GrowattAPI.Latest]? = nil) {
+                    inverters: [String: GrowattAPI.Latest]? = nil, timezone: String? = nil) {
             self.data = data; self.power = power; self.yesterdayPower = yesterdayPower; self.devices = devices
-            self.days = days; self.months = months; self.inverters = inverters
+            self.days = days; self.months = months; self.inverters = inverters; self.timezone = timezone
         }
 
         /// Nothing came back at all.
@@ -123,7 +125,7 @@ extension Monitoring {
                             inverters: max(base.inverters, prev?.inverters ?? 0), paired: true)
             let today = calendar.startOfDay(for: now)
             let nowSlot = Forecast.slot(of: now, calendar: calendar)
-            let zone = timeZone(reading.data?.timezone ?? "")
+            let zone = timeZone(reading.data?.timezone ?? reading.timezone ?? "")
 
             // the forecast: the site's clear day, its part to now
             let dayKWh = base.kWp * forecastDailyKWhPerKWp
@@ -208,6 +210,9 @@ extension Monitoring {
                                             detail: "ขาดการติดต่อ" + (label.isEmpty ? "" : " · " + label), since: since))
                     }
                 }
+            } else {
+                // device/list not read this time: its inverters' faults stand as last read
+                alarms += (prev?.alarms ?? []).filter { $0.id.hasPrefix(base.id + "/fault/") || $0.id.hasPrefix(base.id + "/lost/") }
             }
             // one still raised keeps when it began, its count and its work order
             let before = Dictionary((prev?.alarms ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })

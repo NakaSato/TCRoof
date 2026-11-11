@@ -15,12 +15,13 @@ struct MonitoringPairingPane: View {
     @Binding var draft: Monitoring.Settings
     let canEdit: Bool
     var stub = false
+    /// The plants read, by server (`stubKey` for the stub), shared with the dialog so `testAndAdd` / `test` and
+    /// switching pages don't call `plant/list` again.
+    @Binding var plants: [UUID: [Monitoring.Pairing.Plant]]
 
     @State private var selected: String?
     @State private var serverID: UUID?
     @State private var search = ""
-    /// The plants read, by server (`stubKey` for the stub); loading and the error per server.
-    @State private var plants: [UUID: [Monitoring.Pairing.Plant]] = [:]
     @State private var loading: Set<UUID> = []
     @State private var errors: [UUID: String] = [:]
 
@@ -249,20 +250,17 @@ struct MonitoringPairingPane: View {
             plants[key] = Monitoring.Pairing.demoPlants()
             return
         }
-        guard let server, let token = MonitoringToken.token(server.id), let url = URL(string: server.url) else {
+        guard let server,
+              let token = MonitoringToken.token(server.id),
+              let url = URL(string: server.url) else {
             errors[key] = "ไม่มี Token ของเซิร์ฟเวอร์นี้ในเครื่อง · ใส่ Token ในหน้าตั้งค่าก่อน"
             return
         }
         let api = GrowattAPI(baseURL: url, token: token)
-        var all: [Monitoring.Pairing.Plant] = []
         do {
-            for page in 1...10 {
-                let rows = try await api.plants(page: page)
-                all += rows.map(Monitoring.Pairing.Plant.init)
-                if rows.count < 100 { break }
-            }
+            let rows = try await api.allPlants(maxPages: 10)
             guard !Task.isCancelled else { return }
-            plants[key] = all
+            plants[key] = rows.map(Monitoring.Pairing.Plant.init)
             errors[key] = nil
         } catch let f as GrowattAPI.Failure {
             errors[key] = f.message

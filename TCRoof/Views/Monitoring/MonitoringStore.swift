@@ -46,12 +46,12 @@ final class MonitoringStore {
     @ObservationIgnored private var stringsRead: [String: Date] = [:]
     private struct ReadKey: Equatable {
         var pairings: [String: String], pairingServers: [String: UUID], servers: [Monitoring.Settings.Server.ID: String]
-        var tokenRevision: Int
+        var tokenRevision: Int, plantsRevision: Int
     }
     private var readKey: ReadKey {
         ReadKey(pairings: settings.pairings, pairingServers: settings.pairingServers,
                 servers: Dictionary(settings.servers.map { ($0.id, $0.url) }, uniquingKeysWith: { a, _ in a }),
-                tokenRevision: tokenRevision)
+                tokenRevision: tokenRevision, plantsRevision: plantsRevision)
     }
 
     /// The summary is due: never read, read with other pairings or tokens, or `pollInterval` ago (a second early, so a
@@ -193,10 +193,10 @@ final class MonitoringStore {
             return recount()
         } else {
             now = Date()
-            sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
-            stations = Self.handedOver(jobs).map { job in
-                let base = Self.base(job)
-                guard settings.pairing(of: base.id) != nil, let last = stations.first(where: { $0.id == base.id }), last.paired else { return base }
+            sources = allSources(jobs)
+            let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            stations = sources.map { src in
+                guard src.plant != nil, let last = previous[src.base.id], last.paired else { return src.base }
                 return last
             }
         }
@@ -216,10 +216,10 @@ final class MonitoringStore {
             guard summary else { return }
             return await pollWebDemo(key: readKey)
         }
-        sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
+        sources = allSources(jobs)
         var targets: [MonitoringFeed.Target] = []
         for src in sources {
-            guard let p = settings.pairing(of: src.base.id), let url = URL(string: p.server.url),
+            guard let p = src.plant, let url = URL(string: p.server.url),
                   let token = MonitoringToken.token(p.server.id) else { continue }
             let parts = parts(for: src.base.id, summary: summary, now: readAt)
             guard !parts.isEmpty else { continue }
@@ -235,23 +235,70 @@ final class MonitoringStore {
             return
         }
         if summary, !hasRead { readingFirst = true }
-        let readings = await feed.read(targets, now: readAt, calendar: .current)
-        // cancelled (the tab left): no skeleton left on; the next poll starts the wait again
-        guard !Task.isCancelled else { readingFirst = false; return }
-        for t in targets where t.parts.contains(.strings) { stringsRead[t.stationID] = readAt }
-        guard !readings.isEmpty else { return }
-        let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
-        if summary {
-            summaryRead = (readAt, key)
-            // a failed first read ends the wait too: the header says why (`feedFailure`)
-            hasRead = true
-            readingFirst = false
-            apply(all, at: readAt, failure: .some(readings.compactMap(\.failure).first?.message))
-        } else {
-            // the history or the strings alone: the header's failure stays the summary's
-            apply(all, at: readAt, failure: nil)
+        // a few plants at a time, each batch shown as it comes: with the account's plants listed too, a whole poll
+        // takes minutes (every call is spaced by `GrowattGate`); the paired stations come first
+        var failure: String?
+        var readAny = false
+        for start in stride(from: 0, to: targets.count, by: Self.readBatch) {
+            let batch = Array(targets[start..<min(start + Self.readBatch, targets.count)])
+            let readings = await feed.read(batch, now: readAt, calendar: .current)
+            // cancelled (the tab left): no skeleton left on; the next poll starts the wait again
+            guard !Task.isCancelled else { readingFirst = false; return }
+            for t in batch where t.parts.contains(.strings) { stringsRead[t.stationID] = readAt }
+            guard !readings.isEmpty else { continue }
+            readAny = true
+            let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
+            if summary {
+                failure = failure ?? readings.compactMap(\.failure).first?.message
+                // a failed first read ends the wait too: the header says why (`feedFailure`)
+                hasRead = true
+                readingFirst = false
+                apply(all, at: readAt, failure: .some(failure))
+            } else {
+                // the history or the strings alone: the header's failure stays the summary's
+                apply(all, at: readAt, failure: nil)
+            }
         }
+        if summary, readAny { summaryRead = (readAt, key) }
     }
+
+    /// Plants read before their rows are shown (`poll`).
+    private static let readBatch = 5
+
+    /// Every row: the handed-over PWA stations, then each account's plants that none of them is paired with
+    /// (`plantLists`, from the account's last `ทดสอบ`), when this device has the account's token. Those are read as a
+    /// paired station is, without being one; ตั้งค่า Monitoring's pairing lists only the stations.
+    private func allSources(_ jobs: [Job]) -> [Source] {
+        let handed = Self.handedOver(jobs).map { job -> Source in
+            let base = Self.base(job)
+            return Source(base: base, latitude: job.latitude, longitude: job.longitude, plant: settings.pairing(of: base.id))
+        }
+        let taken = Set(handed.compactMap { $0.plant.map { Self.accountPlantID($0.server.id, $0.plantID) } })
+        var extra: [Source] = []
+        for server in settings.servers where MonitoringToken.token(server.id) != nil {
+            for p in plantLists[server.id] ?? [] {
+                guard let plantID = Int(p.id) else { continue }
+                let id = Self.accountPlantID(server.id, plantID)
+                guard !taken.contains(id), !extra.contains(where: { $0.base.id == id }) else { continue }
+                let base = Monitoring.Station.unpaired(id: id, mpNumber: nil, name: p.name, kWp: p.kWp, inverters: 1)
+                extra.append(Source(base: base, latitude: nil, longitude: nil, plant: (server, plantID)))
+            }
+        }
+        return handed + extra
+    }
+
+    private static let accountPlantPrefix = "growatt-plant-"
+
+    /// An account's plant shown on its own (not a station's): `growatt-plant-<server>-<plant id>`.
+    static func accountPlantID(_ server: UUID, _ plantID: Int) -> String {
+        accountPlantPrefix + server.uuidString + "-" + String(plantID)
+    }
+
+    /// A row that is an account's plant, not a handed-over station: left out of the pairing and its counts.
+    static func isAccountPlant(_ id: String) -> Bool { id.hasPrefix(accountPlantPrefix) }
+
+    /// The handed-over stations only, for ตั้งค่า Monitoring's pairing and the `จับคู่แล้ว` counts.
+    var jobStations: [Monitoring.Station] { stations.filter { !Self.isAccountPlant($0.id) } }
 
     /// A station's parts this poll: the summary when due, the overview chart's history, and for the station page shown
     /// its chart's history, this month's energy (its card) and the string currents (with each summary, else once
@@ -268,11 +315,13 @@ final class MonitoringStore {
         return p
     }
 
-    /// The handed-over stations as last listed by `poll`.
+    /// The rows as last listed by `poll`: the handed-over stations and the accounts' plants (`allSources`).
     private struct Source {
         var base: Monitoring.Station
         var latitude: Double?
         var longitude: Double?
+        /// What it is read from: a station's pairing, or the account's plant itself; nil for a station not paired.
+        var plant: (server: Monitoring.Settings.Server, plantID: Int)?
     }
     @ObservationIgnored private var sources: [Source] = []
 
@@ -298,7 +347,7 @@ final class MonitoringStore {
         // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt). Only an
         // iPad posts them: a phone shows the readings and the badge, so someone with both isn't told twice (CHA-34)
         if settings.notifyMaintenance, Self.postsAlerts {
-            MonitoringNotification.plans(previous: before, stations: stations, now: readAt,
+            MonitoringNotification.plans(previous: before, stations: jobStations, now: readAt,
                                          offlineAfter: settings.loggerOfflineMinutes).forEach(NotificationService.shared.post)
         }
     }
@@ -415,7 +464,13 @@ final class MonitoringStore {
         plantLists[server] = list
         let raw = Dictionary(uniqueKeysWithValues: plantLists.map { ($0.key.uuidString, $0.value) })
         if let d = try? JSONEncoder().encode(raw) { UserDefaults.standard.set(d, forKey: Self.plantsKey) }
+        // the account's plants are rows of their own: list them now, and the poller reads them
+        plantsRevision &+= 1
+        if !Self.demo, !Self.growattWebDemo { refresh(jobs: lastJobs) }
     }
+
+    /// Bumped when an account's plant list changes, so `MonitoringPoller` reads the new rows at once.
+    private(set) var plantsRevision = 0
 
     // MARK: Growatt's wait (10012)
 

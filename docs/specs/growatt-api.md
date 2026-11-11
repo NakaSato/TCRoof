@@ -60,20 +60,20 @@ Still to check on the live server: whether 10012 limits calls per plant or per t
 
 ## 2. Web portal, guest session (`TCRoofCore/GrowattWebDemo`)
 
-`https://server.growatt.com/`, a cookie session on the portal's example account, for the DEBUG `-growattDemo YES` overview (docs/debug-flags.md).
+`https://server.growatt.com/`, a cookie session on the portal's example account, for the DEBUG `-growattDemo YES` overview (docs/debug-flags.md). The calls go through the package's `GrowattPortal` (`openGuest()` for the guest login, `post` for the rest, `dayChart` for the power), which keeps the session's cookies; the guest login answers 200 with them (no redirect) and expires a few at once (`selPage`, `Max-Age=0`), which aren't kept.
 
 | Endpoint | Method | Parameters | Answer |
 |---|---|---|---|
 | `login/toViewExamlePlant` | GET | none | opens the guest session |
 | `index/getPlantListTitle` | POST | none | the home dashboard's plants |
 | `indexbC/getPlantListTitle` | POST | none | the business dashboard's plants |
-| `panel/getPlantData` | POST | `plantId` (query) | one plant's totals |
+| `panel/getPlantData` | POST | `plantId` (form; the query works too, checked 11 Nov 2026) | one plant's totals |
 | `panel/getDevicesByPlantList` | POST | `plantId`, `currPage` | devices, 4 a page |
 | `energy/compare/getDevicesDayChart` | POST | `plantId`, `date`, `jsonData` | one day's power, 288 points |
 
 ## 3. Web portal, signed-in account (`GrowattPortal` in the package)
 
-Captured from a browser on `server.growatt.com` (10 Nov 2026), signed in to a company account, and ported as `GrowattPortal` in the `GrowattAPI` package. Nothing in the app calls it yet.
+Captured from a browser on `server.growatt.com` (10 Nov 2026), signed in to a company account, and ported as `GrowattPortal` in the `GrowattAPI` package. Nothing in the app calls its signed-in calls yet; the guest demo above uses its transport.
 
 - It needs a browser session: give the `Cookie` header's text (`JSESSIONID`, `assToken`, …) to `useCookies(_:)`. The client sends the cookies itself and keeps those the portal renews (`SERVERID`). The cookies work like the account's password until the session ends, so keep them out of the repo, tickets and logs.
 - Signing in with a username and password isn't ported: its request hasn't been captured.

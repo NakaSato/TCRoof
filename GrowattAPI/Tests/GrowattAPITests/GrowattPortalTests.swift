@@ -112,6 +112,24 @@ final class GrowattPortalTests: XCTestCase {
         XCTAssertEqual(p.jar.header, "mapLang=com; JSESSIONID=NEW; assToken=0f0f; SERVERID=x|1|2", "a cookie set again is replaced in place")
     }
 
+    /// The guest login (10 Nov 2026 live answer): a GET answered 200 on its own `login/` path, with the session's cookies
+    /// and a few it expires at once; the next call sends the kept ones.
+    func testTheGuestSessionKeepsItsCookies() async throws {
+        let p = portal()
+        GrowattStub.headers = ["Set-Cookie": "JSESSIONID=GUEST1; Path=/; HttpOnly, mapLang=com; Max-Age=2592000; Path=/, "
+                                             + "selPage=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/"]
+        GrowattStub.replies = [json("<!DOCTYPE html><html><head><title>List of Power Plants</title></head></html>")]
+        try await p.openGuest()
+        let open = try XCTUnwrap(GrowattStub.requests.first)
+        XCTAssertEqual(open.httpMethod ?? "GET", "GET")
+        XCTAssertEqual(open.url?.path, "/login/toViewExamlePlant")
+        XCTAssertEqual(p.jar.header, "JSESSIONID=GUEST1; mapLang=com", "an expired cookie isn't kept")
+        GrowattStub.headers = [:]
+        GrowattStub.replies = [json(#"[{"id":"2710610","plantName":"Res***t"}]"#)]
+        _ = try await p.post("index/getPlantListTitle", [:])
+        XCTAssertEqual(GrowattStub.requests.last?.value(forHTTPHeaderField: "Cookie"), "JSESSIONID=GUEST1; mapLang=com")
+    }
+
     func testMonthChartSendsThePagesForm() async throws {
         GrowattStub.replies = [json(#"{"result":1,"obj":[{"datas":{"energy":[512.3,"498.1",null]}}]}"#)]
         let lines = try await portal().monthChart(plantID: "9947162", month: "2026-11",

@@ -17,6 +17,9 @@ final class MonitoringStore {
 
     private(set) var settings: Monitoring.Settings
     private(set) var stations: [Monitoring.Station] = []
+    /// Bumped when a server's token is saved or removed in the Keychain, so `MonitoringPoller` reads again even when
+    /// `settings` itself didn't change (for example, entering the token on a second iPad).
+    private(set) var tokenRevision = 0
     /// The clock the figures are worked out at: now, or the board's 14:55 in the demo.
     private(set) var now = Date()
     private(set) var refreshedAt: Date?
@@ -252,22 +255,27 @@ final class MonitoringStore {
         recount()
     }
 
+    func noteTokenChange() {
+        tokenRevision &+= 1
+    }
+
     // MARK: connection test
 
-    /// Lists the token's plants on the server (read only, `plant/list`) and records the result on the server's row.
-    func test(_ server: Monitoring.Settings.Server) async -> Result<Int, GrowattAPI.Failure> {
+    /// Lists the token's plants on the server (read only, `plant/list`, every page up to 10) and records the result on
+    /// the server's row.
+    func test(_ server: Monitoring.Settings.Server) async -> Result<[GrowattAPI.Plant], GrowattAPI.Failure> {
         guard let token = MonitoringToken.token(server.id), let url = URL(string: server.url) else {
             return .failure(.api(10011, "ไม่มี token"))
         }
-        let result: Result<Int, GrowattAPI.Failure>
-        do { result = .success(try await GrowattAPI(baseURL: url, token: token).plants().count) }
+        let result: Result<[GrowattAPI.Plant], GrowattAPI.Failure>
+        do { result = .success(try await GrowattAPI(baseURL: url, token: token).allPlants(maxPages: 10)) }
         catch let f as GrowattAPI.Failure { result = .failure(f) }
         catch { result = .failure(.badResponse) }
         var s = settings
         if let i = s.servers.firstIndex(where: { $0.id == server.id }) {
             s.servers[i].testedAt = Date()
             s.servers[i].testOK = (try? result.get()) != nil
-            if case .success(let n) = result { s.servers[i].plants = n }
+            if case .success(let list) = result { s.servers[i].plants = list.count }
             // a test is this iPad's (its token), so it stays here and isn't sent
             keep(s)
         }

@@ -216,8 +216,8 @@ struct MonitoringPage: View {
 }
 
 /// Reads Growatt while the app is open, at once and then every `pollMinutes` (never closer than its 5 minutes), so the
-/// dock's badge and the alerts follow the stations whichever tab shows (CHA-21). A new pairing or server reads again at
-/// once. Draws nothing.
+/// dock's badge and the alerts follow the stations whichever tab shows (CHA-21). A new pairing, server or token reads
+/// again at once. Draws nothing.
 struct MonitoringPoller: View {
     @Query(sort: \Job.installStart) private var jobs: [Job]
     @State private var store = MonitoringStore.shared
@@ -225,7 +225,8 @@ struct MonitoringPoller: View {
     var body: some View {
         Color.clear.frame(width: 0, height: 0)
             .task(id: PollKey(minutes: store.settings.pollMinutes, pairings: store.settings.pairings,
-                              servers: store.settings.servers.map(\.id))) {
+                              pairingServers: store.settings.pairingServers,
+                              servers: store.settings.servers.map(\.id), tokenRevision: store.tokenRevision)) {
                 while !Task.isCancelled {
                     await store.poll(jobs: jobs)
                     try? await Task.sleep(for: .seconds(store.settings.pollInterval))
@@ -234,6 +235,6 @@ struct MonitoringPoller: View {
     }
 
     private struct PollKey: Equatable {
-        var minutes: Int, pairings: [String: String], servers: [UUID]
+        var minutes: Int, pairings: [String: String], pairingServers: [String: UUID], servers: [UUID], tokenRevision: Int
     }
 }

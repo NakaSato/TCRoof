@@ -39,6 +39,11 @@ public struct GrowattPortal: Sendable {
             if values[name] == nil { order.append(name) }
             values[name] = value
         }
+        func remove(_ name: String) {
+            lock.lock(); defer { lock.unlock() }
+            values[name] = nil
+            order.removeAll { $0 == name }
+        }
         var all: [(name: String, value: String)] {
             lock.lock(); defer { lock.unlock() }
             return order.compactMap { n in values[n].map { (n, $0) } }
@@ -84,6 +89,15 @@ public struct GrowattPortal: Sendable {
     }
 
     // MARK: calls
+
+    /// `login/toViewExamlePlant` (a GET, the login page's demo link): a guest session on Growatt's example account, whose
+    /// plants are real home systems with their names partly hidden. The portal answers 200 with the session's cookies,
+    /// which this client keeps like a signed-in account's. The guest account answers `index/getPlantListTitle`,
+    /// `panel/…` and the charts, not the signed-in calls (`plantList`, `faultLog`).
+    public func openGuest() async throws {
+        _ = try await send(URLRequest(url: baseURL.appendingPathComponent("login/toViewExamlePlant"), timeoutInterval: timeout),
+                           loginIsSignedOut: false)
+    }
 
     /// `selectPlant/getPlantList`: the account's plants, a page at a time (the portal's own page size). `name` filters
     /// by plant name; `plantType` -1 is every type; `orderType` 2 is the portal's default order.
@@ -216,6 +230,13 @@ public struct GrowattPortal: Sendable {
         request.setValue("application/json, text/javascript, */*; q=0.01", forHTTPHeaderField: "Accept")
         request.setValue(baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")), forHTTPHeaderField: "Origin")
         request.httpBody = Data(GrowattAPI.formBody(form).utf8)
+        return try await send(request, loginIsSignedOut: true)
+    }
+
+    /// Sends `request` with the session's cookies and keeps the ones the answer sets (dropping those it expires).
+    /// A redirect or, with `loginIsSignedOut`, an answer from a login page is `signedOut`.
+    private func send(_ request: URLRequest, loginIsSignedOut: Bool) async throws -> Data {
+        var request = request
         if let cookies = jar.header { request.setValue(cookies, forHTTPHeaderField: "Cookie") }
         let data: Data, response: URLResponse
         do { (data, response) = try await session.data(for: request) } catch { throw GrowattAPI.Failure.offline }
@@ -224,10 +245,13 @@ public struct GrowattPortal: Sendable {
             let fields = http.allHeaderFields.reduce(into: [String: String]()) { d, kv in
                 if let k = kv.key as? String, let v = kv.value as? String { d[k] = v }
             }
-            for c in HTTPCookie.cookies(withResponseHeaderFields: fields, for: request.url ?? baseURL) { jar.set(c.name, c.value) }
+            let now = Date()
+            for c in HTTPCookie.cookies(withResponseHeaderFields: fields, for: request.url ?? baseURL) {
+                if let expires = c.expiresDate, expires <= now { jar.remove(c.name) } else { jar.set(c.name, c.value) }
+            }
             if (300..<400).contains(http.statusCode) { throw GrowattAPI.Failure.signedOut }
             if !(200..<300).contains(http.statusCode) { throw GrowattAPI.Failure.http(http.statusCode) }
-            if let url = http.url, url.path.lowercased().contains("login") { throw GrowattAPI.Failure.signedOut }
+            if loginIsSignedOut, let url = http.url, url.path.lowercased().contains("login") { throw GrowattAPI.Failure.signedOut }
         }
         return data
     }

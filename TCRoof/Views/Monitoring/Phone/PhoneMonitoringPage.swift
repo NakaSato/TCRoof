@@ -78,7 +78,8 @@ struct PhoneMonitoringPage: View {
     /// `อัปเดต 14:55 · จับคู่แล้ว 6/8 สถานี`, or the source's note in place of the counts.
     private func headerLine(_ f: Monitoring.Fleet) -> String {
         let read = f.stations.compactMap(\.lastReading).max() ?? store.refreshedAt
-        let second = store.sourceNote ?? "จับคู่แล้ว \(f.stations.filter(\.paired).count)/\(f.stations.count) สถานี"
+        let jobs = store.jobStations
+        let second = store.sourceNote ?? "จับคู่แล้ว \(jobs.filter(\.paired).count)/\(jobs.count) สถานี"
         return "อัปเดต " + MonFormat.time(read) + " · " + second
     }
 

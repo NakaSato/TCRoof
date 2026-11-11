@@ -66,7 +66,8 @@ actor MonitoringFeed {
     /// When each call was last made on each station's plant (`plantKey/endpoint`).
     private var lastCall: [String: Date] = [:]
     /// The least time between two of the same call on a plant: Growatt's 5 minutes, less a little, since a poll may come
-    /// a second early and `GrowattAPI` retries a 10012 once 6 s later.
+    /// a second early. Longer than `GrowattGate.window`, which every call also goes through, so the gate never refuses
+    /// a call made on this time.
     static let callGap = TimeInterval(Monitoring.minimumPollMinutes * 60 - 15)
     /// The 30 days read so far today, a week a call (`dayChunks`), per station's plant.
     private var dayRows: [String: (day: Date, step: Int, rows: [GrowattAPI.EnergyPoint])] = [:]
@@ -194,11 +195,10 @@ actor MonitoringFeed {
             if free(t, "devices") {
                 used(t, "devices")
                 r.devices = await call { try await t.api.devices(plantID: t.plantID) }
-                if let d = r.devices { inverterSNs[t.plantKey] = d.filter(\.isInverter).map(\.sn) }
+                if let d = r.devices { inverterSNs[t.plantKey] = GrowattAPI.Device.inverters(d).map(\.sn) }
             }
         }
-        // the inverters' string currents (CHA-106): `invs_data` isn't confirmed on the live server yet, so its failure
-        // only keeps the last currents and never shows in the header
+        // the inverters' string currents (CHA-106): a failure only keeps the last currents and never shows in the header
         if parts.contains(.strings), free(t, "latest"), let sns = inverterSNs[t.plantKey], !sns.isEmpty {
             used(t, "latest")
             r.inverters = try? await t.api.latest(deviceSNs: sns)

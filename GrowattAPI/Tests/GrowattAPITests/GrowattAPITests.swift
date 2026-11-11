@@ -74,6 +74,17 @@ final class GrowattAPITests: XCTestCase {
         XCTAssertEqual(p[3].time, "2026-11-08 06:15")
     }
 
+    /// A live account lists each MAX inverter twice under one serial number (type 1 and type 4): counted once, the
+    /// reporting copy kept.
+    func testAnInverterListedTwiceCountsOnce() {
+        typealias D = GrowattAPI.Device
+        let list = [D(sn: "B", type: 1, status: -1), D(sn: "A", type: 1, status: 1), D(sn: "B", type: 4, status: 1),
+                    D(sn: "A", type: 4, status: 1), D(sn: "L", type: 3)]
+        let inv = D.inverters(list)
+        XCTAssertEqual(inv.map(\.sn), ["A", "B"])
+        XCTAssertTrue(inv.allSatisfy(\.isOnline))
+    }
+
     func testDeviceList() throws {
         let d = try GrowattAPI.parseDevices(devices)
         XCTAssertEqual(d.map(\.sn), ["MAX0001", "MAX0002", "MTR0001"])
@@ -187,6 +198,7 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) private static var seen: [URLRequest] = []
     nonisolated(unsafe) private static var sent: [String] = []
     nonisolated(unsafe) private static var fields: [String: String] = [:]
+    nonisolated(unsafe) private static var codes: [Int] = []
 
     static var replies: [Data] {
         get { lock.lock(); defer { lock.unlock() }; return queue }
@@ -200,7 +212,12 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
         get { lock.lock(); defer { lock.unlock() }; return fields }
         set { lock.lock(); fields = newValue; lock.unlock() }
     }
-    static func reset() { lock.lock(); queue = []; seen = []; sent = []; fields = [:]; lock.unlock() }
+    /// HTTP statuses of the next replies, in order; 200 once they run out.
+    static var statuses: [Int] {
+        get { lock.lock(); defer { lock.unlock() }; return codes }
+        set { lock.lock(); codes = newValue; lock.unlock() }
+    }
+    static func reset() { lock.lock(); queue = []; seen = []; sent = []; fields = [:]; codes = []; lock.unlock() }
 
     /// A session that answers through this stub.
     static func api() -> GrowattAPI {
@@ -231,8 +248,9 @@ final class GrowattStub: URLProtocol, @unchecked Sendable {
         Self.sent.append(Self.body(request))
         let data = Self.queue.isEmpty ? Data() : Self.queue.removeFirst()
         let headers = Self.fields
+        let status = Self.codes.isEmpty ? 200 : Self.codes.removeFirst()
         Self.lock.unlock()
-        if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: headers) {
+        if let url = request.url, let r = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers) {
             client?.urlProtocol(self, didReceive: r, cacheStoragePolicy: .notAllowed)
         }
         client?.urlProtocol(self, didLoad: data)

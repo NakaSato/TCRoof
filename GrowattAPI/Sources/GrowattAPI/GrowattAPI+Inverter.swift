@@ -85,11 +85,10 @@ extension GrowattAPI {
     }
 
     /// `device/inverter/invs_data` (a POST in the guide): up to 100 inverters' latest readings at once, by serial
-    /// number. The guide shows `inverters` as an array without saying how a form carries it; it is sent as a JSON
-    /// array (`["SN1","SN2"]`), which is unconfirmed.
+    /// number. `inverters` goes as the serial numbers joined by commas (`SN1,SN2`): the live server answered that with
+    /// every inverter, and a JSON array (`["SN1","SN2"]`) with none and no error.
     public func latest(deviceSNs: [String], page: Int = 1) async throws -> [String: Latest] {
-        let sns = Array(deviceSNs.prefix(100))
-        let list = String(decoding: (try? JSONEncoder().encode(sns)) ?? Data("[]".utf8), as: UTF8.self)
+        let list = deviceSNs.prefix(100).joined(separator: ",")
         return try Self.parseLatestBatch(try await post("device/inverter/invs_data", ["pageNum": "\(max(page, 1))", "inverters": list]))
     }
 

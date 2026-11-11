@@ -174,7 +174,7 @@ extension Monitoring {
             }
 
             // device/list: the inverters and how many report without a fault
-            let inverters: [GrowattAPI.Device]? = reading.devices?.filter(\.isInverter).sorted { $0.sn < $1.sn }
+            let inverters: [GrowattAPI.Device]? = reading.devices.map(GrowattAPI.Device.inverters)
             if let inv = inverters {
                 if inv.isEmpty {
                     s.invertersOnline = nil

@@ -6,7 +6,7 @@ extension Monitoring {
     /// was found on; this is the picker's side: the plants as rows, the search and the suggestion.
     public enum Pairing {
         /// One plant of `plant/list` as the picker shows it: name, size and city.
-        public struct Plant: Identifiable, Hashable, Sendable {
+        public struct Plant: Identifiable, Hashable, Codable, Sendable {
             /// Growatt's `plant_id`, as text (the pairing's value).
             public var id: String
             public var name: String

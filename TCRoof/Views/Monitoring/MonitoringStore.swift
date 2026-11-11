@@ -46,12 +46,12 @@ final class MonitoringStore {
     @ObservationIgnored private var stringsRead: [String: Date] = [:]
     private struct ReadKey: Equatable {
         var pairings: [String: String], pairingServers: [String: UUID], servers: [Monitoring.Settings.Server.ID: String]
-        var tokenRevision: Int
+        var tokenRevision: Int, plantsRevision: Int
     }
     private var readKey: ReadKey {
         ReadKey(pairings: settings.pairings, pairingServers: settings.pairingServers,
                 servers: Dictionary(settings.servers.map { ($0.id, $0.url) }, uniquingKeysWith: { a, _ in a }),
-                tokenRevision: tokenRevision)
+                tokenRevision: tokenRevision, plantsRevision: plantsRevision)
     }
 
     /// The summary is due: never read, read with other pairings or tokens, or `pollInterval` ago (a second early, so a
@@ -93,6 +93,11 @@ final class MonitoringStore {
             .flatMap { try? JSONDecoder().decode(Monitoring.Settings.self, from: $0) } ?? .init()
     }
 
+    /// Growatt's example plants in place of the stations (`growattWebDemo`, set at launch).
+    var webDemoOn: Bool { Self.growattWebDemo }
+    /// The jobs of the last `refresh` or `poll`, to rebuild the stations when the settings change.
+    @ObservationIgnored private var lastJobs: [Job] = []
+
     static var demo: Bool {
         #if DEBUG
         UserDefaults.standard.bool(forKey: "monitoringDemo")
@@ -101,12 +106,13 @@ final class MonitoringStore {
         #endif
     }
 
-    /// DEBUG: Growatt's web portal example plants in place of the stations (`-growattDemo YES`, or the PWA settings'
-    /// `สถานีตัวอย่าง Growatt` switch, the same flag as the `บำรุงรักษา` overview's). Off, the stations are the real
-    /// ones: a token goes in ตั้งค่า Monitoring and a station is paired with its plant.
+    /// DEBUG: Growatt's web portal example plants in place of the stations, with `-growattDemo YES` at launch only.
+    /// The PWA settings' `สถานีตัวอย่าง Growatt` switch, kept in the device's defaults, adds them to the `บำรุงรักษา`
+    /// overview but not here: Monitoring always shows the stations and the accounts' plants.
     static var growattWebDemo: Bool {
         #if DEBUG
-        let flag = (UserDefaults.standard.string(forKey: "growattDemo") ?? "").lowercased()
+        let launch = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+        let flag = ((launch["growattDemo"] as? String) ?? "").lowercased()
         return !demo && !["", "no", "0", "false"].contains(flag)
         #else
         false
@@ -134,7 +140,7 @@ final class MonitoringStore {
     }
 
     /// The line under the page's header naming where the rows come from, nil for the stations' own.
-    var sourceNote: String? { Self.growattWebDemo ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
+    var sourceNote: String? { webDemoOn ? "สถานีตัวอย่างจากเว็บ Growatt" : nil }
 
     var fleet: Monitoring.Fleet { Monitoring.Fleet(stations, now: now, settings: settings, raised: raised) }
 
@@ -156,6 +162,7 @@ final class MonitoringStore {
     /// Reads the stations again: the demo's, or the handed-over PWA stations (`jobs` from the page's query). A paired
     /// station keeps what Growatt last gave until the next `poll`.
     func refresh(jobs: [Job]) {
+        lastJobs = jobs
         if Self.demo {
             now = Monitoring.demoNow()
             stations = Monitoring.demo(now: now)
@@ -166,10 +173,10 @@ final class MonitoringStore {
             return recount()
         } else {
             now = Date()
-            sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
-            stations = Self.handedOver(jobs).map { job in
-                let base = Self.base(job)
-                guard settings.pairing(of: base.id) != nil, let last = stations.first(where: { $0.id == base.id }), last.paired else { return base }
+            sources = allSources(jobs)
+            let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            stations = sources.map { src in
+                guard src.plant != nil, let last = previous[src.base.id], last.paired else { return src.base }
                 return last
             }
         }
@@ -182,21 +189,21 @@ final class MonitoringStore {
     /// it (`parts(for:summary:now:)`). A station not read, or whose read failed, keeps its last figures.
     func poll(jobs: [Job]) async {
         guard !Self.demo else { return refresh(jobs: jobs) }
+        lastJobs = jobs
         let readAt = Date()
         let summary = summaryDue(at: readAt)
         if Self.growattWebDemo {
             guard summary else { return }
-            summaryRead = (readAt, readKey)
-            return await pollWebDemo()
+            return await pollWebDemo(key: readKey)
         }
-        sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
+        sources = allSources(jobs)
         var targets: [MonitoringFeed.Target] = []
         for src in sources {
-            guard let p = settings.pairing(of: src.base.id), let url = URL(string: p.server.url),
+            guard let p = src.plant, let url = URL(string: p.server.url),
                   let token = MonitoringToken.token(p.server.id) else { continue }
             let parts = parts(for: src.base.id, summary: summary, now: readAt)
             guard !parts.isEmpty else { continue }
-            targets.append(.init(stationID: src.base.id, api: GrowattAPI(baseURL: url, token: token), plantID: p.plantID,
+            targets.append(.init(stationID: src.base.id, api: Self.api(url, token: token), plantID: p.plantID,
                                  latitude: src.latitude, longitude: src.longitude, parts: parts))
         }
         let key = readKey
@@ -208,23 +215,70 @@ final class MonitoringStore {
             return
         }
         if summary, !hasRead { readingFirst = true }
-        let readings = await feed.read(targets, now: readAt, calendar: .current)
-        // cancelled (the tab left): no skeleton left on; the next poll starts the wait again
-        guard !Task.isCancelled else { readingFirst = false; return }
-        for t in targets where t.parts.contains(.strings) { stringsRead[t.stationID] = readAt }
-        guard !readings.isEmpty else { return }
-        let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
-        if summary {
-            summaryRead = (readAt, key)
-            // a failed first read ends the wait too: the header says why (`feedFailure`)
-            hasRead = true
-            readingFirst = false
-            apply(all, at: readAt, failure: .some(readings.compactMap(\.failure).first?.message))
-        } else {
-            // the history or the strings alone: the header's failure stays the summary's
-            apply(all, at: readAt, failure: nil)
+        // a few plants at a time, each batch shown as it comes: with the account's plants listed too, a whole poll
+        // takes minutes (every call is spaced by `GrowattGate`); the paired stations come first
+        var failure: String?
+        var readAny = false
+        for start in stride(from: 0, to: targets.count, by: Self.readBatch) {
+            let batch = Array(targets[start..<min(start + Self.readBatch, targets.count)])
+            let readings = await feed.read(batch, now: readAt, calendar: .current)
+            // cancelled (the tab left): no skeleton left on; the next poll starts the wait again
+            guard !Task.isCancelled else { readingFirst = false; return }
+            for t in batch where t.parts.contains(.strings) { stringsRead[t.stationID] = readAt }
+            guard !readings.isEmpty else { continue }
+            readAny = true
+            let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
+            if summary {
+                failure = failure ?? readings.compactMap(\.failure).first?.message
+                // a failed first read ends the wait too: the header says why (`feedFailure`)
+                hasRead = true
+                readingFirst = false
+                apply(all, at: readAt, failure: .some(failure))
+            } else {
+                // the history or the strings alone: the header's failure stays the summary's
+                apply(all, at: readAt, failure: nil)
+            }
         }
+        if summary, readAny { summaryRead = (readAt, key) }
     }
+
+    /// Plants read before their rows are shown (`poll`).
+    private static let readBatch = 5
+
+    /// Every row: the handed-over PWA stations, then each account's plants that none of them is paired with
+    /// (`plantLists`, from the account's last `ทดสอบ`), when this device has the account's token. Those are read as a
+    /// paired station is, without being one; ตั้งค่า Monitoring's pairing lists only the stations.
+    private func allSources(_ jobs: [Job]) -> [Source] {
+        let handed = Self.handedOver(jobs).map { job -> Source in
+            let base = Self.base(job)
+            return Source(base: base, latitude: job.latitude, longitude: job.longitude, plant: settings.pairing(of: base.id))
+        }
+        let taken = Set(handed.compactMap { $0.plant.map { Self.accountPlantID($0.server.id, $0.plantID) } })
+        var extra: [Source] = []
+        for server in settings.servers where MonitoringToken.token(server.id) != nil {
+            for p in plantLists[server.id] ?? [] {
+                guard let plantID = Int(p.id) else { continue }
+                let id = Self.accountPlantID(server.id, plantID)
+                guard !taken.contains(id), !extra.contains(where: { $0.base.id == id }) else { continue }
+                let base = Monitoring.Station.unpaired(id: id, mpNumber: nil, name: p.name, kWp: p.kWp, inverters: 1)
+                extra.append(Source(base: base, latitude: nil, longitude: nil, plant: (server, plantID)))
+            }
+        }
+        return handed + extra
+    }
+
+    private static let accountPlantPrefix = "growatt-plant-"
+
+    /// An account's plant shown on its own (not a station's): `growatt-plant-<server>-<plant id>`.
+    static func accountPlantID(_ server: UUID, _ plantID: Int) -> String {
+        accountPlantPrefix + server.uuidString + "-" + String(plantID)
+    }
+
+    /// A row that is an account's plant, not a handed-over station: left out of the pairing and its counts.
+    static func isAccountPlant(_ id: String) -> Bool { id.hasPrefix(accountPlantPrefix) }
+
+    /// The handed-over stations only, for ตั้งค่า Monitoring's pairing and the `จับคู่แล้ว` counts.
+    var jobStations: [Monitoring.Station] { stations.filter { !Self.isAccountPlant($0.id) } }
 
     /// A station's parts this poll: the summary when due, the overview chart's history, and for the station page shown
     /// its chart's history, this month's energy (its card) and the string currents (with each summary, else once
@@ -241,11 +295,13 @@ final class MonitoringStore {
         return p
     }
 
-    /// The handed-over stations as last listed by `poll`.
+    /// The rows as last listed by `poll`: the handed-over stations and the accounts' plants (`allSources`).
     private struct Source {
         var base: Monitoring.Station
         var latitude: Double?
         var longitude: Double?
+        /// What it is read from: a station's pairing, or the account's plant itself; nil for a station not paired.
+        var plant: (server: Monitoring.Settings.Server, plantID: Int)?
     }
     @ObservationIgnored private var sources: [Source] = []
 
@@ -271,18 +327,21 @@ final class MonitoringStore {
         // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt). Only an
         // iPad posts them: a phone shows the readings and the badge, so someone with both isn't told twice (CHA-34)
         if settings.notifyMaintenance, Self.postsAlerts {
-            MonitoringNotification.plans(previous: before, stations: stations, now: readAt,
+            MonitoringNotification.plans(previous: before, stations: jobStations, now: readAt,
                                          offlineAfter: settings.loggerOfflineMinutes).forEach(NotificationService.shared.post)
         }
     }
 
     /// DEBUG `growattWebDemo`: every example plant read again (a guest session on the portal, read only), mapped as a
     /// paired station's. A plant whose figures fail keeps its last row; no alerts are posted for them.
-    private func pollWebDemo() async {
+    private func pollWebDemo(key: ReadKey) async {
         let readAt = Date()
         if !hasRead { readingFirst = true }
         let result = await feed.readWebDemo()
+        // cancelled (the tab left, or the poller restarted as the page set its range): not marked read, so the next
+        // poll reads at once rather than after `pollInterval`
         guard !Task.isCancelled, Self.growattWebDemo else { readingFirst = false; return }
+        summaryRead = (readAt, key)
         hasRead = true
         readingFirst = false
         let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -353,6 +412,69 @@ final class MonitoringStore {
         tokenRevision &+= 1
     }
 
+    // MARK: Growatt calls
+
+    /// Every Growatt client of the app: paced by the shared `GrowattGate` (a call repeated within its window is refused
+    /// before it's sent, calls on a token are spaced, a 10012 isn't retried).
+    static func api(_ url: URL, token: String) -> GrowattAPI {
+        var a = GrowattAPI(baseURL: url, token: token)
+        a.gate = .shared
+        return a
+    }
+
+    /// The plants each account last listed (`plant/list`, and the end users' picked in the pairing pane), kept on the
+    /// device (`monitoring.plants`), so the pairing pane and a reopened dialog don't ask Growatt again: plants rarely
+    /// change, and `ทดสอบ` reads them again.
+    private(set) var plantLists: [UUID: [Monitoring.Pairing.Plant]] = MonitoringStore.loadPlants()
+
+    private static let plantsKey = "monitoring.plants"
+
+    private static func loadPlants() -> [UUID: [Monitoring.Pairing.Plant]] {
+        guard let d = UserDefaults.standard.data(forKey: plantsKey),
+              let raw = try? JSONDecoder().decode([String: [Monitoring.Pairing.Plant]].self, from: d) else { return [:] }
+        return Dictionary(uniqueKeysWithValues: raw.compactMap { k, v in UUID(uuidString: k).map { ($0, v) } })
+    }
+
+    /// The last test's `plant/list` answer with its values hidden (`GrowattAPI.outline`), when it listed no plants.
+    private(set) var answerOutline: [UUID: String] = [:]
+
+    /// Keeps (or with nil forgets) an account's plants.
+    func setPlants(_ list: [Monitoring.Pairing.Plant]?, for server: UUID) {
+        guard plantLists[server] != list else { return }
+        plantLists[server] = list
+        let raw = Dictionary(uniqueKeysWithValues: plantLists.map { ($0.key.uuidString, $0.value) })
+        if let d = try? JSONEncoder().encode(raw) { UserDefaults.standard.set(d, forKey: Self.plantsKey) }
+        // the account's plants are rows of their own: list them now, and the poller reads them
+        plantsRevision &+= 1
+        if !Self.demo, !Self.growattWebDemo { refresh(jobs: lastJobs) }
+    }
+
+    /// Bumped when an account's plant list changes, so `MonitoringPoller` reads the new rows at once.
+    private(set) var plantsRevision = 0
+
+    // MARK: Growatt's wait (10012)
+
+    /// When each account's `plant/list` may be called again after Growatt's 10012 (`GrowattGate`); none once passed.
+    private(set) var retryAt: [UUID: Date] = [:]
+
+    /// The account's wait as the gate has it now (a test, or the pairing pane's list, may have started one).
+    func noteWait(_ server: UUID, token: String) async {
+        let at = await GrowattGate.shared.freeAt(token: token, path: "plant/list")
+        if retryAt[server] != at { retryAt[server] = at }
+    }
+
+    /// Forgets the waits that are over (the settings dialog calls it when the next one ends).
+    func clearPastWaits(now: Date = Date()) {
+        let left = retryAt.filter { $0.value > now }
+        if left != retryAt { retryAt = left }
+    }
+
+    /// `เรียก Growatt ถี่เกินไป · ลองใหม่ได้เวลา 23:58`, or Growatt's plain message without a time.
+    static func tooFrequentNote(until at: Date?) -> String {
+        guard let at else { return GrowattAPI.Failure.tooFrequent.message }
+        return "Growatt ให้รอ 5 นาทีหลังเรียกถี่เกินไป · ลองใหม่ได้เวลา " + MonFormat.time(at)
+    }
+
     // MARK: connection test
 
     /// Lists the token's plants on the server (read only, `plant/list`, every page up to 10) and records the result on
@@ -361,15 +483,31 @@ final class MonitoringStore {
         guard let token = MonitoringToken.token(server.id), let url = URL(string: server.url) else {
             return .failure(.api(10011, "ไม่มี token"))
         }
+        // Growatt answered 10012 to this account's `plant/list` lately: nothing is sent until its wait is over, since
+        // each call into the wait starts it again
+        if let at = await GrowattGate.shared.freeAt(token: token, path: "plant/list") {
+            retryAt[server.id] = at
+            return .failure(.tooFrequent)
+        }
         let result: Result<[GrowattAPI.Plant], GrowattAPI.Failure>
-        do { result = .success(try await GrowattAPI(baseURL: url, token: token).allPlants(maxPages: 10)) }
+        answerOutline[server.id] = nil
+        do {
+            let (list, first) = try await Self.api(url, token: token).allPlantsAnswer(maxPages: 10)
+            // no plants: what Growatt sent, values hidden, so the cause can be told from the screen without another call
+            if list.isEmpty { answerOutline[server.id] = GrowattAPI.outline(first) }
+            result = .success(list)
+        }
         catch let f as GrowattAPI.Failure { result = .failure(f) }
         catch { result = .failure(.badResponse) }
+        await noteWait(server.id, token: token)
         var s = settings
         if let i = s.servers.firstIndex(where: { $0.id == server.id }) {
             s.servers[i].testedAt = Date()
             s.servers[i].testOK = (try? result.get()) != nil
-            if case .success(let list) = result { s.servers[i].plants = list.count }
+            if case .success(let list) = result {
+                s.servers[i].plants = list.count
+                setPlants(list.map(Monitoring.Pairing.Plant.init), for: server.id)
+            }
             // a test is this iPad's (its token), so it stays here and isn't sent
             keep(s)
         }

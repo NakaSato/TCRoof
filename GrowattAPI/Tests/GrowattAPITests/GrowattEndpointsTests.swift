@@ -73,11 +73,43 @@ final class GrowattEndpointsTests: XCTestCase {
             let rows = ids.map { #"{"plant_id":\#($0),"name":"P\#($0)"}"# }.joined(separator: ",")
             return json(#"{"data":{"count":\#(count),"plants":[\#(rows)]},"error_code":0}"#)
         }
-        GrowattStub.replies = [page(0..<100, count: 143), page(100..<143, count: 143), page(0..<1, count: 143)]
+        GrowattStub.replies = [page(0..<20, count: 33), page(20..<33, count: 33), page(0..<1, count: 33)]
         let all = try await GrowattStub.api().allPlants()
-        XCTAssertEqual(all.count, 143)
+        XCTAssertEqual(all.count, 33)
         XCTAssertEqual(GrowattStub.requests.count, 2, "a short page is the last")
-        XCTAssertEqual(GrowattStub.requests.last?.url?.query, "page=2&perpage=100")
+        XCTAssertEqual(GrowattStub.requests.last?.url?.query, "page=2&perpage=20")
+    }
+
+    /// A first page with no rows though `count` says there are plants is asked once more without paging.
+    func testAnEmptyPageWithACountIsAskedOnceWithoutPaging() async throws {
+        GrowattStub.replies = [json(#"{"data":{"count":1,"plants":[]},"error_code":0}"#),
+                               json(#"{"data":{"count":1,"plants":[{"plant_id":5,"name":"P5"}]},"error_code":0}"#)]
+        let (plants, first) = try await GrowattStub.api().allPlantsAnswer()
+        XCTAssertEqual(plants.map(\.id), [5])
+        XCTAssertEqual(GrowattStub.requests.count, 2)
+        XCTAssertEqual(GrowattStub.requests.last?.url?.query, nil)
+        XCTAssertTrue(GrowattAPI.outline(first).contains("plants: [1×"))
+    }
+
+    /// An account with no plants is one call.
+    func testAnEmptyAccountIsOneCall() async throws {
+        GrowattStub.replies = [json(#"{"data":{"count":0,"plants":[]},"error_code":0}"#)]
+        let plants = try await GrowattStub.api().allPlants()
+        XCTAssertEqual(plants, [])
+        XCTAssertEqual(GrowattStub.requests.count, 1)
+    }
+
+    func testPlantRowsUnderOtherNames() throws {
+        let data = json(#"{"data":{"count":2,"plants":[{"plantId":"12","plantName":"สถานี A"},{"id":13,"plant_name":""}]},"error_code":0}"#)
+        let plants = try GrowattAPI.parsePlants(data)
+        XCTAssertEqual(plants.map(\.id), [12, 13])
+        XCTAssertEqual(plants.map(\.name), ["สถานี A", "Plant 13"])
+    }
+
+    func testRowsWithoutAnIdFailRatherThanReadAsNone() {
+        let data = json(#"{"data":{"count":1,"plants":[{"plant":"x"}]},"error_code":0}"#)
+        XCTAssertThrowsError(try GrowattAPI.parsePlants(data)) { XCTAssertEqual($0 as? GrowattAPI.Failure, .badResponse) }
+        XCTAssertEqual(try GrowattAPI.parsePlants(json(#"{"data":{"count":0,"plants":[]},"error_code":0}"#)), [])
     }
 
     func testUserPlantsArePosted() async throws {
@@ -85,7 +117,7 @@ final class GrowattEndpointsTests: XCTestCase {
         let page = try await GrowattStub.api().userPlants(userName: "user 1")
         XCTAssertEqual(page.items.map(\.name), ["Name of Plant 1"])
         XCTAssertEqual(GrowattStub.requests.first?.httpMethod, "POST")
-        XCTAssertEqual(GrowattStub.bodies.first, "page=1&perpage=100&user_name=user%201")
+        XCTAssertEqual(GrowattStub.bodies.first, "page=1&perpage=20&user_name=user%201")
     }
 
     func testPlantDetails() async throws {
@@ -180,7 +212,7 @@ final class GrowattEndpointsTests: XCTestCase {
         XCTAssertEqual(l["2033022963"]?.datalogger, "AH13140003")
         XCTAssertEqual(l["TL15300005"]?.status, 3)
         XCTAssertEqual(GrowattStub.requests.first?.httpMethod, "POST")
-        XCTAssertEqual(GrowattStub.bodies.first, "inverters=%5B%222033022963%22%2C%22TL15300005%22%5D&pageNum=1")
+        XCTAssertEqual(GrowattStub.bodies.first, "inverters=2033022963%2CTL15300005&pageNum=1")
     }
 
     /// The string and MPPT currents by the names the live portal answered for a MAX (`currentString1…`, `ipv1…`; not
@@ -263,5 +295,15 @@ final class GrowattEndpointsTests: XCTestCase {
         XCTAssertNil(v["f"]?.number)
         XCTAssertEqual(v["g"]?.bool, false)
         XCTAssertNil(v["missing"])
+    }
+
+    /// The outline shows the structure and Growatt's error fields, never a value.
+    func testOutlineHidesTheValues() {
+        let empty = Data(#"{"data":{"count":0,"plants":[]},"error_code":0,"error_msg":""}"#.utf8)
+        XCTAssertEqual(GrowattAPI.outline(empty), "error_code: 0 · data{count: number 0, plants: [] (empty)}")
+        let row = Data(#"{"data":{"plants":[{"plant_id":12,"name":"Secret"}]},"error_code":0}"#.utf8)
+        let o = GrowattAPI.outline(row)
+        XCTAssertEqual(o, "error_code: 0 · data{plants: [1× {name: text, plant_id: number}]}")
+        XCTAssertFalse(o.contains("Secret") || o.contains("12"))
     }
 }

@@ -52,7 +52,7 @@ struct MonitoringPage: View {
         .onChange(of: range, initial: true) { _, r in store.overviewRange = r }
         .overlay {
             if showSettings {
-                MonitoringSettingsDialog(store: store, stations: fleet.stations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
+                MonitoringSettingsDialog(store: store, stations: store.jobStations, canEdit: canEdit, startOnPairing: Self.debugPairing) { showSettings = false }
             }
         }
         // one station's page (CHA-73); `-monitoringStation <mp>` opens it in DEBUG
@@ -232,7 +232,8 @@ struct MonitoringPoller: View {
             .task(id: PollKey(minutes: store.settings.pollMinutes, pairings: store.settings.pairings,
                               pairingServers: store.settings.pairingServers,
                               servers: store.settings.servers.map(\.id), tokenRevision: store.tokenRevision,
-                              overviewRange: store.overviewRange, focus: store.focus)) {
+                              overviewRange: store.overviewRange, focus: store.focus, webDemo: store.webDemoOn,
+                              plants: store.plantsRevision)) {
                 while !Task.isCancelled {
                     await store.poll(jobs: jobs)
                     try? await Task.sleep(for: .seconds(store.nextPollDelay))
@@ -243,5 +244,9 @@ struct MonitoringPoller: View {
     private struct PollKey: Equatable {
         var minutes: Int, pairings: [String: String], pairingServers: [String: UUID], servers: [UUID], tokenRevision: Int
         var overviewRange: Monitoring.ChartRange?, focus: MonitoringStore.Focus?
+        /// The example plants switched on or off: read the other side at once.
+        var webDemo: Bool
+        /// An account's plant list changed: its plants are rows to read.
+        var plants: Int
     }
 }

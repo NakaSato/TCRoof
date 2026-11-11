@@ -96,32 +96,51 @@ extension GrowattAPI {
 
     // MARK: calls
 
-    /// `plant/list`: the token's plants, at most 100 a page. `search` narrows them by name (`search_type=name`).
-    public func plants(page: Int = 1, perPage: Int = 100, search: String? = nil) async throws -> [Plant] {
+    /// `plant/list`: the token's plants, 20 a page by default (`plantListPage`), at most 100. `search` narrows them by name (`search_type=name`).
+    public func plants(page: Int = 1, perPage: Int = plantListPage, search: String? = nil) async throws -> [Plant] {
         try await plantPage(page: page, perPage: perPage, search: search).items
     }
 
     /// `plant/list` with its total count.
-    public func plantPage(page: Int = 1, perPage: Int = 100, search: String? = nil) async throws -> Page<Plant> {
+    public func plantPage(page: Int = 1, perPage: Int = plantListPage, search: String? = nil) async throws -> Page<Plant> {
         var q = ["page": "\(max(page, 1))", "perpage": Self.perPage(perPage)]
         if let s = search?.trimmingCharacters(in: .whitespaces), !s.isEmpty { q["search_type"] = "name"; q["search_keyword"] = s }
         let data = try await get("plant/list", q)
         return Page(items: try Self.parsePlants(data), count: Self.count(data))
     }
 
-    /// Every plant of the token, page after page (100 a page) until `count` is reached or a page comes back short.
+    /// Every plant of the token, page after page (20 a page) until `count` is reached or a page comes back short.
     public func allPlants(maxPages: Int = 50) async throws -> [Plant] {
+        try await allPlantsAnswer(maxPages: maxPages).plants
+    }
+
+    /// The page size `allPlants` asks for: the guide's default. A live account answered `perpage=100` with
+    /// `count` 1 and no rows.
+    public static let plantListPage = 20
+
+    /// `allPlants` with the first page's answer as Growatt sent it, for `outline` when no plants come back. A first
+    /// page with no rows while `count` says there are plants is asked once more with no paging at all (Growatt's
+    /// own defaults), the only extra call.
+    public func allPlantsAnswer(maxPages: Int = 50) async throws -> (plants: [Plant], first: Data) {
+        let per = Self.plantListPage
         var out: [Plant] = []
+        var first = Data()
         for page in 1...max(maxPages, 1) {
-            let p = try await plantPage(page: page, perPage: Self.maxPerPage)
-            out += p.items
-            if p.items.count < Self.maxPerPage || (p.count.map { out.count >= $0 } ?? false) { break }
+            let data = try await get("plant/list", ["page": "\(page)", "perpage": "\(per)"])
+            if page == 1 { first = data }
+            let items = try Self.parsePlants(data)
+            if page == 1, items.isEmpty, (Self.count(data) ?? 0) > 0 {
+                let plain = try await get("plant/list", [:])
+                return (try Self.parsePlants(plain), plain)
+            }
+            out += items
+            if items.count < per || (Self.count(data).map { out.count >= $0 } ?? false) { break }
         }
-        return out
+        return (out, first)
     }
 
     /// `plant/user_plant_list` (a POST in the guide): the plants of one end user's account, by its user name.
-    public func userPlants(userName: String, page: Int = 1, perPage: Int = 100) async throws -> Page<Plant> {
+    public func userPlants(userName: String, page: Int = 1, perPage: Int = plantListPage) async throws -> Page<Plant> {
         let data = try await post("plant/user_plant_list", ["user_name": userName, "page": "\(max(page, 1))", "perpage": Self.perPage(perPage)])
         return Page(items: try Self.parsePlants(data), count: Self.count(data))
     }
@@ -153,11 +172,17 @@ extension GrowattAPI {
     /// `data.count`, nil when not given.
     static func count(_ data: Data) -> Int? { (try? body(data)).flatMap { number($0["count"]) }.map { Int($0) } }
 
+    /// `data.plants`. The guide names a row's id `plant_id` and its name `name`; Growatt's other answers write them
+    /// `plantId` / `id` and `plantName` / `plant_name`, read too. Rows given and none readable throw `badResponse`
+    /// rather than reading as no plants.
     public static func parsePlants(_ data: Data) throws -> [Plant] {
-        guard let rows = try body(data)["plants"] as? [[String: Any]] else { throw Failure.badResponse }
-        return rows.compactMap { r in
-            guard let id = number(r["plant_id"]) else { return nil }
-            return Plant(id: Int(id), name: (r["name"] as? String) ?? "Plant \(Int(id))",
+        let b = try body(data)
+        guard let rows = (b["plants"] ?? b["plantList"] ?? b["plant_list"]) as? [[String: Any]] else { throw Failure.badResponse }
+        func first(_ r: [String: Any], _ keys: [String]) -> Any? { keys.lazy.compactMap { r[$0] }.first }
+        let plants: [Plant] = rows.compactMap { r in
+            guard let id = number(first(r, ["plant_id", "plantId", "id"])) else { return nil }
+            let name = first(r, ["name", "plant_name", "plantName"]) as? String
+            return Plant(id: Int(id), name: name.flatMap { $0.isEmpty ? nil : $0 } ?? "Plant \(Int(id))",
                          peakPower: number(r["peak_power"]) ?? 0, currentPower: number(r["current_power"]) ?? -1,
                          totalEnergy: number(r["total_energy"]) ?? 0, status: number(r["status"]).map { Int($0) },
                          city: (r["city"] as? String) ?? "", country: (r["country"] as? String) ?? "",
@@ -165,6 +190,8 @@ extension GrowattAPI {
                          userID: number(r["user_id"]).map { Int($0) }, created: (r["create_date"] as? String) ?? "",
                          installer: (r["installer"] as? String) ?? "")
         }
+        if plants.isEmpty, !rows.isEmpty { throw Failure.badResponse }
+        return plants
     }
 
     public static func parseDetails(_ data: Data) throws -> PlantDetails {

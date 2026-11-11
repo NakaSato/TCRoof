@@ -295,3 +295,26 @@ risk's stations as job ids (`tools/master-plan-sheet`), and the team's devices r
 risks after its tripped leading indicators (`ความเสี่ยงสูง R03 …`, with ⚠ and the KRI once it reaches its threshold, the
 response and the owner), and `look_ahead` gives `risks`: the open high ones and any whose KRI has reached its threshold.
 Changing a risk's status in the app, written back to the sheet, is a later step.
+
+Schedule buffer (CHA-87, PMBOK 7th Guide 2.8.5 and 2.4.2): as the Master Plan's risk sheet keeps `COD + สำรองทั้งหมด`, each
+station's buffer sits after its install end and protects `installEnd + buffer` (`ScheduleBuffer`). Its size is the
+contingency, the authority tasks' spread at baseline (`HandoverRange` late − likely with nothing done, CHA-80), plus the
+management reserve, 10 % of the install span (`MGMT_PCT`); at least 1 day. The forecast's days past the install end
+(`คาดส่งมอบ`) use it up: `% used` = days late ÷ buffer. Against `% done` (the plan's actual %) it is green while the buffer
+is used no faster than the work, amber when faster, red once a third ahead (`redMargin` 33) or all used. The iPad's KPI
+strip has a `บัฟเฟอร์` cell (`ใช้ 40%`, `เหลือ 6 จาก 19 วัน`) whose popover is the fever chart (`BufferFeverChart`: the
+zones, the weekly points and today's dot) with the buffer's make-up and the protected date; the iPhone overview shows the
+same as a row with a small chart; the PWA `แผนงาน` page's `รายสถานี` list has a column (`40%` in the zone's colour on
+iPad, a dot on iPhone; `PWAPlan.Bar.bufferUsed` / `bufferZone` / `bufferLeft`). A handed-over station has none.
+
+Stakeholders and communication schedule (CHA-82, PMBOK 5th §13.1 identify stakeholders and §10.1 plan communications):
+the Master Plan gets a `ผู้มีส่วนได้ส่วนเสีย` tab (the sheet's menu `สร้างชีตผู้มีส่วนได้ส่วนเสีย` makes it): each outside
+party (กปภ. เขต and สาขา, กฟภ., พพ. / กกพ.) with organisation, role, interest and influence, the report it gets (R3 weekly,
+R4 monthly, hand-over papers), the channel, `ความถี่` (`รายสัปดาห์` + a weekday, `รายเดือน` + a day or `สิ้นเดือน`,
+`ก่อนส่งมอบ` + days before each station's handover, `ตามเหตุการณ์`), who sends it on our side and its `ขอบเขต`. Like the
+risk register it reaches the app read only through `config/stakeholders` (team only) and is edited in the sheet. The app
+works out each report's due days (`StakeholderList.dues`) and shows the next two weeks' in the plan page's `กำหนดส่ง`
+(filter `ส่งรายงาน`; a hand-over row opens its station), reminds at 08:00 the day before (a routine-report notification:
+the programme's reports to the whole team, a station's hand-over papers to its people) and gives them to `look_ahead`
+among the deadlines. Whether a report was sent isn't recorded yet: a due day only reminds, it never turns late.
+

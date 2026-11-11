@@ -326,3 +326,37 @@ test('risk register JSON: the rows with an id, their jobs, numbers or null', () 
   assert.equal(json, core.riskRegister(rows, stations, { 'P3-001': 'job-1', 'P3-002': 'job-2' }, () => '2026-11-01'),
                'the same sheet gives the same text, so an unchanged register is not written again');
 });
+
+// CHA-82: the stakeholder list copied into config/stakeholders for the app
+test('stakeholder list JSON: the rows with an id, their jobs, a day typed as a number', () => {
+  const rows = [
+    { id: 'S01', name: 'ผอ.กองแผนงาน', org: 'กปภ. เขต 5', reports: 'R3', channel: 'อีเมล', freq: 'รายสัปดาห์', due: 'ศุกร์',
+      owner: 'PM', scope: 'ทั้งเฟส' },
+    { id: 'S02', name: 'ผรม. S', freq: 'รายเดือน', due: 25, scope: 'ผรม. S' },
+    { id: '', name: 'empty row' }
+  ];
+  const stations = [{ id: 'P3-001', contractor: 'S' }, { id: 'P3-009', contractor: 'S' }, { id: 'P3-002', contractor: 'C' }];
+  const json = core.stakeholderList(rows, stations, { 'P3-001': 'job-1', 'P3-002': 'job-2' });
+  const got = JSON.parse(json).stakeholders;
+  assert.equal(got.length, 2);
+  assert.equal(got[0].organisation, 'กปภ. เขต 5');
+  assert.equal(got[0].frequency, 'รายสัปดาห์');
+  assert.equal(got[0].jobs, undefined, 'every station');
+  assert.deepEqual(got[1].jobs, ['job-1'], 'P3-009 has no app job');
+  assert.equal(got[1].due, '25');
+  assert.equal(got[1].note, '');
+  assert.equal(json, core.stakeholderList(rows, stations, { 'P3-001': 'job-1', 'P3-002': 'job-2' }),
+               'the same sheet gives the same text, so an unchanged list is not written again');
+});
+
+test('stakeholder tab: a _keys row per column, the examples as wide as the header', () => {
+  const keys = core.stakeholderKeyRows();
+  assert.equal(keys.length, core.STAKEHOLDER_COLUMNS.length);
+  assert.deepEqual(keys[0], ['ผู้มีส่วนได้ส่วนเสีย', 'id', 'A', 4, '']);
+  assert.deepEqual(keys[keys.length - 1].slice(1, 3), ['note', 'M']);
+  for (const row of core.STAKEHOLDER_TAB.examples) assert.equal(row.length, core.STAKEHOLDER_COLUMNS.length);
+  // the example rows read back through the same keys give stakeholders the app reads
+  const read = core.STAKEHOLDER_TAB.examples.map((r) => Object.fromEntries(core.STAKEHOLDER_COLUMNS.map((c, i) => [c[0], r[i]])));
+  const got = JSON.parse(core.stakeholderList(read, [], {})).stakeholders;
+  assert.deepEqual(got.map((s) => [s.id, s.frequency, s.due]), [['S01', 'รายสัปดาห์', 'ศุกร์'], ['S02', 'ก่อนส่งมอบ', '3']]);
+});

@@ -160,7 +160,7 @@ service cloud.firestore {
     // Settings set in the Firebase console. `config/public` (minSyncVersion, installLink, contactsSplit, driveShareWith) is
     // every member's; `config/app` (the center Drive, the claim share list) is the team's only (CHA-59).
     match /config/{doc} {
-      allow read: if isMember() && !(doc in ['devKey', 'app', 'monitoring', 'risks']);
+      allow read: if isMember() && !(doc in ['devKey', 'app', 'monitoring', 'risks', 'stakeholders']);
       allow write: if false;
     }
     match /config/app {
@@ -169,6 +169,11 @@ service cloud.firestore {
     // The Master Plan's project risk register (CHA-81): the team's Google Sheet writes it with its own IAM access (the
     // Apps Script, `syncRisks`), the team reads it. Never contractors: it names them (`ผรม. S กำลังติดตั้งไม่พอ`).
     match /config/risks {
+      allow read: if isTeam();
+    }
+    // The Master Plan's stakeholder list (CHA-82): written by the same sheet (`syncStakeholders`), read by the team.
+    // Never contractors: it names the customer's and the authorities' people and how we report to them.
+    match /config/stakeholders {
       allow read: if isTeam();
     }
     // The team's ตั้งค่า Monitoring (`Monitoring.Settings`, CHA-91): servers, thresholds, rate and which Growatt plant

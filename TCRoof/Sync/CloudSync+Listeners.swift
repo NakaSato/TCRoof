@@ -246,6 +246,17 @@ extension CloudSync {
         }
     }
 
+    /// The Master Plan's stakeholder list (`config/stakeholders`, CHA-82), written by the team's Google Sheet on its
+    /// pull; read only here, team only, like the risk register.
+    func listenStakeholders(barrier: StartupLoadBarrier? = nil) {
+        listenStartupDocument(db.document("config/stakeholders"), barrier: barrier) { snapshot, error in
+            // never fail the whole sync over the list (rule not deployed yet): the jobs still sync
+            if let error { return SyncLog.sync.error("stakeholder listener: \(error.localizedDescription)") }
+            guard let json = snapshot?.data()?["json"] as? String else { return }
+            StakeholderStore.shared.receive(json: json)
+        }
+    }
+
     /// The team's ตั้งค่า Monitoring (`config/monitoring`, CHA-91): the servers, thresholds, rate and station pairings,
     /// the same on every team iPad. A manager's save here is sent (firestore.rules refuse anyone else and an older
     /// revision); every team device takes a copy of its revision or later (`Monitoring.Settings.takes`). Tokens are never

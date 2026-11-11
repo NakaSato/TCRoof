@@ -75,6 +75,9 @@ struct StationMonitorPage: View {
         .toolbar(.hidden, for: .navigationBar)
         .padDock(fade: nil)
         .task(id: permissions.email) { acks.load(account: permissions.email, demo: MonitoringStore.demo) }
+        // this station's string currents and its chart's history are read while the page shows (CHA-107)
+        .task(id: MonitoringStore.Focus(stationID: stationID, range: range)) { store.focus = .init(stationID: stationID, range: range) }
+        .onDisappear { if store.focus?.stationID == stationID { store.focus = nil } }
         .onChange(of: stationID) { _, _ in
             selectedInverter = nil; selectedEvent = nil; compareDevice = nil; compare = .init(); compareNote = nil
             compareSeeded = false

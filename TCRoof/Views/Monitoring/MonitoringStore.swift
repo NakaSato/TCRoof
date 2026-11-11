@@ -8,21 +8,65 @@ import TCRoofCore
 /// the page and the dock's badge.
 ///
 /// The stations are the handed-over PWA stations, or with `-monitoringDemo YES` the board's example fleet. A station
-/// paired with a Growatt plant (`Settings.pairings`) is read from Growatt's OpenAPI by this iPad every `pollMinutes`
-/// when it has the token (`poll`, `MonitoringFeed`); an unpaired one reads `ไม่มีข้อมูล`. Growatt's figures never go
-/// through Firebase: only the settings sync (`config/monitoring`).
+/// paired with a Growatt plant (`Settings.pairings`) is read from Growatt's OpenAPI by this device every `pollMinutes`
+/// while the Monitor tab is shown and it has the token (`poll`, `MonitoringFeed`); an unpaired one reads `ไม่มีข้อมูล`.
+/// Each poll reads every station's summary; the history and the string currents only for the screen that shows them
+/// (`overviewRange`, `focus`: CHA-107). Growatt's figures never go through Firebase: only the settings sync
+/// (`config/monitoring`).
 @MainActor @Observable
 final class MonitoringStore {
     static let shared = MonitoringStore()
 
     private(set) var settings: Monitoring.Settings
     private(set) var stations: [Monitoring.Station] = []
+    /// Bumped when a server's token is saved or removed in the Keychain, so `MonitoringPoller` reads again even when
+    /// `settings` itself didn't change (for example, entering the token on a second iPad).
+    private(set) var tokenRevision = 0
     /// The clock the figures are worked out at: now, or the board's 14:55 in the demo.
     private(set) var now = Date()
     private(set) var refreshedAt: Date?
     /// Why the last poll couldn't read a station's plant (`ต่อ Growatt ไม่ได้`), nil when every paired station read.
     private(set) var feedFailure: String?
     @ObservationIgnored private let feed = MonitoringFeed()
+
+    /// The iPad overview's chart range: its history is read for every station (nil where no screen draws one, as on
+    /// the iPhone). Set by `MonitoringPage`.
+    var overviewRange: Monitoring.ChartRange?
+    /// The station page shown and its chart's range: its string currents and history are read. Set by
+    /// `StationMonitorPage`, nil when it closes.
+    var focus: Focus?
+    struct Focus: Hashable {
+        var stationID: String
+        var range: Monitoring.ChartRange
+    }
+
+    /// The last summary read, and the pairings and tokens it read with: a change reads again at once.
+    @ObservationIgnored private var summaryRead: (at: Date, key: ReadKey)?
+    /// When each station's string currents were last read.
+    @ObservationIgnored private var stringsRead: [String: Date] = [:]
+    private struct ReadKey: Equatable {
+        var pairings: [String: String], pairingServers: [String: UUID], servers: [Monitoring.Settings.Server.ID: String]
+        var tokenRevision: Int
+    }
+    private var readKey: ReadKey {
+        ReadKey(pairings: settings.pairings, pairingServers: settings.pairingServers,
+                servers: Dictionary(settings.servers.map { ($0.id, $0.url) }, uniquingKeysWith: { a, _ in a }),
+                tokenRevision: tokenRevision)
+    }
+
+    /// The summary is due: never read, read with other pairings or tokens, or `pollInterval` ago (a second early, so a
+    /// sleep that wakes just short of it still reads).
+    private func summaryDue(at now: Date) -> Bool {
+        guard let r = summaryRead, r.key == readKey else { return true }
+        return now.timeIntervalSince(r.at) >= settings.pollInterval - 1
+    }
+
+    /// Seconds until the next summary is due, for `MonitoringPoller`'s sleep: leaving the tab and coming back, or
+    /// changing a range, doesn't read the summary again before its time.
+    var nextPollDelay: TimeInterval {
+        guard let r = summaryRead, r.key == readKey else { return 1 }
+        return max(settings.pollInterval - Date().timeIntervalSince(r.at), 1)
+    }
 
     /// The first read since launch is under way and nothing has come back yet (CHA-74): the page shows skeletons in
     /// its shape instead of `—` and zeros. Only when there is something to read (a paired station with its token on
@@ -115,34 +159,68 @@ final class MonitoringStore {
         recount()
     }
 
-    /// Reads every paired station from Growatt itself (read only, one call after another, off the main actor) when this
-    /// iPad has the server's token. A station not read, or whose read failed, keeps its last figures.
+    /// Reads the paired stations from Growatt itself (read only, one call after another, off the main actor) when this
+    /// device has the server's token: every station's summary when it is due, and what the shown screens need beyond
+    /// it (`parts(for:summary:now:)`). A station not read, or whose read failed, keeps its last figures.
     func poll(jobs: [Job]) async {
         guard !Self.demo else { return refresh(jobs: jobs) }
-        if Self.growattWebDemo { return await pollWebDemo() }
-        sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
         let readAt = Date()
+        let summary = summaryDue(at: readAt)
+        if Self.growattWebDemo {
+            guard summary else { return }
+            summaryRead = (readAt, readKey)
+            return await pollWebDemo()
+        }
+        sources = Self.handedOver(jobs).map { Source(base: Self.base($0), latitude: $0.latitude, longitude: $0.longitude) }
         var targets: [MonitoringFeed.Target] = []
         for src in sources {
             guard let p = settings.pairing(of: src.base.id), let url = URL(string: p.server.url),
                   let token = MonitoringToken.token(p.server.id) else { continue }
+            let parts = parts(for: src.base.id, summary: summary, now: readAt)
+            guard !parts.isEmpty else { continue }
             targets.append(.init(stationID: src.base.id, api: GrowattAPI(baseURL: url, token: token), plantID: p.plantID,
-                                 latitude: src.latitude, longitude: src.longitude))
+                                 latitude: src.latitude, longitude: src.longitude, parts: parts))
         }
+        let key = readKey
         guard !targets.isEmpty else {
+            guard summary else { return }
+            summaryRead = (readAt, key)
             refresh(jobs: jobs)
             feedFailure = nil
             return
         }
-        if !hasRead { readingFirst = true }
+        if summary, !hasRead { readingFirst = true }
         let readings = await feed.read(targets, now: readAt, calendar: .current)
-        // cancelled (the page left): no skeleton left on; the next poll starts the wait again
+        // cancelled (the tab left): no skeleton left on; the next poll starts the wait again
         guard !Task.isCancelled else { readingFirst = false; return }
-        // a failed first read ends the wait too: the header says why (`feedFailure`)
-        hasRead = true
-        readingFirst = false
+        for t in targets where t.parts.contains(.strings) { stringsRead[t.stationID] = readAt }
+        guard !readings.isEmpty else { return }
         let all = Dictionary(readings.map { ($0.stationID, $0) }, uniquingKeysWith: { a, _ in a })
-        apply(all, at: readAt, failure: readings.compactMap(\.failure).first?.message)
+        if summary {
+            summaryRead = (readAt, key)
+            // a failed first read ends the wait too: the header says why (`feedFailure`)
+            hasRead = true
+            readingFirst = false
+            apply(all, at: readAt, failure: .some(readings.compactMap(\.failure).first?.message))
+        } else {
+            // the history or the strings alone: the header's failure stays the summary's
+            apply(all, at: readAt, failure: nil)
+        }
+    }
+
+    /// A station's parts this poll: the summary when due, the overview chart's history, and for the station page shown
+    /// its chart's history, this month's energy (its card) and the string currents (with each summary, else once
+    /// `pollInterval` has passed). The feed skips history already read today.
+    private func parts(for id: String, summary: Bool, now: Date) -> MonitoringFeed.Parts {
+        var p: MonitoringFeed.Parts = summary ? .summary : []
+        if let r = overviewRange { p.formUnion(.history(for: r)) }
+        if let f = focus, f.stationID == id {
+            p.formUnion(.history(for: f.range))
+            p.insert(.months)
+            let stale = stringsRead[id].map { now.timeIntervalSince($0) >= settings.pollInterval - 1 } ?? true
+            if summary || stale { p.insert(.strings) }
+        }
+        return p
     }
 
     /// The handed-over stations as last listed by `poll`.
@@ -154,7 +232,8 @@ final class MonitoringStore {
     @ObservationIgnored private var sources: [Source] = []
 
     /// The readings as the stations' rows; a station without one keeps its row. Alerts for what changed since.
-    private func apply(_ byID: [String: MonitoringFeed.Reading], at readAt: Date, failure: String?) {
+    /// `failure` nil leaves the header's as it is (a read without the summary); `.some(nil)` clears it.
+    private func apply(_ byID: [String: MonitoringFeed.Reading], at readAt: Date, failure: String??) {
         let previous = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         // what each station read as before, for the alerts; a station never read since launch has none
         let before = previous.values.reduce(into: [String: Monitoring.Health]()) { out, s in
@@ -168,7 +247,7 @@ final class MonitoringStore {
                                                  offlineAfter: settings.loggerOfflineMinutes,
                                                  forecastDailyKWhPerKWp: r.forecastDailyKWhPerKWp)
         }
-        feedFailure = failure
+        if let failure { feedFailure = failure }
         refreshedAt = Date()
         recount()
         // `ผู้รับแจ้งเตือน`'s maintenance team: this device is the team's (contractors don't read Growatt). Only an
@@ -252,22 +331,27 @@ final class MonitoringStore {
         recount()
     }
 
+    func noteTokenChange() {
+        tokenRevision &+= 1
+    }
+
     // MARK: connection test
 
-    /// Lists the token's plants on the server (read only, `plant/list`) and records the result on the server's row.
-    func test(_ server: Monitoring.Settings.Server) async -> Result<Int, GrowattAPI.Failure> {
+    /// Lists the token's plants on the server (read only, `plant/list`, every page up to 10) and records the result on
+    /// the server's row.
+    func test(_ server: Monitoring.Settings.Server) async -> Result<[GrowattAPI.Plant], GrowattAPI.Failure> {
         guard let token = MonitoringToken.token(server.id), let url = URL(string: server.url) else {
             return .failure(.api(10011, "ไม่มี token"))
         }
-        let result: Result<Int, GrowattAPI.Failure>
-        do { result = .success(try await GrowattAPI(baseURL: url, token: token).plants().count) }
+        let result: Result<[GrowattAPI.Plant], GrowattAPI.Failure>
+        do { result = .success(try await GrowattAPI(baseURL: url, token: token).allPlants(maxPages: 10)) }
         catch let f as GrowattAPI.Failure { result = .failure(f) }
         catch { result = .failure(.badResponse) }
         var s = settings
         if let i = s.servers.firstIndex(where: { $0.id == server.id }) {
             s.servers[i].testedAt = Date()
             s.servers[i].testOK = (try? result.get()) != nil
-            if case .success(let n) = result { s.servers[i].plants = n }
+            if case .success(let list) = result { s.servers[i].plants = list.count }
             // a test is this iPad's (its token), so it stays here and isn't sent
             keep(s)
         }

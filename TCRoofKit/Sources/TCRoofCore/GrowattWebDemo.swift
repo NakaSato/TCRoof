@@ -8,7 +8,8 @@ import FoundationNetworking
 /// portal's own calls, which Growatt doesn't document and may change, so this is for trying the maintenance overview
 /// only; a company's stations go through the OpenAPI (`GrowattAPI`).
 ///
-/// One `GrowattWebDemo` keeps its session's cookies: `openGuest()` first, then `plantList()` and `plant(_:)`.
+/// The calls go through the package's portal client (`GrowattPortal`), which keeps the guest session's cookies: one
+/// `GrowattWebDemo` is one session, `openGuest()` first, then `plantList()` and `plant(_:)`.
 public struct GrowattWebDemo: Sendable {
     public struct Device: Equatable, Sendable {
         public var sn: String
@@ -57,28 +58,27 @@ public struct GrowattWebDemo: Sendable {
         public var timezoneHours: Double? = nil
     }
 
-    public var baseURL = URL(string: "https://server.growatt.com/")!
-    /// Seconds without an answer before a call fails. Long, since the portal answers nothing for about 70 s on the first
-    /// call for a plant it hasn't served lately (then under a second).
-    public var timeout: TimeInterval = 90
-    public let session: URLSession
+    /// The portal client the calls go through, with the guest session's cookies once `openGuest()` has run. Its
+    /// `timeout` is long (90 s), since the portal answers nothing for about 70 s on the first call for a plant it hasn't
+    /// served lately (then under a second).
+    public let portal: GrowattPortal
 
-    /// A session with its own cookies, so the guest login stays in it.
-    public init(session: URLSession = URLSession(configuration: .ephemeral)) { self.session = session }
+    /// A session of its own (`session` nil: `GrowattPortal`'s, which keeps the cookies itself).
+    public init(session: URLSession? = nil) { portal = GrowattPortal(session: session) }
 
     // MARK: calls
 
     /// Opens the guest session on the demo account.
     public func openGuest() async throws {
-        _ = try await send("login/toViewExamlePlant", post: false)
+        try await portal.openGuest()
     }
 
     /// The demo account's plants: id and (hidden) name. The portal keeps two lists: the home dashboard's
     /// (`index/getPlantListTitle`, residential plants) and the business dashboard's (`indexbC/getPlantListTitle`,
     /// commercial ones); the ids of both work with `plant(id:name:)`. A failed business list leaves the home plants.
     public func plantList() async throws -> [(id: String, name: String)] {
-        let home = try Self.parseList(try await send("index/getPlantListTitle"))
-        let business = (try? Self.parseList(try await send("indexbC/getPlantListTitle"))) ?? []
+        let home = try Self.parseList(try await portal.post("index/getPlantListTitle", [:]))
+        let business = (try? Self.parseList(try await portal.post("indexbC/getPlantListTitle", [:]))) ?? []
         return Self.merged(home, business)
     }
 
@@ -92,7 +92,7 @@ public struct GrowattWebDemo: Sendable {
     /// `maxDevicePages`. The totals and the first page are asked together, then the other pages together: the portal
     /// takes about 70 s over each call for a plant it hasn't served lately, so one after another would add those up.
     public func plant(id: String, name: String) async throws -> Plant {
-        async let info = send("panel/getPlantData", query: ["plantId": id])
+        async let info = portal.post("panel/getPlantData", ["plantId": id])
         let first = try await devices(plantID: id, page: 1)
         let last = min(try Self.devicePage(first).pages, Self.maxDevicePages)
         var pages = [first]
@@ -110,7 +110,7 @@ public struct GrowattWebDemo: Sendable {
     }
 
     private func devices(plantID: String, page: Int) async throws -> Data {
-        try await send("panel/getDevicesByPlantList", form: ["plantId": plantID, "currPage": "\(page)"])
+        try await portal.post("panel/getDevicesByPlantList", ["plantId": plantID, "currPage": "\(page)"])
     }
 
     /// Pages of devices read at most: 200 devices at the portal's 4 a page.
@@ -119,26 +119,14 @@ public struct GrowattWebDemo: Sendable {
     /// The plant's power through a day (`yyyy-MM-dd`, the plant's own date): 288 samples 5 min apart, W; nil for times
     /// not reached yet.
     public func dayPower(plantID: String, date: String) async throws -> [Double?] {
-        let json = #"[{"type":"plant","sn":"\#(plantID)","params":"pac"}]"#
-        return try Self.parseDay(try await send("energy/compare/getDevicesDayChart", form: ["plantId": plantID, "date": date, "jsonData": json]))
+        guard let line = try await portal.dayChart(plantID: plantID, date: date, series: [Self.powerSeries(plantID)]).first else {
+            throw GrowattAPI.Failure.badResponse
+        }
+        return line.points
     }
 
-    func send(_ path: String, post: Bool = true, query: [String: String] = [:], form: [String: String] = [:]) async throws -> Data {
-        var c = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        if !query.isEmpty { c.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) } }
-        var request = URLRequest(url: c.url!, timeoutInterval: timeout)
-        if post {
-            request.httpMethod = "POST"
-            request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-            var body = URLComponents()
-            body.queryItems = form.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
-            request.httpBody = Data((body.percentEncodedQuery ?? "").utf8)
-        }
-        let data: Data, response: URLResponse
-        do { (data, response) = try await session.data(for: request) } catch { throw GrowattAPI.Failure.offline }
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) { throw GrowattAPI.Failure.http(http.statusCode) }
-        return data
-    }
+    /// The plant's own power (`pac`, W) as a line of the portal's charts.
+    static func powerSeries(_ plantID: String) -> GrowattPortal.ChartSeries { .init(type: "plant", sn: plantID, params: "pac") }
 
     // MARK: parsing
 
@@ -199,11 +187,10 @@ public struct GrowattWebDemo: Sendable {
                datalogger: text(d["datalogSn"]) ?? "", dataloggerType: text(d["datalogTypeTest"]) ?? "")
     }
 
-    static func parseDay(_ data: Data) throws -> [Double?] {
-        guard let o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], GrowattAPI.number(o["result"]) == 1,
-              let first = (o["obj"] as? [[String: Any]])?.first, let pac = (first["datas"] as? [String: Any])?["pac"] as? [Any]
-        else { throw GrowattAPI.Failure.badResponse }
-        return pac.map { GrowattAPI.number($0) }
+    /// A day chart's answer for the plant's power, read as `GrowattPortal` reads every chart.
+    static func parseDay(_ data: Data, plantID: String = "") throws -> [Double?] {
+        guard let line = try GrowattPortal.parseChart(data, series: [powerSeries(plantID)]).first else { throw GrowattAPI.Failure.badResponse }
+        return line.points
     }
 
     /// The hours 06:00 … 18:00 of a day's 5-minute samples as the station page's 13 bars: each hour's mean, kW.

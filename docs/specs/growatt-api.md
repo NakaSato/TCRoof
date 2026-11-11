@@ -38,7 +38,7 @@ Readings with many fields (inverter and storage) come back as `Readings`, every 
 Not confirmed against a live answer:
 - `device/inverter/alarm`: needs a `date` (`yyyy-MM-dd`) that neither guide names: without it the test server answers 10003 `error_dateError`; with it and `device_sn` it looks the inverter up (10005 for a serial it doesn't know), while `device_id` gets 10002 (10 Nov 2026). The meaning of an alarm's `status` isn't given.
 - Times: the guide's examples write `2015-12-08T11:05:00Z` and `2016-04-28 18:41:40.0`, while live `plant/data` writes `yyyy-MM-dd HH:mm:ss` on the plant's clock.
-- `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`). Monitoring reads the string currents from it (CHA-106) by the names the portal's chart answered for a MAX (`currentString1…32`, else `ipv1…` per MPPT, two strings to an MPPT, `GrowattMap.mppts`), not yet seen in this answer: the iPad calls it every poll and treats a failure as no news (the last currents stay, nothing shows in the header). Record a live answer for the tests when a token and a MAX plant are at hand.
+- `invs_data`: the guide shows `inverters` as an array without saying how a form carries it; it is sent as JSON (`["SN1","SN2"]`). Monitoring reads the string currents from it (CHA-106) by the names the portal's chart answered for a MAX (`currentString1…32`, else `ipv1…` per MPPT, two strings to an MPPT, `GrowattMap.mppts`), not yet seen in this answer: the device calls it for the station page shown (CHA-107) and treats a failure as no news (the last currents stay, nothing shows in the header). Record a live answer for the tests when a token and a MAX plant are at hand.
 - `search_type`: the appendix gives `name`, the example `PlantName`.
 
 ### Left out on purpose
@@ -47,12 +47,17 @@ These change something on Growatt, and nothing in the app should: `user/user_reg
 
 ### Polling
 
-Only the device reads Growatt (`MonitoringFeed`, for `MonitoringStore`): there is no server poll, and none of Growatt's answers go through Firebase. Every `pollMinutes` (5 at the most often), one call after another, each paired station whose token is on the device:
+Only the device reads Growatt (`MonitoringFeed`, for `MonitoringStore`): there is no server poll, and none of Growatt's answers go through Firebase. The device reads only while its Monitor tab is shown (`MonitoringPoller`, in `PadTabs` and `PhoneTabs`): on any other tab it calls nothing, so the dock's badge and the iPad's alerts keep their last reading. Each paired station whose token is on the device, one call after another, and only what a screen shows (CHA-107):
 
-| What | Call | How often | Calls |
+| What | Call | When | Calls |
 |---|---|---|---|
-| A station's figures | `plant/data`, `plant/power` (the whole day so far), `device/list`, `invs_data` (its inverters' string currents) | every poll | 4 |
-| History | yesterday's `plant/power`, `plant/energy` by day (5 calls) and month | once a day per station | 7 |
+| Summary | `plant/data`, `plant/power` (the whole day so far), `device/list` | every `pollMinutes` (5 at the most often); coming back to the tab before then reads nothing | 3 |
+| Yesterday | yesterday's `plant/power` (`เทียบเมื่อวานเวลาเดียวกัน`) | the iPad overview's chart on `วันนี้`, or a station page on it; once a day | 1 |
+| Days | `plant/energy` by day, 30 days | a chart on `7 วัน` or `30 วัน`; once a day | 5 |
+| Months | `plant/energy` by month, 12 months | a chart on `12 เดือน`, or a station page (its month card); once a day | 1 |
+| String currents | `invs_data` | the station page shown, with each summary | 1 |
+
+The overview's chart range reads its history for every station; a station page reads its own only. A new pairing, server or token reads the summary at once.
 
 Each device with the token polls on its own, so two iPads open on Monitoring make twice the calls on the same account.
 
@@ -60,20 +65,20 @@ Still to check on the live server: whether 10012 limits calls per plant or per t
 
 ## 2. Web portal, guest session (`TCRoofCore/GrowattWebDemo`)
 
-`https://server.growatt.com/`, a cookie session on the portal's example account, for the DEBUG `-growattDemo YES` overview (docs/debug-flags.md).
+`https://server.growatt.com/`, a cookie session on the portal's example account, for the DEBUG `-growattDemo YES` overview (docs/debug-flags.md). The calls go through the package's `GrowattPortal` (`openGuest()` for the guest login, `post` for the rest, `dayChart` for the power), which keeps the session's cookies; the guest login answers 200 with them (no redirect) and expires a few at once (`selPage`, `Max-Age=0`), which aren't kept.
 
 | Endpoint | Method | Parameters | Answer |
 |---|---|---|---|
 | `login/toViewExamlePlant` | GET | none | opens the guest session |
 | `index/getPlantListTitle` | POST | none | the home dashboard's plants |
 | `indexbC/getPlantListTitle` | POST | none | the business dashboard's plants |
-| `panel/getPlantData` | POST | `plantId` (query) | one plant's totals |
+| `panel/getPlantData` | POST | `plantId` (form; the query works too, checked 11 Nov 2026) | one plant's totals |
 | `panel/getDevicesByPlantList` | POST | `plantId`, `currPage` | devices, 4 a page |
 | `energy/compare/getDevicesDayChart` | POST | `plantId`, `date`, `jsonData` | one day's power, 288 points |
 
 ## 3. Web portal, signed-in account (`GrowattPortal` in the package)
 
-Captured from a browser on `server.growatt.com` (10 Nov 2026), signed in to a company account, and ported as `GrowattPortal` in the `GrowattAPI` package. Nothing in the app calls it yet.
+Captured from a browser on `server.growatt.com` (10 Nov 2026), signed in to a company account, and ported as `GrowattPortal` in the `GrowattAPI` package. Nothing in the app calls its signed-in calls yet; the guest demo above uses its transport.
 
 - It needs a browser session: give the `Cookie` header's text (`JSESSIONID`, `assToken`, …) to `useCookies(_:)`. The client sends the cookies itself and keeps those the portal renews (`SERVERID`). The cookies work like the account's password until the session ends, so keep them out of the repo, tickets and logs.
 - Signing in with a username and password isn't ported: its request hasn't been captured.

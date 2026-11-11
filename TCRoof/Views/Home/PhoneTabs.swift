@@ -98,6 +98,9 @@ struct PhoneTabs<HomeRoot: View>: View {
             }
         }
         .environment(dock)
+        // Growatt is read only while Monitor is shown (only with a token saved on this phone), as on iPad (CHA-107);
+        // phones post no alerts, which stay the iPad's (CHA-34)
+        .background { if dock.tab == .monitor, permissions.role != .external { MonitoringPoller() } }
         .onChange(of: availableTabs, initial: true) { _, tabs in
             if !tabs.contains(dock.tab) { dock.select(.home) }
         }
@@ -188,11 +191,8 @@ private struct PhoneDockBarContent: View {
     var body: some View {
         TCTabBar(items: items(dock), selection: Binding(get: { dock.tab }, set: dock.select), dividerBefore: .settings,
                  slideFrom: dock.slideFrom)
-            // the demo's fleet counts from launch; real stations once the page has read them
+            // the demo's fleet counts from launch; real stations once the Monitor tab has read them (`PhoneTabs`)
             .task { if MonitoringStore.demo, monitoring.refreshedAt == nil { monitoring.refresh(jobs: []) } }
-            // the team's phones read Growatt while the app is open (only with a token saved on this phone), for the
-            // badge; they post no alerts, which stay the iPad's (CHA-34); contractors have no Monitor
-            .background { if permissions.role != .external { MonitoringPoller() } }
     }
 
     private func items(_ dock: PhoneDock) -> [TCTabItem<PhoneTab>] {

@@ -66,7 +66,8 @@ actor MonitoringFeed {
     /// When each call was last made on each station's plant (`plantKey/endpoint`).
     private var lastCall: [String: Date] = [:]
     /// The least time between two of the same call on a plant: Growatt's 5 minutes, less a little, since a poll may come
-    /// a second early and `GrowattAPI` retries a 10012 once 6 s later.
+    /// a second early. Longer than `GrowattGate.window`, which every call also goes through, so the gate never refuses
+    /// a call made on this time.
     static let callGap = TimeInterval(Monitoring.minimumPollMinutes * 60 - 15)
     /// The 30 days read so far today, a week a call (`dayChunks`), per station's plant.
     private var dayRows: [String: (day: Date, step: Int, rows: [GrowattAPI.EnergyPoint])] = [:]

@@ -54,6 +54,9 @@ public struct GrowattAPI: Sendable {
     /// server, but its token is shared with every developer trying it, so one wait isn't always enough.
     public var retries = 3
     public var retryDelay: TimeInterval = 6
+    /// Paces the calls (`GrowattGate`): with one, a call repeated too soon is refused before it is sent and a 10012
+    /// isn't retried. Nil (the default) sends every call, with `retries`.
+    public var gate: GrowattGate?
 
     /// `baseURL` ends in `/v1/`; the token is trimmed (a pasted one often brings a newline).
     public init(baseURL: URL, token: String) {
@@ -85,10 +88,10 @@ public struct GrowattAPI: Sendable {
     /// doesn't wrap.
     public func get(_ path: String, _ query: [String: String]) async throws -> Data {
         var c = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        c.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
+        if !query.isEmpty { c.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) } }
         var request = URLRequest(url: c.url!, timeoutInterval: timeout)
         request.setValue(token, forHTTPHeaderField: "token")
-        return try await send(request)
+        return try await send(request, call: path + "?" + (c.percentEncodedQuery ?? ""))
     }
 
     /// A POST of `path` with `form` as `application/x-www-form-urlencoded`, for the reads the guide makes POSTs.
@@ -97,8 +100,9 @@ public struct GrowattAPI: Sendable {
         request.httpMethod = "POST"
         request.setValue(token, forHTTPHeaderField: "token")
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        request.httpBody = Data(Self.formBody(form).utf8)
-        return try await send(request)
+        let body = Self.formBody(form)
+        request.httpBody = Data(body.utf8)
+        return try await send(request, call: path + "?" + body)
     }
 
     /// `a=1&b=x%20y`, keys sorted.
@@ -109,7 +113,28 @@ public struct GrowattAPI: Sendable {
         return form.sorted { $0.key < $1.key }.map { esc($0.key) + "=" + esc($0.value) }.joined(separator: "&")
     }
 
-    private func send(_ request: URLRequest) async throws -> Data {
+    /// `call` names the request for the gate: its path and query or form.
+    private func send(_ request: URLRequest, call: String) async throws -> Data {
+        if let gate {
+            try await gate.admit(token: token, call: call)
+            let (data, response): (Data, URLResponse)
+            // a call that didn't reach Growatt's API (no network, cancelled, an HTTP error) gives its slot back
+            do { (data, response) = try await session.data(for: request) } catch {
+                await gate.release(token: token, call: call)
+                throw Failure.offline
+            }
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                await gate.release(token: token, call: call)
+                throw Failure.http(http.statusCode)
+            }
+            let head = try Self.head(data)
+            if head.code == 10012 {
+                await gate.refused(token: token, call: call)
+                throw Failure.tooFrequent
+            }
+            guard head.code == 0 else { throw Failure.api(head.code, head.message) }
+            return data
+        }
         for attempt in 1...(retries + 1) {
             let data: Data, response: URLResponse
             do { (data, response) = try await session.data(for: request) } catch { throw Failure.offline }
@@ -127,6 +152,44 @@ public struct GrowattAPI: Sendable {
     }
 
     // MARK: parsing
+
+    /// An answer's structure with every value hidden, on one line: keys, types, list lengths, and `error_code` /
+    /// `error_msg` (Growatt's own words). For showing what Growatt sent without showing the account's data:
+    /// `error_code: 0 · data{count: number 0, plants: [] (empty)}`.
+    public static func outline(_ data: Data) -> String {
+        guard let o = try? JSONSerialization.jsonObject(with: data) else { return "ไม่ใช่ JSON (\(data.count) ไบต์)" }
+        func shape(_ v: Any) -> String {
+            switch v {
+            // a list's total (`count`, `total`) is shown: it tells an empty account from a page that came back empty
+            case let o as [String: Any]: return "{" + o.keys.sorted().map { k in
+                let total = ["count", "total"].contains(k) ? number(o[k]).map { " \(Int($0))" } : nil
+                return "\(k): " + (total.map { "number" + $0 } ?? shape(o[k]!))
+            }.joined(separator: ", ") + "}"
+            case let a as [Any]: return a.first.map { "[\(a.count)× " + shape($0) + "]" } ?? "[] (empty)"
+            case is NSNull: return "null"
+            case let n as NSNumber: return Self.isBool(n) ? "bool" : "number"
+            case let s as String: return s.isEmpty ? "\"\"" : "text"
+            default: return "\(type(of: v))"
+            }
+        }
+        guard let d = o as? [String: Any] else { return shape(o) }
+        var parts: [String] = []
+        if let c = d["error_code"] { parts.append("error_code: \(c)") }
+        if let m = d["error_msg"] as? String, !m.isEmpty { parts.append("error_msg: \(m)") }
+        let rest = d.filter { $0.key != "error_code" && $0.key != "error_msg" }
+        parts += rest.keys.sorted().map { k in k + (rest[k] is [String: Any] ? "" : ": ") + shape(rest[k]!) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Whether JSONSerialization read `n` from `true` / `false`. CoreFoundation's type check isn't public on Linux;
+    /// there an NSNumber made from a Bool reports the `c` (char) type.
+    static func isBool(_ n: NSNumber) -> Bool {
+        #if canImport(Darwin)
+        return CFGetTypeID(n) == CFBooleanGetTypeID()
+        #else
+        return String(cString: n.objCType) == "c"
+        #endif
+    }
 
     /// `error_code` (0 when missing) and `error_msg`.
     public static func head(_ data: Data) throws -> (code: Int, message: String) {

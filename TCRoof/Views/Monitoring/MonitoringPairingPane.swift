@@ -24,6 +24,12 @@ struct MonitoringPairingPane: View {
     @State private var search = ""
     @State private var loading: Set<UUID> = []
     @State private var errors: [UUID: String] = [:]
+    /// The account's end users (`user/c_user_list`), listed once when asked for: a business account's plants can sit
+    /// under its end users rather than in `plant/list`. One user's plants are read when it is tapped, one call each.
+    @State private var endUsers: [UUID: [GrowattAPI.EndUser]] = [:]
+    @State private var endUserLoading: Set<String> = []
+    @State private var endUsersRead: Set<String> = []
+    @State private var endUserError: String?
 
     private static let stubKey = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!
 
@@ -184,13 +190,15 @@ struct MonitoringPairingPane: View {
             ScrollView {
                 VStack(spacing: 0) {
                     if shown.isEmpty {
-                        Text(all.isEmpty ? "เซิร์ฟเวอร์นี้ไม่มี Plant" : "ไม่พบ Plant ที่ตรงกับคำค้น").font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
+                        Text(all.isEmpty ? "บัญชีนี้ไม่มี Plant โดยตรง · ดู Plant ของผู้ใช้ปลายทางด้านล่าง" : "ไม่พบ Plant ที่ตรงกับคำค้น")
+                            .font(.sarabunFixed(14)).foregroundStyle(Theme.inkMuted)
                             .frame(maxWidth: .infinity, minHeight: 80)
                     }
                     ForEach(shown) { p in
                         plantRow(p, station: station, suggested: suggested.contains(p.id))
                         Divider()
                     }
+                    if !stub { endUsersSection(key) }
                 }
             }
             Divider()
@@ -237,9 +245,105 @@ struct MonitoringPairingPane: View {
         .accessibilityAddTraits(current ? .isSelected : [])
     }
 
+    // MARK: end users
+
+    /// `ผู้ใช้ปลายทาง`: a button that lists the account's end users (one call), then a row per user whose tap reads its
+    /// plants into the list (one call each, through the gate).
+    @ViewBuilder private func endUsersSection(_ key: UUID) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("ผู้ใช้ปลายทาง").font(.sarabunFixed(13, .bold)).foregroundStyle(Theme.inkMuted)
+                .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
+            if let error = endUserError {
+                Text(error).font(.sarabunFixed(13)).foregroundStyle(Theme.dangerText).padding(.horizontal, 16).padding(.bottom, 6)
+            }
+            if let users = endUsers[key] {
+                if users.isEmpty {
+                    Text("บัญชีนี้ไม่มีผู้ใช้ปลายทาง").font(.sarabunFixed(13)).foregroundStyle(Theme.inkMuted)
+                        .padding(.horizontal, 16).frame(minHeight: 44)
+                }
+                ForEach(users, id: \.id) { u in endUserRow(u, key: key) }
+            } else {
+                Button { Task { await loadEndUsers(key) } } label: {
+                    HStack(spacing: 8) {
+                        if endUserLoading.contains(key.uuidString) { ProgressView() }
+                        Text(verbatim: "ดู Plant ของผู้ใช้ปลายทาง")
+                    }
+                }
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                .disabled(endUserLoading.contains(key.uuidString))
+                .padding(.horizontal, 16).padding(.bottom, 12)
+                .accessibilityIdentifier("monitoring.pairing.endUsers")
+            }
+        }
+    }
+
+    private func endUserRow(_ u: GrowattAPI.EndUser, key: UUID) -> some View {
+        let id = key.uuidString + "/" + u.name
+        let read = endUsersRead.contains(id)
+        return Button { Task { await loadPlants(of: u, key: key) } } label: {
+            HStack(spacing: 12) {
+                Image(systemName: read ? "checkmark.circle.fill" : "person.crop.circle").font(.system(size: 18))
+                    .foregroundStyle(read ? Theme.success : Theme.inkMuted)
+                Text(u.name).font(.sarabunFixed(14, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
+                Spacer(minLength: 8)
+                if endUserLoading.contains(id) { ProgressView() }
+                else { Text(read ? "อ่านแล้ว" : "อ่าน Plant").font(.sarabunFixed(12)).foregroundStyle(Theme.inkMuted) }
+            }
+            .padding(.horizontal, 16).frame(minHeight: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(read || endUserLoading.contains(id))
+    }
+
+    private func loadEndUsers(_ key: UUID) async {
+        guard let api = gatedAPI() else { return }
+        endUserLoading.insert(key.uuidString); endUserError = nil
+        defer { endUserLoading.remove(key.uuidString) }
+        do {
+            endUsers[key] = try await api.endUsers().items.filter { !$0.name.isEmpty }
+        } catch GrowattAPI.Failure.api(_, _) {
+            // an account that may not list end users has none
+            endUsers[key] = []
+        } catch let f as GrowattAPI.Failure {
+            endUserError = f.message
+        } catch {
+            endUserError = GrowattAPI.Failure.badResponse.message
+        }
+    }
+
+    private func loadPlants(of user: GrowattAPI.EndUser, key: UUID) async {
+        guard let api = gatedAPI() else { return }
+        let id = key.uuidString + "/" + user.name
+        endUserLoading.insert(id); endUserError = nil
+        defer { endUserLoading.remove(id) }
+        do {
+            let found = try await api.userPlants(userName: user.name).items.map(Monitoring.Pairing.Plant.init)
+            var list = plants[key] ?? []
+            let known = Set(list.map(\.id))
+            list += found.filter { !known.contains($0.id) }
+            plants[key] = list
+            endUsersRead.insert(id)
+        } catch let f as GrowattAPI.Failure {
+            endUserError = f.message
+        } catch {
+            endUserError = GrowattAPI.Failure.badResponse.message
+        }
+    }
+
+    /// The selected account's client, through the app's gate; nil (with the reason shown) without its token here.
+    private func gatedAPI() -> GrowattAPI? {
+        guard let server, let token = MonitoringToken.token(server.id), let url = URL(string: server.url) else {
+            endUserError = "ไม่มี Token ของเซิร์ฟเวอร์นี้ในเครื่อง · ใส่ Token ในหน้าตั้งค่าก่อน"
+            return nil
+        }
+        return MonitoringStore.api(url, token: token)
+    }
+
     // MARK: loading
 
-    /// Reads the server's plants once (`plant/list`, every page), or the stub's after a moment.
+    /// The server's plants: those kept on the device (`MonitoringStore.plantLists`, through `plants`), else read once
+    /// (`plant/list`, every page, through the gate), or the stub's after a moment.
     private func load() async {
         guard let key = cacheKey, plants[key] == nil, !loading.contains(key) else { return }
         loading.insert(key)
@@ -256,12 +360,15 @@ struct MonitoringPairingPane: View {
             errors[key] = "ไม่มี Token ของเซิร์ฟเวอร์นี้ในเครื่อง · ใส่ Token ในหน้าตั้งค่าก่อน"
             return
         }
-        let api = GrowattAPI(baseURL: url, token: token)
+        let api = MonitoringStore.api(url, token: token)
         do {
             let rows = try await api.allPlants(maxPages: 10)
             guard !Task.isCancelled else { return }
             plants[key] = rows.map(Monitoring.Pairing.Plant.init)
             errors[key] = nil
+        } catch GrowattAPI.Failure.tooFrequent {
+            await MonitoringStore.shared.noteWait(server.id, token: token)
+            errors[key] = MonitoringStore.tooFrequentNote(until: MonitoringStore.shared.retryAt[server.id])
         } catch let f as GrowattAPI.Failure {
             errors[key] = f.message
         } catch {

@@ -33,7 +33,13 @@ struct MonitoringSettingsDialog: View {
     @State private var savedTokens: Set<UUID> = []
     /// Plants already read for each server during this dialog session (`testAndAdd`, `test`, or the pairing pane),
     /// kept so opening `จับคู่สถานีกับ Plant` doesn't call `plant/list` a second time.
-    @State private var plants: [UUID: [Monitoring.Pairing.Plant]] = [:]
+    /// The accounts' plants, kept on the device by the store (`MonitoringStore.plantLists`).
+    private var plants: [UUID: [Monitoring.Pairing.Plant]] {
+        get { store.plantLists }
+        nonmutating set {
+            for id in Set(store.plantLists.keys).union(newValue.keys) { store.setPlants(newValue[id], for: id) }
+        }
+    }
     @State private var testing: Set<UUID> = []
     @State private var testNote: [UUID: String] = [:]
 
@@ -61,7 +67,7 @@ struct MonitoringSettingsDialog: View {
                 if page == .pairing {
                     Divider()
                     MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants,
-                                          plants: $plants)
+                                          plants: Binding(get: { plants }, set: { plants = $0 }))
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 24) {
@@ -87,6 +93,21 @@ struct MonitoringSettingsDialog: View {
         // fields are near the top, so they stay in view while typed
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .accessibilityAddTraits(.isModal)
+        // a wait Growatt started before the dialog opened (an earlier test, the last launch) shows at once
+        .task {
+            for s in store.settings.servers {
+                if let token = MonitoringToken.token(s.id) { await store.noteWait(s.id, token: token) }
+            }
+        }
+        // the chip turns back to `ทดสอบ` when the wait ends
+        .task(id: store.retryAt) {
+            guard let next = store.retryAt.values.min() else { return }
+            try? await Task.sleep(for: .seconds(max(next.timeIntervalSinceNow, 0) + 0.5))
+            guard !Task.isCancelled else { return }
+            let ended = store.retryAt.filter { $0.value <= Date() }.keys
+            store.clearPastWaits()
+            for id in ended where testNote[id]?.hasPrefix("Growatt ให้รอ") == true { testNote[id] = nil }
+        }
     }
 
     // MARK: title and footer
@@ -183,7 +204,6 @@ struct MonitoringSettingsDialog: View {
     /// so they stay.
     private func undo() {
         draft = store.settings
-        plants = [:]
         adding = false; changingToken = nil; changedToken = ""
         newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString; addError = nil
         testNote = [:]
@@ -215,6 +235,11 @@ struct MonitoringSettingsDialog: View {
                 accountStatus(s)
                 if let note = testNote[s.id] {
                     Text(note).font(.sarabun(12)).foregroundStyle(Theme.dangerText).fixedSize(horizontal: false, vertical: true)
+                }
+                if let outline = store.answerOutline[s.id] {
+                    Text("Growatt ตอบ: " + outline).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.inkMuted)
+                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("monitoring.server.answerOutline")
                 }
             }
             Spacer(minLength: 4)
@@ -248,10 +273,14 @@ struct MonitoringSettingsDialog: View {
     @ViewBuilder
     private func accountStatus(_ s: Monitoring.Settings.Server) -> some View {
         let hasToken = savedTokens.contains(s.id)
+        let wait = store.retryAt[s.id]
         Button { Task { await test(s) } } label: {
             Group {
                 if testing.contains(s.id) {
                     MonChip("กำลังทดสอบ…", .info)
+                } else if let wait {
+                    // Growatt's 10012: a call before this time only starts its wait again
+                    MonChip("รอ Growatt ถึง " + MonFormat.time(wait), .warn)
                 } else if !hasToken {
                     MonChip("ไม่มี Token ใน iPad เครื่องนี้", .warn)
                 } else if let ok = s.testOK, let at = s.testedAt {
@@ -263,8 +292,8 @@ struct MonitoringSettingsDialog: View {
             .frame(minHeight: 28).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!hasToken || testing.contains(s.id))
-        .accessibilityHint("แตะเพื่อทดสอบการเชื่อมต่ออีกครั้ง")
+        .disabled(!hasToken || testing.contains(s.id) || wait != nil)
+        .accessibilityHint(wait == nil ? "แตะเพื่อทดสอบการเชื่อมต่ออีกครั้ง" : "ทดสอบได้อีกครั้งหลังเวลาที่แสดง")
         .accessibilityIdentifier("monitoring.server.test")
     }
 
@@ -345,7 +374,7 @@ struct MonitoringSettingsDialog: View {
         addTesting = true; addError = nil
         defer { addTesting = false }
         do {
-            let rows = try await GrowattAPI(baseURL: base, token: token).allPlants(maxPages: 10)
+            let rows = try await MonitoringStore.api(base, token: token).allPlants(maxPages: 10)
             var s = Monitoring.Settings.Server(name: name, url: url,
                                                tokenSuffix: Monitoring.Settings.Server.suffix(of: token))
             s.testedAt = Date(); s.testOK = true; s.plants = rows.count
@@ -358,6 +387,8 @@ struct MonitoringSettingsDialog: View {
             store.save(saved)
             store.noteTokenChange()
             adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString
+        } catch GrowattAPI.Failure.tooFrequent {
+            addError = MonitoringStore.tooFrequentNote(until: await GrowattGate.shared.freeAt(token: token, path: "plant/list"))
         } catch let f as GrowattAPI.Failure {
             addError = f.message
         } catch {
@@ -420,7 +451,11 @@ struct MonitoringSettingsDialog: View {
                 draft.servers[i].testOK = true
                 draft.servers[i].plants = list.count
                 plants[s.id] = list.map(Monitoring.Pairing.Plant.init)
-                testNote[s.id] = nil
+                // connected, but nothing to pair: say so, since `0 Plant` alone reads like a fault in the app
+                testNote[s.id] = list.isEmpty ? "Growatt ไม่ส่ง Plant ของ Token นี้มา (ทั้งบัญชีและผู้ใช้ปลายทาง) · ตรวจว่าเป็น Token ของบัญชีที่ดูแลสถานี" : nil
+            case .failure(.tooFrequent):
+                draft.servers[i].testOK = false
+                testNote[s.id] = MonitoringStore.tooFrequentNote(until: store.retryAt[s.id])
             case .failure(let f):
                 draft.servers[i].testOK = false
                 testNote[s.id] = f.message

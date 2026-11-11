@@ -17,9 +17,12 @@ extension Job {
     @MainActor
     func assistantJob(_ permissions: Permissions, library: StationDocs.Library? = nil) -> Assistant.Job {
         let settings = routineSettings
-        let deadlines = library.map { lib in
+        // with the reports due to the Master Plan's stakeholders over look_ahead's three weeks (CHA-82): the programme's
+        // and this station's handover papers
+        let reports = StakeholderStore.shared.dues(jobs: [self], days: 21).map { Assistant.Deadline(date: $0.date, title: $0.title) }
+        let deadlines = (library.map { lib in
             PWAPlan.deadlines([planStation], library: lib, today: .now).map { Assistant.Deadline(date: $0.date, title: $0.title) }
-        } ?? []
+        } ?? []) + reports
         var job = Assistant.Job(id: overviewID, station: assistantStation, mpNumber: mpNumber, kWp: capacityKW > 0 ? capacityKW : nil,
                              input: scheduleInput, actual: scheduleActual, dailies: dailyReports,
                              canEdit: permissions.can(.mpProgress, on: access), canReplan: permissions.can(.mpSetup, on: access),

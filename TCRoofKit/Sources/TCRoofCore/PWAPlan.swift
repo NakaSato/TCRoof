@@ -465,7 +465,8 @@ public enum PWAPlan {
 
     // MARK: Deadlines
 
-    public enum DeadlineKind: String, Sendable { case handover, document, other }
+    /// `report`: a report due to a stakeholder (CHA-82, `PWAPlan.stakeholderDeadlines`).
+    public enum DeadlineKind: String, Sendable { case handover, document, other, report }
     public enum Tone: String, Sendable { case late, risk, ok }
 
     public struct Deadline: Identifiable, Equatable, Sendable {

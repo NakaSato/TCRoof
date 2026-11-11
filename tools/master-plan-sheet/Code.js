@@ -20,6 +20,7 @@ function onOpen() {
     .addSeparator()
     .addItem('เพิ่มสถานีที่ยังไม่มีในแอป…', 'addMissingStations')
     .addItem('ลบสถานีที่เพิ่มจากชีต…', 'removeAddedStations')
+    .addItem('สร้างชีตผู้มีส่วนได้ส่วนเสีย', 'createStakeholderTab')
     .addSeparator()
     .addItem('เปิดงานอัตโนมัติ (ดึงทุก 5 นาที, ประวัติวันจันทร์ 08:00)', 'installTriggers')
     .addItem('ปิดงานอัตโนมัติ', 'removeTriggers')
@@ -68,11 +69,13 @@ function pullFromApp() {
     writeAppTab(book, appTabRows(jobs, matches, rows, stats), logs.length);
     writeWBSTab(book, wbsTabRows(rows, matches), wbs);
     var risks = syncRisks(book, rows, matches);
+    var people = syncStakeholders(book, rows, matches);
 
     var found = matches.filter(function (m, i) { return m.job && String(ids[i] || '').trim(); }).length;
     var stations = ids.filter(function (id) { return String(id || '').trim(); }).length;
     var line = 'สำเร็จ: จับคู่ ' + found + ' / ' + stations + ' สถานี, งานในแอป ' + jobs.length + ', รายงานประจำวัน ' + logs.length;
     if (risks) line += ', ' + risks;
+    if (people) line += ', ' + people;
     if (wbs.written || wbs.refusals.length) line += ', WBS ส่งเข้าแอป ' + wbs.written + ' งาน' + (wbs.refusals.length ? ' ไม่รับ ' + wbs.refusals.length + ' แถว (ดูชีต WBS)' : '');
     // the app's days are Bangkok's: a sheet in another time zone shows them a day early
     var tz = book.getSpreadsheetTimeZone();
@@ -286,6 +289,60 @@ function syncRisks(book, rows, matches) {
   } catch (e) {
     return '⚠ ทะเบียนความเสี่ยง: ' + e.message;
   }
+}
+
+// MARK: the stakeholder list for the app (CHA-82)
+
+/**
+ * Copies `ผู้มีส่วนได้ส่วนเสีย` into `config/stakeholders` (`Core.stakeholderList`), only when it changed, as
+ * `syncRisks` does. A book without the tab yet writes nothing and says nothing (the menu's `สร้างชีตผู้มีส่วนได้ส่วนเสีย`
+ * makes it). Returns a few words for the pull's line, or ''; a failure is reported there and never stops the pull.
+ */
+function syncStakeholders(book, rows, matches) {
+  if (!book.getSheetByName(STAKEHOLDER_TAB.name)) return '';
+  try {
+    var jobByCode = {};
+    matches.forEach(function (m, i) {
+      var code = String(rows[i].code || '').trim();
+      if (m.job && code) jobByCode[code] = m.job.id;
+    });
+    var json = stakeholderList(readRows(book, STAKEHOLDER_TAB.name), readRows(book, 'Master Plan'), jobByCode);
+    var current = firestoreGet('config/stakeholders');
+    if (current && current.json === json) return '';
+    firestoreCall(':commit', { writes: [{
+      update: { name: 'projects/' + project() + '/databases/(default)/documents/config/stakeholders',
+                fields: { json: { stringValue: json }, updatedAt: { timestampValue: new Date().toISOString() } } }
+    }] }, 'config/stakeholders');
+    return 'ผู้มีส่วนได้ส่วนเสียส่งเข้าแอป ' + JSON.parse(json).stakeholders.length + ' ราย';
+  } catch (e) {
+    return '⚠ ผู้มีส่วนได้ส่วนเสีย: ' + e.message;
+  }
+}
+
+/**
+ * Makes the `ผู้มีส่วนได้ส่วนเสีย` tab: title, note, header, two example rows to overwrite, and its rows in `_keys`. Does
+ * nothing to a tab that already exists.
+ */
+function createStakeholderTab() {
+  var book = SpreadsheetApp.getActive(), ui = SpreadsheetApp.getUi();
+  if (book.getSheetByName(STAKEHOLDER_TAB.name)) {
+    ui.alert('มีชีต ' + STAKEHOLDER_TAB.name + ' อยู่แล้ว');
+    return;
+  }
+  var keys = book.getSheetByName('_keys');
+  if (!keys) { ui.alert('ไม่พบชีต _keys'); return; }
+  var sheet = book.insertSheet(STAKEHOLDER_TAB.name);
+  var width = STAKEHOLDER_COLUMNS.length, header = STAKEHOLDER_TAB.first - 1;
+  sheet.getRange(1, 1).setValue(STAKEHOLDER_TAB.title).setFontWeight('bold').setFontSize(14);
+  sheet.getRange(2, 1).setValue(STAKEHOLDER_TAB.note).setFontColor('#666666');
+  sheet.getRange(header, 1, 1, width).setValues([STAKEHOLDER_COLUMNS.map(function (c) { return c[1]; })])
+    .setFontWeight('bold').setBackground('#1f3864').setFontColor('#ffffff');
+  sheet.getRange(STAKEHOLDER_TAB.first, 1, STAKEHOLDER_TAB.examples.length, width).setValues(STAKEHOLDER_TAB.examples);
+  sheet.setFrozenRows(header);
+  sheet.autoResizeColumns(1, width);
+  var add = stakeholderKeyRows();
+  keys.getRange(keys.getLastRow() + 1, 1, add.length, 5).setValues(add);
+  ui.alert('สร้างชีต ' + STAKEHOLDER_TAB.name + ' แล้ว: แก้แถวตัวอย่าง S01 และ S02 แล้วเพิ่มแถวได้เลย การดึงข้อมูลครั้งถัดไปจะส่งเข้าแอป');
 }
 
 // MARK: adding the stations to the app

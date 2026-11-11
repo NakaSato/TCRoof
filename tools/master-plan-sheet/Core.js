@@ -393,6 +393,62 @@ function riskRegister(rows, stations, jobByCode, bangkokDay) {
   return JSON.stringify({ risks: risks });
 }
 
+// MARK: the stakeholder list (CHA-82): `ผู้มีส่วนได้ส่วนเสีย` copied into `config/stakeholders` for the app, read only
+
+/** The tab's columns, in order: key, header. `STAKEHOLDER_TAB` writes them and `_keys` names them. */
+var STAKEHOLDER_COLUMNS = [
+  ['id', 'รหัส'], ['name', 'ชื่อ / ตำแหน่ง'], ['org', 'หน่วยงาน'], ['role', 'บทบาทในโครงการ'], ['interest', 'ความสนใจ'],
+  ['influence', 'อิทธิพล'], ['reports', 'รายงานที่ได้รับ'], ['channel', 'ช่องทาง'], ['freq', 'ความถี่'], ['due', 'กำหนดส่ง'],
+  ['owner', 'ผู้ส่ง (ฝั่งเรา)'], ['scope', 'ขอบเขต'], ['note', 'หมายเหตุ']
+];
+
+/** The tab the menu's `สร้างชีตผู้มีส่วนได้ส่วนเสีย` makes: its name, the first data row and two example rows. */
+var STAKEHOLDER_TAB = {
+  name: 'ผู้มีส่วนได้ส่วนเสีย',
+  title: 'ผู้มีส่วนได้ส่วนเสียและแผนการสื่อสาร – โครงการประปา เฟส 3–4',
+  note: 'ความถี่: รายสัปดาห์ (กำหนดส่ง = วัน เช่น ศุกร์) | รายเดือน (กำหนดส่ง = วันที่ เช่น 25 หรือ สิ้นเดือน) | ' +
+        'ก่อนส่งมอบ (กำหนดส่ง = จำนวนวันก่อนส่งมอบแต่ละสถานี) | ตามเหตุการณ์ (ไม่เตือน). ' +
+        'ขอบเขต: ทั้งเฟส, ผรม. X หรือ สถานี > 200 kVA เหมือนทะเบียนความเสี่ยง. แอปเตือนทีม 08:00 วันก่อนกำหนด',
+  first: 4,
+  examples: [
+    ['S01', 'ผอ.กองแผนงาน', 'กปภ. เขต', 'เจ้าของโครงการ', 'สูง', 'สูง', 'R3 รายงานประจำสัปดาห์', 'อีเมล', 'รายสัปดาห์', 'ศุกร์', 'PM', 'ทั้งเฟส', ''],
+    ['S02', 'หัวหน้าสถานี', 'กปภ. สาขา', 'ผู้ใช้งานระบบ', 'สูง', 'กลาง', 'เอกสารส่งมอบ', 'หนังสือ', 'ก่อนส่งมอบ', '3', 'วิศวกรโครงการ', 'ทั้งเฟส', '']
+  ]
+};
+
+/**
+ * `config/stakeholders`' JSON: every row of `ผู้มีส่วนได้ส่วนเสีย` with an id, in the sheet's order, its stations as app
+ * job ids from its `ขอบเขต` (`riskStations`, as the risk register; a station not paired with a job is left out). The app's
+ * `StakeholderList.decode` reads it and works out the due days from `frequency` and `due`.
+ */
+function stakeholderList(rows, stations, jobByCode) {
+  var str = function (v) {
+    if (v === null || v === undefined) return '';
+    // a day typed as a number (25) comes back as one
+    return typeof v === 'number' ? String(v) : String(v).trim();
+  };
+  var list = (rows || []).filter(function (r) { return str(r.id); }).map(function (r) {
+    var codes = riskStations(r.scope, stations);
+    var jobs = codes === null ? null : codes.map(function (c) { return jobByCode[c]; }).filter(Boolean)
+      .filter(function (j, i, a) { return a.indexOf(j) === i; });
+    var out = {
+      id: str(r.id), name: str(r.name), organisation: str(r.org), role: str(r.role), interest: str(r.interest),
+      influence: str(r.influence), reports: str(r.reports), channel: str(r.channel), frequency: str(r.freq),
+      due: str(r.due), owner: str(r.owner), note: str(r.note), scope: str(r.scope)
+    };
+    if (jobs !== null) out.jobs = jobs;
+    return out;
+  });
+  return JSON.stringify({ stakeholders: list });
+}
+
+/** The `_keys` rows for the tab: sheet, key, column letter, first row, last row (blank: to the sheet's last row). */
+function stakeholderKeyRows() {
+  return STAKEHOLDER_COLUMNS.map(function (c, i) {
+    return [STAKEHOLDER_TAB.name, c[0], String.fromCharCode(65 + i), STAKEHOLDER_TAB.first, ''];
+  });
+}
+
 // MARK: the WBS tab (CHA-71): the plans' sub-tasks, and a `Y` typed there written to the app as a `sheet` tick
 
 /** Bangkok is UTC+7 all year. */
@@ -573,5 +629,7 @@ if (typeof module !== 'undefined') {
                      sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsSourceLabel: wbsSourceLabel,
                      WBS_TAB_HEADER: WBS_TAB_HEADER, wbsTabRows: wbsTabRows, wbsCells: wbsCells, wbsSnapshotRows: wbsSnapshotRows,
                      wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges,
-                     riskStations: riskStations, riskRegister: riskRegister };
+                     riskStations: riskStations, riskRegister: riskRegister,
+                     STAKEHOLDER_COLUMNS: STAKEHOLDER_COLUMNS, STAKEHOLDER_TAB: STAKEHOLDER_TAB,
+                     stakeholderList: stakeholderList, stakeholderKeyRows: stakeholderKeyRows };
 }

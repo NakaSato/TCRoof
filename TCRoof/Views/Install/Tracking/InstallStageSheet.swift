@@ -34,6 +34,8 @@ struct InstallStageSheet: View {
     /// The first photo of a pick's line: its thumbnail.
     var pickPhoto: (RoutineReport.WBSPick) -> Data? = { _ in nil }
     var contractors: Set<String> = []
+    /// What the job's ICL sheets and station papers say of the rows (CHA-84).
+    var records = MasterSchedule.WBSDictionary.Records()
     /// `ยืนยัน` / `ส่งกลับ`: the team's; a contractor sees the list without them.
     var canConfirm = false
     var confirmWBS: (RoutineReport.WBSPick) -> Void = { _ in }
@@ -167,7 +169,7 @@ struct InstallStageSheet: View {
                      toggle: toggleWBS, setDocument: setDocument,
                      updateTick: updateWBSTick, updateItem: updateWBSItem,
                      pending: Dictionary(pending.map { ($0.code, $0) }) { a, _ in a }, contractors: contractors,
-                     canConfirm: canConfirm, confirm: confirmWBS)
+                     canConfirm: canConfirm, confirm: confirmWBS, records: records)
             .padding(wide ? 14 : 0)
             .background(wide ? Theme.phonePage : .clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }

@@ -116,7 +116,7 @@ final class GrowattDemoFeed {
     }
 
     private func loadAPI(_ api: GrowattAPI) async throws {
-        let plants = try await api.plants()
+        let plants = try await api.allPlants()
         stations = plants.map { Self.mocked(GrowattAPI.summary($0)) }
         loaded = true
         for p in plants {

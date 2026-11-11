@@ -63,6 +63,14 @@ extension Job {
 
     func iclSheet(_ id: String) -> ICLSheet? { iclSheets.first { $0.sheet.id == id } }
 
+    /// What the job's records say of its WBS rows (CHA-84): the ICL groups whose sheets are all signed, and each station
+    /// paper's status.
+    var wbsRecords: MasterSchedule.WBSDictionary.Records {
+        let groups = Dictionary(grouping: iclSheets, by: { $0.sheet.group })
+        let signed = Set(groups.filter { !$0.value.isEmpty && $0.value.allSatisfy { $0.sheet.lockState == .closed } }.keys)
+        return .init(iclSigned: signed, papers: stationDocs.docs.mapValues(\.status))
+    }
+
     /// Signed sheets over all sheets, for the job's card.
     var siteICLTally: (signed: Int, total: Int) {
         (iclSheets.filter { $0.sheet.lockState == .closed }.count, iclSheets.count)

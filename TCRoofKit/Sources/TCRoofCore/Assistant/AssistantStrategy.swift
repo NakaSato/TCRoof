@@ -255,6 +255,24 @@ public extension Assistant {
             public var crewNow: Double
             public var crewNeeded: Int
             public var overloaded: Bool
+            /// The people the group said it has that week (`CrewSupply`); nil when it said none.
+            public var crewSupply: Int?
+            /// True when its stations need more than `crewSupply`: two stations of one group in the same week count once,
+            /// as one week of the group. Nil without a supply.
+            public var overSupply: Bool?
+        }
+
+        /// A station whose tasks in an over-supply week can wait, inside their float, until the group has people
+        /// (PMBOK 5th §6.6.2.4 resource smoothing). Its `tasks` are the dates to give `propose_replan`.
+        public struct Leveling: Codable, Equatable, Sendable {
+            public var crewGroup: String
+            /// The over-supply week it frees.
+            public var week: String
+            public var jobID: String
+            public var station: String
+            /// People the week gains.
+            public var crew: Int
+            public var tasks: [Shift]
         }
 
         public struct Move: Codable, Equatable, Sendable {
@@ -271,12 +289,28 @@ public extension Assistant {
             public var loads: [GroupWeek]
             /// Spare crew of stations ahead, offered to the riskiest of the same group.
             public var moves: [Move]
+            /// Tasks not started that can move later inside their float so no group needs more than its supply; empty
+            /// without a supply or an over-supply week.
+            public var leveling: [Leveling]
             public var note: String
             public var json: String { Strategy.text(self) }
         }
 
-        public static func priorities(_ jobs: [Job], today: Date, calendar cal: Calendar = MasterSchedule.calendar) -> Priorities {
-            struct Row { var risk: StationRisk; var sitePlan: [MasterSchedule.Recovery]; var factor: Double? }
+        /// The stations ranked by risk, each crew group's load over the next four weeks against the people it said it
+        /// has (`supply`, CHA-78), crew moves between its stations, and the tasks that can wait inside their float so no
+        /// week needs more than the supply (`leveling`).
+        public static func priorities(_ jobs: [Job], supply: CrewSupply? = nil, today: Date,
+                                      calendar cal: Calendar = MasterSchedule.calendar) -> Priorities {
+            struct Row {
+                var risk: StationRisk
+                var sitePlan: [MasterSchedule.Recovery]
+                var factor: Double?
+                /// Working days each task can slip, by code (`ScheduleBrief.TaskLine.floatDays`).
+                var float: [String: Int]
+                var installEnd: Date
+                var demand: Int { risk.crewNeeded ?? Int((risk.crewAverage ?? 0).rounded(.up)) }
+            }
+            typealias Dates = [MasterSchedule.Task: (start: Date, end: Date)]
             let thisWeek = MasterSchedule.weekStart(today, calendar: cal)
             var rows: [Row] = []
             for j in jobs {
@@ -292,21 +326,40 @@ public extension Assistant {
                                                   crewGroup: j.crewGroup, variance: b.variance, projectedSlipDays: b.projectedSlipDays,
                                                   riskScore: ScheduleBrief.round(score), crewAverage: crew.map(ScheduleBrief.round),
                                                   crewNeeded: req?.crew, spareCrew: spare.flatMap { $0 > 0 ? $0 : nil }),
-                                sitePlan: recovery.filter { $0.task.part != .permit && $0.state != .done }, factor: req?.paceFactor))
+                                sitePlan: recovery.filter { $0.task.part != .permit && $0.state != .done }, factor: req?.paceFactor,
+                                float: Dictionary(b.tasks.compactMap { t in t.floatDays.map { (t.code, $0) } }, uniquingKeysWith: min),
+                                installEnd: input.installEnd))
             }
             rows.sort { $0.risk.riskScore > $1.risk.riskScore }
 
-            var loads: [GroupWeek] = []
-            for w in 0..<4 {
-                let start = cal.date(byAdding: .day, value: 7 * w, to: thisWeek)!, end = cal.date(byAdding: .day, value: 6, to: start)!
-                let busy = rows.filter { r in
-                    r.sitePlan.contains { $0.plannedStart <= end && ($0.plannedEnd >= start || $0.state == .overdue) }
+            let weeks = (0..<4).map { cal.date(byAdding: .day, value: 7 * $0, to: thisWeek)! }
+            func last(_ w: Date) -> Date { cal.date(byAdding: .day, value: 6, to: w)! }
+            // each station's open site tasks' dates, as the leveling moves them
+            var dates: [String: Dates] = [:]
+            for r in rows {
+                dates[r.risk.jobID] = Dictionary(r.sitePlan.map { ($0.task, (start: $0.plannedStart, end: $0.plannedEnd)) },
+                                                 uniquingKeysWith: { a, _ in a })
+            }
+            func inWeek(_ r: Row, _ w: Date, _ d: Dates) -> [MasterSchedule.Recovery] {
+                r.sitePlan.filter { t in
+                    guard let x = d[t.task] else { return false }
+                    return x.start <= last(w) && (x.end >= w || t.state == .overdue)
                 }
-                for (group, rs) in Dictionary(grouping: busy, by: \.risk.crewGroup) {
+            }
+            func busy(_ r: Row, _ w: Date) -> Bool { !inWeek(r, w, dates[r.risk.jobID] ?? [:]).isEmpty }
+            func need(_ group: String, _ w: Date) -> Int {
+                rows.filter { $0.risk.crewGroup == group && busy($0, w) }.reduce(0) { $0 + $1.demand }
+            }
+
+            var loads: [GroupWeek] = []
+            for w in weeks {
+                for (group, rs) in Dictionary(grouping: rows.filter { busy($0, w) }, by: \.risk.crewGroup) {
                     let now = rs.compactMap(\.risk.crewAverage).reduce(0, +)
-                    let needed = rs.reduce(0) { $0 + ($1.risk.crewNeeded ?? Int(($1.risk.crewAverage ?? 0).rounded(.up))) }
-                    loads.append(GroupWeek(crewGroup: group, week: day(start, cal), stations: rs.map(\.risk.station),
-                                           crewNow: ScheduleBrief.round(now), crewNeeded: needed, overloaded: Double(needed) > now + 0.5))
+                    let needed = rs.reduce(0) { $0 + $1.demand }
+                    let have = supply?.crew(group, week: w, calendar: cal)
+                    loads.append(GroupWeek(crewGroup: group, week: day(w, cal), stations: rs.map(\.risk.station),
+                                           crewNow: ScheduleBrief.round(now), crewNeeded: needed, overloaded: Double(needed) > now + 0.5,
+                                           crewSupply: have, overSupply: have.map { needed > $0 }))
                 }
             }
             loads.sort { ($0.week, $0.crewGroup) < ($1.week, $1.crewGroup) }
@@ -321,8 +374,64 @@ public extension Assistant {
                     moves.append(Move(crewGroup: group, from: d.station, to: r.station, crew: min(short, d.spareCrew ?? 0)))
                 }
             }
+
+            /// `r`'s tasks in week `w` moved to start the week after, when every one of them is not started yet and
+            /// the move stays inside its float, its install end and the start of a later task that waits for it.
+            func smoothed(_ r: Row, _ w: Date) -> (shifts: [Shift], dates: Dates, days: Int)? {
+                guard var d = dates[r.risk.jobID] else { return nil }
+                let tasks = inWeek(r, w, d)
+                guard !tasks.isEmpty, tasks.allSatisfy({ $0.state == .upcoming }) else { return nil }
+                let next = cal.date(byAdding: .day, value: 7, to: w)!
+                let moving = Set(tasks.map(\.task))
+                var shifts: [Shift] = []
+                for t in tasks {
+                    let x = d[t.task]!
+                    let n = days(x.start, next, cal)
+                    // float is in working days: a move of as many calendar days is always inside it
+                    guard n > 0, let f = r.float[t.task.code], n <= f else { return nil }
+                    let end = cal.date(byAdding: .day, value: n, to: x.end)!
+                    guard end <= r.installEnd else { return nil }
+                    for (q, ps) in predecessors where ps.contains(t.task) && !moving.contains(q) {
+                        guard let y = d[q] else { continue }
+                        guard end <= max(x.end, cal.date(byAdding: .day, value: -1, to: y.start)!) else { return nil }
+                    }
+                    shifts.append(Shift(code: t.task.code, title: t.task.title, plannedStart: day(x.start, cal), plannedEnd: day(x.end, cal),
+                                        newStart: day(next, cal), newEnd: day(end, cal), shiftDays: n,
+                                        why: "รอคนว่างหลังสัปดาห์ \(day(w, cal)) ใช้เวลาลอย \(n) จาก \(f) วัน"))
+                    d[t.task] = (start: next, end: end)
+                }
+                return (shifts: shifts, dates: d, days: shifts.map(\.shiftDays).max() ?? 0)
+            }
+
+            var leveling: [Leveling] = []
+            if let supply {
+                var moved = Set<String>()
+                for w in weeks {
+                    for group in Set(rows.map(\.risk.crewGroup)).sorted() {
+                        guard let have = supply.crew(group, week: w, calendar: cal) else { continue }
+                        while need(group, w) > have {
+                            let options = rows.filter { $0.risk.crewGroup == group && !moved.contains($0.risk.jobID) && $0.demand > 0 && busy($0, w) }
+                                .compactMap { r -> (Row, [Shift], Dates, Int)? in
+                                    guard let s = smoothed(r, w) else { return nil }
+                                    // the weeks it moves into must still have the people
+                                    for later in weeks where later > w && !busy(r, later) && !inWeek(r, later, s.dates).isEmpty {
+                                        if let h = supply.crew(group, week: later, calendar: cal), need(group, later) + r.demand > h { return nil }
+                                    }
+                                    return (r, s.shifts, s.dates, s.days)
+                                }
+                                .sorted { ($0.0.risk.riskScore, $0.3, $0.0.risk.jobID) < ($1.0.risk.riskScore, $1.3, $1.0.risk.jobID) }
+                            guard let (r, shifts, d, _) = options.first else { break }
+                            dates[r.risk.jobID] = d
+                            moved.insert(r.risk.jobID)
+                            leveling.append(Leveling(crewGroup: group, week: day(w, cal), jobID: r.risk.jobID, station: r.risk.station,
+                                                     crew: r.demand, tasks: shifts))
+                        }
+                    }
+                }
+            }
             return Priorities(today: day(today, cal), stations: rows.map(\.risk), loads: loads,
-                              moves: moves.sorted { ($0.crewGroup, $0.to) < ($1.crewGroup, $1.to) }, note: assumption)
+                              moves: moves.sorted { ($0.crewGroup, $0.to) < ($1.crewGroup, $1.to) }, leveling: leveling,
+                              note: assumption + (supply == nil ? "" : " | crewSupply คือจำนวนคนที่ผู้รับเหมาแจ้ง leveling เลื่อนเฉพาะงานที่ยังไม่เริ่ม ภายในเวลาลอย"))
         }
 
         // MARK: Look-ahead
@@ -533,7 +642,7 @@ extension Assistant.Toolbox {
                 "start_now": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
                                       "description": .string("codes of unstarted tasks to start in parallel this week, e.g. [\"2.3\"]")])],
                required: ["job"]),
-            fn("station_priorities", "Risk ranking of all stations (days late × kWp), each crew's load over the next 4 weeks, and stations with crew to spare",
+            fn("station_priorities", "Risk ranking of all stations (days late × kWp), each crew's load over the next 4 weeks against the crew its contractor declared (crewSupply, overSupply), stations with crew to spare, and leveling: unstarted tasks to move inside their float so no week is over supply",
                [:], required: []),
             fn("look_ahead", "One station week by week: tasks, unfinished tasks they wait on, inspections, paper deadlines, rain and stop days of the last 14 days, open problems",
                ["job": job, "weeks": p("integer", "1–6 (default 3)")], required: ["job"]),

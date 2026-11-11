@@ -250,6 +250,24 @@ test('the tab lists the rows the app ticks, with each tick and its source', () =
   assert.equal(cells.J1['2.1.2.1'].editor, 'bee@tcroof.test');
 });
 
+test('a tick at a credit step under 100 shows its percent, not Y, and a Y over it is refused (CHA-84)', () => {
+  assert.equal(core.wbsMark(undefined), '');
+  assert.equal(core.wbsMark({ by: 'a', at: day7 }), 'Y');
+  assert.equal(core.wbsMark({ by: 'a', at: day7, percent: 50 }), '50%');
+  const ticks = { '2.1.1': { by: 'eng@tcroof.test', at: day7, source: 'team', percent: 50 } };
+  const job = { id: 'J1', name: 'สถานี A', codes: ['P3-001'], kind: 'pwa',
+                doc: { scheduleWBS: JSON.stringify(wbsItems), wbsTicks: JSON.stringify(ticks) } };
+  const rows = core.wbsTabRows([{ code: 'P3-001' }], [{ job }]);
+  assert.equal(rows[0][5], '50%');
+  const snap = core.wbsCells(core.wbsSnapshotRows(rows), false);
+  assert.equal(snap.J1['2.1.1'].y, false);
+  const cur = JSON.parse(JSON.stringify(snap));
+  cur.J1['2.1.1'] = { y: true, day: '2026-12-09', editor: 'bee@tcroof.test' };
+  const r = core.wbsSheetChanges(snap, cur, { J1: ticks }, 'a@tcroof.test', (e) => e.endsWith('@tcroof.test'), '2026-12-10');
+  assert.deepEqual(r.writes, []);
+  assert.deepEqual(r.refusals.map((x) => x.code), ['2.1.1']);
+});
+
 test('a Y typed on the tab becomes a sheet tick; only a sheet tick is cleared from the sheet', () => {
   const team = (e) => e.endsWith('@tcroof.test');
   const app = { J1: { '2.1.1': { by: 'eng@tcroof.test', at: day7, source: 'team' },

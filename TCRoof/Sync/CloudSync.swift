@@ -163,6 +163,7 @@ final class CloudSync {
         DesignLibrary.shared.onChange = nil
         DesignLibrary.shared.onRoofChange = nil
         TankStandard.Store.shared.onChange = nil
+        CrewSupply.Store.shared.onChange = nil
         TeamDirectory.shared.clear()
         PhotoSync.shared.stop()
         pending = [:]
@@ -244,6 +245,8 @@ final class CloudSync {
                 guard await waitForStartup("directory", register: { listenDirectory(barrier: $0) }) else { return }
                 try await delaySequenceLoad()
                 guard await waitForStartup("monitoring settings", register: { listenMonitoringSettings(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
+                guard await waitForStartup("crew supply", register: { listenCrewSupply(barrier: $0) }) else { return }
                 try await delaySequenceLoad()
                 guard await waitForStartup("risk register", register: { listenRiskRegister(barrier: $0) }) else { return }
                 try await delaySequenceLoad()

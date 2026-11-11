@@ -235,6 +235,26 @@ extension CloudSync {
         }
     }
 
+    /// The crew each contractor said it has (`config/crewSupply`, CHA-78): every team device takes a newer revision; a
+    /// save by someone who sets up the MP plan (`mp.setup`) is sent, signed with their email (firestore.rules refuse
+    /// anyone else and an older revision). Not for contractors, who can't read it.
+    func listenCrewSupply(barrier: StartupLoadBarrier? = nil) {
+        let session = snapshotSession
+        let ref = db.document("config/crewSupply")
+        CrewSupply.Store.shared.onChange = { [weak self] s in
+            guard self?.snapshotSession == session, MemberRole.shared.permissions.can(.mpSetup) else { return }
+            ref.setData(["json": s.json, "revision": s.revision, "savedBy": s.savedBy ?? "", "updatedAt": FieldValue.serverTimestamp()]) { error in
+                if let error { SyncLog.sync.error("crew supply refused: \(error.localizedDescription)") }
+            }
+        }
+        listenStartupDocument(ref, barrier: barrier) { snapshot, error in
+            // never fail the whole sync over it (rules not deployed yet): the jobs still sync
+            if let error { return SyncLog.sync.error("crew supply listener: \(error.localizedDescription)") }
+            guard let json = snapshot?.data()?["json"] as? String, let s = CrewSupply.decode(json) else { return }
+            CrewSupply.Store.shared.receive(s)
+        }
+    }
+
     /// The Master Plan's project risk register (`config/risks`, CHA-81), written by the team's Google Sheet on its pull;
     /// read only here. Not for contractors, who can't read it.
     func listenRiskRegister(barrier: StartupLoadBarrier? = nil) {

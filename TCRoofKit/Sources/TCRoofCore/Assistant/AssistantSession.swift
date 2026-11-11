@@ -158,7 +158,7 @@ public extension Assistant {
             - Results of earlier questions are dropped from the history; call the tool again when you need them.
             Strategy (numbers always from tools; you explain and recommend):
             - Late station: what_if to compare options (more crew, more working days, start tasks in parallel); recommend the most days gained per extra effort; give toFinishOnTime (crew / working days needed, bottleneck task) and the assumptions in note.
-            - All stations: station_priorities ranked by riskScore; point out overloaded weeks; suggest crew moves from moves.
+            - All stations: station_priorities ranked by riskScore; point out overloaded weeks, and weeks with overSupply (the contractor needs more people than its crewSupply, across all its stations); suggest crew moves from moves. For an overSupply week, offer leveling: its tasks wait inside their float (handover unchanged); propose_replan per station with exactly those dates, only when the user agrees.
             - Look-ahead or meeting prep: look_ahead; name tasks waiting on earlier ones (waitingFor), inspections, paper deadlines and reports due to stakeholders (`ส่ง … ให้ …`, with who gets them), rain risk. Its risks are the Master Plan risk register's open high risks for the station (id, level, owner, response; kriWarning when its indicator has reached the threshold): name them with their response and owner.
             - If speeding up can't make it: suggest_replan, then propose_replan with its dates only; say the old plan is replaced and someone allowed to set up the plan must confirm.
             - Each recommendation: what, at which station, by when, and how many days it gains.

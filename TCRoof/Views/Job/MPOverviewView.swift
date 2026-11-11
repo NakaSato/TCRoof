@@ -17,6 +17,8 @@ struct MPOverviewView: View {
     @State private var readingFiles = false
     @State private var importedCount: Int?
     @State private var assistant = false
+    /// กำลังคนผู้รับเหมา (CHA-78).
+    @State private var crewSupply = false
     struct Batch: Identifiable { let id = UUID(); let items: [MPBulkImportSheet.Item] }
     /// นำเข้ารายชื่อสถานี: the PWA tracking workbook (`StationListImportSheet`). One file picker serves both imports.
     @State private var pickingList = false
@@ -114,6 +116,9 @@ struct MPOverviewView: View {
                         if mayAddStations {
                             Button { addingStations = true } label: { Label("เพิ่มสถานีจากไฟล์แผน", systemImage: "plus.rectangle.on.rectangle") }
                         }
+                        if permissions.can(.mpSetup) {
+                            Button { crewSupply = true } label: { Label("กำลังคนผู้รับเหมา", systemImage: "person.3") }
+                        }
                     } label: { Label("นำเข้า", systemImage: "square.and.arrow.down.on.square") }
                 }
             }
@@ -133,8 +138,12 @@ struct MPOverviewView: View {
             if mayAddStations {
                 TCButton("เพิ่มสถานีจากไฟล์แผน", systemImage: "plus.rectangle.on.rectangle", kind: .secondary) { addingStations = true }
             }
+            if permissions.can(.mpSetup) {
+                TCButton("กำลังคนผู้รับเหมา", systemImage: "person.3", kind: .secondary) { crewSupply = true }
+            }
         }
         .sheet(isPresented: $assistant) { AssistantChatView() }
+        .sheet(isPresented: $crewSupply) { CrewSupplySheet(jobs: jobs) }
         .fileImporter(isPresented: $importing, allowedContentTypes: MPWorkbookFlow.types, allowsMultipleSelection: !pickingList) { result in
             guard case .success(let urls) = result, let first = urls.first else { return }
             if pickingList { openList(first) } else { open(urls) }
@@ -168,6 +177,12 @@ struct MPOverviewView: View {
             // after `-screen mpall` has made its stations PWA jobs
             try? await Task.sleep(for: .seconds(1))
             open(list.split(separator: "|").map { URL(fileURLWithPath: String($0)) })
+        }
+        // `-mpCrewSupply YES` opens กำลังคนผู้รับเหมา
+        .task {
+            guard UserDefaults.standard.bool(forKey: "mpCrewSupply") else { return }
+            try? await Task.sleep(for: .seconds(1))
+            crewSupply = true
         }
         // `-mpStationFiles YES` opens เพิ่มสถานีจากไฟล์แผน
         .task {

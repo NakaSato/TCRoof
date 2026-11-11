@@ -475,6 +475,11 @@ public extension Assistant {
             /// The last 14 days of daily reports.
             public var weather: Weather
             public var openProblems: [String]
+            /// The leading indicators at or over their threshold (CHA-85); nil when none is.
+            public var leadingIndicators: [LeadingIndicator.Brief]?
+            /// The project risk register's open high risks for the station, and any whose KRI has reached its threshold
+            /// (CHA-81); nil when none.
+            public var risks: [ProjectRisk.Brief]?
             public var json: String { Strategy.text(self) }
         }
 
@@ -510,7 +515,8 @@ public extension Assistant {
             let problems = recent.sorted { $0.date < $1.date }.flatMap { $0.problems.filter { !$0.closed && !$0.description.isEmpty }.map(\.description) }
             return LookAhead(jobID: job.id, station: job.station, today: day(today, cal), weeks: weeks,
                              overdue: plan.filter { recovery[$0.task]?.state == .overdue }.map { "\($0.task.code) \($0.task.title)" },
-                             weather: weather, openProblems: problems.reduce(into: []) { if !$0.contains($1) { $0.append($1) } })
+                             weather: weather, openProblems: problems.reduce(into: []) { if !$0.contains($1) { $0.append($1) } },
+                             leadingIndicators: job.trippedIndicators, risks: job.riskBriefs)
         }
 
         // MARK: Re-plan

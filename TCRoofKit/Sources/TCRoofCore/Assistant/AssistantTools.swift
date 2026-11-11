@@ -32,6 +32,11 @@ public extension Assistant {
         /// calendar they are counted in (the station's working days and holidays).
         public var wbs: [MasterSchedule.WorkItem]
         public var calendarSettings: RoutineReport.Settings?
+        /// The station's leading indicators (CHA-85), worked out by the app; `get_schedule` and `look_ahead` give the
+        /// tripped ones.
+        public var indicators: [LeadingIndicator] = []
+        /// The project risk register's open risks that touch the station (CHA-81, `RiskRegister.open(for:)`), high first.
+        public var risks: [ProjectRisk] = []
 
         public init(id: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil, input: MasterSchedule.Input?,
                     actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool,
@@ -47,6 +52,18 @@ public extension Assistant {
             self.wbs = wbs; self.calendarSettings = calendarSettings
         }
 
+        /// The tripped indicators as the tools give them; nil when none is.
+        public var trippedIndicators: [LeadingIndicator.Brief]? {
+            let t = indicators.filter(\.tripped).map(LeadingIndicator.Brief.init)
+            return t.isEmpty ? nil : t
+        }
+
+        /// The open risks `look_ahead` gives: the high ones and any whose KRI has reached its threshold; nil when none.
+        public var riskBriefs: [ProjectRisk.Brief]? {
+            let r = risks.filter { $0.isOpen && ($0.isHigh || $0.warn) }.map(ProjectRisk.Brief.init)
+            return r.isEmpty ? nil : r
+        }
+
         /// The crew group the station draws on, for the all-station loads.
         public var crewGroup: String {
             let c = contractor.trimmingCharacters(in: .whitespaces), t = team.trimmingCharacters(in: .whitespaces)
@@ -57,8 +74,12 @@ public extension Assistant {
         public var replans: Int { actual.replans }
 
         public func brief(today: Date) -> ScheduleBrief? {
-            input.map { ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
-                                      actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings) }
+            input.map {
+                var b = ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
+                                      actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings)
+                b.leadingIndicators = trippedIndicators
+                return b
+            }
         }
     }
 

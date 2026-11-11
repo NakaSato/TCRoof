@@ -13,6 +13,10 @@ extension InstallTrackingPage {
                 statGrid(kpis.map { AnyView(statCell($0.label, $0.value, ink: $0.ink, note: $0.note)) })
                 Rectangle().fill(Theme.hairline).frame(height: 1)
             }
+            if let b = data.buffer {
+                phoneBufferRow(b)
+                Rectangle().fill(Theme.hairline).frame(height: 1)
+            }
             Button { if !open.isEmpty { sheet = .actions } } label: {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -40,6 +44,26 @@ extension InstallTrackingPage {
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
         .cardShadow()
+    }
+
+    /// `บัฟเฟอร์` (CHA-87): % used and the days left, with the small fever chart beside them.
+    private func phoneBufferRow(_ b: ScheduleBuffer.Status) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("บัฟเฟอร์กำหนดการ").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(BufferFeverChart.used(b)).font(.sarabun(22, .bold)).foregroundStyle(BufferFeverChart.ink(b.zone)).fixedSize()
+                    Text(BufferFeverChart.left(b)).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 4)
+            BufferFeverChart(status: b, labelled: false).frame(width: 96, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(BufferFeverChart.summary(b))
+        .accessibilityIdentifier("install.buffer")
     }
 
     /// The tiles that are one of this page's tabs switch to it; the others list their items, as on iPad.

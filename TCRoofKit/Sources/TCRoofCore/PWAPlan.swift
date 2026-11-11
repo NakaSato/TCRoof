@@ -431,12 +431,18 @@ public enum PWAPlan {
         public var planned: Double
         public var behind: Bool
         public var pendingAckDays: Int
+        /// The schedule buffer (CHA-87, `ScheduleBuffer`): % used, its zone and the days left; nil before the install starts.
+        public var bufferUsed: Double?
+        public var bufferZone: ScheduleBuffer.Zone?
+        public var bufferLeft: Int?
 
         public init(id: String, ref: String, name: String, fullName: String, contractor: String = "", team: String = "",
-                    start: Date, due: Date, actual: Double, planned: Double, behind: Bool, pendingAckDays: Int = 0) {
+                    start: Date, due: Date, actual: Double, planned: Double, behind: Bool, pendingAckDays: Int = 0,
+                    bufferUsed: Double? = nil, bufferZone: ScheduleBuffer.Zone? = nil, bufferLeft: Int? = nil) {
             self.id = id; self.ref = ref; self.name = name; self.fullName = fullName; self.contractor = contractor
             self.team = team; self.start = start; self.due = due; self.actual = actual; self.planned = planned; self.behind = behind
             self.pendingAckDays = pendingAckDays
+            self.bufferUsed = bufferUsed; self.bufferZone = bufferZone; self.bufferLeft = bufferLeft
         }
 
         public func matches(search: String) -> Bool { PWAPlan.matches([ref, fullName], search) }
@@ -448,16 +454,19 @@ public enum PWAPlan {
         return stations.compactMap { s -> Bar? in
             guard let input = s.input else { return nil }
             let st = MasterSchedule.status(plan: MasterSchedule.plan(input, calendar: cal), actual: s.actual, through: today, calendar: cal)
+            let buffer = s.handedOver ? nil : ScheduleBuffer.status(input: input, actual: s.actual, today: today, history: false, calendar: cal)
             return Bar(id: s.id, ref: s.ref, name: s.shortName, fullName: s.name, contractor: s.contractor, team: s.team,
                        start: cal.startOfDay(for: input.installStart), due: cal.startOfDay(for: input.installEnd),
-                       actual: st.actual, planned: st.planned, behind: -st.variance >= threshold, pendingAckDays: s.pendingAckDays)
+                       actual: st.actual, planned: st.planned, behind: -st.variance >= threshold, pendingAckDays: s.pendingAckDays,
+                       bufferUsed: buffer?.now.used, bufferZone: buffer?.zone, bufferLeft: buffer?.remainingDays)
         }
         .sorted { $0.due < $1.due }
     }
 
     // MARK: Deadlines
 
-    public enum DeadlineKind: String, Sendable { case handover, document, other }
+    /// `report`: a report due to a stakeholder (CHA-82, `PWAPlan.stakeholderDeadlines`).
+    public enum DeadlineKind: String, Sendable { case handover, document, other, report }
     public enum Tone: String, Sendable { case late, risk, ok }
 
     public struct Deadline: Identifiable, Equatable, Sendable {

@@ -230,6 +230,27 @@ today at the soonest. The chip shows only when the late case is after `คาด
 `get_schedule` gives `handoverLikely`, `handoverLate` and `handoverRangeTasks`. With O = M = P the range is the point
 forecast. The defaults live in code; editing them per station is a later step.
 
+Leading indicators (CHA-85, PMBOK 7th Guide 2.7.1 and 2.8.5): SPI, % planned against % actual and `คาดส่งมอบ` are
+lagging, so each station also gets five measures that move a week or two earlier, each with a threshold (เกณฑ์เตือน),
+computed from what the app keeps (`LeadingIndicators.compute`, `Job.leadingIndicators`), never stored:
+
+| Indicator | Value | Trips at | From | Master Plan KRI |
+|---|---|---|---|---|
+| รอหน่วยงานเกินกำหนด | days the worst ERC-flow wait is past its time limit | ≥ 1 day | `ERCFlow.waits` | R01 R02 R04 R10 |
+| ICL ไม่ผ่าน ยังไม่ตรวจซ้ำ | site ICL items failed, last checked 7 days ago or more | ≥ 1 item | `SiteICL.Sheet.failed` | R09 |
+| คนหน้างานต่ำกว่าแผน | full weeks running, up to last week, whose average crew was under the plan's need | ≥ 2 weeks | daily reports' crew; `Assistant.Strategy.crewNeed` | R03 |
+| ปัญหาค้างใกล้ส่งมอบ | problems open in the daily reports, from 14 days before the install end | ≥ 1 | `RoutineReport.problems` | R09 |
+| คำขอรายสัปดาห์ (R1) ยังไม่ส่ง | days since this week began without its R1 sent, signed or approved | ≥ 1 day | `WeeklyRequest` | R08 |
+
+The crew need is today's 14-day average crew scaled by the pace the slowest open task needs to end on time
+(`Requirement.crew`, the same as `what_if`'s `toFinishOnTime`). An indicator with nothing to measure (no wait, no crew
+need, outside its window) is left out; a handed-over job has none. The thresholds are `LeadingIndicators.Thresholds`'
+defaults in code; the Master Plan's KRIs count stations across the program, so these are the per-station signals that
+feed them, and editing them per program is a later step. A tripped indicator leads the install tracking page's open
+items (high priority, opening the screen where it is fixed), is an MP plan notification at 08:00 on the next Monday,
+once per indicator per week (`LeadingIndicatorNotification`, id `lead-<job>-<kind>-<week>`, heard by the job's people,
+`Permissions.hearsNews`), and is in `get_schedule` and `look_ahead` as `leadingIndicators`.
+
 The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
 It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
 Rows persist through the existing `scheduleWBS` JSON and job sync. Finish-to-start links need `AppCompat.syncVersion`
@@ -265,6 +286,37 @@ Export writes the current revision into the `แผนโครงการ` she
 `REV 02 (CR-014)`, `อนุมัติโดย` → the approver's name, `วันที่` → the approval day, and the `REV …` cell above `ฉบับ` →
 `REV 02, อนุมัติแล้ว`. A plan never re-planned in the app leaves the box as the file has it. Revisions need
 `AppCompat.syncVersion` 10: older builds drop them when they save the plan.
+
+Project risk register (CHA-81, PMBOK 5th §11.2.3.1 and §11.3): the Master Plan's `ทะเบียนความเสี่ยง` (R01–R13: probability,
+impact, score, level `สูง` ≥ 15 / `กลาง` ≥ 8 / `ต่ำ`, KRI and its threshold, response, owner, status `เปิด` / `เฝ้าระวัง` /
+`เกิดแล้ว` / `ปิด`) reaches the app read only: the team's Google Sheet copies it into `config/risks` on each pull, with each
+risk's stations as job ids (`tools/master-plan-sheet`), and the team's devices read it (`RiskRegisterStore`, decoded by
+`RiskRegister`; contractors can't, by the rules and in the app). The install tracking page lists the station's open high
+risks after its tripped leading indicators (`ความเสี่ยงสูง R03 …`, with ⚠ and the KRI once it reaches its threshold, the
+response and the owner), and `look_ahead` gives `risks`: the open high ones and any whose KRI has reached its threshold.
+Changing a risk's status in the app, written back to the sheet, is a later step.
+
+Schedule buffer (CHA-87, PMBOK 7th Guide 2.8.5 and 2.4.2): as the Master Plan's risk sheet keeps `COD + สำรองทั้งหมด`, each
+station's buffer sits after its install end and protects `installEnd + buffer` (`ScheduleBuffer`). Its size is the
+contingency, the authority tasks' spread at baseline (`HandoverRange` late − likely with nothing done, CHA-80), plus the
+management reserve, 10 % of the install span (`MGMT_PCT`); at least 1 day. The forecast's days past the install end
+(`คาดส่งมอบ`) use it up: `% used` = days late ÷ buffer. Against `% done` (the plan's actual %) it is green while the buffer
+is used no faster than the work, amber when faster, red once a third ahead (`redMargin` 33) or all used. The iPad's KPI
+strip has a `บัฟเฟอร์` cell (`ใช้ 40%`, `เหลือ 6 จาก 19 วัน`) whose popover is the fever chart (`BufferFeverChart`: the
+zones, the weekly points and today's dot) with the buffer's make-up and the protected date; the iPhone overview shows the
+same as a row with a small chart; the PWA `แผนงาน` page's `รายสถานี` list has a column (`40%` in the zone's colour on
+iPad, a dot on iPhone; `PWAPlan.Bar.bufferUsed` / `bufferZone` / `bufferLeft`). A handed-over station has none.
+
+Stakeholders and communication schedule (CHA-82, PMBOK 5th §13.1 identify stakeholders and §10.1 plan communications):
+the Master Plan gets a `ผู้มีส่วนได้ส่วนเสีย` tab (the sheet's menu `สร้างชีตผู้มีส่วนได้ส่วนเสีย` makes it): each outside
+party (กปภ. เขต and สาขา, กฟภ., พพ. / กกพ.) with organisation, role, interest and influence, the report it gets (R3 weekly,
+R4 monthly, hand-over papers), the channel, `ความถี่` (`รายสัปดาห์` + a weekday, `รายเดือน` + a day or `สิ้นเดือน`,
+`ก่อนส่งมอบ` + days before each station's handover, `ตามเหตุการณ์`), who sends it on our side and its `ขอบเขต`. Like the
+risk register it reaches the app read only through `config/stakeholders` (team only) and is edited in the sheet. The app
+works out each report's due days (`StakeholderList.dues`) and shows the next two weeks' in the plan page's `กำหนดส่ง`
+(filter `ส่งรายงาน`; a hand-over row opens its station), reminds at 08:00 the day before (a routine-report notification:
+the programme's reports to the whole team, a station's hand-over papers to its people) and gives them to `look_ahead`
+among the deadlines. Whether a report was sent isn't recorded yet: a due day only reminds, it never turns late.
 
 ## Done criteria and rules of credit (CHA-84)
 

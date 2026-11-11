@@ -138,10 +138,12 @@ struct PWAPlanPhoneView: View {
         // built once per change of the stations or their records, not on every pass (scrolling the day list selects
         // days, which re-runs the body); the rows of the query, the switch and the day aren't observed: they are the key
         let stations = stations, library = library, today = Self.today, threshold = survey.settings.behindThreshold
+        let people = StakeholderStore.shared
         let key = [AnyHashable(stations.map(\.persistentModelID)), AnyHashable(today), AnyHashable(threshold),
-                   AnyHashable(StationDocsStore.libraryStamp())]
+                   AnyHashable(StationDocsStore.libraryStamp()), AnyHashable(people.revision)]
         return boardCache.value(key: key) {
-            PWAPlanBoard(stations: stations.map(\.planStation), library: library, today: today, threshold: threshold)
+            PWAPlanBoard(stations: stations.map(\.planStation), library: library, today: today, threshold: threshold,
+                         stakeholders: people.dues(jobs: stations, from: today))
         }
     }
 

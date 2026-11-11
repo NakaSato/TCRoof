@@ -247,6 +247,10 @@ final class CloudSync {
                 guard await waitForStartup("monitoring settings", register: { listenMonitoringSettings(barrier: $0) }) else { return }
                 try await delaySequenceLoad()
                 guard await waitForStartup("crew supply", register: { listenCrewSupply(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
+                guard await waitForStartup("risk register", register: { listenRiskRegister(barrier: $0) }) else { return }
+                try await delaySequenceLoad()
+                guard await waitForStartup("stakeholders", register: { listenStakeholders(barrier: $0) }) else { return }
             }
             guard await waitForStartup("configuration", register: { listenConfig(barrier: $0) }) else { return }
             observers.append(NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { [weak self] notification in

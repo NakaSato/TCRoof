@@ -114,7 +114,7 @@ extension PWAPlanPhoneView {
                 }
             }
             .frame(height: 14)
-            .padding(.leading, ganttNameWidth + 6).padding(.trailing, 46)
+            .padding(.leading, ganttNameWidth + 6).padding(.trailing, 46 + bufferWidth + 6)
             .accessibilityHidden(true)
             if bars.isEmpty {
                 Text("ไม่พบสถานีที่ค้นหา").font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
@@ -137,6 +137,28 @@ extension PWAPlanPhoneView {
     }
 
     private var ganttNameWidth: CGFloat { pad ? 170 : 90 }
+    /// The buffer column (CHA-87): `40%` in its zone's colour on iPad, a dot on iPhone.
+    private var bufferWidth: CGFloat { pad ? 36 : 10 }
+
+    @ViewBuilder
+    private func bufferCell(_ bar: PWAPlan.Bar) -> some View {
+        if let zone = bar.bufferZone, let used = bar.bufferUsed {
+            if pad {
+                Text("\(Int(used.rounded()))%").font(.sarabun(11, .bold)).monospacedDigit().foregroundStyle(BufferFeverChart.ink(zone))
+                    .minimumScaleFactor(0.8).lineLimit(1)
+            } else {
+                Circle().fill(BufferFeverChart.ink(zone)).frame(width: 8, height: 8)
+            }
+        } else {
+            Color.clear
+        }
+    }
+
+    private static func bufferLabel(_ bar: PWAPlan.Bar) -> String {
+        guard let zone = bar.bufferZone, let used = bar.bufferUsed else { return "" }
+        let left = bar.bufferLeft.map { $0 >= 0 ? " เหลือ \($0) วัน" : " เกิน \(-$0) วัน" } ?? ""
+        return " | บัฟเฟอร์ใช้ \(Int(used.rounded()))%" + left + " " + BufferFeverChart.title(zone)
+    }
 
     /// The S-curve's height: 268 pt on iPad (FIX-01, docs/ui/pwa-plan-ipad), 120 on iPhone. The chart draws from its
     /// frame, so the plot grows and the labels keep their size.
@@ -159,6 +181,7 @@ extension PWAPlanPhoneView {
                 PWAPlanGanttBar(bar: bar, axis: axis).frame(height: 22)
                 Text(due).font(.sarabun(11, .bold)).monospacedDigit().foregroundStyle(bar.behind ? Theme.dangerText : Theme.navy)
                     .frame(width: 40, alignment: .trailing)
+                bufferCell(bar).frame(width: bufferWidth, alignment: .trailing)
             }
             // the board's rows are 30 pt; they are 44 here for the touch target
             .frame(minHeight: 44)
@@ -167,7 +190,7 @@ extension PWAPlanPhoneView {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(bar.fullName) | จริง \(PWAPlanFormat.percent(bar.actual)) แผน \(PWAPlanFormat.percent(bar.planned)) | ส่งมอบ \(due)"
-            + (pending.isEmpty ? "" : " | \(pending)"))
+            + (pending.isEmpty ? "" : " | \(pending)") + Self.bufferLabel(bar))
         .accessibilityAddTraits(.isButton)
     }
 }

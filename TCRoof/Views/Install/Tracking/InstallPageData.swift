@@ -24,6 +24,9 @@ struct InstallPageData {
     /// The handover's likely and late days from the open authority tasks' three-point durations (CHA-80); nil without
     /// a plan or once those tasks are done.
     var handoverRange: HandoverRange.Result?
+    /// The schedule buffer after the install end and how much of it is used (CHA-87); nil without a plan, before the
+    /// install starts or once handed over.
+    var buffer: ScheduleBuffer.Status?
     /// The leading indicators (CHA-85): the tripped ones also lead the open items.
     var indicators: [LeadingIndicator] = []
     var actions: [Action]
@@ -80,6 +83,9 @@ struct InstallPageData {
             tracking = InstallTracking(actual: now.actual, planned: now.planned, actualWeekAgo: weekAgo.actual,
                                        start: job.installStart, due: job.installEnd, today: today,
                                        earned: InstallTracking.earnedDate(plan: plan, actual: actual, done: now.actual, start: job.installStart))
+            if job.status != .completed {
+                buffer = ScheduleBuffer.status(input: input, actual: actual, today: today)
+            }
             if let t = tracking {
                 handoverRange = HandoverRange.forecast(plan: plan, actual: actual, base: t.forecastEnd(), installEnd: input.installEnd, today: today)
             }
@@ -121,6 +127,14 @@ struct InstallPageData {
             items.append(.init(id: "lead-" + i.id, priority: .high, title: i.title,
                                detail: [i.detail, i.thresholdText].filter { !$0.isEmpty }.joined(separator: " | "),
                                target: Self.target(i.kind)))
+        }
+        // the Master Plan risk register's open high risks for this station (CHA-81), after the tripped indicators
+        for r in RiskRegisterStore.shared.open(for: job.overviewID, highOnly: true) {
+            let kri = r.warn && !r.kri.isEmpty ? "⚠ " + r.kri : nil
+            items.append(.init(id: "risk-" + r.id, priority: .high, title: "ความเสี่ยงสูง " + r.label,
+                               detail: [kri, r.response.isEmpty ? nil : r.response, r.owner.isEmpty ? nil : "ผู้รับผิดชอบ: " + r.owner]
+                                .compactMap { $0 }.joined(separator: " | "),
+                               target: .plan))
         }
         if let input = job.scheduleInput {
             let permits = RoutineReport.permits(plan: MasterSchedule.plan(input), actual: job.scheduleActual, at: today)
@@ -240,6 +254,12 @@ extension InstallPageData {
         data.curveDays = planned.indices.map { CurveDay(date: d($0), planned: planned[$0], actual: $0 < actual.count ? actual[$0] : nil) }
         data.waitLabel = "รอการไฟฟ้านัดตรวจ"
         // the utility's inspection may run long: likely 2 days and up to 9 days past the due date
+        // the buffer: 13 days (5 for the authorities, 8 management), used faster than the work since the DC stage slipped
+        let used: [Double] = late ? [0, 0, 8, 15, 31, 46, 62] : [0, 0, 0, 8, 15, 23, 31]
+        let doneAt: [Double] = [5, 12, 18, 25, 33, 41, late ? 41 : 50]
+        let history = used.indices.map { ScheduleBuffer.Point(date: d($0), done: doneAt[$0], used: used[$0]) }
+        data.buffer = ScheduleBuffer.Status(size: .init(contingency: 5, management: 8), protectedDate: due.adding(days: 13),
+                                            usedDays: Int((used.last! * 13 / 100).rounded()), now: history.last!, history: history)
         data.handoverRange = HandoverRange.Result(likely: due.adding(days: late ? 4 : 2), late: due.adding(days: late ? 12 : 9),
                                                   tasks: [.gridConnection])
         data.plan = InstallPlan.demo(gantt: InstallGantt(rows: rows, today: day), nonWorking: data.nonWorking, tracking: data.tracking, day: day)

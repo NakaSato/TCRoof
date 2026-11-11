@@ -159,7 +159,7 @@ public extension Assistant {
             Strategy (numbers always from tools; you explain and recommend):
             - Late station: what_if to compare options (more crew, more working days, start tasks in parallel); recommend the most days gained per extra effort; give toFinishOnTime (crew / working days needed, bottleneck task) and the assumptions in note.
             - All stations: station_priorities ranked by riskScore; point out overloaded weeks; suggest crew moves from moves.
-            - Look-ahead or meeting prep: look_ahead; name tasks waiting on earlier ones (waitingFor), inspections, paper deadlines, rain risk.
+            - Look-ahead or meeting prep: look_ahead; name tasks waiting on earlier ones (waitingFor), inspections, paper deadlines and reports due to stakeholders (`ส่ง … ให้ …`, with who gets them), rain risk. Its risks are the Master Plan risk register's open high risks for the station (id, level, owner, response; kriWarning when its indicator has reached the threshold): name them with their response and owner.
             - If speeding up can't make it: suggest_replan, then propose_replan with its dates only; say the old plan is replaced and someone allowed to set up the plan must confirm.
             - Each recommendation: what, at which station, by when, and how many days it gains.
             """

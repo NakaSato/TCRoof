@@ -174,6 +174,8 @@ extension InstallTrackingPage {
         var opens: ProgressView?
         /// `SPI`: tapped, it explains itself with the station's numbers.
         var explainsSPI = false
+        /// `บัฟเฟอร์`: tapped, the buffer-consumption chart (CHA-87).
+        var showsBuffer = false
     }
 
     /// `ความคืบหน้า | กำหนดการ | คาดส่งมอบ | SPI | ต้องดำเนินการ`. Without an MP plan only the open items are left.
@@ -201,6 +203,10 @@ extension InstallTrackingPage {
                                 explainsSPI: true))
             }
         }
+        if let b = data.buffer {
+            out.append(Cell(label: "บัฟเฟอร์", value: BufferFeverChart.used(b), ink: BufferFeverChart.ink(b.zone),
+                            note: BufferFeverChart.left(b), weight: 0.9, showsBuffer: true))
+        }
         let open = data.actions
         out.append(Cell(label: "ต้องดำเนินการ", value: open.isEmpty ? "ไม่มี" : "\(open.count) เรื่อง", ink: open.isEmpty ? Theme.successInk : Theme.pending,
                         note: open.prefix(3).map(\.title).joined(separator: " | "), weight: 1.4, opensActions: !open.isEmpty))
@@ -213,7 +219,7 @@ extension InstallTrackingPage {
         return GeometryReader { g in
             HStack(spacing: 0) {
                 ForEach(Array(cells.enumerated()), id: \.element.id) { i, c in
-                    kpiCell(c, tracking: data.tracking)
+                    kpiCell(c, tracking: data.tracking, buffer: data.buffer)
                         .frame(width: g.size.width * c.weight / total, height: g.size.height)
                         .overlay(alignment: .leading) { if i > 0 { Rectangle().fill(Theme.hairline).frame(width: 1) } }
                 }
@@ -229,9 +235,11 @@ extension InstallTrackingPage {
     /// A cell of the strip: a button over the whole cell when a tap opens something (the progress card's view, the open
     /// items, the SPI explanation), else a plain view (`ต้องดำเนินการ` reading `ไม่มี`).
     @ViewBuilder
-    private func kpiCell(_ c: Cell, tracking: InstallTracking?) -> some View {
+    private func kpiCell(_ c: Cell, tracking: InstallTracking?, buffer: ScheduleBuffer.Status?) -> some View {
         if c.explainsSPI, let t = tracking, let spi = t.spi {
             KPISPICell(cell: c, tracking: t, spi: spi)
+        } else if c.showsBuffer, let b = buffer {
+            KPIBufferCell(cell: c, status: b)
         } else if c.opens != nil || c.opensActions {
             let marked = c.opens != nil && c.opens == view
             Button {
@@ -402,6 +410,23 @@ private struct KPISPICell: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(current ? "ตอนนี้" : "")
+    }
+}
+
+/// `บัฟเฟอร์`: a tap shows the buffer-consumption chart (CHA-87).
+private struct KPIBufferCell: View {
+    let cell: InstallTrackingPage.Cell
+    let status: ScheduleBuffer.Status
+    @State private var shown = false
+
+    var body: some View {
+        Button { shown = true } label: { KPICellContent(cell: cell, marked: false) }
+            .buttonStyle(KPICellStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(BufferFeverChart.summary(status)) | แตะเพื่อดูกราฟ")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("kpi.buffer")
+            .popover(isPresented: $shown, arrowEdge: .bottom) { BufferExplanation(status: status).presentationCompactAdaptation(.popover) }
     }
 }
 

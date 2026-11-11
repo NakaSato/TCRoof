@@ -488,6 +488,22 @@ test('config/app is the team\'s; config/public every member\'s (CHA-59)', async 
   await assertFails(setDoc(doc(db(BOSS), 'config', 'app'), { centerDriveFolder: 'x' }));
 });
 
+test('config/risks is the team\'s, written only by the Master Plan sheet (CHA-81)', async () => {
+  await assertFails(getDoc(doc(db(CON), 'config', 'risks')));
+  await assertSucceeds(getDoc(doc(db(TEAM), 'config', 'risks')));
+  await assertSucceeds(getDoc(doc(db(BOSS), 'config', 'risks')));
+  await assertFails(setDoc(doc(db(BOSS), 'config', 'risks'), { json: '{"risks":[]}' }));
+  await assertFails(setDoc(doc(db(TEAM), 'config', 'risks'), { json: '{"risks":[]}' }));
+});
+
+test('config/stakeholders is the team\'s, written only by the Master Plan sheet (CHA-82)', async () => {
+  await assertFails(getDoc(doc(db(CON), 'config', 'stakeholders')));
+  await assertSucceeds(getDoc(doc(db(TEAM), 'config', 'stakeholders')));
+  await assertSucceeds(getDoc(doc(db(BOSS), 'config', 'stakeholders')));
+  await assertFails(setDoc(doc(db(BOSS), 'config', 'stakeholders'), { json: '{"stakeholders":[]}' }));
+  await assertFails(setDoc(doc(db(TEAM), 'config', 'stakeholders'), { json: '{"stakeholders":[]}' }));
+});
+
 test('a suspended member reads nothing but their own membership', async () => {
   await assertSucceeds(updateDoc(doc(db(DEV), 'members', TEAM), suspend(DEV)));
   await assertFails(getDocs(collection(db(TEAM), 'jobs')));

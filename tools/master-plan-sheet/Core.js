@@ -345,6 +345,110 @@ function phaseSummary(stations, previousCOD, risks, changes) {
   };
 }
 
+// MARK: the risk register (CHA-81): `ทะเบียนความเสี่ยง` copied into `config/risks` for the app, read only
+
+/**
+ * The station codes a risk's `ขอบเขต` touches, from the Master Plan rows (`id`, `contractor`, `pk2_required`); null
+ * for every station. `ผรม. S` is contractor S's stations, `สถานี > 200 kVA` the ones that need พค.2; `ทั้งเฟส`,
+ * `ทุก ผรม.`, `รายเขต`, `รายสถานี`, `รายวิศวกร` and anything else touch every station.
+ */
+function riskStations(scope, stations) {
+  var text = String(scope === null || scope === undefined ? '' : scope).trim();
+  var ids = function (keep) {
+    return (stations || []).filter(function (s) { return String(s.id || '').trim() && keep(s); })
+      .map(function (s) { return String(s.id).trim(); });
+  };
+  if (/200\s*kVA/i.test(text)) return ids(function (s) { return isY(s.pk2_required); });
+  var m = /^ผรม\.?\s*(\S+)$/.exec(text);
+  if (m && m[1] !== 'ทุก') {
+    var who = m[1].toUpperCase();
+    return ids(function (s) { return String(s.contractor || '').trim().toUpperCase() === who; });
+  }
+  return null;
+}
+
+/**
+ * `config/risks`' JSON: every row of `ทะเบียนความเสี่ยง` with an id, in the sheet's order, its stations as app job
+ * ids (`jobByCode`: station code → Firestore job id; a station not paired with a job is left out). The app's
+ * `RiskRegister.decode` reads it. `bangkokDay` formats a date cell (the sheet passes Utilities.formatDate).
+ */
+function riskRegister(rows, stations, jobByCode, bangkokDay) {
+  var num = function (v) { return typeof v === 'number' && isFinite(v) ? v : null; };
+  var str = function (v) { return v === null || v === undefined ? '' : String(v).trim(); };
+  var risks = (rows || []).filter(function (r) { return str(r.id); }).map(function (r) {
+    var codes = riskStations(r.scope, stations);
+    var jobs = codes === null ? null : codes.map(function (c) { return jobByCode[c]; }).filter(Boolean)
+      .filter(function (j, i, a) { return a.indexOf(j) === i; });
+    var out = {
+      id: str(r.id), title: str(r.risk), category: str(r.cat), cause: str(r.cause), scope: str(r.scope), wbs: str(r.wbs),
+      kri: str(r.kri), kriValue: num(r.kri_v), kriThreshold: num(r.kri_t), warn: str(r.warn) === '⚠',
+      probability: num(r.p), impact: num(r.i), score: num(r.score), level: str(r.level),
+      impactDays: num(r.days), reserveDays: num(r.res), strategy: str(r.strat), response: str(r.resp), owner: str(r.owner),
+      status: str(r.status) || 'เปิด',
+      reviewed: r.rev instanceof Date && bangkokDay ? bangkokDay(r.rev) : (str(r.rev) || null)
+    };
+    if (jobs !== null) out.jobs = jobs;
+    return out;
+  });
+  return JSON.stringify({ risks: risks });
+}
+
+// MARK: the stakeholder list (CHA-82): `ผู้มีส่วนได้ส่วนเสีย` copied into `config/stakeholders` for the app, read only
+
+/** The tab's columns, in order: key, header. `STAKEHOLDER_TAB` writes them and `_keys` names them. */
+var STAKEHOLDER_COLUMNS = [
+  ['id', 'รหัส'], ['name', 'ชื่อ / ตำแหน่ง'], ['org', 'หน่วยงาน'], ['role', 'บทบาทในโครงการ'], ['interest', 'ความสนใจ'],
+  ['influence', 'อิทธิพล'], ['reports', 'รายงานที่ได้รับ'], ['channel', 'ช่องทาง'], ['freq', 'ความถี่'], ['due', 'กำหนดส่ง'],
+  ['owner', 'ผู้ส่ง (ฝั่งเรา)'], ['scope', 'ขอบเขต'], ['note', 'หมายเหตุ']
+];
+
+/** The tab the menu's `สร้างชีตผู้มีส่วนได้ส่วนเสีย` makes: its name, the first data row and two example rows. */
+var STAKEHOLDER_TAB = {
+  name: 'ผู้มีส่วนได้ส่วนเสีย',
+  title: 'ผู้มีส่วนได้ส่วนเสียและแผนการสื่อสาร – โครงการประปา เฟส 3–4',
+  note: 'ความถี่: รายสัปดาห์ (กำหนดส่ง = วัน เช่น ศุกร์) | รายเดือน (กำหนดส่ง = วันที่ เช่น 25 หรือ สิ้นเดือน) | ' +
+        'ก่อนส่งมอบ (กำหนดส่ง = จำนวนวันก่อนส่งมอบแต่ละสถานี) | ตามเหตุการณ์ (ไม่เตือน). ' +
+        'ขอบเขต: ทั้งเฟส, ผรม. X หรือ สถานี > 200 kVA เหมือนทะเบียนความเสี่ยง. แอปเตือนทีม 08:00 วันก่อนกำหนด',
+  first: 4,
+  examples: [
+    ['S01', 'ผอ.กองแผนงาน', 'กปภ. เขต', 'เจ้าของโครงการ', 'สูง', 'สูง', 'R3 รายงานประจำสัปดาห์', 'อีเมล', 'รายสัปดาห์', 'ศุกร์', 'PM', 'ทั้งเฟส', ''],
+    ['S02', 'หัวหน้าสถานี', 'กปภ. สาขา', 'ผู้ใช้งานระบบ', 'สูง', 'กลาง', 'เอกสารส่งมอบ', 'หนังสือ', 'ก่อนส่งมอบ', '3', 'วิศวกรโครงการ', 'ทั้งเฟส', '']
+  ]
+};
+
+/**
+ * `config/stakeholders`' JSON: every row of `ผู้มีส่วนได้ส่วนเสีย` with an id, in the sheet's order, its stations as app
+ * job ids from its `ขอบเขต` (`riskStations`, as the risk register; a station not paired with a job is left out). The app's
+ * `StakeholderList.decode` reads it and works out the due days from `frequency` and `due`.
+ */
+function stakeholderList(rows, stations, jobByCode) {
+  var str = function (v) {
+    if (v === null || v === undefined) return '';
+    // a day typed as a number (25) comes back as one
+    return typeof v === 'number' ? String(v) : String(v).trim();
+  };
+  var list = (rows || []).filter(function (r) { return str(r.id); }).map(function (r) {
+    var codes = riskStations(r.scope, stations);
+    var jobs = codes === null ? null : codes.map(function (c) { return jobByCode[c]; }).filter(Boolean)
+      .filter(function (j, i, a) { return a.indexOf(j) === i; });
+    var out = {
+      id: str(r.id), name: str(r.name), organisation: str(r.org), role: str(r.role), interest: str(r.interest),
+      influence: str(r.influence), reports: str(r.reports), channel: str(r.channel), frequency: str(r.freq),
+      due: str(r.due), owner: str(r.owner), note: str(r.note), scope: str(r.scope)
+    };
+    if (jobs !== null) out.jobs = jobs;
+    return out;
+  });
+  return JSON.stringify({ stakeholders: list });
+}
+
+/** The `_keys` rows for the tab: sheet, key, column letter, first row, last row (blank: to the sheet's last row). */
+function stakeholderKeyRows() {
+  return STAKEHOLDER_COLUMNS.map(function (c, i) {
+    return [STAKEHOLDER_TAB.name, c[0], String.fromCharCode(65 + i), STAKEHOLDER_TAB.first, ''];
+  });
+}
+
 // MARK: the WBS tab (CHA-71): the plans' sub-tasks, and a `Y` typed there written to the app as a `sheet` tick
 
 /** Bangkok is UTC+7 all year. */
@@ -524,5 +628,8 @@ if (typeof module !== 'undefined') {
                      phaseSummary: phaseSummary, bangkokDayToSwift: bangkokDayToSwift, swiftToBangkokDay: swiftToBangkokDay,
                      sheetDay: sheetDay, isY: isY, wbsTickable: wbsTickable, wbsSourceLabel: wbsSourceLabel,
                      WBS_TAB_HEADER: WBS_TAB_HEADER, wbsTabRows: wbsTabRows, wbsCells: wbsCells, wbsSnapshotRows: wbsSnapshotRows,
-                     wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges };
+                     wbsTicksJSON: wbsTicksJSON, wbsSheetChanges: wbsSheetChanges,
+                     riskStations: riskStations, riskRegister: riskRegister,
+                     STAKEHOLDER_COLUMNS: STAKEHOLDER_COLUMNS, STAKEHOLDER_TAB: STAKEHOLDER_TAB,
+                     stakeholderList: stakeholderList, stakeholderKeyRows: stakeholderKeyRows };
 }

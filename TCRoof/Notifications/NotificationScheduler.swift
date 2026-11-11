@@ -211,7 +211,9 @@ private struct NotificationScheduler: ViewModifier {
             let erc = job.stationDocs.erc.map {
                 ERCNotification.plans(jobKey: key, station: job.stationName, record: $0, context: job.ercContext, now: now)
             } ?? []
-            return MPJob(key: key, station: job.stationName, input: job.scheduleInput, actual: job.scheduleActual, erc: erc)
+            let lead = LeadingIndicatorNotification.plans(jobKey: key, station: job.stationName,
+                                                          indicators: job.leadingIndicators(today: now), now: now)
+            return MPJob(key: key, station: job.stationName, input: job.scheduleInput, actual: job.scheduleActual, erc: erc + lead)
         }
         return MPState(hour: hourKey, jobs: snapshots, installs: installSnapshots)
     }

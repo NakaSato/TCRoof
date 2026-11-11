@@ -19,12 +19,14 @@ extension Job {
         let deadlines = library.map { lib in
             PWAPlan.deadlines([planStation], library: lib, today: .now).map { Assistant.Deadline(date: $0.date, title: $0.title) }
         } ?? []
-        return Assistant.Job(id: overviewID, station: assistantStation, mpNumber: mpNumber, kWp: capacityKW > 0 ? capacityKW : nil,
+        var job = Assistant.Job(id: overviewID, station: assistantStation, mpNumber: mpNumber, kWp: capacityKW > 0 ? capacityKW : nil,
                              input: scheduleInput, actual: scheduleActual, dailies: dailyReports,
                              canEdit: permissions.can(.mpProgress, on: access), canReplan: permissions.can(.mpSetup, on: access),
                              contractor: settings.subcontractor.trimmingCharacters(in: .whitespaces), team: team.rawValue,
                              workingWeekdays: settings.workingWeekdays, inspections: settings.inspections, deadlines: deadlines,
                              wbs: scheduleWBS, calendarSettings: settings)
+        job.indicators = leadingIndicators()
+        return job
     }
 }
 

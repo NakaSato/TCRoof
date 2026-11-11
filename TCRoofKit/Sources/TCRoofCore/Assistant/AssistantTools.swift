@@ -32,6 +32,9 @@ public extension Assistant {
         /// calendar they are counted in (the station's working days and holidays).
         public var wbs: [MasterSchedule.WorkItem]
         public var calendarSettings: RoutineReport.Settings?
+        /// The station's leading indicators (CHA-85), worked out by the app; `get_schedule` and `look_ahead` give the
+        /// tripped ones.
+        public var indicators: [LeadingIndicator] = []
 
         public init(id: String, station: String, mpNumber: Int? = nil, kWp: Double? = nil, input: MasterSchedule.Input?,
                     actual: MasterSchedule.Actual = .init(), dailies: [RoutineReport.Daily] = [], canEdit: Bool,
@@ -47,6 +50,12 @@ public extension Assistant {
             self.wbs = wbs; self.calendarSettings = calendarSettings
         }
 
+        /// The tripped indicators as the tools give them; nil when none is.
+        public var trippedIndicators: [LeadingIndicator.Brief]? {
+            let t = indicators.filter(\.tripped).map(LeadingIndicator.Brief.init)
+            return t.isEmpty ? nil : t
+        }
+
         /// The crew group the station draws on, for the all-station loads.
         public var crewGroup: String {
             let c = contractor.trimmingCharacters(in: .whitespaces), t = team.trimmingCharacters(in: .whitespaces)
@@ -57,8 +66,12 @@ public extension Assistant {
         public var replans: Int { actual.replans }
 
         public func brief(today: Date) -> ScheduleBrief? {
-            input.map { ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
-                                      actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings) }
+            input.map {
+                var b = ScheduleBrief(jobID: id, station: station, mpNumber: mpNumber, kWp: kWp, input: $0,
+                                      actual: actual, dailies: dailies, today: today, wbs: wbs, settings: calendarSettings)
+                b.leadingIndicators = trippedIndicators
+                return b
+            }
         }
     }
 

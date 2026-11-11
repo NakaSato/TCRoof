@@ -24,6 +24,8 @@ struct InstallPageData {
     /// The handover's likely and late days from the open authority tasks' three-point durations (CHA-80); nil without
     /// a plan or once those tasks are done.
     var handoverRange: HandoverRange.Result?
+    /// The leading indicators (CHA-85): the tripped ones also lead the open items.
+    var indicators: [LeadingIndicator] = []
     var actions: [Action]
     /// Today is a working day and its daily report isn't signed: the dot on `รายงานประจำวัน`.
     var dailyUnsent: Bool
@@ -114,6 +116,12 @@ struct InstallPageData {
         dailyUnsent = working && todayState != .signed
 
         var items: [Action] = []
+        indicators = job.leadingIndicators(today: today)
+        for i in indicators where i.tripped {
+            items.append(.init(id: "lead-" + i.id, priority: .high, title: i.title,
+                               detail: [i.detail, i.thresholdText].filter { !$0.isEmpty }.joined(separator: " | "),
+                               target: Self.target(i.kind)))
+        }
         if let input = job.scheduleInput {
             let permits = RoutineReport.permits(plan: MasterSchedule.plan(input), actual: job.scheduleActual, at: today)
             let late = (InstallOverview.permits(permits) ?? []).filter { $0.state == .overdue }
@@ -163,6 +171,18 @@ struct InstallPageData {
             if !wbs.isEmpty { p.useWBS(wbs, ticked: Set(job.wbsTicks.keys), settings: settings) }
             p.useBaseline(InstallPlan.baselineDates(input: input, wbs: wbs))
             plan = p
+        }
+    }
+}
+
+extension InstallPageData {
+    /// The screen where an indicator's cause is fixed.
+    static func target(_ kind: LeadingIndicator.Kind) -> Target {
+        switch kind {
+        case .authorityOverdue, .iclFailed: .docs
+        case .crewShort: .plan
+        case .openProblems: .daily
+        case .requestLate: .request
         }
     }
 }

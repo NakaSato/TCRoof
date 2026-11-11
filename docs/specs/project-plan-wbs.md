@@ -230,6 +230,27 @@ today at the soonest. The chip shows only when the late case is after `คาด
 `get_schedule` gives `handoverLikely`, `handoverLate` and `handoverRangeTasks`. With O = M = P the range is the point
 forecast. The defaults live in code; editing them per station is a later step.
 
+Leading indicators (CHA-85, PMBOK 7th Guide 2.7.1 and 2.8.5): SPI, % planned against % actual and `คาดส่งมอบ` are
+lagging, so each station also gets five measures that move a week or two earlier, each with a threshold (เกณฑ์เตือน),
+computed from what the app keeps (`LeadingIndicators.compute`, `Job.leadingIndicators`), never stored:
+
+| Indicator | Value | Trips at | From | Master Plan KRI |
+|---|---|---|---|---|
+| รอหน่วยงานเกินกำหนด | days the worst ERC-flow wait is past its time limit | ≥ 1 day | `ERCFlow.waits` | R01 R02 R04 R10 |
+| ICL ไม่ผ่าน ยังไม่ตรวจซ้ำ | site ICL items failed, last checked 7 days ago or more | ≥ 1 item | `SiteICL.Sheet.failed` | R09 |
+| คนหน้างานต่ำกว่าแผน | full weeks running, up to last week, whose average crew was under the plan's need | ≥ 2 weeks | daily reports' crew; `Assistant.Strategy.crewNeed` | R03 |
+| ปัญหาค้างใกล้ส่งมอบ | problems open in the daily reports, from 14 days before the install end | ≥ 1 | `RoutineReport.problems` | R09 |
+| คำขอรายสัปดาห์ (R1) ยังไม่ส่ง | days since this week began without its R1 sent, signed or approved | ≥ 1 day | `WeeklyRequest` | R08 |
+
+The crew need is today's 14-day average crew scaled by the pace the slowest open task needs to end on time
+(`Requirement.crew`, the same as `what_if`'s `toFinishOnTime`). An indicator with nothing to measure (no wait, no crew
+need, outside its window) is left out; a handed-over job has none. The thresholds are `LeadingIndicators.Thresholds`'
+defaults in code; the Master Plan's KRIs count stations across the program, so these are the per-station signals that
+feed them, and editing them per program is a later step. A tripped indicator leads the install tracking page's open
+items (high priority, opening the screen where it is fixed), is an MP plan notification at 08:00 on the next Monday,
+once per indicator per week (`LeadingIndicatorNotification`, id `lead-<job>-<kind>-<week>`, heard by the job's people,
+`Permissions.hearsNews`), and is in `get_schedule` and `look_ahead` as `leadingIndicators`.
+
 The construction plan's `งานก่อนหน้า WBS` sheet is available on iPhone and iPad to people with `mp.setup` permission.
 It edits a draft, blocks invalid graphs, and rejects saving when a remote edit changed the rows while it was open.
 Rows persist through the existing `scheduleWBS` JSON and job sync. Finish-to-start links need `AppCompat.syncVersion`

@@ -77,6 +77,9 @@ public struct ScheduleBrief: Codable, Equatable, Sendable {
     public var handoverLikely: String?
     public var handoverLate: String?
     public var handoverRangeTasks: [String]?
+    /// The leading indicators at or over their threshold (CHA-85, `LeadingIndicators`): trouble a week or two before
+    /// the SPI shows it. Nil when none is tripped or the app gave none.
+    public var leadingIndicators: [LeadingIndicator.Brief]?
     /// The task by task forecast (each task's pace, the plan's order of work): the last task's end and its days past
     /// the install end. `what_if` starts from it.
     public var projectedFinish: String?

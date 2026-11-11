@@ -19,6 +19,13 @@ struct MonitoringPage: View {
     @State var asCards = false
     @State var showSettings = MonitoringPage.debugSettings
     @State var opened: Monitoring.Station?
+    /// The chart card's height: `ต้องดำเนินการ` keeps it and scrolls inside (CHA-110).
+    @State var chartHeight: CGFloat = 0
+    /// `ต้องดำเนินการ`'s rows and the room they have, to show `ดูทั้งหมด` when they don't fit.
+    @State var actionsContent: CGFloat = 0
+    @State var actionsViewport: CGFloat = 0
+    /// `ดูทั้งหมด`: the table, filtered to `มีปัญหา`, scrolled to.
+    @State var scrollToStations = 0
     @Environment(\.permissions) var permissions
     @Environment(\.isPresented) private var isPushed
     @Environment(\.dismiss) private var dismiss
@@ -33,14 +40,17 @@ struct MonitoringPage: View {
 
     var body: some View {
         let fleet = store.fleet
-        ScrollView {
-            Group {
-                // the first Growatt read since launch: skeletons in the page's shape, never `—` and zeros (CHA-74)
-                if store.awaitingFirstRead { loadingContent } else { content(fleet) }
+        ScrollViewReader { proxy in
+            ScrollView {
+                Group {
+                    // the first Growatt read since launch: skeletons in the page's shape, never `—` and zeros (CHA-74)
+                    if store.awaitingFirstRead { loadingContent } else { content(fleet) }
+                }
+                .padding(.horizontal, Self.margin)
+                .padding(.top, 14)
+                .padding(.bottom, 116)
             }
-            .padding(.horizontal, Self.margin)
-            .padding(.top, 14)
-            .padding(.bottom, 116)
+            .onChange(of: scrollToStations) { withAnimation { proxy.scrollTo(Self.stationsAnchor, anchor: .top) } }
         }
         .safeAreaInset(edge: .top, spacing: 0) { header }
         .background(Theme.phonePage.ignoresSafeArea())
@@ -68,9 +78,11 @@ struct MonitoringPage: View {
                 chartCard(fleet).frame(maxWidth: .infinity)
                 actionsCard(fleet).frame(width: 398)
             }
-            stationsCard(fleet)
+            stationsCard(fleet).id(Self.stationsAnchor)
         }
     }
+
+    static let stationsAnchor = "monitoring.stationsAnchor"
 
     /// Managers and the Maintainer edit the settings (issue #259 §7), as `config/monitoring`'s rule allows; everyone
     /// else sees them.
@@ -118,28 +130,32 @@ struct MonitoringPage: View {
 
     // MARK: since installed
 
+    /// The value and its unit never shrink; only the grey note may be cut (CHA-110).
     private func sinceStrip(_ f: Monitoring.Fleet) -> some View {
-        let energy = MonFormat.energy(f.totalEnergy), value = MonFormat.baht(f.value)
-        let rate = store.settings.rate.map { MonFormat.number($0, 2) + " ฿/kWh" } ?? "ยังไม่ตั้งอัตราค่าไฟ"
+        let energy = MonFormat.energy(f.totalEnergy), value = MonFormat.baht(f.value), size = MonFormat.capacity(f.kWp)
+        let rate = store.settings.rate.map { "ที่ " + MonFormat.number($0, 2) + " ฿/kWh" } ?? "ยังไม่ตั้งอัตราค่าไฟ"
         return MonCard(padding: 0) {
             HStack(spacing: 0) {
-                Text("ตั้งแต่ติดตั้ง").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted).padding(.horizontal, 16)
+                Text("ตั้งแต่ติดตั้ง").font(.sarabun(13, .bold)).foregroundStyle(Theme.inkMuted).fixedSize().padding(.horizontal, 16)
                 stripItem("พลังงานสะสม", energy.value, energy.unit)
-                stripItem("กำลังติดตั้ง", MonFormat.number(f.kWp, 1), "kWp", note: "\(f.inverters) อินเวอร์เตอร์")
-                stripItem("มูลค่าไฟที่ผลิตได้", value.value, value.unit + " · " + rate)
+                stripItem("กำลังติดตั้ง", size.value, size.unit, note: "\(f.inverters) อินเวอร์เตอร์")
+                stripItem("มูลค่าไฟที่ผลิตได้", value.value, value.unit, note: rate)
                 stripItem("ลด CO₂", MonFormat.number(f.co2Tonnes), "t", last: true)
             }
-            .frame(height: 52)
+            .frame(minHeight: 52)
         }
         .accessibilityElement(children: .combine)
     }
 
     private func stripItem(_ title: String, _ value: String, _ unit: String, note: String? = nil, last: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
-            Text(value).font(.sarabun(21, .bold)).foregroundStyle(Theme.navy).monospacedDigit()
-            Text(unit).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1)
-            if let note { Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted.opacity(0.8)).lineLimit(1) }
+            Text(title).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
+            Text(value).font(.sarabun(21, .bold)).foregroundStyle(Theme.navy).monospacedDigit().lineLimit(1).fixedSize()
+            Text(unit).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(1).fixedSize()
+            if let note {
+                Text(note).font(.sarabun(12)).foregroundStyle(Theme.inkMuted.opacity(0.8)).lineLimit(1).truncationMode(.tail)
+                    .layoutPriority(-1)
+            }
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,41 +164,77 @@ struct MonitoringPage: View {
 
     // MARK: the six cards
 
+    /// The six cards. At night they say so (CHA-110): `กลางคืน`, and before sunrise yesterday's figures under `—`,
+    /// not zeros that read as a fault.
     private func kpiRow(_ f: Monitoring.Fleet) -> some View {
         let chart = Monitoring.Chart(f.stations, range: .today, now: f.now)
         let week = Monitoring.Chart(f.stations, range: .week, now: f.now)
         return HStack(spacing: 12) {
-            MonitoringKPI(icon: "bolt", tint: Theme.primary, title: "กำลังตอนนี้",
-                          value: MonFormat.number(f.powerNow), unit: "kW",
-                          chip: (MonFormat.percent(f.powerShare), .info), caption: "ของ " + MonFormat.number(f.kWp) + " kWp",
-                          spark: .line(chart.total.compactMap(\.actual)))
-            MonitoringKPI(icon: "sun.max", tint: Theme.warning, title: "พลังงานวันนี้",
-                          value: MonFormat.number(f.energyToday), unit: "kWh",
-                          chip: (MonFormat.percent(f.yieldShare) + " คาด", tone(share: f.yieldShare)),
-                          caption: "คาด " + MonFormat.number(f.expectedSoFar) + " kWh",
-                          spark: .bars(week.total.map { $0.actual ?? 0 }, highlightLast: true))
-            MonitoringKPI(icon: "gauge.with.dots.needle.33percent", tint: Theme.primary, title: "ผลผลิตจำเพาะ",
-                          value: MonFormat.number(f.specificYield, 2), unit: "kWh/kWp",
-                          chip: (MonFormat.percent(f.specificVsMedian, signed: true), tone(delta: f.specificVsMedian)),
-                          caption: "จากค่ากลาง " + MonFormat.number(f.medianYield, 2),
-                          spark: .line(week.total.map { ($0.actual ?? 0) / max(f.kWp, 1) }))
-            MonitoringKPI(icon: "arrow.down.right", tint: Theme.warning, title: "สูญเสียวันนี้",
-                          value: MonFormat.number(f.lossToday), unit: "kWh", valueTint: (f.lossToday ?? 0) > 0 ? Theme.warningInk : nil,
-                          chip: (MonFormat.percent(f.lossShare), (f.lossToday ?? 0) > 0 ? .warn : .ok),
-                          caption: "ของที่คาด · \(f.lossStations) สถานี",
-                          spark: .bars(week.total.map { $0.loss ?? 0 }, highlightLast: true))
-            MonitoringKPI(icon: "cpu", tint: Theme.danger, title: "พร้อมใช้งาน",
-                          value: MonFormat.number(f.availability.map { $0 * 100 }, 1), unit: "%",
-                          valueTint: (f.availability ?? 1) < 1 ? Theme.dangerText : nil,
-                          chip: ("\(f.invertersOnline)/\(f.inverters)", (f.availability ?? 1) < 1 ? .bad : .ok),
-                          caption: f.inverters - f.invertersOnline > 0 ? "\(f.inverters - f.invertersOnline) เครื่องไม่ทำงาน" : "ทำงานครบ",
-                          spark: .blocks(inverterBlocks(f)))
+            powerKPI(f, chart)
+            energyKPI(f, week)
+            yieldKPI(f, week)
+            lossKPI(f, week)
+            availabilityKPI(f)
             MonitoringKPI(icon: "shield", tint: Theme.success, title: "ไหลย้อน",
                           value: MonFormat.number(f.backfeed), unit: "kWh",
                           chip: ("ปกติ \(f.backfeedClean)/\(f.stations.count)", f.backfeedClean == f.backfeedReporting ? .ok : .warn),
                           caption: backfeedCaption(f),
                           spark: .blocks(f.stations.map { $0.backfeedToday == nil ? .unknown : ($0.backfeedToday ?? 0) < 0.05 ? .on : .off }))
         }
+    }
+
+    private func powerKPI(_ f: Monitoring.Fleet, _ chart: Monitoring.Chart) -> some View {
+        MonitoringKPI(icon: "bolt", tint: Theme.primary, title: "กำลังตอนนี้",
+                      value: MonFormat.number(f.isNight && f.powerNow == nil && f.online > 0 ? 0 : f.powerNow), unit: "kW",
+                      chip: f.isNight ? ("กลางคืน", .muted) : (MonFormat.percent(f.powerShare), .info),
+                      caption: "ของ " + MonFormat.number(f.kWp) + " kWp",
+                      spark: .line(chart.total.compactMap(\.actual)))
+    }
+
+    private func energyKPI(_ f: Monitoring.Fleet, _ week: Monitoring.Chart) -> some View {
+        let night = f.isBeforeSunrise
+        return MonitoringKPI(icon: "sun.max", tint: Theme.warning, title: "พลังงานวันนี้",
+                             value: night ? "0" : MonFormat.number(f.energyToday), unit: "kWh",
+                             chip: night ? ("ยังไม่เริ่ม", .muted) : (MonFormat.percent(f.yieldShare) + " คาด", tone(share: f.yieldShare)),
+                             caption: night ? Self.yesterday(f.yesterdayEnergy) : "คาด " + MonFormat.number(f.expectedSoFar) + " kWh",
+                             spark: .bars(week.total.map { $0.actual ?? 0 }, highlightLast: !night))
+    }
+
+    private func yieldKPI(_ f: Monitoring.Fleet, _ week: Monitoring.Chart) -> some View {
+        let night = f.isBeforeSunrise
+        return MonitoringKPI(icon: "gauge.with.dots.needle.33percent", tint: Theme.primary, title: "ผลผลิตจำเพาะ",
+                             value: night ? MonFormat.dash : MonFormat.number(f.specificYield, 2), unit: "kWh/kWp",
+                             chip: night ? ("กลางคืน", .muted) : (MonFormat.percent(f.specificVsMedian, signed: true), tone(delta: f.specificVsMedian)),
+                             caption: night ? "เมื่อวาน " + MonFormat.number(f.yesterdaySpecificYield, 2)
+                                 : "จากค่ากลาง " + MonFormat.number(f.medianYield, 2),
+                             spark: .line(week.total.map { ($0.actual ?? 0) / max(f.kWp, 1) }))
+    }
+
+    private func lossKPI(_ f: Monitoring.Fleet, _ week: Monitoring.Chart) -> some View {
+        let night = f.isBeforeSunrise, loss = f.lossToday ?? 0
+        return MonitoringKPI(icon: "arrow.down.right", tint: Theme.warning, title: "สูญเสียวันนี้",
+                             value: night ? MonFormat.dash : MonFormat.number(f.lossToday), unit: "kWh",
+                             valueTint: !night && loss > 0 ? Theme.warningInk : nil,
+                             chip: night ? ("กลางคืน", .muted) : (MonFormat.percent(f.lossShare), loss > 0 ? .warn : .ok),
+                             caption: night ? "เมื่อวาน " + MonFormat.number(f.yesterdayLoss) + " kWh" : "ของที่คาด · \(f.lossStations) สถานี",
+                             spark: .bars(week.total.map { $0.loss ?? 0 }, highlightLast: !night))
+    }
+
+    private func availabilityKPI(_ f: Monitoring.Fleet) -> some View {
+        let down = f.inverters - f.invertersOnline, asleep = f.isNight ? f.invertersAsleep : 0
+        let caption = asleep > 0 ? "พัก \(asleep) เครื่องไม่นับ" : down > 0 ? "\(down) เครื่องไม่ทำงาน" : "ทำงานครบ"
+        return MonitoringKPI(icon: "cpu", tint: Theme.danger, title: "พร้อมใช้งาน",
+                             value: MonFormat.number(f.availability.map { $0 * 100 }, 1), unit: "%",
+                             valueTint: (f.availability ?? 1) < 1 ? Theme.dangerText : nil,
+                             chip: ("\(f.invertersOnline)/\(f.inverters)", (f.availability ?? 1) < 1 ? .bad : .ok),
+                             caption: caption,
+                             spark: .blocks(inverterBlocks(f)))
+    }
+
+    /// `เมื่อวาน 12.4 MWh`.
+    static func yesterday(_ kWh: Double?) -> String {
+        let e = MonFormat.energy(kWh)
+        return "เมื่อวาน " + e.value + " " + e.unit
     }
 
     private func backfeedCaption(_ f: Monitoring.Fleet) -> String {
@@ -194,7 +246,10 @@ struct MonitoringPage: View {
     private func inverterBlocks(_ f: Monitoring.Fleet) -> [MonitoringKPI.Block] {
         f.rows.flatMap { r -> [MonitoringKPI.Block] in
             let online = r.health == .offline ? 0 : (r.station.invertersOnline ?? r.station.inverters)
-            return (0..<r.station.inverters).map { i in r.health == .offline ? .unknown : i < online ? .on : .off }
+            let asleep = r.health == .offline ? 0 : (r.station.invertersAsleep ?? 0)
+            return (0..<r.station.inverters).map { i in
+                r.health == .offline || (i >= online && i < online + asleep) ? .unknown : i < online ? .on : .off
+            }
         }
     }
 

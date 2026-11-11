@@ -68,11 +68,11 @@ public enum Monitoring {
             self.since = since; self.occurrences = occurrences; self.workOrder = workOrder; self.loss = loss
         }
 
-        /// `Error 124`, `Lost`, `TCRoof`.
+        /// `Error 124`, `ขาดการติดต่อ` (Growatt's `Lost`), `TCRoof`.
         public var label: String {
             switch source {
             case .growatt: code.isEmpty ? "Error" : "Error " + code
-            case .lost: "Lost"
+            case .lost: "ขาดการติดต่อ"
             case .tcroof: "TCRoof"
             }
         }
@@ -89,6 +89,26 @@ public enum Monitoring {
         }
     }
 
+    /// Day and night on the device's clock, by the forecast's day (`Forecast.sunrise` to `Forecast.sunset`). At
+    /// night an inverter stops reporting while its data logger goes on (CHA-110).
+    public enum Daylight {
+        static func hours(_ date: Date, calendar: Calendar) -> Double {
+            let c = calendar.dateComponents([.hour, .minute], from: date)
+            return Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60
+        }
+
+        /// Before sunrise or from sunset.
+        public static func isNight(_ date: Date, calendar: Calendar = .current) -> Bool {
+            let h = hours(date, calendar: calendar)
+            return h < Forecast.sunrise || h >= Forecast.sunset
+        }
+
+        /// Before today's sunrise: nothing made today yet.
+        public static func isBeforeSunrise(_ date: Date, calendar: Calendar = .current) -> Bool {
+            hours(date, calendar: calendar) < Forecast.sunrise
+        }
+    }
+
     public struct Station: Identifiable, Hashable, Sendable {
         public var id: String
         public var mpNumber: Int?
@@ -97,6 +117,9 @@ public enum Monitoring {
         /// Inverters the station has, and those reporting without a fault; nil when not known.
         public var inverters: Int
         public var invertersOnline: Int?
+        /// Inverters asleep: at night, quiet behind a data logger that still reports (CHA-110). Not an alarm, not
+        /// counted against `พร้อมใช้งาน`; the table shows `พัก n`. Nil by day.
+        public var invertersAsleep: Int?
         /// Paired with a source (a Growatt plant). False: everything below is nil, the row reads `ไม่มีข้อมูล`.
         public var paired: Bool
         /// kW at the last reading.
@@ -157,7 +180,7 @@ public enum Monitoring {
         public func health(now: Date, offlineAfter minutes: Int) -> Health {
             guard paired, let last = lastReading, now.timeIntervalSince(last) <= Double(minutes * 60) else { return .offline }
             if alarms.contains(where: { $0.source != .tcroof }) { return .alarm }
-            if let online = invertersOnline, online < inverters { return .alarm }
+            if let online = invertersOnline, online + (invertersAsleep ?? 0) < inverters { return .alarm }
             return .normal
         }
 

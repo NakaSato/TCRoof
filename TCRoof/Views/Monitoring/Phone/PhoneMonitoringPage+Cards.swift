@@ -220,8 +220,8 @@ extension PhoneMonitoringPage {
     }
 }
 
-/// One line of `ต้องดำเนินการ` on iPhone: the station and part, where it was raised (`TCRoof`, `Error 102`, `Lost`),
-/// the detail, and on the right the loss over since when.
+/// One line of `ต้องดำเนินการ` on iPhone: the station, its status (`TCRoof ตรวจพบ`, `Error 102`, `ขาดการติดต่อ`), what
+/// and since when (`Action.summary`), and on the right the loss.
 struct PhoneMonitoringActionRow: View {
     let action: Monitoring.Action
     let open: () -> Void
@@ -233,19 +233,11 @@ struct PhoneMonitoringActionRow: View {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(.sarabun(15, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
-                    HStack(spacing: 6) {
-                        MonChip(alarm.label, alarm.source == .tcroof ? .warn : .bad)
-                        Text(alarm.part).font(.sarabun(13, .semibold)).foregroundStyle(Theme.inkStrong).lineLimit(1)
-                    }
-                    if !alarm.detail.isEmpty {
-                        Text(alarm.detail).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
-                    }
+                    MonChip(action.status, alarm.source == .tcroof ? .warn : .bad)
+                    Text(action.summary(now: Date())).font(.sarabun(13)).foregroundStyle(Theme.inkMuted).lineLimit(2)
                 }
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(loss).font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk).lineLimit(1).monospacedDigit()
-                    Text(age).font(.sarabun(12)).foregroundStyle(Theme.inkMuted).multilineTextAlignment(.trailing)
-                }
+                Text(loss).font(.sarabun(15, .bold)).foregroundStyle(Theme.warningInk).lineLimit(1).monospacedDigit()
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             .frame(minHeight: 56)
@@ -256,11 +248,8 @@ struct PhoneMonitoringActionRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// `MP 25 · นครชัยศรี`.
-    private var title: String {
-        let name = MonitoringPage.shortName(action.station)
-        return action.station.mpNumber.map { "MP \($0) · " + name } ?? name
-    }
+    /// `MP 25 · นครชัยศรี`, `P1_3 · บ้านโป่ง`.
+    private var title: String { MonitoringPage.title(action.station, separator: " · ") }
 
     /// `~4.2 kWh`, `≤ 430 kWh`, or `—`.
     private var loss: String {
@@ -269,14 +258,6 @@ struct PhoneMonitoringActionRow: View {
         case .atMost(let v): "≤ " + MonFormat.number(v) + " kWh"
         case .unknown: MonFormat.dash
         }
-    }
-
-    /// `ตั้งแต่ 11:30 · เกิด 3 ครั้ง`.
-    private var age: String {
-        var parts: [String] = []
-        if action.alarm.source != .lost { parts.append("ตั้งแต่ " + MonFormat.time(action.alarm.since)) }
-        if action.occurrences > 1 { parts.append("เกิด \(action.occurrences) ครั้ง") }
-        return parts.joined(separator: " · ")
     }
 }
 

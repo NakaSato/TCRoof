@@ -62,10 +62,14 @@ public struct TCButtonStyle: ButtonStyle {
     public var working: Bool
     /// An enabled `.primary` button's fill in place of `Theme.primary` (the daily report's purple `ยืนยันรับทราบ`).
     public var tint: Color?
+    /// The glass dialogs' capsule (CHA-109): radius half the height, and a disabled `.primary` reads as a pale
+    /// outlined capsule (`segmentTrack`, `inkFaint`) instead of the grey block.
+    public var capsule: Bool
 
     public init(_ kind: TCButtonKind = .primary, size: TCButtonSize = .page, fullWidth: Bool? = nil, working: Bool = false,
-                tint: Color? = nil) {
+                tint: Color? = nil, capsule: Bool = false) {
         self.kind = kind; self.size = size; self.fullWidth = fullWidth; self.working = working; self.tint = tint
+        self.capsule = capsule
     }
 
     // The environment is read in `TCButtonBody`, not here: a style with its own `@Environment` blanks the whole page
@@ -89,7 +93,8 @@ struct TCButtonBody: View {
     var compact: Bool { sizeClass == .compact }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: size.radius(compact: compact), style: .continuous)
+        let height = size.height(compact: compact)
+        let shape = RoundedRectangle(cornerRadius: style.capsule ? height / 2 : size.radius(compact: compact), style: .continuous)
         let wide = style.fullWidth ?? (size == .page && compact)
         let pressed = isPressed && isEnabled && !working
         return HStack(spacing: Space.s) {
@@ -101,7 +106,7 @@ struct TCButtonBody: View {
         .lineLimit(1).minimumScaleFactor(0.8)
         .padding(.horizontal, kind == .text ? Space.s : 18)
         .frame(maxWidth: wide ? .infinity : nil)
-        .frame(minWidth: touchMin, minHeight: size.height(compact: compact))
+        .frame(minWidth: touchMin, minHeight: height)
         .background(fill, in: shape)
         .overlay { border(shape) }
         .overlay { if pressed && kind != .text { shape.fill(Color.black.opacity(0.18)) } }
@@ -113,8 +118,11 @@ struct TCButtonBody: View {
     }
 
     var off: Bool { !isEnabled }
+    /// A disabled solid button in a glass dialog: pale and outlined.
+    var paleOff: Bool { off && style.capsule && (kind == .primary || kind == .primaryGradient) }
 
     var foreground: Color {
+        if paleOff { return Theme.inkFaint }
         if off { return kind == .text ? Theme.disabledText : (kind == .secondary || kind == .destructive || kind == .dashedAdd ? Theme.disabledText : .white) }
         switch kind {
         case .primary, .primaryGradient, .tealGradient, .danger: return Theme.onPrimary
@@ -125,6 +133,7 @@ struct TCButtonBody: View {
     }
 
     var fill: AnyShapeStyle {
+        if paleOff { return AnyShapeStyle(Theme.segmentTrack) }
         if off {
             switch kind {
             case .text, .dashedAdd: return AnyShapeStyle(Color.clear)
@@ -144,6 +153,7 @@ struct TCButtonBody: View {
 
     @ViewBuilder func border(_ shape: RoundedRectangle) -> some View {
         switch kind {
+        case _ where paleOff: shape.strokeBorder(Theme.inkFaint.opacity(0.6))
         case .secondary: shape.strokeBorder(off ? Theme.borderSubtle : Theme.navy.opacity(0.6))
         case .destructive: shape.strokeBorder(off ? Theme.borderSubtle : Theme.danger.opacity(0.5))
         case .dashedAdd: shape.strokeBorder(off ? Theme.borderSubtle : Theme.primary, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))

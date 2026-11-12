@@ -181,6 +181,16 @@ public enum Theme {
     /// The selected pill's fill, white running down to light grey.
     public static let glassPillTop = Color(hex: 0xFFFFFF, opacity: 0.95)
     public static let glassPillBottom = Color(hex: 0xE9EEF5, opacity: 0.9)
+    // Glass dialog (ตั้งค่า Monitoring, CHA-109)
+    /// The sheet's wash over the blur, white at 78 % running down to pale blue at 62 %.
+    public static let glassSheetTop = Color(light: 0xFFFFFF, dark: 0x1A2533, opacity: 0.78)
+    public static let glassSheetBottom = Color(light: 0xECF2F9, dark: 0x121A24, opacity: 0.62)
+    /// The sheet's 1 pt edge: white at 75 %.
+    public static let glassSheetStroke = Color(light: 0xFFFFFF, dark: 0x2A3646, opacity: 0.75)
+    /// The scrim behind a glass dialog: deep navy at 22 %.
+    public static let glassScrim = Color(light: 0x0E1E38, dark: 0x000000, opacity: 0.22)
+    /// A card on the glass sheet: the surface at 85 %.
+    public static let glassCard = surface.opacity(0.85)
     // iPad home board (docs/ui/tcroof-home-ipad)
     /// Hairline under the white header #E6EBF2.
     public static let headerLine = Color(light: 0xE6EBF2, dark: 0x243142)

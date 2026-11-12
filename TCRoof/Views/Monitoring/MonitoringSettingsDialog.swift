@@ -2,12 +2,13 @@ import SwiftUI
 import TCRoofUI
 import TCRoofCore
 
-/// `ตั้งค่า Monitoring` (issue #259 §7, redesigned in CHA-72 / #323): one column over the page. From the top: the
+/// `ตั้งค่า Monitoring` (issue #259 §7, redesigned in CHA-72 / #323, glass in CHA-109): one scrolling page on a glass
+/// sheet over a light scrim, no tabs, the header only its title and `✕ ปิด`. From the top: the
 /// Growatt accounts as cards (a token kept in this iPad's Keychain, only its last four in the settings; a dashed
 /// `+ เพิ่มบัญชี` card opens an inline form that tests the account before adding it), polling with the nightly archive
 /// and the pairings' count (`ดูรายการ ›` turns the dialog to `จับคู่สถานีกับ Plant`, `MonitoringPairingPane`), the
 /// alert thresholds as four tiles, who is told as three cards, and the electricity rate. Only a manager edits; the
-/// team sees the values. Changes wait for `บันทึก` in the footer, which says how many are unsaved;
+/// team sees the values. Changes wait for `บันทึก` in the floating glass bar, which says how many are unsaved;
 /// `ยกเลิกการแก้` puts the saved values back. `-monitoringPairing YES` opens it on the pairing page with example plants.
 struct MonitoringSettingsDialog: View {
     enum Page { case settings, pairing }
@@ -61,32 +62,17 @@ struct MonitoringSettingsDialog: View {
 
     var body: some View {
         ZStack {
-            Theme.popoverDim.ignoresSafeArea().onTapGesture(perform: close)
+            scrim
             VStack(spacing: 0) {
                 titleBar
-                if page == .pairing {
-                    Divider()
-                    MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants,
-                                          plants: Binding(get: { plants }, set: { plants = $0 }))
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            sourcesSection.disabled(!canEdit)
-                            pollingSection
-                            thresholdsSection.disabled(!canEdit)
-                            recipientsSection.disabled(!canEdit)
-                            rateSection.disabled(!canEdit)
-                        }
-                        .padding(.horizontal, 28).padding(.top, 4).padding(.bottom, 24)
-                    }
-                }
-                Divider()
-                footer
+                content
+                    // the bar floats over the page's end: the content scrolls under it
+                    .safeAreaInset(edge: .bottom, spacing: 0) { footer }
             }
-            .frame(maxWidth: 940, maxHeight: 900)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: .black.opacity(0.18), radius: 30, y: 10)
+            .frame(maxWidth: 1000, maxHeight: 780)
+            .background { GlassSheet(radius: Self.radius) }
+            .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
+            .shadow(color: Theme.navy.opacity(0.22), radius: 40, y: 18)
             .padding(40)
         }
         // the keyboard covers the dialog's lower part rather than squeezing all of it above the keys: the account
@@ -110,6 +96,39 @@ struct MonitoringSettingsDialog: View {
         }
     }
 
+    static let radius: CGFloat = 32
+
+    /// The page behind, dimmed and lightly blurred; a tap outside closes.
+    private var scrim: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial).opacity(0.35)
+            Theme.glassScrim
+        }
+        .ignoresSafeArea()
+        .onTapGesture(perform: close)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if page == .pairing {
+            MonitoringPairingPane(stations: stations, draft: $draft, canEdit: canEdit, stub: Self.stubPlants,
+                                  plants: Binding(get: { plants }, set: { plants = $0 }))
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 32) {
+                    sourcesSection.disabled(!canEdit)
+                    pollingSection
+                    thresholdsSection.disabled(!canEdit)
+                    recipientsSection.disabled(!canEdit)
+                    rateSection.disabled(!canEdit)
+                }
+                .padding(.horizontal, 30).padding(.top, 6).padding(.bottom, 28)
+            }
+            .scrollIndicators(.hidden)
+        }
+    }
+
     // MARK: title and footer
 
     private var titleBar: some View {
@@ -123,17 +142,17 @@ struct MonitoringSettingsDialog: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(page == .pairing ? "จับคู่สถานีกับ Plant" : "ตั้งค่า Monitoring")
-                    .font(.sarabun(24, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+                    .font(.sarabun(26, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
                 if page == .pairing {
                     Text(pairedLine).font(.sarabun(13)).foregroundStyle(Theme.inkMuted)
                 }
             }
             Spacer()
             Button(action: close) { Label("ปิด", systemImage: "xmark") }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false, capsule: true))
                 .accessibilityIdentifier("monitoring.settings.close")
         }
-        .padding(.horizontal, 28).padding(.top, 22).padding(.bottom, 14)
+        .padding(.leading, 30).padding(.trailing, 24).padding(.top, 24).padding(.bottom, 14)
     }
 
     private var footer: some View {
@@ -147,15 +166,18 @@ struct MonitoringSettingsDialog: View {
             if canEdit {
                 if n > 0 {
                     Button(action: undo) { Text(verbatim: "ยกเลิกการแก้") }
-                        .buttonStyle(TCButtonStyle(.secondary, fullWidth: false))
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false, capsule: true))
                         .accessibilityIdentifier("monitoring.settings.undo")
                 }
-                Button(action: save) { Text(verbatim: "บันทึก") }.buttonStyle(TCButtonStyle(.primary, fullWidth: false))
+                Button(action: save) { Text(verbatim: "บันทึก").padding(.horizontal, 4) }
+                    .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false, capsule: true))
                     .disabled(n == 0)
                     .accessibilityIdentifier("monitoring.settings.save")
             }
         }
-        .padding(.horizontal, 28).padding(.vertical, 14)
+        .padding(.leading, 22).padding(.trailing, 10).padding(.vertical, 10)
+        .background { GlassBar() }
+        .padding(.horizontal, 16).padding(.bottom, 16)
     }
 
     private func footerLine(_ n: Int) -> String {
@@ -226,8 +248,8 @@ struct MonitoringSettingsDialog: View {
     private func accountCard(_ s: Monitoring.Settings.Server) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: "server.rack").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.onPrimary)
-                .frame(width: 48, height: 48)
-                .background(Theme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .frame(width: 44, height: 44)
+                .background(Theme.headerGradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(s.name).font(.sarabun(16, .bold)).foregroundStyle(Theme.navy).lineLimit(1)
@@ -255,10 +277,9 @@ struct MonitoringSettingsDialog: View {
             }
             .accessibilityIdentifier("monitoring.server.delete")
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+        .modifier(SectionCard())
     }
 
     /// `openapi.growatt.com · จับคู่ 4 สถานี · 43 Plant`: the stations whose plant is read from this account (so 0
@@ -310,8 +331,8 @@ struct MonitoringSettingsDialog: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Theme.borderControl, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .overlay(RoundedRectangle(cornerRadius: SectionCard.radius, style: .continuous)
+                .strokeBorder(Theme.inkFaint, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -346,21 +367,21 @@ struct MonitoringSettingsDialog: View {
                 Button {
                     adding = false; newName = ""; newToken = ""; newURL = GrowattAPI.openAPIURL.absoluteString; addError = nil
                 } label: { Text(verbatim: "ยกเลิก") }
-                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false, capsule: true))
                 Button { Task { await testAndAdd() } } label: {
                     HStack(spacing: 8) {
                         if addTesting { ProgressView().tint(Theme.onPrimary) }
                         Text(verbatim: addTesting ? "กำลังทดสอบ…" : "ทดสอบและเพิ่ม")
                     }
                 }
-                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
+                .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false, capsule: true))
                 .disabled(addTesting || URL(string: resolvedNewURL)?.host == nil
                           || newToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityIdentifier("monitoring.server.testAndAdd")
             }
         }
-        .padding(16)
-        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(18)
+        .modifier(SectionCard())
     }
 
     /// Lists the account's plants (read only, `plant/list`) before it is added, so a wrong URL or token is caught in
@@ -404,7 +425,7 @@ struct MonitoringSettingsDialog: View {
             HStack(spacing: 10) {
                 secureField("วาง Token ใหม่จาก Growatt", text: $changedToken, id: "monitoring.server.newToken")
                 Button { changingToken = nil; changedToken = "" } label: { Text(verbatim: "ยกเลิก") }
-                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                    .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false, capsule: true))
                 Button {
                     let token = changedToken.trimmingCharacters(in: .whitespacesAndNewlines)
                     let suffix = Monitoring.Settings.Server.suffix(of: token)
@@ -429,12 +450,12 @@ struct MonitoringSettingsDialog: View {
                     testNote[s.id] = nil
                     changingToken = nil; changedToken = ""
                 } label: { Text(verbatim: "ใช้ Token นี้") }
-                    .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false))
+                    .buttonStyle(TCButtonStyle(.primary, size: .card, fullWidth: false, capsule: true))
                     .disabled(changedToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(16)
-        .background(Theme.phonePage, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(18)
+        .modifier(SectionCard())
     }
 
     /// Tests the account's connection with the token in this iPad's Keychain (`MonitoringStore.test` records the
@@ -471,14 +492,14 @@ struct MonitoringSettingsDialog: View {
             VStack(spacing: 0) {
                 settingRow("รอบดึงข้อมูล", "ยิ่งถี่ ข้อมูลยิ่งใหม่ · ใช้โควตา API มากขึ้น") {
                     Segments(options: Monitoring.Settings.pollChoices.map { ($0, "\($0) นาที") }, selection: $draft.pollMinutes)
-                        .frame(width: 280)
+                        .frame(width: 320)
                 }
                 .disabled(!canEdit)
-                Divider()
+                Divider().overlay(Theme.hairline)
                 // viewing the pairings is open to everyone; the pane itself is read only for the team
                 settingRow("จับคู่สถานี", pairedLine) {
                     Button { withAnimation(.easeInOut(duration: 0.2)) { page = .pairing } } label: { Text(verbatim: "ดูรายการ ›") }
-                        .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false))
+                        .buttonStyle(TCButtonStyle(.secondary, size: .card, fullWidth: false, capsule: true))
                         .accessibilityIdentifier("monitoring.pairing.open")
                 }
             }
@@ -522,7 +543,7 @@ struct MonitoringSettingsDialog: View {
             }
             control
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .modifier(SectionCard())
         .accessibilityElement(children: .contain)
@@ -536,7 +557,10 @@ struct MonitoringSettingsDialog: View {
     private var recipientsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("ส่งแจ้งเตือนถึง", note: "แจ้งบน iPad ที่เปิด Monitoring")
-            recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
+            // the board's three columns; the supervisor's and contractor's cards wait for a server path (CHA-94)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), alignment: .leading) {
+                recipientCard("ทีมบำรุงรักษา", "ทุกสถานี", on: $draft.notifyMaintenance)
+            }
         }
     }
 
@@ -557,11 +581,12 @@ struct MonitoringSettingsDialog: View {
                 }
                 .frame(width: 24, height: 24)
             }
-            .padding(14)
+            .padding(16)
             .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-            .background(on.wrappedValue ? Theme.primarySoft : Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(on.wrappedValue ? Theme.primary : Theme.borderSubtle, lineWidth: on.wrappedValue ? 1.5 : 1))
+            .background(on.wrappedValue ? Theme.primarySoft : Theme.glassCard,
+                        in: RoundedRectangle(cornerRadius: SectionCard.radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: SectionCard.radius, style: .continuous)
+                .strokeBorder(on.wrappedValue ? Theme.primary : Theme.glassSheetStroke, lineWidth: on.wrappedValue ? 2 : 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -581,13 +606,13 @@ struct MonitoringSettingsDialog: View {
                         .keyboardType(.decimalPad).multilineTextAlignment(.center)
                         .font(.sarabun(18, .bold)).foregroundStyle(Theme.navy)
                         .frame(width: 96, height: 44)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .accessibilityLabel("อัตราค่าไฟ บาทต่อ kWh")
                         .accessibilityIdentifier("monitoring.settings.rate")
                     Text(verbatim: "บาท / kWh").font(.sarabun(14)).foregroundStyle(Theme.inkMuted)
                 }
-                .padding(4).padding(.trailing, 8)
-                .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(4).padding(.trailing, 10)
+                .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .modifier(SectionCard())
         }
@@ -595,11 +620,13 @@ struct MonitoringSettingsDialog: View {
 
     // MARK: parts
 
+    /// A 20 pt title with its 13.5 pt grey line under it.
     private func sectionHeader(_ title: String, note: String?) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title).font(.sarabun(18, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
-            if let note { Text(note).font(.sarabun(13)).foregroundStyle(Theme.inkMuted) }
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.sarabun(20, .bold)).foregroundStyle(Theme.navy).accessibilityAddTraits(.isHeader)
+            if let note { Text(note).font(.sarabun(13.5)).foregroundStyle(Theme.inkMuted) }
         }
+        .padding(.bottom, 4)
     }
 
     private func settingRow<Trailing: View>(_ title: String, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
@@ -611,7 +638,7 @@ struct MonitoringSettingsDialog: View {
             Spacer(minLength: 8)
             trailing()
         }
-        .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 64)
+        .padding(.horizontal, 18).padding(.vertical, 12).frame(minHeight: 68)
     }
 
     private func labelledField<F: View>(_ label: String, @ViewBuilder _ field: () -> F) -> some View {
@@ -664,12 +691,43 @@ struct MonitoringSettingsDialog: View {
     }
 }
 
-/// A section's white card: radius 16, a hairline border.
+/// A card on the glass sheet: the surface at 85 %, radius 22, a white edge and a soft shadow.
 private struct SectionCard: ViewModifier {
+    static let radius: CGFloat = 22
+
     func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         content
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.borderSubtle))
+            .background(Theme.glassCard, in: shape)
+            .overlay(shape.strokeBorder(Theme.glassSheetStroke))
+            .shadow(color: Theme.navy.opacity(0.06), radius: 10, y: 3)
+    }
+}
+
+/// The dialog's glass: the page blurred under a white-to-pale-blue wash, with a white 1 pt edge.
+private struct GlassSheet: View {
+    let radius: CGFloat
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        ZStack {
+            shape.fill(.ultraThinMaterial)
+            shape.fill(LinearGradient(colors: [Theme.glassSheetTop, Theme.glassSheetBottom], startPoint: .top, endPoint: .bottom))
+            shape.strokeBorder(Theme.glassSheetStroke)
+        }
+    }
+}
+
+/// The floating save bar's glass: a rounded bar of blur, the dock's wash and a white top edge.
+private struct GlassBar: View {
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
+        ZStack {
+            shape.fill(.regularMaterial)
+            shape.fill(Theme.glassFillPhone)
+            shape.strokeBorder(Theme.glassSheetStroke)
+        }
+        .shadow(color: Theme.navy.opacity(0.14), radius: 18, y: 6)
     }
 }
 
@@ -689,8 +747,8 @@ private struct Segments<Value: Hashable>: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.surface)
-                                    .shadow(color: Theme.navy.opacity(0.18), radius: 1.5, y: 1)
+                                Capsule().fill(Theme.surface)
+                                    .shadow(color: Theme.navy.opacity(0.16), radius: 3, y: 1)
                             }
                         }
                         .contentShape(Rectangle())
@@ -699,7 +757,7 @@ private struct Segments<Value: Hashable>: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
-        .padding(3)
-        .background(Theme.segmentTrack, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(4)
+        .background(Theme.segmentTrack, in: Capsule())
     }
 }
